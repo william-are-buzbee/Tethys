@@ -120,6 +120,8 @@ Docs, most upstream first. When a doc's Open list says a choice is the person's,
 | `POLISH.md` | the low-budget effects survey: pass A built (v11.13, v11.23); passes B and C are next |
 | `AUDIO.md` | the sound's design (v11.14); every number was chosen blind |
 | `DESIGN.md` | **the reference**: one section per system with the owning file, the numbers, the knobs and the reasons |
+| `analysis_believability.md` | the 12 Sep analysis: how the world, flora, clades and spawning work, and where the believability is strong and thin |
+| `DIRECTION.md` | where the project is going (12 Sep): the archipelago, oxygen, the silled basin, the hingeshells, and the game's loop ("the body is the tech"); its Open list is the person's |
 | `CHANGELOG.md` | judging risk: what each version changed, what the person saw and said, what was never seen |
 | `HANDOFF.md` | current state only, newest first, with what to ask the person to look at; entries no longer true are removed, not kept |
 | `IDEAS.txt` | the person's own backlog |

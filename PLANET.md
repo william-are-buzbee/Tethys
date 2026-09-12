@@ -347,6 +347,35 @@ then stone, crusher, pall, rasp, needle; then basker, hook, comb, watcher, picke
 geometry language (boxes and cones with joints for hingeshells; lathes for slowbloods; spheres and chains for
 ringmouths), its blood tint and its eye rule; existing builders get eyes and tints in the same pass.
 
+## Decided 12 Sep 2026 — the believability discussion (`analysis_believability.md`, `DIRECTION.md`)
+
+Decided, not built; the sections above stand as written until the passes that build these change them. The full reasoning is in
+`DIRECTION.md`.
+
+- **Oxygen: ~21%, Earth's**, not 28%. The Carboniferous number bought giant land insects (a tracheal effect) and nothing for water-
+  breathers; the big hingeshells stand on buoyancy, closed circulation and the moult, which work at 21%. Removes fire on land and the
+  tension with an anoxic deep.
+- **The chemocline is this basin's, not the planet's.** A permanent planet-wide anoxic deep under an animal atmosphere is not
+  believable (Earth's were transients that ended themselves); a **silled basin** is (Black Sea, Cariaco, Saanich Inlet with tides). A ridge
+  encloses the chain with its crest near −400 to −450, the basin floor −800 to −1500, exchange through a few narrow deep gaps; renewal
+  events move the boundary. The sill replaces the plate paragraph of v11.28 as the horizon; the deep's water is sill-depth water, ~8–10 °C.
+  The Ocean bullet's "Proterozoic ferruginous ocean" reading goes; the dark, the seep line, the black shells and the iron chemistry stay.
+- **The pall lives in the suboxic band just above −450**, not below it; the picker on the redoxcline; nothing multicellular below.
+- **The mountain is one of a hotspot chain** (one island now, the archipelago later): young / mature / atoll / guyot by age, saddles
+  between merged edifices, oxic corridors above the chemocline and barriers below. The founder rule applies at species rank across the
+  chain, not at phylum rank on one island.
+- **Size is not the limit; density is.** Sizes stand (a 15 m slowblood apex, a 16 m filter feeder); numbers follow mass^−0.75 and the
+  world's area. Giants are seen by haunts, aggregation events and age, not by count.
+- **The hingeshells' long segmented plan is legit** (radiodonts, eurypterids, remipedes) with firm limits: no pursuit, poor turning, swimmers
+  capped near the sickle's size, giants by terminal moult only and in cool water. The clade's numbers are a size pyramid with a wide base.
+- **The moon is closer: about half Earth's lunar distance**, ~8× the tidal force, so a couple of metres of open-ocean tide amplified to
+  the 6–9 m on the banks and lagoons; a ~10-day month, springs and neaps every five days, an eclipse every ten days. The Moon bullet's
+  "~3× Earth's tidal force" and the 26-day `moonIllum` period change with the pass; the day stays ~30 h.
+- **A physiology model** (temperature, pressure) will be built — the Hooks' `temp(x,z,y)` and pressure with depth, read by creatures and
+  player. **Player hunger**, **eggs, mating and reproduction within one life**, and **the player starting as the smallest body the creator
+  allows** are decided (DIRECTION). Reputation is a facet of intelligence, per species. Deferred: how young "young" is (until the
+  archipelago); the ledger's mass for long bodies.
+
 ## Open
 
 Asked and not yet answered; do not decide these for the person.

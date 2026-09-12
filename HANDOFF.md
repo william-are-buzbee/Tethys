@@ -14,6 +14,19 @@ every top-level name with its line is `src/INDEX.md` (generated). Read a DESIGN 
 
 ## Where things stand
 
+**12 Sep: the direction, decided on paper, nothing built.** `analysis_believability.md` read the world as built and judged it; the
+discussion after it is `DIRECTION.md` and a dated section at the end of `PLANET.md`. Decided: oxygen to ~21%; the chemocline as a silled
+basin's (a sill ridge and gaps replace the v11.28 plate horizon; the pall moves above the line); one island now, a hotspot-chain
+archipelago later (young / mature / atoll / guyot, saddles between); size is not the limit, density is; the hingeshells' long segmented
+plan gets more variety within firm limits (no pursuit, terminal-moult giants in cool water, a wide base of small ones); and the game's loop
+is "the body is the tech" — a player born as the smallest body the creator allows, growing, keys eaten where the chemistry puts them
+(mass, minerals, pigments, symbionts, senses), physical doors (current, depth, sulfide, size, air, territory), a den, the builders at the
+bottom. Not a human, not generations. Also decided: a closer moon (~half Earth's lunar distance, a ~10-day month) for the 6–9 m tides; a
+physiology model (temperature, pressure); player hunger; eggs, mating and reproduction within one life; reputation as a facet of
+intelligence. Deferred by the person: how young the island is (until the archipelago), and the ledger's mass for long bodies. The code review of the same day is `analysis_review.md`: eleven real bugs ranked (the shaft colour comment, the reach-vs-contact
+table, hunter regen, the NaN hold on dt 0, the grab leak, the cell-edge determinism, `stranded` on MAT, `bigsGen`'s yield, the smoke
+test's mouse, the lab's NaN inputs), then drift and cosmetics; none fixed yet.
+
 **v11.31 (11 Sep): combat as the physics — the hold, built, unseen.** CHANGELOG v11.31; DESIGN, Combat (new section). The person asked for the
 combat overhauled from the physics (grab, hold, bite until it dies or bleeds; the player grabbing on a button; blood; losing allowed) and for
 the AI left alone. Built: `src/combat.js` — a fight is a hold, a rope between a body's grip (jaws, arms, claws, derived by `compile`) and the
