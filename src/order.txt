@@ -1,0 +1,27 @@
+# build order of src/*.js (one name per line, without .js). build.py, test/smoke.js and test/lint.js all read this.
+# Only top-level statements that run at load care about the order; everything else is one shared scope.
+util
+world
+physics
+scene
+parts
+grow
+creatures_builders
+creatures_spec
+flora
+reef
+creatures_defs
+audio
+creatures_ai
+chunks
+ecology
+far
+player
+atmosphere
+combat
+effects
+menu
+zoo
+lab
+input
+main

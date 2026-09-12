@@ -1,0 +1,359 @@
+// creatures_ai.js — registry, spawning (with far-LOD bake), behaviours, per-frame update
+const creatures=[],schools=[],carcasses=[],eggs=[]; // carcasses (v11.26): the dead, lying where they fell until eaten or gone; eggs: the clutches
+// The eggs (v11.26): a birth the ledger owes a loaded cell is laid as a clutch on the floor near an adult of its kind — a knot of
+// translucent spheres the clade's colour, sized to the animal — and hatches after ECO.hatch days (by mass^¼: a flicker's in five
+// minutes, a ridge's in a day and a half) into juveniles at the clutch. A clutch is a carcass to the scavengers (findCarcass): eaten
+// down, it hatches fewer. The ledger counts the unhatched as living; a clutch eaten is a debit
+const EGG_GEO={},EGG_COL={ringmouths:[0.60,0.70,0.62],slowbloods:[0.74,0.64,0.50],hingeshells:[0.84,0.82,0.72],drifters:[0.8,0.8,0.8]};
+function eggGeo(clade){let g=EGG_GEO[clade];if(g)return g;const col=EGG_COL[clade]||EGG_COL.hingeshells,rng=mulberry(77),P=[];
+  for(let i=0;i<7;i++){const a=rng()*TAU,r=i?0.9+rng()*0.6:0;P.push(part(G.sph(0.85+rng()*0.3,6,5),Math.cos(a)*r,0.3+(i?rng()*0.5:0.6),Math.sin(a)*r,col));}
+  return EGG_GEO[clade]=merge(P);}
+function layEggs(ch,e,ei,n,rng){
+  const kind=e.kind,D=DEFS[kind],EK=ecoOf(kind);let at=null;const adults=[];for(const o of ch.creatures)if(o.alive&&o.ent===ei&&!o.def.juv)adults.push(o);
+  if(adults.length){const a=adults[Math.floor(rng()*adults.length)];at=V3(a.pos.x+(rng()-0.5)*8,0,a.pos.z+(rng()-0.5)*8);}
+  else{at=chunkPoint(ch,rng,e.env,!!e.land);if(!at)return 0;}
+  const h=ch.h(at.x,at.z);if(!e.land&&h>-4)return 0;at.y=h;if(solidPush(at,0.6,null,ch))return 0;
+  const sz=0.12*Math.pow(D.size,0.6),m=new THREE.Mesh(eggGeo(SPECS[kind]?SPECS[kind].clade:'hingeshells'),MATT);m.position.copy(at);m.scale.setScalar(sz);m.rotation.y=rng()*TAU;scene.add(m);
+  const egg={mesh:m,pos:at,ent:ei,e:e,kind:kind,chunk:ch,n:n,n0:n,t:ECO.hatch*Math.pow(EK.mass,0.25)*DAY_S*(0.8+0.4*rng()),flesh:n*sz*sz*sz*40,flesh0:n*sz*sz*sz*40,gone:false,def:{size:sz*2},egg:true};
+  eggs.push(egg);ch.eggs.push(egg);POP.laid+=n;return n;
+}
+function removeEgg(g){g.gone=true;scene.remove(g.mesh);let k=eggs.indexOf(g);if(k>=0)eggs.splice(k,1);k=g.chunk.eggs.indexOf(g);if(k>=0)g.chunk.eggs.splice(k,1);}
+function updateEggs(dt){
+  for(let i=eggs.length-1;i>=0;i--){const g=eggs[i];
+    if(g.flesh<g.flesh0){const left=Math.ceil(g.n0*Math.max(0,g.flesh)/g.flesh0);if(left<g.n){const c=g.chunk.i*NCELL+g.chunk.j;POP.n[g.ent][c]=Math.max(0,POP.n[g.ent][c]-(g.n-left)/Q.creatures);POP.eaten+=g.n-left;g.n=left;}
+      if(g.n<=0){removeEgg(g);continue;}}
+    g.t-=dt;if(g.t<=0){const r=placeKind(g.chunk,g.e,g.n,mulberry((g.pos.x*131+g.pos.z*7)|0),{ent:g.ent,juv:true,at:g.pos});let q=r.next();while(!q.done)q=r.next();POP.hatched+=q.value||0;removeEgg(g);}}
+}
+let visibleCreatures=0;
+
+// The static geometry of a kind is shared by every individual (v11.12): a build merges the same body for every creature of a kind
+// (the rest pose, the kind's palette) and its far-LOD bake is a second full copy — 1100 resident creatures carried 1100 of each, a
+// 455 MB heap at boot. The first spawn of a kind donates its meshes' geometries and its bake; the rest point at them and drop their
+// own. The rigs (skinned every frame) stay per creature; the lab's placed species ('lab', a changing spec) is never cached. The
+// build itself still runs per spawn: only the copies and the uploads are saved.
+const KIND_GEO={},SHARED_GEO=new Set();
+// A juvenile (v11.26): a recruit is born at ECO.juv of its kind's scale and grows up off screen (growUp). Its def is its kind's with the
+// size-dependent numbers scaled, chained to the adult's so every other read falls through; its geometry is cached apart (KIND_GEO 'kind~')
+const JUV_DEF={};
+function juvDef(kind){let j=JUV_DEF[kind];if(j)return j;const d=DEFS[kind],s=ECO.juv,sp=SPECS[kind];j=JUV_DEF[kind]=Object.create(d);
+  j.size=d.size*s;j.juv=true;j.build=()=>compile(sp,s*(sp.s||1));if(d.speed)j.speed=d.speed*Math.sqrt(s);if(d.flee)j.flee=d.flee*Math.sqrt(s);if(d.reach)j.reach=d.reach*s;if(d.hp<1e8)j.hp=d.hp*s*s;if(d.dmg)j.dmg=d.dmg*s*s;
+  if(d.radius)j.radius=d.radius*s;if(d.lunge)j.lunge=d.lunge*Math.sqrt(s);if(d.detect)j.detect=d.detect*s;if(d.clear!==undefined)j.clear=d.clear*s;if(d.food)j.food=Math.max(1,Math.round(d.food*s));return j;}
+function spawn(ch,kind,pos,rng,opt){
+  const juv=!!(opt&&opt.juv),d=juv?juvDef(kind):DEFS[kind],b=d.build(),EK=ecoOf(kind);
+  const c={kind:kind,def:d,g:b.g,anim:b.anim,pos:pos.clone(),vel:V3(0,0,0),home:pos.clone(),hp:d.hp,state:'wander',t0:rng()*100,target:null,biteT:0,wanderT:0,wander:pos.clone(),alive:true,gone:false,stun:0,bored:0,cool:rng()*3,scanT:rng()*0.5,alarm:0,fleeT:0,lungeT:0,ramT:0,school:null,off:null,offT:0,chunk:ch,lod:-1,parts:null,lodMeshes:null,sub:1,wet:true,grounded:false,flopT:0,
+    b:b,mass:Math.max(0.6,d.size*d.size*d.size),bound:0,reach:0,shapesW:null,chainW:null,grab:null,holding:0,hold:null,held:0,bleed:0,cWith:null,d6:0,par:creatures.length&1, // hold: the hold it has on something, held: how many have hold of it, bleed: hp still to lose to its wounds (combat.js)
+    st:{tell:0,strike:0,jet:false},tellT:0,strikeT:0,recoverT:0,burstT:rng()*2,face:null,bit:false,accT:0,threat:null,
+    ent:opt&&opt.ent!==undefined?opt.ent:-1,hunger:EK.hunter?rng():0,starveT:0,feedT:0,feedAt:null,dead:false,flesh:0,deadT:0,scav:null,scavT:rng()*0.5,juv:juv?EK.grow*DAY_S*(0.8+0.4*rng()):0}; // ent: the ledger entry; hunger 0 fed..1 starving (ecology.js); juv: seconds until it grows up // st: what the anim reads (creatures_builders.js); the tell and the strike as clocks
+  b.g.position.copy(pos);scene.add(b.g);
+  // far LOD: the whole creature flattened into one mesh per material, hidden until needed
+  c.parts=b.g.children.slice();
+  // the far pose (v11.18): the rigs posed by the creature's own idle anim and skinned at rest before the bake, so a far lurker's arms
+  // lie as they will when simulated and a far sailer's lines hang straight — they held the build pose (armRing's 0.3 rad spread:
+  // arms raised, lines splayed) until the near LOD switched them on, which read as floating and then falling
+  if(b.anim)b.anim(0,0,c.st);if(b.rigs)for(const r of b.rigs)rigRest(r);
+  const gk=juv?kind+'~':kind,K=kind==='lab'?null:(KIND_GEO[gk]||(KIND_GEO[gk]={geos:[],lod:null}));
+  if(K){const rigMeshes=new Set();if(b.rigs)for(const r of b.rigs)rigMeshes.add(r.mesh);let n=0;
+    b.g.traverse(o=>{if(!o.isMesh||rigMeshes.has(o))return;const g=K.geos[n++];if(g){if(o.geometry!==g){o.geometry.dispose();o.geometry=g;}}else{K.geos[n-1]=o.geometry;SHARED_GEO.add(o.geometry);}});}
+  if(K&&K.lod)c.lodMeshes=K.lod.map(e=>{const m=new THREE.Mesh(e.geo,e.mat);m.visible=false;return m;});
+  else{c.lodMeshes=bakeLOD(b.g);if(K)K.lod=c.lodMeshes.map(m=>{SHARED_GEO.add(m.geometry);return {geo:m.geometry,mat:m.material};});}
+  for(const m of c.lodMeshes){if(d.size>=6&&m.material===MAT)m.material=MATBIG;b.g.add(m);} // a big animal's far LOD keeps the far ghost (scene.js, addTint)
+  c.shM=[];b.g.traverse(o=>{if(o.isMesh)c.shM.push(o);});c.cast=false; // the meshes that cast into the shadow map when this body is among the nearest (scene.js updateShadow)
+  c.lodNear=(d.lodNear||45+d.size*4)*Q.lodNear;c.lodFar=Math.min(FAR*0.7,120+d.size*40); // lodNear on the def (v11.18): the long-appendaged are simulated from further off; a veil is drawn to 760, an abyssal to 720
+  creatures.push(c);ch.creatures.push(c);return c;
+}
+function setLOD(c,level){
+  if(c.lod===level)return;c.lod=level;
+  const near=level===0;
+  for(const p of c.parts)p.visible=near;
+  for(const m of c.lodMeshes)m.visible=!near&&c.lodMeshes.length>0;
+  if(!near&&c.lodMeshes.length===0)for(const p of c.parts)p.visible=true; // no bakeable parts: keep the real thing, just stop animating
+}
+// A school is a loose ribbon (the boid role): its members flock among themselves and follow the school's wandering target;
+// the school's pos is the members' mean. sp: the spread they start in, in units of the member's size.
+function* makeSchool(ch,kind,p,n,rng,opt){ // a generator (v11.12): one member a step of the cell's build
+  const s={pos:p.clone(),home:p.clone(),target:p.clone(),t:0,chunk:ch,members:[],threat:null,scanT:0};schools.push(s);ch.schools.push(s);
+  const sz=DEFS[kind].size*3;
+  for(let i=0;i<n;i++){const c=spawn(ch,kind,p.clone().add(V3((rng()-0.5)*sz,(rng()-0.5)*sz*0.4,(rng()-0.5)*sz)),rng,opt);c.school=s;s.members.push(c);c.vel.set((rng()-0.5)*2,0,(rng()-0.5)*2);yield;}
+}
+function disposeCreature(c){c.alive=false;c.gone=true;releaseAll(c);scene.remove(c.g);c.g.traverse(o=>{if(o.geometry&&!SHARED_GEO.has(o.geometry))o.geometry.dispose();});} // a kind's shared body and bake stay (spawn)
+// a creature leaving the world mid-life (eaten away, grown up): disposed and struck from every list it is on
+function removeCreature(c){disposeCreature(c);let k=creatures.indexOf(c);if(k>=0)creatures.splice(k,1);if(c.chunk){k=c.chunk.creatures.indexOf(c);if(k>=0)c.chunk.creatures.splice(k,1);}
+  if(c.school){k=c.school.members.indexOf(c);if(k>=0)c.school.members.splice(k,1);}k=carcasses.indexOf(c);if(k>=0)carcasses.splice(k,1);}
+// a juvenile grows up: the adult is spawned in its place with its ledger entry, school and state, and the small one goes
+function growUp(c){const ch=c.chunk,a=spawn(ch,c.kind,c.pos,Math.random,{ent:c.ent});a.vel.copy(c.vel);a.home.copy(c.home);a.g.quaternion.copy(c.g.quaternion);a.hunger=c.hunger;
+  if(c.school){a.school=c.school;c.school.members.push(a);}if(c.state==='sit'){a.state='sit';}removeCreature(c);return a;}
+
+// ---------- steering ----------
+function seek(c,target,speed,dt,accel){T1.copy(target).sub(c.pos);const L=T1.length();if(L<0.001)return;T1.multiplyScalar(speed/L);curComp(c,T1,speed);c.vel.lerp(T1,1-Math.exp(-accel*dt));}
+// the way through the water that gives the wanted way over the ground in this current, no faster than CUR_FIGHT times the speed asked
+const CUR_FIGHT=1.2;
+function curComp(c,v,speed){if(!c.carried||!c.cur)return;v.sub(c.cur);const l=v.length(),m=speed*CUR_FIGHT;if(l>m)v.multiplyScalar(m/l);}
+function seekAway(c,from,speed,dt){T1.copy(c.pos).sub(from);T1.y*=0.3;const L=T1.length()||1;T1.multiplyScalar(speed/L);c.vel.lerp(T1,1-Math.exp(-2*dt));}
+function setWander(c){
+  const d=c.def,R=d.home||30;let p,fh;
+  for(let k=0;k<6;k++){ // swimmers steer for wet ground only; a legged creature goes where it likes
+    p=c.home.clone().add(V3(rnd(-R,R),0,rnd(-R,R)));p.x=clamp(p.x,-HALF+30,HALF-30);p.z=clamp(p.z,-HALF+30,HALF-30);
+    fh=groundAt(p.x,p.z);if(d.legs||fh<-3-d.size*0.6)break;
+  }
+  if(d.floor)p.y=fh+rnd(0.5,2.5)+d.size*0.4;
+  else if(d.deep)p.y=clamp(c.home.y+rnd(-60,60),fh+8,-458); // the pall: below the chemocline, off the mud
+  else if(fh<-450)p.y=clamp(c.home.y+rnd(-80,80),-420,-30);
+  else p.y=clamp(fh+rnd(4,d.cruise||30),fh+3,-4-d.size*0.4);
+  c.wander.copy(p);c.wanderT=rnd(6,14);
+}
+function wander(c,dt){c.wanderT-=dt;if(c.wanderT<=0||c.pos.distanceTo(c.wander)<3)setWander(c);const k=burstK(c,dt);seek(c,c.wander,c.def.speed*(c.def.cruiseF||0.45)*k,dt,0.8*k);}
+function findPrey(c,R){
+  const d=c.def;let best=null,bd=1e9;if(R===undefined)R=d.detect;
+  if(d.prey.indexOf('player')>=0&&!player.dead&&player.inkT<=0&&(!d.preyClade||(player.clade&&player.clade.id===d.preyClade))){const dp=c.pos.distanceTo(player.pos);if(dp<R){best=player;bd=dp*0.7;}}
+  for(const o of creatures){if(!o.alive||o===c)continue;if(d.prey.indexOf(o.kind)<0)continue;const dd=c.pos.distanceTo(o.pos);if(dd<R&&dd<bd){bd=dd;best=o;}}
+  return best;
+}
+// The kill (v11.26): the ledger is debited and nothing comes back. Eaten whole (the player's bite, a small prey in a big mouth) the
+// body goes; otherwise it is a carcass — it stays in the scene, sinks, lies on its side, and is eaten away (updateCarcass) by what
+// killed it, by the scavengers it draws and by the water, ECO.carc days untouched. `by` is what killed it: it feeds
+function kill(c,by,whole){if(!c.alive)return;c.alive=false;c.target=null;c.grab=null;c.threat=null;c.scav=null;c.bleed=0;releaseAll(c);ecoDebit(c);POP.kills++;
+  const mass=c.def.size*c.def.size*c.def.size;
+  if(by&&by!==player){const K=ecoOf(by.kind),food=ecoOf(c.kind).food;by.hunger=Math.max(0,by.hunger-food/K.meal);by.starveT=0;if(mass<=K.meal*0.35)whole=true;}
+  if(whole||c.def.role==='boid'&&c.def.size<0.5){removeCreature(c);return;}
+  c.dead=true;c.flesh=mass;c.deadT=0;c.vel.multiplyScalar(0.3);carcasses.push(c);
+  _q.setFromAxisAngle(V3(0,0,1),c.t0>50?HPI:-HPI);c.lieQ=c.g.quaternion.clone().multiply(_q); // rolled onto its side
+  if(c.b.rigs)for(const r of c.b.rigs)rigRest(r);
+  if(by&&by!==player){by.state='feed';by.feedAt=c;by.feedT=12+mass*0.4*(1+Math.random());by.target=null;by.grab=null;}
+}
+// a carcass: sinks at a body's terminal fall, settles, decays; a scavenger or its killer at it eats it faster (c.flesh)
+function updateCarcass(c,dt,dp){
+  c.deadT+=dt;if(!c.grounded){c.vel.y=Math.max(c.vel.y-1.2*dt,-1.6);c.vel.x*=Math.exp(-0.8*dt);c.vel.z*=Math.exp(-0.8*dt);}else c.vel.set(0,0,0);
+  c.pos.addScaledVector(c.vel,dt);const fh=groundAt(c.pos.x,c.pos.z)+c.def.size*0.3;c.grounded=false;if(c.pos.y<fh){c.pos.y=fh;c.vel.y=0;c.grounded=true;}
+  if(c.lieQ)c.g.quaternion.slerp(c.lieQ,1-Math.exp(-1.5*dt));c.g.position.copy(c.pos);
+  const mass=c.def.size*c.def.size*c.def.size;c.flesh-=mass*dt/(ECO.carc*DAY_S);
+  const vis=dp<c.lodFar;c.g.visible=vis;if(vis){visibleCreatures++;setLOD(c,dp<c.lodNear?0:1);if(dp<90)nearList.push(c);} // a body to push against
+  if(c.flesh<=0||c.deadT>ECO.carc*DAY_S*1.5){POP.eaten+=1;removeCreature(c);}
+}
+// eating at a carcass: a mouthful a second scaled to the eater; the eater's hunger falls with it
+function eatAt(o,c,dt){const om=o.def.size*o.def.size*o.def.size,K=ecoOf(o.kind),bite=(K.hunter?Math.min(om/75,K.meal/20):om/40)*dt;c.flesh-=bite;if(o.hunger>0){o.hunger=Math.max(0,o.hunger-bite/ecoOf(o.kind).meal);o.starveT=0;}}
+// the nearest carcass within R of o, still worth eating
+function findCarcass(o,R){let best=null,bd=R;for(const c of carcasses){if(c.gone||c.flesh<=0)continue;const d=o.pos.distanceTo(c.pos);if(d<bd){bd=d;best=c;}}
+  for(const g of eggs){if(g.gone||g.flesh<=0||g.kind===o.kind)continue;const d=o.pos.distanceTo(g.pos);if(d<bd*0.5){bd=d;best=g;}}return best;} // a clutch too (not its own kind's), from half the distance
+
+// ---------- behaviours ----------
+// Burst and coast (PLANET, hingeshells: paddles in a metachronal wave; nothing they do is a steady swim): a hunter or wanderer
+// with d.burst {on, off} runs its speed and accel on a duty cycle — full for `on` seconds, then a coast for `off` where it only
+// holds a third of the speed with little steering. The anim sees the speed pulse, so the flaps beat and rest with it.
+function burstK(c,dt){const b=c.def.burst;if(!b)return 1;c.burstT-=dt;if(c.burstT<=-b.off)c.burstT=b.on;return c.burstT>0?1:0.3;}
+// The bite that lands (v11.31: combat.js): forage dies at the touch; anything that can fight is taken hold of, and the hold bites
+function landBite(c,tg){combatBite(c,tg);}
+// Hunger (v11.26): a hunter's clock runs from fed (0) to starving (1) over its kind's cycle (ecology.js) and it hunts only past
+// ECO.hungry — a fed ridge cruises past the player; a kill sets it back by the prey's mass over its meal; at 1 it starves, and
+// past a cycle and a fifth of that it dies (a carcass). The feed state: it stays at a carcass it made and eats
+const ECO_CHASE=9; // seconds a hunter keeps after prey that is not the player
+function hungerTick(c,dt){const K=ecoOf(c.kind);c.hunger=Math.min(1,c.hunger+dt/(K.cycle*DAY_S));if(c.hunger>=1){c.starveT+=dt;if(c.starveT>K.cycle*DAY_S*1.2){POP.starved+=1;kill(c,null);return true;}}return false;}
+function updateHunter(c,dt){
+  const d=c.def;
+  if(c.stun>0){c.stun-=dt;c.vel.multiplyScalar(1-2*dt);return;}
+  if(hungerTick(c,dt))return;
+  if(c.state==='feed'){const f=c.feedAt;c.feedT-=dt;if(!f||f.gone||f.flesh<=0||c.feedT<=0||c.hunger<=0){c.state='wander';c.feedAt=null;c.cool=d.cool||4;setWander(c);return;}
+    const dist=c.pos.distanceTo(f.pos);if(dist>d.reach*0.9)seek(c,f.pos,d.speed*0.35,dt,1.5);else{c.vel.multiplyScalar(1-3*dt);eatAt(c,f,dt);}c.face=dist<d.reach*1.5?f.pos:null;return;}
+  if(c.state==='flee'){c.grab=null;c.fleeT-=dt;if(c.fleeT<=0)c.state='wander';seekAway(c,player.pos,d.speed,dt);return;}
+  c.scanT-=dt;c.cool-=dt;
+  if(c.state==='chase'){
+    const tg=c.target;const tpos=tg===player?player.pos:tg.pos;const dist=c.pos.distanceTo(tpos);
+    const ashore=tg&&tg.grounded&&tg.sub<0.5&&!d.legs; // prey on the strand is out of reach: the sea ends here
+    // the chase (v11.26): a burst — the hunter runs at chaseK times its speed for the first seconds and tires to a cruise — and it gives up a
+    // pursuit that has run ECO_CHASE seconds without a bite (a real pursuit is short; prey with a flee speed at its hunter's cruise outran
+    // every hunter for good before this, and no hunt in the game ever ended in a meal). The clock stops while it has hold of the prey (v11.31)
+    if(!c.hold)c.chaseT=(c.chaseT||0)+dt;const chaseK=tg===player?1:1+0.6*smooth(6,2,c.chaseT);
+    const lost=!tg||(tg!==player&&!tg.alive)||ashore||dist>d.detect*1.6||(tg===player&&(player.dead||(player.inkT>0&&dist>3.5)))||c.bored>2||c.pos.distanceTo(c.home)>(d.home||30)*1.9||(tg!==player&&c.chaseT>ECO_CHASE);
+    if(lost){c.state='wander';c.target=null;c.grab=null;c.bored=0;c.cool=d.cool||4;c.tellT=0;c.strikeT=0;setWander(c);}
+    else if(d.strike){
+      // the strike (PLANET, hingeshells; the platebacks' bite): in range, the tell first — it slows, cocks and turns to the prey —
+      // then a burst at the prey with the strike pose on, the bite landing once if it gets within reach; then the cooldown
+      const S=d.strike;c.biteT-=dt;
+      if(c.strikeT>0){c.strikeT-=dt;c.st.strike=1;seek(c,tpos,S.speed,dt,8);if(!c.bit&&dist<d.reach){c.bit=true;landBite(c,tg);}if(c.strikeT<=0){c.biteT=d.biteCD||1.5;c.grab=null;}}
+      else if(c.tellT>0){c.tellT-=dt;c.st.tell=Math.min(1,c.st.tell+dt/S.tell*1.5);c.vel.multiplyScalar(1-3*dt);c.face=tpos;if(c.tellT<=0){c.strikeT=S.dur;c.bit=false;c.face=null;}}
+      else{const k=burstK(c,dt)*chaseK;seek(c,tpos,d.speed*k,dt,2.2*k);c.grab=null;
+        if(dist<d.reach*(S.range||1.6)&&c.biteT<=0){c.tellT=S.tell;c.st.tell=0;}}
+      if(c.strikeT>0)c.grab=(c.b.rigs&&dist<d.reach*1.3+(tg.def?tg.def.size:1)*0.5)?tg:null;
+    }
+    else{
+      const k=burstK(c,dt)*chaseK;seek(c,tpos,d.speed*k,dt,2.2*k);c.biteT-=dt;
+      c.grab=(c.b.rigs&&dist<d.reach*1.3+(tg.def?tg.def.size:1)*0.5)?tg:null; // the arms reach for prey in range and close on it (physics.js)
+      if(dist<d.reach&&c.biteT<=0){c.biteT=d.biteCD||1.2;landBite(c,tg);}
+    }
+  }else{
+    if(c.scanT<=0){c.scanT=0.4;if(c.cool<=0&&c.hunger>ECO.hungry){const tg=findPrey(c);if(tg){c.state='chase';c.target=tg;c.bored=0;c.chaseT=0;}}}
+    wander(c,dt);
+  }
+}
+// Sit and strike (the trap, the stone): buried or lying on its floor, it never moves. Prey within `radius` starts the tell — the
+// eyestalks rise, it swivels to face the prey — then the strike: the arms unfold or the jaw drops, and anything within reach
+// takes the bite. Then it settles for `cool` seconds. A sitting one is as heavy as a rock for contact (updateCreatures).
+function updateTrap(c,dt){
+  const d=c.def,S=d.strike;c.vel.set(0,0,0);c.cool-=dt;
+  if(c.strikeT>0){c.strikeT-=dt;c.st.strike=1;const tg=c.target;if(tg&&!c.bit){const tpos=tg===player?player.pos:tg.pos;if(c.pos.distanceTo(tpos)<d.reach&&(tg===player||tg.alive)){c.bit=true;landBite(c,tg);}}if(c.strikeT<=0){c.cool=d.cool||2;c.face=null;if(!c.hold)c.target=null;c.state='sit';}return;} // v11.31: the target stays while it is held
+  if(c.tellT>0){c.tellT-=dt;c.st.tell=Math.min(1,c.st.tell+dt/S.tell*1.5);const tg=c.target;if(tg)c.face=tg===player?player.pos:tg.pos;if(c.tellT<=0){c.strikeT=S.dur;c.bit=false;}return;}
+  c.scanT-=dt;if(hungerTick(c,dt))return;if(c.scanT<=0){c.scanT=0.25;if(c.cool<=0&&c.hunger>ECO.hungry*0.4){const tg=findPrey(c);if(tg){c.target=tg;c.tellT=S.tell;c.st.tell=0;c.state='strike';}}} // a trap strikes at most things (a reflex), but not on a full stomach
+}
+// The watcher (PLANET: a curious omnivore that never attacks and never flees far): wanders the floor; within `detect` of the
+// player it walks up to a standoff of `stand` and holds there facing the player, following if they move, backing off if they
+// come closer than half the standoff, and drifting back to its wander when they leave.
+function updateWatcher(c,dt){
+  const d=c.def,dp=player.dead?1e9:c.pos.distanceTo(player.pos),stand=d.stand||6;
+  if(c.state!=='curious'){if(dp<d.detect&&mode==='play'){c.state='curious';}else{c.face=null;if(!scavenge(c,dt))wander(c,dt);return;}}
+  if(dp>d.detect*1.4||player.dead){c.state='wander';c.face=null;setWander(c);return;}
+  T1.copy(c.pos).sub(player.pos);T1.y=0;const L=T1.length()||1;T1.multiplyScalar((dp<stand*0.55?stand*1.5:stand)/L).add(player.pos);
+  T1.y=groundAt(T1.x,T1.z)+d.size*0.35+0.4;
+  const far=c.pos.distanceTo(T1);if(far>1.5)seek(c,T1,Math.min(d.speed,far*0.8),dt,1.6);else c.vel.multiplyScalar(1-3*dt);
+  c.face=far<4?player.pos:null;
+}
+// A boid (the flicker, the darter): steers toward the school's target, aligns with and gathers to the members near it, keeps
+// apart from the close ones, and flees the player and anything that eats its kind. Only its own school's members count, so a
+// ribbon of seven costs forty-two distances. v4's fixed offsets from a school centre read as a block; this is the ribbon.
+function updateBoid(c,dt){
+  const s=c.school,d=c.def,R=d.size*14,R2=R*R,Rs=d.size*4.5;let ax=0,ay=0,az=0,cx=0,cy=0,cz=0,sx=0,sy=0,sz=0,n=0;
+  for(const o of s.members){if(o===c||!o.alive)continue;const dx=o.pos.x-c.pos.x,dy=o.pos.y-c.pos.y,dz=o.pos.z-c.pos.z,d2=dx*dx+dy*dy+dz*dz;if(d2>R2)continue;n++;ax+=o.vel.x;ay+=o.vel.y;az+=o.vel.z;cx+=dx;cy+=dy;cz+=dz;
+    if(d2<Rs*Rs){const dd=Math.sqrt(d2)||0.01,f=(Rs-dd)/(dd*Rs);sx-=dx*f;sy-=dy*f;sz-=dz*f;}}
+  T3.copy(s.target).sub(c.pos);const L=T3.length()||0.01;T3.multiplyScalar(Math.min(1,L/6)/L);
+  if(n){const iv=0.5/(n*d.speed),ic=0.3/(n*R);T3.x+=ax*iv+cx*ic+sx*1.0;T3.y+=ay*iv+cy*ic+sy*1.0;T3.z+=az*iv+cz*ic+sz*1.0;}
+  T3.x+=0.35*Math.sin(t*1.1+c.t0);T3.y+=0.15*Math.sin(t*0.9+c.t0*1.7);T3.z+=0.35*Math.cos(t*1.3+c.t0*0.6); // its own wander, so the ribbon frays and re-forms
+  let fl=0;if(!player.dead){const dd=c.pos.distanceTo(player.pos);if(dd<6){T2.copy(c.pos).sub(player.pos).normalize().multiplyScalar(2);T3.add(T2);fl=1;}}
+  if(s.threat){const dd=c.pos.distanceTo(s.threat);if(dd<8){T2.copy(c.pos).sub(s.threat).normalize().multiplyScalar(2);T3.add(T2);fl=1;}} // the school scans for hunters; a member only reads the answer
+  T3.y*=0.5;const M=T3.length()||0.01,sp=fl?d.flee:d.speed*Math.min(1,0.35+M);T3.multiplyScalar(sp/M);curComp(c,T3,sp);
+  c.vel.lerp(T3,1-Math.exp(-3.5*dt));
+}
+// The schools: a wandering target near home (fleeing threats), and the school's position as its members' mean.
+function updateSchools(dt){
+  for(const s of schools){
+    let n=0;T1.set(0,0,0);for(const c of s.members)if(c.alive){n++;T1.add(c.pos);}if(n)s.pos.copy(T1.multiplyScalar(1/n));
+    s.t-=dt;
+    if(s.t<=0||s.pos.distanceTo(s.target)<3){s.t=rnd(5,12);const p=s.home.clone().add(V3(rnd(-30,30),0,rnd(-30,30)));const fh=groundAt(p.x,p.z);p.y=fh<-450?clamp(s.home.y+rnd(-30,30),-400,-20):clamp(fh+rnd(1.5,8),fh+1.5,-3);s.target.copy(p);}
+    // threats: the player, and any hunter of the members' kind, scanned four times a second (every member reading every creature
+    // was a thousand by a thousand a frame)
+    s.scanT=(s.scanT||0)-dt;if(s.scanT<=0){s.scanT=0.25;let th=null,td=14;const kind=s.members.length?s.members[0].kind:'';
+      if(!player.dead){const d=s.pos.distanceTo(player.pos);if(d<td){th=player.pos;td=d;}}
+      for(const c of creatures){if(!c.alive||!c.def.prey||c.def.prey.indexOf(kind)<0)continue;const d=s.pos.distanceTo(c.pos);if(d<td){th=c.pos;td=d;}}
+      s.threat=th;}
+    const th=s.threat;
+    if(th){T2.copy(s.pos).sub(th);T2.y*=0.2;T2.normalize().multiplyScalar(12);s.target.copy(s.pos).add(T2);const fh=groundAt(s.target.x,s.target.z);s.target.y=clamp(s.target.y,fh+1.5,-3);s.t=Math.min(s.t,2);}
+  }
+}
+function updateGrazer(c,dt){
+  const d=c.def;
+  if(d.calm){wander(c,dt);return;} // the tread: nothing hunts it, so nothing moves it
+  // threats, scanned three times a second (a hundred grazers reading a thousand creatures a frame was the frame's biggest cost)
+  c.scanT-=dt;if(c.scanT<=0){c.scanT=0.3;let threat=null;
+    if(!player.dead&&c.pos.distanceTo(player.pos)<8)threat=player.pos;
+    if(!threat)for(const o of creatures){if(!o.alive||!o.def.prey)continue;const big=o.def.size>=6;if((big||o.def.prey.indexOf(c.kind)>=0)&&c.pos.distanceTo(o.pos)<(big?18:7)){threat=o.pos;break;}}
+    c.threat=threat;}
+  const threat=c.threat;
+  if(threat){seekAway(c,threat,d.flee,dt);c.alarm=2.5;c.scav=null;}
+  else if(c.alarm>0){c.alarm-=dt;c.vel.multiplyScalar(1-0.8*dt);}
+  else if(!scavenge(c,dt))wander(c,dt);
+}
+// A scavenger (def.scav: the distance it smells a carcass from — the picker 90, the watcher 50, the crusher 40, the scuttle 30, the
+// rasp 12) walks to the nearest carcass in range and eats at it until it is gone; true while it is at that
+function scavenge(c,dt){const d=c.def;if(!d.scav)return false;
+  c.scavT-=dt;if(c.scavT<=0){c.scavT=0.6;if(!c.scav||c.scav.gone||c.scav.flesh<=0)c.scav=findCarcass(c,d.scav);}
+  const f=c.scav;if(!f)return false;const dist=c.pos.distanceTo(f.pos),at=d.size*0.9+f.def.size*0.7;
+  if(dist>at)seek(c,f.pos,d.speed*0.7,dt,1.4);else{c.vel.multiplyScalar(1-3*dt);eatAt(c,f,dt);c.face=f.pos;}return true;}
+function updateCoil(c,dt){
+  const d=c.def;c.cool-=dt;const dist=c.pos.distanceTo(player.pos);
+  if(c.state==='ram'){c.ramT-=dt;seek(c,player.pos,d.ram,dt,3);c.biteT-=dt;if(dist<d.reach&&c.biteT<=0){c.biteT=2;wound(player,d.dmg,c,null,'snap');}if(c.ramT<=0||player.dead){c.state='wander';c.cool=8;setWander(c);}}
+  else{if(dist<d.radius&&c.cool<=0&&!player.dead){c.state='ram';c.ramT=3.5;}wander(c,dt);}
+}
+// the ambushers (the lurker, the hook) lunge at their prey (v11.26: a prey list, not only the player), when hungry
+function updateLurker(c,dt){
+  const d=c.def;if(hungerTick(c,dt))return;
+  if(c.state==='sit'){c.vel.set(0,0,0);c.cool-=dt;c.scanT-=dt;if(c.scanT<=0){c.scanT=0.25;if(c.cool<=0&&c.hunger>ECO.hungry){const tg=findPrey(c,d.radius);if(tg){c.state='lunge';c.target=tg;c.lungeT=1.3;}}}}
+  else if(c.state==='lunge'){const tg=c.target,tp=tg===player?player.pos:tg?tg.pos:c.home,dist=c.pos.distanceTo(tp);c.lungeT-=dt;seek(c,tp,d.lunge,dt,6);c.biteT-=dt;c.grab=c.b.rigs&&dist<d.reach*1.6?tg:null;if(d.hang)c.st.strike=1;
+    if(dist<d.reach&&c.biteT<=0){c.biteT=1;landBite(c,tg);if(c.state!=='feed')c.state='return';}if(c.lungeT<=0||!tg||(tg!==player&&!tg.alive)||(tg===player&&player.dead))c.state='return';}
+  else if(c.state==='feed'){const f=c.feedAt;c.feedT-=dt;if(!f||f.gone||f.flesh<=0||c.feedT<=0){c.state='return';c.feedAt=null;return;}const dist=c.pos.distanceTo(f.pos);if(dist>d.reach*0.8)seek(c,f.pos,3,dt,2);else{c.vel.multiplyScalar(1-3*dt);eatAt(c,f,dt);}}
+  else{c.grab=null;if(!c.hold)c.target=null;seek(c,c.home,4,dt,2);if(c.pos.distanceTo(c.home)<0.8){c.state='sit';c.cool=3;c.pos.copy(c.home);}} // v11.31: what it has hold of comes home with it
+  if(c.stun>0){c.stun-=dt;c.vel.multiplyScalar(1-2*dt);}
+  if(c.state==='flee')c.state='return';
+}
+function updateJelly(c,dt){
+  const k=c.def.size>3?0.5:1;c.vel.set(0.3*k*Math.sin(t*0.3*k+c.t0),0.15*k*Math.sin(t*0.5*k+c.t0),0.3*k*Math.cos(t*0.27*k+c.t0));
+  c.biteT-=dt;if(c.def.dmg>0&&!player.dead&&c.biteT<=0&&c.pos.distanceTo(player.pos)<c.def.reach+1){c.biteT=0.6;hurtPlayer(c.def.dmg,null);}
+}
+// The sailer (DRIFTERS.md): rides the wave (the surface rule below), carried by the current like everything, and sails at ~5% of the
+// wind at 40° off downwind — left- or right-handed by the animal, so one wind sorts a fleet two ways. The whole animal is yawed to its
+// heading (the float's axis is +z); the lines are posed to stream against its way through the water (the current carries both, so only
+// the sail's push counts), in the animal's frame. The lines sting: within def.lines of any simulated line point the player takes dmg.
+function updateSailer(c,dt){
+  const d=c.def,W=SKY.wind,wl=Math.hypot(W[0],W[1]);if(!c.hand)c.hand=c.t0>50?1:-1;
+  const a=Math.atan2(W[1],W[0])+c.hand*0.7,sp=wl*0.05*(0.8+0.2*Math.sin(t*0.11+c.t0));
+  c.vel.set(Math.cos(a)*sp,0,Math.sin(a)*sp);
+  const th=HPI-a;_q.setFromAxisAngle(UP,th);c.g.quaternion.slerp(_q,1-Math.exp(-0.5*dt));
+  const cs=Math.cos(th),sn=Math.sin(th),wx=-c.vel.x,wz=-c.vel.z;c.st.lx=wx*cs-wz*sn;c.st.lz=wx*sn+wz*cs;
+  c.biteT-=dt;if(c.biteT<=0&&!player.dead&&c.lod===0&&c.b.rigs){const R=d.lines*d.lines;
+    for(const rig of c.b.rigs)for(const ch of rig.chains){const P=ch.pts;for(let k=1;k<=ch.n;k++){const dx=P[k*3]-player.pos.x,dy=P[k*3+1]-player.pos.y,dz=P[k*3+2]-player.pos.z;
+      if(dx*dx+dy*dy+dz*dz<R){c.biteT=0.7;hurtPlayer(d.dmg,null);return;}}}}
+}
+
+// ---------- per frame ----------
+const nearList=[],simList=[],bodies=[]; // this frame's creatures within 90 of the player; those at near LOD (arms simulated); near plus the player
+let frameNo=0;
+function updateCreatures(dt0){
+  visibleCreatures=0;nearList.length=0;simList.length=0;const near=nearList;frameNo++;
+  for(const c of creatures){
+    const d=c.def,dp=c.pos.distanceTo(player.pos);
+    if(!c.alive){if(c.dead&&!c.gone&&dp<400)updateCarcass(c,dt0,dp);continue;}
+    if(c.juv>0){c.juv-=dt0;if(c.juv<=0){if(dp>90||!c.g.visible){growUp(c);continue;}c.juv=0.001;}} // grows up out of sight
+    if(dp>360&&dp>c.lodFar){c.g.visible=false;continue;} // the big ones keep swimming as far as they are drawn
+    // beyond 150 (past the near LOD of anything under 25 m) a creature moves every other frame with the two frames' time: the
+    // roster tripled the population (v10.7) and most of it is small things far off in the fog
+    let dt=dt0;if(dp>150){c.accT+=dt0;if((frameNo+c.par)&1)continue;dt=c.accT;c.accT=0;}
+    // the medium, as for the player: sub is the submerged fraction. Steering only works in the water.
+    const R=d.size*0.4,sub=c.pos.y+R<TIDE-TIDE_A1-WAVE_AMP*2?1:clamp((waveH(c.pos.x,c.pos.z)-(c.pos.y-R))/(2*R),0,1),vx0=c.vel.x,vy0=c.vel.y,vz0=c.vel.z;c.sub=sub; // the wave is only read near the surface: a thousand creatures a frame
+    switch(d.role){
+      case 'boid':updateBoid(c,dt);break;
+      case 'trap':updateTrap(c,dt);break;
+      case 'watch':updateWatcher(c,dt);break;
+      case 'hunter':updateHunter(c,dt);break;
+      case 'graze':updateGrazer(c,dt);break;
+      case 'wander':wander(c,dt);break;
+      case 'coil':updateCoil(c,dt);break;
+      case 'ambush':updateLurker(c,dt);break;
+      case 'drift':updateJelly(c,dt);break;
+      case 'sail':updateSailer(c,dt);break;
+    }
+    if(sub<1&&!d.legs){const k=1-sub;c.vel.x=lerp(c.vel.x,vx0,k);c.vel.y=lerp(c.vel.y,vy0,k);c.vel.z=lerp(c.vel.z,vz0,k);}
+    if(sub<1){c.vel.y-=GRAV*(1-sub)*dt;c.vel.multiplyScalar(1-0.12*(1-sub)*dt);}
+    c.pos.addScaledVector(c.vel,dt);
+    // the current (v11.18): a body in the water is carried by it (re-read twice a second) unless it holds on — sitting, on the ground,
+    // or a floor crawler; a swimmer's steering (seek, the boids) subtracts the current from the way it wants to go, so it crabs upstream,
+    // holds station facing into the flow with its tail beating, and is swept only when the current outruns it
+    c.carried=sub>0&&!c.grounded&&c.state!=='sit'&&d.role!=='trap'&&!d.floor;
+    if(dp<200&&c.carried){if(!c.cur){c.cur=V3(0,0,0);c.curT=0;}c.curT-=dt;if(c.curT<=0){c.curT=0.4+Math.random()*0.2;currentAt(c.pos.x,c.pos.z,c.pos.y,c.cur);}c.pos.addScaledVector(c.cur,dt*sub);}
+    let pad=null;if(dp<200)pad=bodyPush(c.pos,c.vel,c.g.quaternion,d.size*0.75,d.size*0.35,d.size*0.28);
+    const fh=groundAt(c.pos.x,c.pos.z)+(d.clear!==undefined?d.clear:d.size*0.35);c.grounded=false;if(c.pos.y<fh){c.pos.y=fh;if(c.vel.y<0)c.vel.y*=-0.15;c.grounded=true;} // clear: how high the origin sits over the floor (a buried trap sits low)
+    if(d.surface){c.pos.y=waveH(c.pos.x,c.pos.z)+(d.ys||0);c.vel.y=0;c.grounded=false;} // a float: on the wave, always (the sailers)
+    if(pad){c.grounded=true;loadPad(pad,clamp(d.size*0.3/pad.r,0.02,0.5));} // a fish that lands on a lily pad lies on it (and flops off)
+    // beached: a swimmer lies still, then flops downhill for the sea
+    if(c.grounded&&sub<0.5&&!d.legs){c.vel.x*=Math.exp(-5*dt);c.vel.z*=Math.exp(-5*dt);c.flopT-=dt;
+      if(c.flopT<=0){c.flopT=rnd(0.7,1.3);const gx=groundAt(c.pos.x+1,c.pos.z)-groundAt(c.pos.x-1,c.pos.z),gz=groundAt(c.pos.x,c.pos.z+1)-groundAt(c.pos.x,c.pos.z-1),gl=Math.hypot(gx,gz)||1;
+        c.vel.x+=-gx/gl*3.4+rnd(-0.5,0.5);c.vel.z+=-gz/gl*3.4+rnd(-0.5,0.5);c.vel.y=3.6+d.size*0.25;}}
+    const wet=sub>0.5;if(wet!==c.wet){if(dp<160&&Math.abs(c.vel.y)>2.5)splash(c.pos,Math.abs(c.vel.y)*(0.5+d.size*0.12));c.wet=wet;}
+    c.pos.x=clamp(c.pos.x,-HALF+12,HALF-12);c.pos.z=clamp(c.pos.z,-HALF+12,HALF-12);
+    if(!d.noOrient){if(c.face){_m.lookAt(c.face,c.pos,UP);_q.setFromRotationMatrix(_m);c.g.quaternion.slerp(_q,1-Math.exp(-(d.turn||2)*2*dt));} // turning to a thing (the tell, the watcher's stare)
+      else if(c.vel.lengthSq()>0.02){T2.copy(c.pos).add(c.vel);_m.lookAt(T2,c.pos,UP);_q.setFromRotationMatrix(_m);c.g.quaternion.slerp(_q,1-Math.exp(-(d.turn||2)*dt));}}
+    c.g.position.copy(c.pos);
+    // the action state the anim reads: the tell and the strike are set by the behaviours above and let go here
+    const st=c.st;if(c.tellT<=0&&c.strikeT<=0){st.tell*=Math.exp(-4*dt);st.strike*=Math.exp(-7*dt);if(d.role==='ambush'&&c.state!=='lunge')st.strike*=Math.exp(-7*dt);}st.jet=c.state==='chase'&&d.jetter===true;
+    const vis=dp<c.lodFar;c.g.visible=vis;
+    if(vis){visibleCreatures++;if(dp<c.lodNear){setLOD(c,0);c.anim(t+c.t0,Math.min(4,c.vel.length()/(d.size*0.5)),st);}else setLOD(c,1);}
+    if(d.role==='hunter'&&c.hp<d.hp)c.hp=Math.min(d.hp,c.hp+2*dt);
+    if(vis&&dp<c.lodNear&&c.lod===0)simList.push(c);
+    if(vis&&dp<90)near.push(c);
+  }
+  // contact: bodies near the player push apart by their actual shapes (the player among them), the player is kept out
+  // of every arm and tail near it, then the arms and tails of everything at near LOD are simulated against the bodies.
+  for(const c of near){c.g.updateMatrix();worldShapes(c);if((c.def.role==='ambush'&&c.state==='sit')||c.def.role==='trap'||c.dead)c.mass=1e6;else c.mass=Math.max(0.6,c.def.size*c.def.size*c.def.size);}
+  const P=player,live=mode==='play'&&!P.dead;let heldBy=0;bodies.length=0;for(const c of near)bodies.push(c);if(live)bodies.push(P);
+  resolveBodies(bodies);
+  updateHolds(dt0); // the holds' ropes (combat.js, v11.31): after the bodies have pushed apart, before the arms are simulated
+  if(live)for(const c of near){if(c.chainW&&c.chainW.length&&c.pos.distanceTo(P.pos)<c.reach+2)sphereOutOf(P.pos,0.75,P.vel,c.chainW);}
+  for(const c of near){c.g.position.copy(c.pos);}
+  for(const c of simList){if(near.indexOf(c)<0){c.g.updateMatrix();worldShapes(c);}stepRigs(c,bodies,dt0);if(c.grab===P&&c.holding)heldBy++;}
+  if(heldBy)P.heldT=0.2;
+}

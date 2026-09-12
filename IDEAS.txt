@@ -1,0 +1,21 @@
+#1. Ask it if a refactor is needed. 
+
+#2. Ask it if any obvious performance improvements can be added.
+
+#3. Discuss common low budget systems used for low-poly games like this one (physics tricks, lighting tricks, particle effects, volumetric fog tricks, cheap but effective shaders, shadow system, animation, low budget physics combat, etc)
+
+#4. Implement all the creatures into the creature creator. 
+
+#5. Do a plant overhaul. Include the surface and the man o war. Bring up bog or swamp-like surface conditions that justify swimming up. Bring up real coral reefs and such. 
+
+#6. Do an audio overhaul. White noise? Generators or techniques for unique sound generation? Or 3d sound placement like Thief? 
+
+#?. Ask for odds and ends list. 
+
+Odds and Ends
+-Allow creatures to actually sit properly on the floor 
+-Allow creatures mouths and eyes and features to actually move with them lol
+-Allow for first person camera 
+-Do a single prompt for really nice clouds and fog in the surface. 
+
+
