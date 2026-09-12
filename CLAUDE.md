@@ -61,7 +61,8 @@ Env vars: `TIER` (`low`), `PICK` (menu pick for smoke), `T0`, `OLD`, and for pre
 4. `CHANGELOG.md` (oldest first): a `## vX.Y — title (date)` entry — what changed and why, the knobs by name, what was seen, and an
    **"Unseen, ask in this order"** list for the rest. Patch versions (`vX.Y.Z`) for fixes after the person looks. Update the
    `DESIGN.md` section whose numbers moved; a design doc gets a status note at its head when a pass builds or strikes it.
-5. `HANDOFF.md` "Where things stand": a short paragraph for the version at the top. Keep that file short.
+5. `HANDOFF.md` describes current state only: a short paragraph for the new version at the top, and remove entries that are no
+   longer true rather than appending. Keep that file short; the history is `CHANGELOG.md`.
 6. Commit each version on `main`, one commit per version, the message the CHANGELOG header. Identity is `WB <willbuzbee@gmail.com>`
    (`user.name` in the repo's local config; never any other name). No pushing, rebasing or hard resets from here (`.claude/settings.json`).
 
@@ -120,7 +121,7 @@ Docs, most upstream first. When a doc's Open list says a choice is the person's,
 | `AUDIO.md` | the sound's design (v11.14); every number was chosen blind |
 | `DESIGN.md` | **the reference**: one section per system with the owning file, the numbers, the knobs and the reasons |
 | `CHANGELOG.md` | judging risk: what each version changed, what the person saw and said, what was never seen |
-| `HANDOFF.md` | where things stand, newest first, with what to ask the person to look at |
+| `HANDOFF.md` | current state only, newest first, with what to ask the person to look at; entries no longer true are removed, not kept |
 | `IDEAS.txt` | the person's own backlog |
 
 `AUDIT.md` (the 9 Sep performance audit) and `Tethys Ideas/Ideas.txt` are cited by several docs and exist nowhere on this PC.
