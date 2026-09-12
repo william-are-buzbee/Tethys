@@ -1,7 +1,8 @@
 # HANDOFF — tethys
 
-Read this first. You (Claude) have no memory of the previous conversations; the files in this folder are the state.
-This file is short on purpose. The upstream design is `PLANET.md` (the planet and the rules its life obeys; when the game
+Where things stand, newest first. `CLAUDE.md` is the entry point — what this is, how to build, test, look and deliver, the
+architecture, the conventions, what bites, the person — and is read before this. You (Claude) have no memory of the previous
+conversations; the files in this folder are the state. This file is short on purpose. The upstream design is `PLANET.md` (the planet and the rules its life obeys; when the game
 conflicts with it the game changes) and, for the sessile life, `FLORA.md` (downstream of PLANET, upstream of flora.js) `REEF.md` (10 Sep, built v11.20) is the reef as a landform — why the big things are framework and the generator that grows them; and, since 9 Sep, `TAXA.md` (answered, built v11.15): the descent of the sessile life — three
 photosynthetic lines by pigment (greens, floaters, reds), the animal lines' splits, the colonisation order, the reef's zones, the swamp (parked); `DRIFTERS.md` (9 Sep, built v11.16) is the fourth clade: bells, buttons and sailers; `CLADES.md`
 (v11.8–11.9.1, built) is the creature clade audit and the three clade signatures as built; `CREATOR.md` (9 Sep) is the
@@ -10,102 +11,6 @@ the person's eleven open questions at its end (built: v11.10–11.11; every spec
 person's answers — pass A (the light) is built as v11.13 and its shadows redone as a shadow map in v11.23, passes B (the body) and C (the night) are next; `AUDIO.md` (9 Sep) is the audio overhaul's design, built as v11.14 (DESIGN, The sound). The reference is `DESIGN.md` (one section per system, with the knobs and the reasons);
 the history, what the person has verified and what has never been seen is `CHANGELOG.md`; the file map is `README.md`;
 every top-level name with its line is `src/INDEX.md` (generated). Read a DESIGN section before touching its system.
-
-## What this is
-
-A Subnautica-like underwater exploration game in three.js (r128 from cdnjs, global `THREE`, no modules, no build
-tools). No tech, no oxygen — swimming, an ecology, predators, and since v6 a surface to breach and land to flop onto.
-The player picks one of three clades from a convergent-evolution roster: **soft-arm** (a ringmouth jetter), **finback**
-(a slowblood), **coilshell** (a ringmouth with a flat coiled shell); every clade fills several niches in the world. Since v11.8 the clades
-are being rebuilt away from their Earth reads — `CLADES.md`. Aesthetic:
-old-school low-poly — Minecraft squids meets Subnautica creatures meets Ordovician Earth. Boxes, low-poly lathes and
-spheres, flat shading, countershaded vertex colours.
-
-## The person
-
-- Wants concise replies with dry wit, no praise, no constant agreement. Disagree when reasonable. Don't pretend to be
-  alive; be plain about what you can and can't do. From the sandbox you cannot see the game or profile the GPU. From the person's
-  PC (Claude Code in the desktop app, since 9 Sep) you can: serve the folder on localhost (file:// is blocked), open it in the app's
-  browser, drive the frame loop by hand — the pane's loop only ticks while it is visible, and a hidden pane reports a 0×0 viewport,
-  which NaNs the menu layout — and screenshot it. That is how `AUDIT.md` and v11.12 were measured.
-- Likes being asked questions and is open to your ideas. Has answered every question asked so far — ask, don't guess,
-  when a design choice is genuinely theirs.
-- Tests on **desktop**; phone is secondary and may sacrifice things as long as desktop is "fantastically smooth".
-- Text in the game: tasteful, minimal, lowercase, letterspaced serif, only when needed (see DESIGN, HUD).
-- Cadence agreed: content prompts freely; a performance pass whenever the debug readout says frame time is creeping.
-  The last pass is v11.12 (`AUDIT.md`, measured on their RTX 4060 at 1600×900): the weed forest on the shelf, the heaviest place, is
-  3.2 ms a frame on the main thread and GPU-bound no more (was 5.9 with 15 ms spikes); the peak 3.0; 306–368 draws, 4.2M tris (the
-  figure counts collapsed flora variants). The readout has `render` ms since v11.12: when it runs away from the rest of the frame the
-  GPU is the limit. The next flora pass is what will move these numbers; measure the forest at (330, 0) before and after.
-
-## How to deliver
-
-1. Edit `src/*.js` (a new file goes into `src/order.txt` too). Content edits usually touch only `creatures_defs.js`
-   and `flora.js`; a new creature adds a builder in `creatures_builders.js`; a new plant is a `species()` in flora.js (grow.js bauplans).
-2. `node build.js --test` (or `python3 build.py --test` in the sandbox; the same outputs) → `tethys.html` (everything inlined),
-   `dev.html` (loads `src/` separately), `src/INDEX.md`, then `test/lint.js` (undeclared / unused names across the bundle; acorn is
-   vendored as `test/acorn.js`), `test/physics.js` (the contact system against brute force and invariants; prints the cost),
-   `test/anim.js` (the swimming animation two minutes in: no phase spin, no arm shiver or fling), `test/audio.js` (the audio graph against
-   the stub's fake `AudioContext`, the space's numbers at five sites, the tick's cost) and `test/smoke.js` on both tiers
-   (drives all three clades headlessly against the stub in `test/stub.js`; fails on any runtime error; proves nothing about rendering,
-   frame rate or NaN in a position). New THREE APIs may need adding to the stub.
-3. On the person's PC the folder `C:\Claude Code\Tethys` is the git repo (branch `main`, since 11 Sep 2026; the earlier Desktop
-   repo is gone): commit each version there as `WB <willbuzbee@gmail.com>` (`user.name` is set in the repo's local config; never any
-   other name). Node 22 is on PATH. `tethys.html`, `dev.html` and `src/INDEX.md` are build output and gitignored: run `node build.js`
-   after a fresh clone. The person plays `tethys.html`; the copy beside the folder in `C:\Claude Code\` is the delivery, kept as it was.
-   In the sandbox: copy `tethys.html` to `/mnt/user-data/outputs/`, zip the folder as `tethys-src.zip` there, `present_files` both.
-   For a creature: `node test/preview.js <id>` and *look at the PNG* (the `view` tool) before delivering — a builder is blind
-   otherwise. `test/geo.js` gives the stub real geometry for it. On the PC, look at the game itself (The person, above).
-4. Update `CHANGELOG.md` (what changed, what is unseen) and any DESIGN section whose numbers moved. Keep this file short.
-
-## Things that bite
-
-- One shared scope: the bundle is one IIFE, `dev.html` loads classic scripts in order. Any file may use any name
-  from any file; order matters only for top-level statements that run at load. `grep -n name src/*.js` finds uses.
-- `sample(x,z)` in world.js is the single source of truth: the ground and the nine condition fields (`FI`); there are no biome
-  ids anywhere (v10). Species place by `env` envelopes (`envW`). Landmarks: the pit and the chimney are fixed by the geology,
-  the rest *searched* on the terrain at load (`findSpot`, seed 4242, fixed sequence — add new ones at the end).
-- **An anim's beat is a `swimClock`, never `t*f(spd)`** (DESIGN Creatures, The beat): `t` is the session clock and `t*f` spins on
-  every change of speed. New builders copy an existing one's `ck=swimClock(f0,f1)`.
-- **All creatures face +z.** A predator's `reach` must exceed the contact distance of its and its prey's body capsules
-  (`hit` in the builder) or it can never land a bite (DESIGN, Contact).
-- Contact is `physics.js`: colliders in a per-cell hash (`addSolid/addCapsule/addPad/addEllipsoid/addRock`, `solidPush`, `bodyPush`), body capsules
-  (`worldShapes/resolveBodies`), chains (`makeChain/simChain`, rigs `makeRig/rigSkin/stepRigs`, posed by `ringPose/tailPose`
-  in parts.js). Chain buffers hold ≤39 points and ≤160 segments per rig. The sway shader reads `DIST_A/DIST_B` as `vec4[12]`
-  uniform arrays — r128's `flatten()` passes a typed array through only if its first element is a number, so never write
-  NaN into them. `Math.hypot` is slow in V8: physics.js uses `len3`. Every species geometry (and the rafts) gets a per-cell clone for its instance attributes (`aVar`, `aDip`).
-- The frame order matters: `updatePlayer` (move, rock, floor, pads) → `updateCreatures` (creatures move; then bodies
-  push apart with the player among them; the player out of arms; arms simulated) → `finishPlayer` (pose, own arms,
-  camera). Moving a piece breaks contact silently.
-- **Every tinted material's fragment carries the light block** (v11.13, scene.js `LIGHT_GLSL` in `addTint`): caustics and the bodies'
-  shadows, reading `vFogPos`, `uSunW`, `uCastA/B` (typed arrays, never NaN). `LIGHT_FX` false strips it if the GLSL ever fails (a black
-  or magenta world at boot). `thinLight` regexes r128's Lambert chunk and warns rather than fails. `updateCasters` runs after `assignLights`.
-- The fog is not three's: scene.js rewrites the fog shader chunks and shares uniforms through `THREE.ShaderLib` —
-  pinned to r128's `cloneUniforms`. The camera goes in by hand (`uFogC`/`uFogR`): three's `cameraPosition` is (0,0,0)
-  on Lambert/Basic/Points materials in r128, so never read it in a shared chunk. Fog is per material: `MAT`/sway/`MATFAR` are "small" (fade sooner), `MATBIG`/
-  `TERRAIN_MAT`/`GLOW` are "big" (keep the far ghost) — a structure built with `MAT` will vanish at 300 units. `WAVE_GLSL` is generated from `WAVES`; never write the wave sum twice.
-- The world is ±HALF; past it the edge regions' apron (`apronGen`) carries the far terrain to 2000 beyond, so a mesh that ends at the edge
-  shows against nothing. The veil reads `floorMap` beside `waterMap` (both 96×96, filled together in `wmFill/wmBlur`): a new map channel goes there.
-- The far layer draws every structure (near and far) from `bigsFor`; cells only register collision. Anything `big`
-  that a cell draws itself will pop and double up. Structures place by envelope like everything else and sit on the ground
-  by one rule, `settleOn` (chunks.js), shared with the per-cell flora — change the ground rule there, nowhere else.
-- Since v11.12 the flora has a draw distance, `FLORA_FAR` 450 (scene.js): the small materials collapse instances past it in the vertex
-  shader, a cell past it hides its instanced meshes (`ch.near`, cullChunks) and its far impostors come on. A new small species wants
-  a cut material; a new big one wants a card in `FAR_IMP` and no cut. The disturbance loop runs only within `DIST_R` 90 of the camera.
-- A spawned creature's static geometry is shared by its kind (`KIND_GEO`, creatures_ai.js): never mutate a spawned creature's body
-  geometry (colours, positions) — build a variant instead; the rigs are the creature's own. `disposeCreature` skips shared geometry.
-- The cell and region generators yield inside their big steps: `buildTerrain`, `placeFloraType`, `makeSchool`, `bigsGen`,
-  `impostorsGen` are generators, called with `yield*` (or drained by `bigsFor`). A step that runs long shows as a frame over
-  `Q.target`; the streaming budget is what the last frame left of it (main.js).
-- Quality tier `Q` is numbers only, never code paths.
-- **The ledger is the truth about who lives where** (v11.26, ecology.js): a kill goes through `kill()` (debits, carcass), a creature that
-  leaves mid-life through `removeCreature`, and a new kind of spawn through `placeKind` with an `ent` — a creature spawned outside the
-  ledger (`ent` −1: the fleets, the lab) is not counted and never reborn. `SPAWN.n` is capacity, not a spawn count; the model's equilibrium
-  (`node test/census.js 120`) is the number in the world. Rates are per game day (40 real minutes).
-- Determinism: seeded rngs everywhere the world must persist; `Math.random` only for animation and particles.
-- No `OrbitControls`, no `BufferGeometryUtils` — parts.js has its own merge.
-- The stub's `setTimeout` runs immediately; the smoke test's world is the real one (same `sample()`), so headless
-  measurements of terrain, collision and creature behaviour are meaningful.
 
 ## Where things stand
 
