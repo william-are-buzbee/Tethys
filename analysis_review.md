@@ -29,6 +29,21 @@ next session can turn them into patch versions; strike a line when it is fixed.
 11. **Lab**: number inputs write NaN into the spec mid-edit (`lab.js:692`, only `stats.*` guarded); the lab overwrites `location.hash`
     and loses a forced `#low` (`lab.js:669,782`); `LAB_NAME` has nine duplicate keys so some sliders show the wrong label (`LAB_NAME_BY` exists for this).
 
+## From the person's readout screenshots (12 Sep, ten shots on the 4060, all at the 120 fps cap)
+12. **No clutch is ever laid.** `laid 0 hatched 0 eggs 0` in every shot over several game hours while `born` climbs 43→63 and kills
+    80→124. The `ecoTick` path that turns owed births in a loaded cell into `layEggs` never fires (ecology.js:128–137: `extra = floor(n·
+    Q.creatures − living − eggs)`). Write a headless test: run the tick for a game day with cells loaded, assert `POP.laid > 0`.
+13. **Hunters at hunger 1.00 wandering, not hunting.** Four of ten nearest-hunter samples: hose ×2 (7 and 16 m from the player, 850
+    flickers in the world), arrow (the reach finding, item 2: it cannot bite head-on), hook 0.99 sitting. Check `findPrey`'s `detect`
+    against where the prey actually is, and the starvation clock (`starved 0` throughout).
+14. **Performance, for the pass:** render at the forest edge (300, 0) is 4.5–4.6 ms against the v11.12 mark of 3.2 (+40% since the light
+    pass, the shadow map and combat); the shadow map re-render is 3.4–4.0 ms against ~1000 casters, the biggest single lump; render tracks
+    tris at ~0.5 ms/M; heap flat at 257M; phys 0.7–1.6 ms with 24–118 near creatures. CPU is not the limit yet; the shadow casters are the
+    first target.
+15. **To look at** (the person's): night readability at 8 m under a full moon (near-black but the blades); the floaters' blades reading as
+    lit at night (the pigment boost + moon, not emissive); the marine snow as large squares at 38–48 m; pink/purple polyp tables among the
+    stipes at 8 m.
+
 ## Drift and cost, fold in when touched
 - **Duplicated formulas already disagreeing.** Mass in six places, two unfloored (`combat.js:30`, `creatures_ai.js:115`, `ecology.js:29`).
   The daylight curve six times; the JS uses tide-relative depth, the GLSL raw y (`scene.js:104`, `atmosphere.js:469`) — **the person
