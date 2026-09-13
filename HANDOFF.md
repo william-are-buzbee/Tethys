@@ -14,6 +14,11 @@ every top-level name with its line is `src/INDEX.md` (generated). Read a DESIGN 
 
 ## Where things stand
 
+**v11.32.1 (13 Sep): the readout shows the work.** The first line carries `work <ema>/<max>ms` and `gen <ema>ms` now — the
+frame's own cost, the worst frame in the last quarter second, and the streaming's share. Until now it printed only the vsync
+interval, so a capped display read 8.3 ms and 120 fps whatever the frame cost and the headroom was invisible. The max is what the
+shadow-caster pass needs: that pass re-renders in bursts and an EMA hides them. CHANGELOG v11.32.1.
+
 **v11.32 (13 Sep): one number, one place — the drift half of the code review, built, the menu and the forest seen.** CHANGELOG
 v11.32; DESIGN, The medium and The ecology. Four numbers that were written out many times each. The **daylight curve** was six
 copies and the JS measured depth from the tide while the GLSL measured it from sea level: one `daylightAt`/`DL_GLSL` pair now,

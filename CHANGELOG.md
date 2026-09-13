@@ -2404,3 +2404,16 @@ and say whether the fade reads better than the step, which is the only thing her
 colour across a full tide at 20–60 m, where the shader's daylight now moves by a percent either way and did not before. Then the
 light shafts' heads under the mats, which take the same ramp now (`atmosphere.js` `shWM`). Left of the review: the dead code and the
 stale docs (the other half of the drift list), and items 14 and 15 — the shadow-caster pass is the next performance job.
+
+## v11.32.1 — the readout shows the work, not the wait (13 Sep 2026)
+Every performance screenshot so far read `8.3 ms` and `120 fps`, and both are the vsync interval: `msEma` is `dt`, the wall clock
+between frames, so on a machine with headroom it says the same thing however cheap the frame is. `frameMs` — the top of `loop()` to
+the bottom — was computed for the streaming budget and never printed. The readout's first line now carries **`work <ema>/<max>ms`**
+and, when it is above 0.05, **`gen <ema>ms`**: the frame's own cost, the worst single frame since the readout last drew a quarter
+second ago, and the streaming's share of it. The max is the point — the shadow map re-renders only when the sun turns, the camera
+drifts 20 m or a cell loads, and on those frames it lands all at once; an EMA hides that and a max does not.
+All three are CPU: `renderer.render` is the submit, and the GPU runs behind it.
+**Seen** (dev.html, this PC, not the person's 4060): `work 18.4/18.4ms  gen 7.0ms` in the weed forest at (330, 0) while cells were
+still streaming, and `work 23.6/573.5ms` on the frame after a teleport, which is the cell burst showing up exactly as it should.
+**Unseen:** the numbers on the 4060 — that is the first thing the shadow-caster pass wants (`analysis_review.md` item 14), and what
+this change exists to make readable.
