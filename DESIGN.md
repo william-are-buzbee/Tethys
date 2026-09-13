@@ -1436,6 +1436,24 @@ surface air for finback)? Any persistence, or is a clean cold start the point?
 
 ## Performance and the quality tier
 
+**Where the frame goes, measured on the 4060 at the weed forest (330, 0), 13 Sep 2026.** The readout's `work` pair is the
+frame's own cost and the worst frame in the last quarter second (main.js, v11.32.1); `ms` and `fps` are the vsync interval and say
+nothing about headroom on a capped display.
+
+| | |
+|---|---|
+| frame work | 5.4–5.9 ms average, 7.9 ms worst, against an 8.3 ms budget at 120 Hz — no frame dropped |
+| main render (submit) | 4.06–4.19 ms, 429 draws, 4.9M triangles — about 9.6 µs a draw, ordinary three.js overhead |
+| physics | 1.2–1.5 ms with 57–105 near creatures |
+| the world's shadow map | 2.9 ms a re-render, 105 draws, 2.23M triangles over the 4 cells its box overlaps |
+| its refresh rate | 0.33/s standing still; ~0.8–1.1/s at 8.8–15.4 m/s. `shsN` in the readout is the count of re-renders since boot, not casters |
+
+The re-render is what takes a frame from 65% to 95% of budget, roughly once a second, and never over it. **The draw count is the
+thing that grows**: cell flora is the bulk of it at roughly one `InstancedMesh` per flora species per cell (118 of 196 draws with
+nine cells up), so it scales as species × visible cells and the archipelago multiplies it directly. Creatures are 33 draws and 15k
+triangles and are not a cost. The lever, when `work`'s max reaches 8.3, is batching a species across cells or dropping species by
+distance — a designed pass, not a knob. `render` is CPU submission; the GPU runs behind it and is not measured here.
+
 - Creature far-LOD; budgeted generator streaming (`Q.budgetMs` for cells, `Q.farMs` for regions — and since v11.12 the cells get
   what the last frame left of `Q.target`, 7.5 ms on high, at most `budgetMs`; the generators yield inside their big steps; cells unload
   one a frame); quads for kelp fronds and grass; a fixed light pool (`scene.js` `lightPool`, `assignLights`) so the light count never

@@ -67,13 +67,49 @@ key pair is already the audio tuner's or the game's. **What is left of this file
     at `HUNT_CAST` 0.8 of its speed toward what it senses, leashed to `HUNT_HOME` 1.5 × home. Kills 18 → 27 over 60 s, the share at
     hunger 1.00 13% → 8%. What is left is the ambushers (by design) and the ortho, whose nearest meal is 202 m away — a `SPAWN` envelope
     question, open. `starved 0` is the clock: 1.2 cycles at hunger 1.00 is 22 real minutes for a needle.
-14. **Performance, for the pass:** render at the forest edge (300, 0) is 4.5–4.6 ms against the v11.12 mark of 3.2 (+40% since the light
-    pass, the shadow map and combat); the shadow map re-render is 3.4–4.0 ms against ~1000 casters, the biggest single lump; render tracks
-    tris at ~0.5 ms/M; heap flat at 257M; phys 0.7–1.6 ms with 24–118 near creatures. CPU is not the limit yet; the shadow casters are the
-    first target.
-15. **To look at** (the person's): night readability at 8 m under a full moon (near-black but the blades); the floaters' blades reading as
-    lit at night (the pigment boost + moon, not emissive); the marine snow as large squares at 38–48 m; pink/purple polyp tables among the
-    stipes at 8 m.
+14. ~~**Performance, for the pass.**~~ — **measured 13 Sep, and there is nothing to cut yet.** The review guessed the shadow
+    map was the lump and read `wshadow 2.90ms/85` as 85 casters; `shsN` is the number of re-renders since boot, not a count of
+    anything. Measured in the running game at the forest (330, 0):
+
+    | | |
+    |---|---|
+    | shadow re-render | 105 draws, 2.23M triangles, 4 cells in the box, 2.9 ms |
+    | its refresh rate | 0.33/s standing still; ~0.8–1.1/s at 8.8–15.4 m/s (drift 20 m, plus the sun's 0.005 rad every ~3 s) |
+    | amortised | ~1–3 ms per second of wall clock; about one frame a second carries it |
+    | main render | 429 draws, 4.9M triangles, 4.06–4.19 ms on the 4060 |
+    | the person's frame | work 5.4–5.9 ms average, 7.9 ms worst, against an 8.3 ms budget. **No frame is dropped.** |
+
+    So the shadow pass is a once-a-second spike that takes a frame from 65% to 95% of budget and never over it. Cutting it would
+    buy a spike nobody sees. Where the creep since v11.12 (render 3.2 → 4.2) actually lives: **the main render's draw calls, and
+    they are cell flora** — 118 of the 196 draws with only 9 cells up, roughly one `InstancedMesh` per flora species per cell, so
+    the count grows as species × visible cells. Creatures are 33 draws and 15k triangles; they are not the problem and neither is
+    physics (1.2–1.5 ms).
+
+    **What that means for the archipelago:** draw calls scale with the number of loaded cells, so more islands multiply them
+    directly. The lever, when it is needed, is batching one species across cells (or dropping species by distance), which is a
+    designed pass and not a knob. The trigger to start it is the readout's `work` max reaching 8.3 on the 4060 — it is at 7.9.
+
+    Smaller things found and deliberately not done: the crusts (`rind`, `limerind`) are 9% of the shadow pass's triangles and lie
+    flat on rock where they cast nothing, and `SHS_ANG` could go from 0.005 to ~0.012 (the shadow tip of a 30 m caster moves
+    36 cm, about 4 texels) to cut the sun-driven refreshes by half. Both are real; neither is worth the risk at 95%-of-budget
+    spikes that drop no frames.
+
+15. **To look at — four diagnoses, and each call is the person's.**
+    - **Night readability at 8 m under a full moon.** Pure taste, and the decision is upstream: DIRECTION's closer moon (about half
+      Earth's distance) argues for brighter nights than the current `light 0.25` against a day's 0.88. Nothing to fix until that
+      lands; when it does, the knob is the moon's contribution in `updateSky`.
+    - **The floaters' blades reading as lit at night.** Not emissive — no creature or plant material has an emissive term, and the
+      blades take the same daylight scale as everything else. Two real causes: `pigment`'s shallow-water brightening (`×1.22`
+      above 8 m, grow.js) and the geometry — the blades are near-vertical planes and the floor is horizontal, so a low sun or moon
+      lights them and not it. In the dusk shot (sun 8°) that is simply correct. The knob if it reads wrong anyway is the boost's
+      `k` 0.22 in grow.js `pigment`.
+    - **The marine snow as squares.** `PointsMaterial` with no map draws a hard quad, and the particles are 0.07–0.19 m
+      (`pm.size` 0.14 × `SN_K[i].sz` 0.5–1.35, atmosphere.js). Close ones subtend enough angle to read as squares. A round sprite
+      (a discard in the fragment, or a tiny generated texture) is the cheap fix; it belongs with POLISH pass B rather than here.
+    - **Pink and purple polyp tables among the stipes at 8 m.** Working as designed, and the overlap is narrow and deliberate:
+      `table` wants `nut ≤ 0.55` and `stipe` wants `nut ≥ 0.45`, with depths overlapping over −24..−16, so the two only meet in
+      that band — TAXA's "where two lines meet is where the world is most legible". The question is only whether `VIVID` is too
+      saturated at night, which is the person's eye and the tints table in flora.js.
 
 ## Drift and cost, fold in when touched
 - ~~**Duplicated formulas already disagreeing.**~~ — **fixed v11.32** (`daylightAt`/`DL_GLSL`, `canopyFade`/`CAN_GLSL`, `CHEMO`,
