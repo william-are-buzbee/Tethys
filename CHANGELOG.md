@@ -2173,3 +2173,77 @@ twice as long now) and whether that reads as earned. Then the player's own grab 
 should now take hold where it could not before. Then the ink or the pulse with a hunter's arms already on you: do the arms let go
 cleanly. Then whether a hunter you fight off and drive away now dies of its wounds somewhere off screen (`HUNT_REGEN_W`), and whether
 that is right or too harsh. Not touched in this group: items 7–11 and the readout findings 12–15.
+
+## v11.31.2 — the ecology group of the code review: the clutch that was never laid, and hunters that never went looking (13 Sep 2026)
+
+`analysis_review.md` items 12 and 13, both from the person's 12 Sep readout screenshots. Item 2 (reach against nose-on contact) was
+asked for again with this group; it was already done in v11.31.1 and the reach table it asks for is section 7 of `test/combat.js` — it
+still prints, all 58 predator/prey pairs bite at or past the distance their bodies force, and nothing here changed it.
+
+**12. No clutch was ever laid.** `laid 0 hatched 0 eggs 0` in every one of the ten shots. It was not a broken branch: `ecoTick`'s
+reconcile ran every time, and the arithmetic under it could never reach a whole animal. A loaded cell's growth went into `POP.n`, which
+is *also* where the cell's living are counted — `ecoTake` writes the spawned integer into it, `ecoDebit` takes one out per kill,
+`ecoWriteBack` sets it to the living on every unload. The surplus over the living was therefore erased every time the player swam a cell
+away and back, and even undisturbed it grows at `r(1-n/K)-m` — measured headless, the fastest entry in the world (a cell of 26 flickers)
+owes **0.55 of a recruit a game day**, so no row ever crossed 1.
+
+The births a loaded cell is owed now have their own array, **`POP.ow[entry][cell]`** (ecology.js): the model banks a loaded cell's `b-d`
+there instead of in `n`, the logistic reads `n+ow` so it still saturates at capacity, and the reconcile lays `floor(gap + ow*Q.creatures)`
+as the clutch, moving what it spent from `ow` into `n`. `ow` is untouched by `ecoDebit` and `ecoWriteBack`, so it survives an unload. The
+natural death `m` still comes off it — nothing dies of age in a loaded cell, and charging the births for the deaths the live world does
+not run is what keeps a loaded cell's equilibrium the same as an unloaded one's.
+
+That alone left the first clutch at game day 2.1 (85 real minutes), because every cell in the world started owing exactly zero. It now
+starts at a **random phase** — `ecoCap` seeds `ow = rng()*min(1,K)/Q.creatures` the first time a cell's capacity is known — which is not a
+rate change but the removal of an artefact: a population is not everywhere at the same point in its cycle. Over `Q.creatures` so the low
+tier waits the same wall time for a clutch it shows. Headless, with 25 cells loaded: first clutch at game day 0.67 and 20 laid / 19
+hatched by day 4 on high, 2.0 and 5 / 5 on low. In play that is a clutch somewhere near you every five to fifteen real minutes, more as
+the owed builds. The readout's fourth line gained **`owed`**, the loaded cells' total: it climbs between clutches and drops when one is
+laid.
+
+**13. Hunters at hunger 1.00 wandering, not hunting.** Half-answered by v11.31.1 (the bite lands now). The other half, measured: the
+nearest animal a hunter eats sits **35-50 m away** on the shelf, against a `detect` of 9-17 m. Nothing was wrong with `findPrey`; a hunter
+simply had no way to go looking. It wandered a random point inside its home and met prey by accident, and a tenth of the hunter role sat
+at hunger 1.00 with a school two cells over.
+
+A hungry hunter now **casts**: the 0.4 s scan it already runs goes out to **`HUNT_SEEK`** 4 x detect (the same one `findPrey` call — a
+wider radius costs nothing), and what it finds inside `detect` it chases as before, while what it finds further off becomes its wander
+target. The cast swims at **`HUNT_CAST`** 0.8 of the animal's speed and not at its cruise (`cruiseF`, 0.45-0.5): the first build of this
+used the cruise, and a stern chase at the cruise never closed on a school drifting at its own — one needle held 44 m for ninety seconds.
+It casts only at prey within **`HUNT_HOME`** 1.5 x its `home` of its own home, so a hunter stays its patch's resident, the shelf's
+predators do not all drain toward whatever school the player is in, and the chase that follows starts inside the leash that drops one
+(1.9 x home — a cast that ended outside it was dropped in the frame it began). The eyes stay the ring's (PLANET: 360 degrees, motion);
+past them this is the water itself, scent and the pressure a shoal makes.
+
+A/B over 60 s of shelf play, same seed, same start: kills **18 -> 27**, the hunter role's mean hunger **0.471 -> 0.433**, the share of it
+sitting at hunger 1.00 **13% -> 8%**, the share chasing doubled. What is left at 1.00 is mostly the ambushers (the hook and the lurker,
+which by design sit and wait) and animals whose patch has no prey in it at all — the one ortho in the world has its nearest meal 202 m
+away, which is a `SPAWN` envelope question, not a behaviour one. `starved` is still 0 because starving takes 1.2 cycles at hunger 1.00
+(22 real minutes for a needle) and nothing in a headless run gets there.
+
+**A crash found on the way.** `updateHolds` walks `holds` backwards, and a bite inside the loop can kill the held body, whose `kill` ->
+`releaseAll` splices holds *below* the cursor; the walk then ran off the end of the shortened list. It took the low tier's smoke run down
+once in about fifty. The index is re-clamped at the top of each turn.
+
+**New test: `test/live.js`** — the ecology where the player is, the counterpart to `test/census.js`'s paper. It boots the whole game
+against the stub, lets the cells round the peak load, drives the ecology clock four game days (`ecoTick` with the model drained each step,
+`updateEggs` on the matching real seconds) and fails if nothing is laid or nothing hatches; then runs 60 s of real frames and prints a
+table of every hunter kind — seen, mean hunger, the share at 1.00, the share hunting, the distance to the nearest animal it eats, and its
+`detect` — failing if nothing is killed, nothing chases, or over a quarter of the hunter role is starving. It runs on both tiers in
+`node build.js --test` (build.py in step). Knobs by name: `POP.ow`, `ECO` unchanged, `HUNT_SEEK` 4, `HUNT_CAST` 0.8, `HUNT_HOME` 1.5.
+
+**Seen** (dev.html in the app's browser, 800x450, the clutches forced by hand — waiting out the real rate is 5-15 minutes a clutch):
+`laid` and `eggs` climb on the readout and `owed` moves with them; three clutches side by side at their true scale — a flicker's 0.38 m
+across, a needle's 0.54, a grazer's 1.10 — sitting on the sand as knots of pale translucent spheres. Live, with the hunters round the
+player made hungry: 20 of 86 casting, chases and a carcass with a hunter feeding at it within a few seconds. No console errors.
+
+**Unseen, ask in this order.** First the rate: play a real session and watch `laid` and `owed` on the readout — is a clutch every five to
+fifteen minutes near you enough to notice, or should the world be laying more? (The rate is the model's, unchanged; only the phase moved.
+Raising it means raising `ECO.r0`, which moves the whole census.) Then the clutch itself at 2-3 m: the small ones read as pale rocks on
+the sand in the shot — do they need a colour or a shine that says egg. Then whether a clutch is ever laid somewhere absurd (it goes near
+an adult of its kind, on the floor, clear of solids, and refuses ground above -4 m). Then hatching: do the juveniles appear where the
+clutch was and read as small. Then the cast, in play: does a needle or an arrow now visibly leave off wandering and *go somewhere* when
+hungry, or does it read as drifting; and does the shelf feel emptier of predators near you (the `HUNT_HOME` leash is meant to prevent
+that). Then whether the extra hunting has thinned the flicker and darter schools over a long session — `flicker` and `darter` on the
+readout's fourth line are the numbers. Then, on the 4060, whether any of this shows in the frame time (it should not: no new per-frame
+work, one wider radius on a scan that already ran). Not touched: items 7-11, 14 (the shadow-caster performance pass) and 15.

@@ -1363,7 +1363,12 @@ debits. Nothing respawns. The unloaded cells run the model; the loaded cells run
   `cd` follows the fraction of its ask it got; it breeds by `cd` and starves under `ECO.starve` 0.35 at `0.35/cycle` a day scaled by the
   shortfall; **its capacity is the envelope's times `0.1 + 0.9·response`** (`POP.ke`) — predators are where prey is. Then a drift of
   `ECO.mig` 0.03 a day toward the four neighbours' free capacity, hunters ×(1+4(1−cd)). Immortal kinds (no `prey`, hp ≥ 1e8, not
-  edible) sit at capacity. Loaded cells breed only. `ecoSettle` starts the paper hunters at 0.8 of `ke`.
+  edible) sit at capacity. Loaded cells breed only, and since v11.31.2 into `POP.ow` — **the births a loaded cell is owed** — and not into
+  `n`, which there is the living and is pinned to them by `ecoDebit` and `ecoWriteBack`; the logistic reads `n + ow`, the natural death
+  `m` still comes off (nothing dies of age in a loaded cell, and nothing is born there either until the clutch), and `ow` survives an
+  unload, which is what `n` never did. It starts at a random phase, `rng()·min(1,K)/Q.creatures` in `ecoCap` (a population is not
+  everywhere at the same point in its cycle; every cell starting at zero was why the first clutch took two game days).
+  `ecoSettle` starts the paper hunters at 0.8 of `ke`.
 - **Derived per kind** (`ecoOf`): mass = size³ (the unit is the metre), `stock` (def; the small forage: flicker 8, darter 8, rasp 8,
   scuttle 4, picker 3, grazer 3 — one drawn stands for that many, as the snow's points do), food = mass × stock, r, m, cycle
   `ECO.cyc·mass^¼` days (fed to starving), need, meal = need × cycle, prey (kinds), mortal, grow. A def may override `r`, `cycle`,
@@ -1371,6 +1376,12 @@ debits. Nothing respawns. The unloaded cells run the model; the loaded cells run
 - **Hunger, live** (`creatures_ai.js hungerTick`): `c.hunger` 0..1 over the cycle; hunts past `ECO.hungry` 0.4; the chase bursts
   (1.6× for 2 s, tired by 6) and gives up at `ECO_CHASE` 9 s on anything but the player; a kill takes `food/meal` off; `feed` state at
   a carcass; starving at 1, dead at 1.2 cycles past. Ambushers `findPrey(c, radius)` when hungry; traps past 0.16.
+- **The cast** (v11.31.2, `updateHunter`): the nearest animal a hunter eats sits 35–50 m off on the shelf against a `detect` of 9–17, so
+  a hungry hunter's 0.4 s scan runs out to `HUNT_SEEK` 4 × detect; inside `detect` it chases, further out it steers its wander at the prey
+  and swims at `HUNT_CAST` 0.8 of its speed instead of its cruise (0.45–0.5, which never closed on a school drifting at its own). Only at
+  prey within `HUNT_HOME` 1.5 × `home` of its home, so a hunter stays its patch's resident and the chase that follows is inside the leash
+  that drops one (1.9 × home). It costs nothing: the same one `findPrey` call, a wider radius. Over 60 s of shelf play it took kills from
+  18 to 27, the hunter role's mean hunger from 0.47 to 0.43 and the share of it sitting at hunger 1.00 from 13% to 8%.
 - **Carcasses**: `kill(c, by, whole)` — whole (the player's bite, prey under 0.35 of the killer's meal, a flicker) removes; else the body
   stays (`carcasses`), sinks at 1.6 m/s, rolls to `lieQ`, mass 1e6 for contact, `flesh` = mass decaying over `ECO.carc` 0.45 days,
   eaten at `eatAt` (a hunter min(mass/75, meal/20) a second; a scavenger mass/40); gone at flesh 0 or 1.5× carc. `def.scav` is a
@@ -1384,8 +1395,15 @@ debits. Nothing respawns. The unloaded cells run the model; the loaded cells run
   surface kinds walk in out of sight instead (`kindPoint` with `off`: > 110 m, or behind the camera past 30).
 - **On paper**: `test/census.js [days]` — capacity, derived rates and the model with nothing loaded; fails on a collapse under a fifth.
   The equilibrium it prints is the world's population; tune `n`, `stock` and the envelopes from it, never by adding a place.
+- **Where the player is**: `test/live.js` — the whole game booted headless, the ecology clock driven four game days with the cells round
+  the peak loaded (clutches laid and hatched), then 60 s of real frames and a table of every hunter kind: mean hunger, the share of it at
+  hunger 1.00, the share hunting, and how far the nearest animal it eats actually is against its `detect`. Fails if nothing is laid,
+  nothing hatches, nothing is killed, nothing chases, or over a quarter of the hunter role is starving.
 - **Costs**: the model 3.6 ms over ~20 frames every 3 s (sandbox CPU); the paper census 120 ms over the first 64 frames; the readout's
-  fourth line (`ecoLine`) sums the ledger for a few kinds every frame the readout is open.
+  fourth line (`ecoLine`) sums the ledger for a few kinds every frame the readout is open, and `owed` over the loaded cells only.
+- **The rate to expect**: a cell of 26 flickers owes about half a recruit a game day, so one entry in one cell lays roughly every two
+  game days; over the ~25 cells loaded round the player that is a clutch every 5–15 real minutes, more as the owed builds. The readout's
+  `owed` is the number to watch: it climbs between clutches and drops when one is laid.
 
 ## The player
 

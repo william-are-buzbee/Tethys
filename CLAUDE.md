@@ -41,6 +41,7 @@ node serve.js            static server; open http://localhost:8080/dev.html (edi
 | `test/snow.js` | the marine snow mix at thirteen sites, layering invariants, tick cost | `node test/snow.js` |
 | `test/combat.js` | holds form and kill, ropes never NaN, the player held/bleeds/grabs/bites; a table of every hunter's hold | `node test/combat.js` |
 | `test/census.js` | the ecology on paper: capacities, rates, the model for N days; fails if a kind collapses under a fifth | `node test/census.js 120` (`--test` runs 40) |
+| `test/live.js` | the ecology where the player is: four game days of clutches laid and hatched with cells loaded, then a table of every hunter's hunger against the distance to its nearest meal | `node test/live.js`, `TIER=low …` |
 | `test/smoke.js` | boots, walks the bestiary and the lab, swims all three clades headlessly; fails on any runtime error | `node test/smoke.js`, `TIER=low …` |
 | `test/preview.js` | renders creature builders to `test/preview/<id>.png` with real geometry (`test/geo.js`); not in `--test` | `node test/preview.js sickle trap`; `FLORA=1 … reed`; `SPEC=f.json …` |
 | `test/ident.js` | compiled specs against old hand builders; skipped without `OLD=path` | `OLD=… node test/ident.js` |

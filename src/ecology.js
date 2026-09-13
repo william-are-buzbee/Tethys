@@ -34,10 +34,12 @@ function ecoOf(kind){
 }
 // the ledger: per entry e of SPAWN a Float32Array over the cells — n the count, k the capacity, ke the capacity a hunter's prey
 // allows (ecoModel: k times its response there — predators are where prey is), cd a hunter's condition (the
-// fraction of its need it has met lately, 0..1); done: the cell's capacity is known; tally: what has happened, for the readout
-const POP={n:[],k:[],ke:[],cd:[],done:new Uint8Array(ECO_CELLS),byKind:{},last:0,acc:0,births:0,deaths:0,kills:0,starved:0,eaten:0,recruits:0,laid:0,hatched:0,gen:null,model:null};
+// fraction of its need it has met lately, 0..1), ow the births a *loaded* cell is owed and has not laid yet (v11.31.2: the model banks
+// a loaded cell's growth there and not in n, since the living are the truth in a loaded cell and n follows them — ecoTick lays it as a
+// clutch); done: the cell's capacity is known; tally: what has happened, for the readout
+const POP={n:[],k:[],ke:[],cd:[],ow:[],done:new Uint8Array(ECO_CELLS),byKind:{},last:0,acc:0,births:0,deaths:0,kills:0,starved:0,eaten:0,recruits:0,laid:0,hatched:0,gen:null,model:null};
 function ecoInit(){
-  SPAWN.forEach((e,i)=>{POP.n[i]=new Float32Array(ECO_CELLS);POP.k[i]=new Float32Array(ECO_CELLS);POP.ke[i]=new Float32Array(ECO_CELLS);POP.cd[i]=new Float32Array(ECO_CELLS).fill(0.7);(POP.byKind[e.kind]||(POP.byKind[e.kind]=[])).push(i);ecoOf(e.kind);});
+  SPAWN.forEach((e,i)=>{POP.n[i]=new Float32Array(ECO_CELLS);POP.k[i]=new Float32Array(ECO_CELLS);POP.ke[i]=new Float32Array(ECO_CELLS);POP.cd[i]=new Float32Array(ECO_CELLS).fill(0.7);POP.ow[i]=new Float32Array(ECO_CELLS);(POP.byKind[e.kind]||(POP.byKind[e.kind]=[])).push(i);ecoOf(e.kind);});
   POP.gen=ecoGen();
 }
 function ecoCell(x,z){return cellOf(x)*NCELL+cellOf(z);}
@@ -45,13 +47,14 @@ function ecoCell(x,z){return cellOf(x)*NCELL+cellOf(z);}
 // cell's own grid; a cell nobody has loaded is sampled here, 36 samples at ~35 µs). The first time a cell is known its count starts
 // at a fraction of capacity; a cell that is known on paper and then loaded keeps its count, rescaled to the grid's capacity
 function ecoCap(c,ch){
-  const i=Math.floor(c/NCELL),j=c%NCELL,x0=i*CELL-HALF,z0=j*CELL-HALF,first=!POP.done[c];
+  const i=Math.floor(c/NCELL),j=c%NCELL,x0=i*CELL-HALF,z0=j*CELL-HALF,first=!POP.done[c],rg=mulberry((c*7919+31337)>>>0);
   const hs=new Float32Array(36),sl=new Float32Array(36),fs=[];
   for(let b=0;b<6;b++)for(let a=0;a<6;a++){const n=b*6+a,x=x0+(a+0.5)/6*CELL,z=z0+(b+0.5)/6*CELL;
     if(ch){hs[n]=ch.h(x,z);sl[n]=ch.slope(x,z);fs.push(ch.f(x,z));}else{const s=sample(x,z);hs[n]=s.h;sl[n]=0;fs.push(s.f.slice());}}
   SPAWN.forEach((e,ei)=>{let w=0;for(let n=0;n<36;n++)w+=envW(e.env,hs[n],sl[n],fs[n]);let K=e.n*w/36;if(e.max!==undefined)K=Math.min(K,e.max);
     const k0=POP.k[ei][c];POP.k[ei][c]=K;POP.ke[ei][c]=K;
-    if(first)POP.n[ei][c]=K*(ecoOf(e.kind).hunter?ECO.initH:ECO.init);else if(k0>1e-4)POP.n[ei][c]*=K/k0;else POP.n[ei][c]=Math.min(POP.n[ei][c],K);});
+    if(first){POP.n[ei][c]=K*(ecoOf(e.kind).hunter?ECO.initH:ECO.init);POP.ow[ei][c]=rg()*Math.min(1,K)/Q.creatures;} // the owed birth starts at a random phase (v11.31.2): a population is not everywhere at the same point in its cycle, and every cell starting at zero was the whole reason the first clutch took two game days to appear. Over Q.creatures because a clutch is one animal the cell *shows*, so the low tier waits the same time for it
+    else if(k0>1e-4)POP.n[ei][c]*=K/k0;else POP.n[ei][c]=Math.min(POP.n[ei][c],K);});
   POP.done[c]=1;
 }
 // the paper census of the unloaded world, four cells a step, run in the frame's gaps after boot (main.js); a cell that loads
@@ -76,8 +79,10 @@ function ecoDebit(o){if(o.ent<0||!o.chunk)return;const c=o.chunk.i*NCELL+o.chunk
 // take is spread over the prey kinds and cells by their weighted biomass, capped at ECO.take of any kind in any cell in a day, and
 // the hunter kind's condition follows the fraction of its ask it got. Every mortal kind then breeds toward its capacity and dies at
 // m; a hunter breeds by its condition and starves under ECO.starve. Loaded cells breed only: the living hunt, feed, starve and die
-// there themselves, and the ledger's surplus over the living is laid as eggs (ecoTick; creatures_ai.js layEggs); nothing takes from a
-// loaded cell on paper.
+// there themselves, and the cell's growth is banked in POP.ow — the births it is owed — and laid as eggs (ecoTick; creatures_ai.js
+// layEggs); nothing takes from a loaded cell on paper. Before v11.31.2 the growth went into n, where ecoDebit (a kill) and
+// ecoWriteBack (an unload) put it straight back to the living: the surplus never reached a whole animal and no clutch was ever laid in
+// a session (analysis_review 12). It is slow by design — a cell owes half a flicker a day — so ow has to survive an unload, and does.
 // Then a drift: ECO.mig of every kind moves a day toward the four neighbours' free capacity. Immortal kinds sit at capacity.
 const ECO_B={},ECO_TAKE={},ECO_D=[],ECO_RCH=[];
 function ecoReach(kind){let r=ECO_RCH[kind];if(r)return r;const h=DEFS[kind].home||30;r=[];const R=h>=300?2:h>=60?1:0;
@@ -102,12 +107,14 @@ function* ecoModelGen(dt,isLoaded){
   yield;
   for(let c=0;c<ECO_CELLS;c++){
     if(!POP.done[c])continue;const loaded=isLoaded(c);
-    for(let ei=0;ei<E;ei++){const e=SPAWN[ei],K=ecoOf(e.kind),cap=K.hunter?POP.ke[ei][c]:POP.k[ei][c];let n=POP.n[ei][c];
+    for(let ei=0;ei<E;ei++){const e=SPAWN[ei],K=ecoOf(e.kind),cap=K.hunter?POP.ke[ei][c]:POP.k[ei][c],ow=loaded?POP.ow[ei][c]:0;let n=POP.n[ei][c]+ow; // a loaded cell breeds from its living plus what it is already owed
       if(!K.mortal){POP.n[ei][c]=cap;continue;}
       if(!loaded&&n>0){const T=ECO_TAKE[e.kind][c];if(T>0){const t=T*n/ECO_B[e.kind][c];n=Math.max(0,n-t);POP.eaten+=t;}} // this entry's share of its kind's take, in individuals
       let grow;if(K.hunter){const cd=POP.cd[ei][c];grow=K.r*cd*(cap>0?1-n/cap:0);if(!loaded&&cd<ECO.starve){const s=(0.35/K.cycle)*(ECO.starve-cd)/ECO.starve;n-=n*s*dt;POP.starved+=n*s*dt;}}
       else grow=K.r*(cap>0?1-n/cap:0);
-      const b=Math.max(0,grow)*n*dt,d=K.m*n*dt;if(b>0)POP.births+=b;POP.deaths+=d;n=n+b-d;
+      const b=Math.max(0,grow)*n*dt,d=K.m*n*dt;if(b>0)POP.births+=b;POP.deaths+=d;
+      if(loaded){POP.ow[ei][c]=clamp(ow+b-d,0,Math.max(cap,1/Q.creatures));continue;} // owed, not banked: n there is the living (v11.31.2), and the natural death the live world never runs pays for the births it never runs either. The ceiling is the cell's capacity or one clutch, whichever is larger, so a rare kind can still owe its one
+      n=n+b-d;
       if(!K.hunter&&cap>0&&n>cap*1.25)n=cap*1.25;POP.n[ei][c]=Math.max(0,n);} // a hunter over its prey's allowance starves down, not clamped
     if((c&63)===63)yield;
   }
@@ -120,8 +127,8 @@ function* ecoModelGen(dt,isLoaded){
 }
 function ecoModel(dt,isLoaded){const g=ecoModelGen(dt,isLoaded);while(!g.next().done){}}
 // ---------- the tick (main.js, once a frame) ----------
-// runs the model every ECO_STEP real seconds over the game hours that passed, then squares the loaded cells with the ledger: where
-// the ledger holds more of an entry than the cell has alive or in eggs, the difference is laid as a clutch (up to a group's worth)
+// runs the model every ECO_STEP real seconds over the game hours that passed, then squares the loaded cells with the ledger: where the
+// ledger holds more of an entry than the cell has alive or in eggs, or the cell is owed births (POP.ow), the difference is a clutch (up to a group's worth)
 // near an adult of its kind; the strand's scuttles and the floats, which lay nowhere the game can show, walk in out of sight
 // (chunks.js placeKind with off:true), two a tick
 const ECO_CNT=new Float32Array(64);
@@ -130,10 +137,12 @@ function ecoTick(dt0){
   if(POP.model){if(!POP.model.next().done)return;POP.model=null;} // a piece of the model a frame, the reconcile when it is done
   else{POP.acc+=dt0;if(POP.acc<ECO_STEP)return;const dtDays=(clockH-POP.last)/DAY_H;POP.last=clockH;POP.acc=0;if(dtDays<=0)return;POP.model=ecoModelGen(Math.min(dtDays,0.5),c=>chunkGrid[c]!==null);return;}
   for(const ch of chunks.values()){const c=ch.i*NCELL+ch.j;if(!POP.done[c])continue;ECO_CNT.fill(0);for(const o of ch.creatures)if(o.alive&&o.ent>=0)ECO_CNT[o.ent]+=1;for(const g of ch.eggs)ECO_CNT[g.ent]+=g.n;
-    for(let ei=0;ei<SPAWN.length;ei++){const e=SPAWN[ei],K=ecoOf(e.kind);if(!K.mortal)continue;const want=POP.n[ei][c]*Q.creatures,extra=Math.floor(want-ECO_CNT[ei]+1e-4);
-      if(extra>=1){const rng=mulberry((c*7919+ei*104729+(POP.laid|0)+(POP.recruits|0))>>>0);
-        if(e.land||DEFS[e.kind].surface){const g=placeKind(ch,e,Math.min(2,extra),rng,{ent:ei,juv:true,off:true});let r=g.next();while(!r.done)r=g.next();POP.recruits+=r.value||0;} // the strand's scuttles walk in
-        else layEggs(ch,e,ei,Math.min(e.grp?Math.max(3,e.grp):3,extra),rng);}}}
+    for(let ei=0;ei<SPAWN.length;ei++){const e=SPAWN[ei],K=ecoOf(e.kind);if(!K.mortal)continue;
+      const gap=POP.n[ei][c]*Q.creatures-ECO_CNT[ei],ow=POP.ow[ei][c]*Q.creatures,extra=Math.floor(gap+ow+1e-4); // the ledger's own shortfall (a reload rounded down, a creature wandered out) plus the births the cell has been owed since it loaded, both in animals the cell actually shows (Q.creatures)
+      if(extra>=1){const rng=mulberry((c*7919+ei*104729+(POP.laid|0)+(POP.recruits|0))>>>0);let got=0;
+        if(e.land||DEFS[e.kind].surface){const g=placeKind(ch,e,Math.min(2,extra),rng,{ent:ei,juv:true,off:true});let r=g.next();while(!r.done)r=g.next();got=r.value||0;POP.recruits+=got;} // the strand's scuttles walk in
+        else got=layEggs(ch,e,ei,Math.min(e.grp?Math.max(3,e.grp):3,extra),rng)||0;
+        const fromOw=Math.max(0,got-Math.max(0,gap))/Q.creatures;if(fromOw>0){POP.ow[ei][c]=Math.max(0,POP.ow[ei][c]-fromOw);POP.n[ei][c]+=fromOw;}}}} // what the clutch took out of the owed goes into the ledger: the eggs are counted as living from here (ECO_CNT above)
 }
 ecoInit(); // the ledger exists before the first cell loads (main.js manageChunks); its paper census runs in ecoTick
 // the readout's fourth line: the ledger's world totals for a few kinds and its tally; the nearest hunter's hunger
@@ -141,7 +150,8 @@ function ecoLine(){
   const tot=k=>{let s=0;for(const ei of (POP.byKind[k]||[])){const N=POP.n[ei];for(let c=0;c<ECO_CELLS;c++)s+=N[c];}return s;};
   let near=null,nd=1e9;for(const c of creatures){if(!c.alive||!ecoOf(c.kind).hunter)continue;const d=c.pos.distanceTo(player.pos);if(d<nd){nd=d;near=c;}}
   let done=0;for(let c=0;c<ECO_CELLS;c++)done+=POP.done[c];
+  let owed=0;for(const ch of chunks.values()){const c=ch.i*NCELL+ch.j;for(let ei=0;ei<SPAWN.length;ei++)owed+=POP.ow[ei][c];} // what the loaded cells have coming (v11.31.2): it climbs between clutches and drops when one is laid
   return 'eco '+done+'/'+ECO_CELLS+'  flicker '+tot('flicker').toFixed(0)+'  darter '+tot('darter').toFixed(0)+'  grazer '+tot('grazer').toFixed(0)+'  rasp '+tot('rasp').toFixed(0)+'  eel '+tot('eel').toFixed(1)+'  ridge '+tot('ridge').toFixed(1)+'  ortho '+tot('ortho').toFixed(1)+'  sickle '+tot('sickle').toFixed(1)+'  abyssal '+tot('abyssal').toFixed(1)
-    +'  born '+POP.births.toFixed(0)+'  died '+POP.deaths.toFixed(0)+'  eaten '+POP.eaten.toFixed(0)+'  starved '+POP.starved.toFixed(0)+'  kills '+POP.kills+'  laid '+POP.laid+'  hatched '+POP.hatched+'  eggs '+eggs.length+'  carcasses '+carcasses.length
+    +'  born '+POP.births.toFixed(0)+'  died '+POP.deaths.toFixed(0)+'  eaten '+POP.eaten.toFixed(0)+'  starved '+POP.starved.toFixed(0)+'  kills '+POP.kills+'  laid '+POP.laid+'  hatched '+POP.hatched+'  owed '+owed.toFixed(1)+'  eggs '+eggs.length+'  carcasses '+carcasses.length
     +(near?'  '+near.kind+(near.def.juv?' (juv)':'')+' '+nd.toFixed(0)+'m hunger '+near.hunger.toFixed(2)+' '+near.state:'');
 }

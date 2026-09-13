@@ -73,7 +73,9 @@ function shiftBody(o,dx,dy,dz){if(o.shapesW&&o.shapesW.length)shiftShapes(o,dx,d
 function updateHolds(dt){
   if(!(dt>1e-4))return; // a frame of no time (two rAF in the same millisecond): the struggle divides by dt, and one NaN in h.load
   const P=player;P.heldK=1; // is a NaN rope for good. simChain guards the same way (v11.31.1, analysis_review 4)
-  for(let i=holds.length-1;i>=0;i--){const h=holds[i],a=h.a,b=h.b,K=h.K;h.t+=dt;
+  for(let i=holds.length-1;i>=0;i--){
+    if(i>=holds.length){i=holds.length-1;if(i<0)break;} // a bite below can kill the held body, and kill's releaseAll splices holds under i: without this the walk runs off the end of the shortened list (v11.31.2; it took the low tier's smoke run down once in fifty)
+    const h=holds[i],a=h.a,b=h.b,K=h.K;h.t+=dt;
     // does the hold stand? the holder must still want the held (the AI's target), both must be alive, the player's key held
     let drop=false;
     if(a===P){if(P.dead||mode!=='play'||!P.grabKey||P.withdrawn)drop=true;}else if(!a.alive||a.target!==b)drop=true;

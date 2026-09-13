@@ -43,7 +43,7 @@ function spawn(ch,kind,pos,rng,opt){
   const c={kind:kind,def:d,g:b.g,anim:b.anim,pos:pos.clone(),vel:V3(0,0,0),home:pos.clone(),hp:d.hp,state:'wander',t0:rng()*100,target:null,biteT:0,wanderT:0,wander:pos.clone(),alive:true,gone:false,stun:0,bored:0,cool:rng()*3,scanT:rng()*0.5,alarm:0,fleeT:0,lungeT:0,ramT:0,school:null,off:null,offT:0,chunk:ch,lod:-1,parts:null,lodMeshes:null,sub:1,wet:true,grounded:false,flopT:0,
     b:b,mass:Math.max(0.6,d.size*d.size*d.size),bound:0,reach:0,shapesW:null,chainW:null,grab:null,holding:0,hold:null,held:0,bleed:0,cWith:null,d6:0,par:creatures.length&1, // hold: the hold it has on something, held: how many have hold of it, bleed: hp still to lose to its wounds (combat.js)
     st:{tell:0,strike:0,jet:false},tellT:0,strikeT:0,recoverT:0,burstT:rng()*2,face:null,bit:false,accT:0,threat:null,
-    ent:opt&&opt.ent!==undefined?opt.ent:-1,hunger:EK.hunter?rng():0,starveT:0,feedT:0,feedAt:null,dead:false,flesh:0,deadT:0,scav:null,scavT:rng()*0.5,juv:juv?EK.grow*DAY_S*(0.8+0.4*rng()):0}; // ent: the ledger entry; hunger 0 fed..1 starving (ecology.js); juv: seconds until it grows up // st: what the anim reads (creatures_builders.js); the tell and the strike as clocks
+    ent:opt&&opt.ent!==undefined?opt.ent:-1,hunger:EK.hunter?rng():0,starveT:0,hunt:0,feedT:0,feedAt:null,dead:false,flesh:0,deadT:0,scav:null,scavT:rng()*0.5,juv:juv?EK.grow*DAY_S*(0.8+0.4*rng()):0}; // ent: the ledger entry; hunger 0 fed..1 starving (ecology.js); juv: seconds until it grows up // st: what the anim reads (creatures_builders.js); the tell and the strike as clocks
   b.g.position.copy(pos);scene.add(b.g);
   // far LOD: the whole creature flattened into one mesh per material, hidden until needed
   c.parts=b.g.children.slice();
@@ -177,6 +177,17 @@ const ECO_CHASE=9; // seconds a hunter keeps after prey that is not the player
 // a hunter heals between hunts, not during one: 2 hp/s with no delay outran every wound's bleed, so nothing ever bled out
 // (v11.31.1, analysis_review 3; the player's own gate in player.js is the pattern). Both clocks in seconds since the last wound.
 const HUNT_REGEN=2,HUNT_REGEN_W=8;
+// Casting for prey (v11.31.2, analysis_review 13): the nearest animal a hunter eats sits 40-48 m off on the shelf against a detect of
+// 9-17, so a wandering hunter only ever met prey by accident — a tenth of them sat at hunger 1.00 with a school two cells away and
+// starved 0 all session. The eyes are the ring's (PLANET: 360 degrees, motion); past them a hunter has the water itself — scent and the
+// pressure a shoal makes — so past ECO.hungry the scan already running goes out to HUNT_SEEK times detect and, when what it finds is too
+// far to chase, steers the wander at it instead of at a random point. The same one findPrey call: the wider radius costs nothing. The cast
+// runs at HUNT_CAST of the animal's speed and not at its cruise: a stern chase at the cruise (0.45-0.5 of speed) never closed on a school
+// drifting at its own — the first build of this cast held 44 m for a minute and a half — and a hunt is worth the energy. It casts only at
+// prey within HUNT_HOME of its own home, so a hunter stays the resident of its patch, the shelf's predators do not all drain toward
+// whatever school the player is swimming in, and the chase that follows is inside the leash that drops one (1.9 of home, below): a cast
+// that ended outside it was dropped in the same frame it began.
+const HUNT_SEEK=4,HUNT_HOME=1.5,HUNT_CAST=0.8;
 function hungerTick(c,dt){const K=ecoOf(c.kind);c.hunger=Math.min(1,c.hunger+dt/(K.cycle*DAY_S));if(c.hunger>=1){c.starveT+=dt;if(c.starveT>K.cycle*DAY_S*1.2){POP.starved+=1;kill(c,null);return true;}}return false;}
 function updateHunter(c,dt){
   const d=c.def;
@@ -211,8 +222,11 @@ function updateHunter(c,dt){
       if(dist<reachOf(c,tg)&&c.biteT<=0){c.biteT=d.biteCD||1.2;landBite(c,tg);}
     }
   }else{
-    if(c.scanT<=0){c.scanT=0.4;if(c.cool<=0&&c.hunger>ECO.hungry){const tg=findPrey(c);if(tg){c.state='chase';c.target=tg;c.bored=0;c.chaseT=0;}}}
-    wander(c,dt);
+    if(c.scanT<=0){c.scanT=0.4;c.hunt=0;if(c.cool<=0&&c.hunger>ECO.hungry){const tg=findPrey(c,d.detect*HUNT_SEEK);
+      if(tg){const tp=tg===player?player.pos:tg.pos,dd=c.pos.distanceTo(tp);
+        if(dd<d.detect){c.state='chase';c.target=tg;c.bored=0;c.chaseT=0;} // seen: the chase
+        else if(tp.distanceTo(c.home)<(d.home||30)*HUNT_HOME){c.wander.copy(tp);c.wanderT=rnd(4,8);c.hunt=1;}}}} // sensed: swim that way and look again
+    if(c.hunt){const k=burstK(c,dt);seek(c,c.wander,d.speed*HUNT_CAST*k,dt,1.2*k);}else wander(c,dt);
   }
 }
 // Sit and strike (the trap, the stone): buried or lying on its floor, it never moves. Prey within `radius` starts the tell — the

@@ -6,6 +6,10 @@ next session can turn them into patch versions; strike a line when it is fixed.
 **Fixed: items 2–6, the combat group, v11.31.1 (13 Sep).** All five stood when re-verified. Item 2 was worse than the table below
 said — 45 of 58 predator/prey pairs, not 9 — because a prey's own body counts too. See the CHANGELOG entry.
 
+**Fixed: items 12 and 13, the ecology group, v11.31.2 (13 Sep).** Both stood. Neither was a broken branch: 12 was arithmetic that could
+never reach a whole animal (and a surplus erased on every unload), 13 was a detect of 9–17 m against a nearest meal 35–50 m off. The new
+`test/live.js` holds both. See the CHANGELOG entry.
+
 ## Real bugs, worth a patch each
 1. **Light shafts never take the sun's colour** — `atmosphere.js:296`: the `shU.uCol` update sits inside a trailing `//` comment.
 2. ~~**Most predators cannot bite what is directly ahead**~~ — **fixed v11.31.1** (`reachOf`/`BITE_M`/`armReach`, creatures_ai.js; the
@@ -27,13 +31,15 @@ said — 45 of 58 predator/prey pairs, not 9 — because a prey's own body count
     and loses a forced `#low` (`lab.js:669,782`); `LAB_NAME` has nine duplicate keys so some sliders show the wrong label (`LAB_NAME_BY` exists for this).
 
 ## From the person's readout screenshots (12 Sep, ten shots on the 4060, all at the 120 fps cap)
-12. **No clutch is ever laid.** `laid 0 hatched 0 eggs 0` in every shot over several game hours while `born` climbs 43→63 and kills
-    80→124. The `ecoTick` path that turns owed births in a loaded cell into `layEggs` never fires (ecology.js:128–137: `extra = floor(n·
-    Q.creatures − living − eggs)`). Write a headless test: run the tick for a game day with cells loaded, assert `POP.laid > 0`.
-13. **Hunters at hunger 1.00 wandering, not hunting.** Four of ten nearest-hunter samples: hose ×2 (7 and 16 m from the player, 850
-    flickers in the world), arrow (the reach finding, item 2: it cannot bite head-on), hook 0.99 sitting. Check `findPrey`'s `detect`
-    against where the prey actually is, and the starvation clock (`starved 0` throughout). **Half-answered by v11.31.1:** with the bite
-    landing, two minutes of play took `kills` 13 → 28 and the nearest hunter cycled 1.00 → 0.03. Look again before digging into `findPrey`.
+12. ~~**No clutch is ever laid.**~~ — **fixed v11.31.2**. The reconcile fired every tick; the surplus it looks for could not exist. A
+    loaded cell's growth went into `POP.n`, which is also its living (`ecoTake`/`ecoDebit`/`ecoWriteBack` pin it there), so it was erased
+    on every unload — and undisturbed it grows 0.55 of a recruit a game day at best. Now `POP.ow[entry][cell]`, seeded at a random phase
+    in `ecoCap`, and `test/live.js` asserts a clutch is laid and hatched.
+13. ~~**Hunters at hunger 1.00 wandering, not hunting.**~~ — **fixed v11.31.2**. `findPrey` was right; the nearest animal a hunter eats
+    sits 35–50 m off against a `detect` of 9–17, and a hunter had no way to go looking. It now casts at `HUNT_SEEK` 4 × detect and swims
+    at `HUNT_CAST` 0.8 of its speed toward what it senses, leashed to `HUNT_HOME` 1.5 × home. Kills 18 → 27 over 60 s, the share at
+    hunger 1.00 13% → 8%. What is left is the ambushers (by design) and the ortho, whose nearest meal is 202 m away — a `SPAWN` envelope
+    question, open. `starved 0` is the clock: 1.2 cycles at hunger 1.00 is 22 real minutes for a needle.
 14. **Performance, for the pass:** render at the forest edge (300, 0) is 4.5–4.6 ms against the v11.12 mark of 3.2 (+40% since the light
     pass, the shadow map and combat); the shadow map re-render is 3.4–4.0 ms against ~1000 casters, the biggest single lump; render tracks
     tris at ~0.5 ms/M; heap flat at 257M; phys 0.7–1.6 ms with 24–118 near creatures. CPU is not the limit yet; the shadow casters are the

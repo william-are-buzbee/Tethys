@@ -14,6 +14,32 @@ every top-level name with its line is `src/INDEX.md` (generated). Read a DESIGN 
 
 ## Where things stand
 
+**v11.31.2 (13 Sep): the code review's ecology group — items 12 and 13, built, the clutch seen.** CHANGELOG v11.31.2; DESIGN, The
+ecology. Both stood, and neither was a broken branch. **No clutch had ever been laid** because a loaded cell's growth went into
+`POP.n`, which is also where its living are counted — `ecoTake`, `ecoDebit` and `ecoWriteBack` pin it to them, so the surplus was
+erased on every unload, and undisturbed the fastest entry in the world owes 0.55 of a recruit a game day. The births a loaded cell is
+owed are now their own array, `POP.ow[entry][cell]`: the model banks `b−d` there, the logistic reads `n+ow`, the reconcile lays
+`floor(gap + ow·Q.creatures)` and moves what it spent into `n`, and nothing else touches it. `ecoCap` seeds it at a random phase
+(`rng()·min(1,K)/Q.creatures`) the first time a cell is known — every cell starting at zero was why the first clutch took two game
+days. The readout's fourth line gained `owed`, the loaded cells' total. **Hunters at hunger 1.00 wandering** was not `findPrey`: the
+nearest animal a hunter eats sits 35–50 m off against a `detect` of 9–17, and a hunter had no way to go looking. A hungry one now
+casts — the same 0.4 s scan out to `HUNT_SEEK` 4 × detect, chasing what is inside `detect` and steering its wander at what is further
+off, swimming at `HUNT_CAST` 0.8 of its speed rather than its cruise, and only at prey within `HUNT_HOME` 1.5 × its home. Also fixed
+on the way: `updateHolds` walked off the end of `holds` when a bite inside the loop killed the held body (`releaseAll` splices below
+the cursor) — it took the low tier's smoke run down once in fifty.
+**New test `test/live.js`** (both tiers in `--test`): the ecology where the player is, against `test/census.js`'s paper. Four game
+days of driven ecology with cells loaded (fails if nothing is laid or hatches), then 60 s of frames and a table of every hunter kind —
+mean hunger, the share at 1.00, the share hunting, the distance to its nearest meal against its `detect`.
+**Seen** (dev.html, the clutches forced by hand — the real rate is 5–15 real minutes a clutch): `laid`, `eggs` and `owed` move on the
+readout; three clutches at true scale on the sand (flicker 0.38 m, needle 0.54, grazer 1.10) as knots of pale translucent spheres; and
+live, with the hunters round the player made hungry, 20 of 86 casting with chases and a carcass being fed at within seconds. Headless
+A/B over 60 s: kills 18 → 27, mean hunger 0.471 → 0.433, the share at hunger 1.00 13% → 8%.
+**Unseen:** the rate above all — play a session and watch `laid` and `owed`; is a clutch every 5–15 minutes near you enough to notice,
+or should the world lay more (that means `ECO.r0`, which moves the whole census). Then a clutch at 2–3 m: the small ones read as pale
+rocks — do they want a colour that says egg. Then whether a hatch reads. Then the cast in play: does a hungry needle visibly *go
+somewhere*, and does the shelf feel emptier of predators near you. Then whether the extra hunting thins the flicker and darter numbers
+over a long session. Open, not a bug: the one ortho in the world has its nearest meal 202 m away — a `SPAWN` envelope question.
+
 **v11.31.1 (13 Sep): the code review's combat group — items 2–6, built, the ecology readout seen.** CHANGELOG v11.31.1; DESIGN,
 Contact and Combat. All five stood. The one that matters is **reach against contact**: `reach` in DEFS is centre-to-centre and 45 of
 the 58 predator/prey pairs were shorter than the distance the two bodies' `hit` capsules force, so near the player — where
