@@ -6,6 +6,12 @@ function ckey(i,j){return i+','+j;}
 function cellOf(v){return Math.floor((v+HALF)/CELL);}
 function chunkAt(x,z){return chunks.get(ckey(cellOf(x),cellOf(z)));}
 function groundAt(x,z){const ch=chunkAt(x,z);return ch?ch.h(x,z):sample(x,z).h;}
+// hOut(ch,x,z): the ground for *placing* a thing from a cell being built — the cell's own grid inside it, sample() beyond its
+// edge. ch.h clamps at the grid edge, so a probe that reaches past a cell line reads the edge vertex again and every settleOn
+// face/fit/drop test in a band as wide as its radius sees a plateau (v11.31.3: talus lost 2.2% of its tries in a 14 m band on
+// every cell line, one-sided — the face above the point never registered). Deterministic where groundAt is not: it never asks
+// whether a neighbour happens to be loaded. The same rule buildTerrain's hAt1 uses for the cavity term.
+function hOut(ch,x,z){return x<ch.x0||x>ch.x0+CELL||z<ch.z0||z>ch.z0+CELL?sample(x,z).h:ch.h(x,z);}
 // under the canopy mats near the surface (the one place the water's look is not the floor's)
 function underCanopy(x,z,y){return y>-70&&canopyW(x,z)>0.5;}
 
@@ -101,6 +107,7 @@ function* placeFloraType(ch,rng,f){
   const cw=f.canopyPer?cellCanopy(ch):0;if(cw>0.03)maxN=Math.max(maxN,f.canopyPer);
   if(!maxN)return;
   const tries=Math.round(maxN*Q.flora),list=[],d=new THREE.Object3D(),maxSlope=f.maxSlope!==undefined?f.maxSlope:(f.big?9:0.9);
+  const hAt=(x,z)=>hOut(ch,x,z); // settleOn's probes reach past the cell line (v11.31.3); ch.h alone clamps there
   for(let n=0;n<tries;n++){
     if(n%200===199)yield;
     const x=ch.x0+rng()*CELL,z=ch.z0+rng()*CELL;
@@ -123,7 +130,7 @@ function* placeFloraType(ch,rng,f){
     else if(f.top&&!f.air&&f.top*sc>-1.4-h){const room=(-1.4-h)/f.top;if(room<sc*0.5)continue;sy=room;} // nothing stands into the air (bar the tidal forest, `air`): shorten in y or skip
     const yaw=f.flow?flowYaw(x,z)+(rng()-0.5)*0.5:rng()*TAU; // flow-faced things turn across the current
     if(f.y==='surface'||f.y==='mid'||f.reach){d.position.set(x,y,z);d.rotation.set(f.tilt?(rng()-0.5)*0.3:0,yaw,f.tilt?(rng()-0.5)*0.3:0,'XYZ');}
-    else{if(!settleOn(d,f,x,z,h,sc,yaw,ch.h,rng))continue;y=d.position.y;} // on the floor: the one ground rule (a place it can't lie draws nothing)
+    else{if(!settleOn(d,f,x,z,h,sc,yaw,hAt,rng))continue;y=d.position.y;} // on the floor: the one ground rule (a place it can't lie draws nothing)
     if(!rock&&f.y!=='surface'&&f.y!=='mid'&&!clearOf(ch,x,y,z,f,sc,sy))continue; // v11.22: nothing stands inside rock (or inside an earlier rigid plant) — the collision hash is asked first
     const sx=f.sx?f.sx[0]+rng()*(f.sx[1]-f.sx[0]):1,sz=f.sx?f.sx[0]+rng()*(f.sx[1]-f.sx[0]):1;
     d.scale.set(sc*sx,sy,sc*sz);d.updateMatrix();
@@ -204,7 +211,7 @@ function placeCliffs(ch,rng){
     const gx=(ch.hg[n+1]-ch.hg[n-1])/(2*STEP),gz=(ch.hg[n+GR]-ch.hg[n-GR])/(2*STEP),g=Math.hypot(gx,gz);
     if(g<1.15)continue;
     const x=ch.x0+ii*STEP,z=ch.z0+jj*STEP,ux=gx/g,uz=gz/g;
-    const drop=Math.abs(groundAt(x+ux*3*STEP,z+uz*3*STEP)-groundAt(x-ux*3*STEP,z-uz*3*STEP)); // local cliff height
+    const drop=Math.abs(hOut(ch,x+ux*3*STEP,z+uz*3*STEP)-hOut(ch,x-ux*3*STEP,z-uz*3*STEP)); // local cliff height. v11.31.3: hOut, not groundAt — a probe 13 m out crosses the cell line, and groundAt answered from the neighbour's grid or from sample() by whether that neighbour happened to be loaded, so the same cell laid different ledges on different visits (14 of the 41 cells that have any)
     if(rng()>0.42*Q.flora*Math.min(1,drop/24))continue;
     if(nearLandmark(x,z,70))continue;
     const sc=clamp(drop*(0.4+rng()*0.3),f.s[0],f.s[1]);

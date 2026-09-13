@@ -65,17 +65,23 @@ function bigPlace(f,x,z,h,sc,yaw,sx,sz,minSc){
   if(!settleOn(bigD,f,x,z,h,sc,yaw,bigH,bigRng))return null;bigD.scale.set(sc*sx,sc,sc*sz);bigD.updateMatrix(); // a kit that can't lie on the ground here (fit, face) is not placed
   return {f:f,m:bigD.matrix.clone(),rs:sc*Math.min(sx,sz,1)};
 }
-// A generator (v11.12): a cell's structures are up to a few hundred sample() calls at ~35 µs each, which was one step of a region's
-// build against a 3 ms budget; a yield every 50 tries. bigsFor drains it for the callers that need the list at once (chunks.js
+// A generator (v11.12): a cell's structures are a few hundred sample() calls, which was one step of a region's build against a
+// 3 ms budget; a yield every BIG_YIELD tries. bigsFor drains it for the callers that need the list at once (chunks.js
 // placeBigSolids); the rng is untouched by a yield, so both paths agree.
+// v11.31.3: the count was per entry and no entry has more than 20 tries (crag), so the yield had never once fired — a cell's whole
+// structure pass was always a single step. Measured before the fix that step was 0.27-0.54 ms over all 256 cells, comfortably
+// inside farMs, so nothing was stalling; the guard was simply dead, and would have stayed dead had a per gone up. The counter now
+// runs over the whole cell and the cairns yield too. (The ~35 µs a sample this file used to cite is the cold figure; warm it
+// measures 0.7 µs, 13 Sep — DESIGN "The far layer" already had it at ~2 µs warm.)
+const BIG_YIELD=16; // tries between yields: a try is ~3 samples, or ~11 with settleOn's eight probes, so a step stays near 0.1 ms
 function* bigsGen(i,j){
   let L=bigCache[i*NCELL+j];if(L)return L;L=[];
-  const x0=i*CELL-HALF,z0=j*CELL-HALF;
+  const x0=i*CELL-HALF,z0=j*CELL-HALF;let tn=0; // tn: tries this cell over every entry — the yield's clock
   for(let fi=0;fi<BIG.length;fi++){const f=BIG[fi];
     const rng=mulberry((((i*73856093)^(j*19349663)^(fi*83492791)^0x2545f491)>>>0));
     const maxN=f.per||0,tries=Math.round(maxN*Q.flora);
     for(let n=0;n<tries;n++){
-      if(n%50===49)yield;
+      if(++tn%BIG_YIELD===0)yield;
       const x=x0+rng()*CELL,z=z0+rng()*CELL,u=rng();
       let q=1;if(f.field)q*=clamp(0.1+4*Math.pow(fbm(x*f.field+31,z*f.field+17,2),2.5),0,1.6);
       if(u>=q)continue; // the envelope can only lower the chance from here
@@ -94,6 +100,7 @@ function* bigsGen(i,j){
   }
   for(const c of CAIRNS){ // placed structures (flora.js): the ones standing in this cell
     if(cellOf(c.x)!==i||cellOf(c.z)!==j)continue;
+    if(++tn%BIG_YIELD===0)yield;
     const e=bigPlace(c.f,c.x,c.z,sample(c.x,c.z).h,c.sc,c.yaw,c.sx,c.sz,4);if(!e)continue; // a placed one shrinks to fit under the surface rather than going (the pit's rim is 15–50 deep: a 13× cairn is 45 m tall); under 4× it goes
     const tc=c.f.tints[0];e.col=[tc[0],tc[1],tc[2]];L.push(e);
   }

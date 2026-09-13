@@ -14,6 +14,26 @@ every top-level name with its line is `src/INDEX.md` (generated). Read a DESIGN 
 
 ## Where things stand
 
+**v11.31.3 (13 Sep): the code review's placement group — items 7 and 9, built, seen at a cell line.** CHANGELOG v11.31.3;
+DESIGN, Structures/solids/cliffs, The far layer and Determinism. Item 7 stood in both halves. **A cell laid different ledges depending
+on where the player came from**: `placeCliffs` sized each by the drop over ±3 grid steps and read it with `groundAt`, which answers from
+a neighbour's grid when that neighbour is loaded and from `sample()` when it is not — 14 of the 41 cells that have ledges disagreed when
+loaded alone versus with their four neighbours up. **And every `settleOn` probe stopped at the cell line**: `ch.h` clamps to the grid, so
+`face`/`fit`/`drop` saw a plateau in a band as wide as their radius along every line. The one per-cell entry with such a test is `talus`
+(`face` [14, 6]) and the error was one-sided — the face above the point never registered — so it lost 2.2% of its tries there. Both read
+`hOut(ch,x,z)` now: the cell's own grid inside it, `sample()` beyond its edge, the rule `buildTerrain`'s `hAt1` and the far layer already
+used. Talus 8779 → 9013 over 100 cells and the band's share of them 23.1% → 24.9% against the 24.4% of area it covers; ledges the same
+829, mean scale 11.65 → 11.59; load-order disagreement 14 cells → 0.
+Item 9 was a dead guard, not a stall: `bigsGen` counted tries per entry against 50 and the fattest `big` entry has 20, so a cell's whole
+structure pass was always one step — but that step measures 0.27–0.54 ms over all 256 cells, well inside `Q.farMs`, because `sample()`
+warm is 0.7 µs and not the ~35 µs two far.js comments cited (their cold figure; DESIGN had it right). `BIG_YIELD` 16 over the whole cell,
+the cairns yielding too: five steps, worst 0.15 ms. Comments corrected.
+**Seen** (dev.html, finback, midday): talus across the x = −215 cell line at (−216, −16, −204) and in survey from (−229, −1, −175) — no
+stripe, no gap, nothing floating; ledges half buried in a face near (−297, −9, −125).
+**Unseen:** whether the foot of a long face crossing a cell line now reads even (the change is +2.7% of 1–3 m boulders — no screenshot
+would show it, only walking one); whether any ledge is floating or buried after the re-scale; and whether five budget checks a cell
+instead of one shows as a hitch when a far region comes up. Left of the review: items 8, 10, 11, 14 (the shadow-caster pass) and 15.
+
 **v11.31.2 (13 Sep): the code review's ecology group — items 12 and 13, built, the clutch seen.** CHANGELOG v11.31.2; DESIGN, The
 ecology. Both stood, and neither was a broken branch. **No clutch had ever been laid** because a loaded cell's growth went into
 `POP.n`, which is also where its living are counted — `ecoTake`, `ecoDebit` and `ecoWriteBack` pin it to them, so the surplus was

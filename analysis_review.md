@@ -10,6 +10,10 @@ said — 45 of 58 predator/prey pairs, not 9 — because a prey's own body count
 never reach a whole animal (and a surplus erased on every unload), 13 was a detect of 9–17 m against a nearest meal 35–50 m off. The new
 `test/live.js` holds both. See the CHANGELOG entry.
 
+**Fixed: items 7 and 9, the placement group, v11.31.3 (13 Sep).** 7 stood in both halves. 9 stood as a dead guard but not as a stall: a
+cell's whole structure pass measures 0.27-0.54 ms over all 256 cells, inside farMs — `sample()` warm is 0.7 µs, not the ~35 µs far.js was
+citing (that is its cold figure). See the CHANGELOG entry.
+
 ## Real bugs, worth a patch each
 1. **Light shafts never take the sun's colour** — `atmosphere.js:296`: the `shU.uCol` update sits inside a trailing `//` comment.
 2. ~~**Most predators cannot bite what is directly ahead**~~ — **fixed v11.31.1** (`reachOf`/`BITE_M`/`armReach`, creatures_ai.js; the
@@ -19,12 +23,14 @@ never reach a whole animal (and a surplus erased on every unload), 13 was a dete
 5. ~~**`c.grab` leaks after the player dies or inks**~~ — **fixed v11.31.1** (one `dropTarget(c,cool)`, used by the ink, the pulse, death,
    the lost chase and `combatBite`'s kill).
 6. ~~**Stale hit capsules for prey past 90 m**~~ — **fixed v11.31.1** (`freshShapes` in `startHold`, `c.shapeF` stamped where `worldShapes` runs).
-7. **Placement is not deterministic at cell edges** — `chunks.js:207` (`placeCliffs`) reads `groundAt` before the cell is registered, so
-   the drop depends on which neighbours are loaded and the rng draws after it shift ledge and sailer placement; `chunks.js:16` clamps
-   heights at the grid edge so `settleOn`'s face test sees a plateau in a 14 m band on every cell line (`hAt1` at `:74` is the fix pattern).
+7. ~~**Placement is not deterministic at cell edges**~~ — **fixed v11.31.3** (`hOut` in chunks.js: the cell's grid inside it, `sample()`
+   past its edge; `placeCliffs`'s drop and `placeFloraType`'s `hAt` both read it). Both halves stood. 14 of the 41 cells that have ledges
+   laid different ones by load order — though the set and the creature stream held every time, so what moved was each ledge's scale and
+   its nudge, not the draws after it. The clamp cost talus 2.2% of its tries in the band, one-sided: 8779 → 9013 over 100 cells.
 8. **`stranded` draws all three variants superimposed** — `flora.js:1098` is a `species()` on `MAT`, which has no variant collapse; wants `MATV`.
-9. **`bigsGen`'s yield never fires** — `far.js:78` counts per entry and no entry has 50 tries; a cell's whole structure pass is one step,
-   well over `Q.farMs` since `fit`/`face` added eight-point reads.
+9. ~~**`bigsGen`'s yield never fires**~~ — **fixed v11.31.3** (`BIG_YIELD` 16 counted over the whole cell, the cairns yielding too). The
+   dead guard was real; the cost was not — that one step measures 0.27-0.54 ms over all 256 cells against farMs 3/2. Five steps now,
+   worst 0.15 ms.
 10. **The smoke test's mouse never reaches input.js** — `test/smoke.js:99` takes the first registered handler (zoo.js's); bites and
     look are untested headlessly and the test's comment is false.
 11. **Lab**: number inputs write NaN into the spec mid-edit (`lab.js:692`, only `stats.*` guarded); the lab overwrites `location.hash`

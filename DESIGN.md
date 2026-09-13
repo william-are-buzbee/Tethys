@@ -787,7 +787,9 @@ get only the sun/hemi (the light pool is assigned by distance), so distant vents
   the edge of the screen, the sphere is too small). The unload at `LOAD_R+1` swaps fine for coarse at ~645 units.
 - **Structures.** Every `big` flora entry (crag, crag2, tor, slab, wall, slab2, olddome) is placed by
   `bigsFor(i,j)` from `sample()` and a per-(cell,type) rng (pure, cached, computed on first request by a region or by a
-  cell loading before its region exists; the rng is seeded by the entry's index among the `big` entries, which is why
+  cell loading before its region exists; a cell's pass yields every `BIG_YIELD` (16) tries counted over all entries — before v11.31.3
+  the count was per entry against 50 and no entry has more than 20 tries, so it had never fired and a cell was always one step, measured
+  at 0.27–0.54 ms over all 256 cells, inside `Q.farMs` either way; the rng is seeded by the entry's index among the `big` entries, which is why
   `slab` took `torm`'s old slot and `slab2` went after the megaspire — crags and megaspires stayed put), and drawn as
   **one InstancedMesh per geometry per region** (≤6 per region, 566 structures / 195k tris on high since v9.3's facets
   and slabs; 103k before) — near and far alike; the cell only registers their `lumps` as solids from the same cached
@@ -911,7 +913,12 @@ with the one basalt palette `ROCKT` and `MATROCK`):
 
 The blocks are per-cell flora; heaps, sheets and stacks are structures (`big:true`: placed once for the whole world by
 `bigsFor`, drawn by the far layer with `MATROCKB`, collision registered by the cell). **The placement rule** (`chunks.js`
-`settleOn`, shared by `placeFloraType` and `far.js bigPlace`, the ground read from the cell grid or from `sample()`): a kit —
+`settleOn`, shared by `placeFloraType` and `far.js bigPlace`; the ground read from `sample()` far, and near through `hOut` — the
+cell's own grid inside it and `sample()` past its edge, because `ch.h` clamps at the grid edge and a probe that reaches over a cell line
+would read the edge vertex again. v11.31.3: before that, every `face`/`fit`/`drop` test saw a plateau in a band as wide as its radius on
+every cell line, and talus — the only per-cell entry with one, `face` [14, 6] — lost 2.2% of its tries there, one-sided, because the face
+above the point never registered. 8779 → 9013 boulders over 100 cells, and the 14 m band's share of them 23.1% → 24.9% against the 24.4%
+of a cell's area it covers): a kit —
 anything with `lumps`, the old dome included — reads the ground at eight points on its foot circle (`foot` × scale), lies on the
 least-squares plane through them (`lieOn`, Euler YXZ, yaw first) and sinks by `sink` of its size plus half of how far the ground falls
 away round it, so it is *in* the slope it sits on; with `fit` [gap, bury] it is not placed at all where the ground falls more than gap ×
@@ -966,7 +973,10 @@ few hundred boulders (~39 per 16-unit hash bucket, the same as v9.2's crags gave
 **Cliffs — ledges** (`chunks.js` `placeCliffs`, `flora.js` `ledgeGeo`): flora is slope-gated in `placeFloraType`
 (`maxSlope`, default 0.9; boulders 1.9; structures unlimited) so nothing grows on a face. `placeCliffs` scans the height
 grid every other vertex, and where the gradient exceeds 1.15 lays instanced `ledge` rock along the contour (yaw from the
-gradient, Euler order YXZ so pitch lifts the downhill lip), sized by the local drop over ±3 grid steps, half buried
+gradient, Euler order YXZ so pitch lifts the downhill lip), sized by the local drop over ±3 grid steps (13 m, read by `hOut`
+since v11.31.3 — it was `groundAt`, which answers from a neighbour's grid or from `sample()` by whether that neighbour happens
+to be loaded, so 14 of the 41 cells that have ledges laid different ones on different visits; the fix moved the set not at all
+and the mean scale from 11.65 to 11.59 over 100 cells), half buried
 (median −2, lips to +6, median alignment to the contour 0.24), with solids. That is the whole cliff dressing. Ledge
 density on the arch mounds is high (~50–120 per cell) because every riser is steep — if it looks like scales, lower the
 `0.42` chance in `placeCliffs` or gate it by `nearLandmark`.
@@ -1481,6 +1491,12 @@ Noise perm seed 1337; landmarks seed 4242; per-cell rng seeded from (i,j) for th
 for every flora entry (v11.2, seeded by the cell and the entry's id: striking a species moves nothing else); per-(cell,type) rng
 for structures and impostors; the world is the same on revisit. `Math.random` is used only for things that don't need to persist
 (animation phases, particles).
+
+A seeded rng is only half of it: whatever the placement *reads* must not depend on what happens to be loaded. Everything a cell
+places reads the ground through the cell’s own grid (`hOut`, `sample()` past the edge) or through `sample()`, never `groundAt` — which
+answers from a neighbour’s grid when that neighbour is loaded and from `sample()` when it is not. `placeCliffs` read `groundAt` until
+v11.31.3 and so laid different ledges depending on the order the player arrived from; the check is in the CHANGELOG for that version
+(load a cell alone and again with its four neighbours up, and compare).
 
 ## Hooks for things not built yet
 

@@ -2247,3 +2247,49 @@ hungry, or does it read as drifting; and does the shelf feel emptier of predator
 that). Then whether the extra hunting has thinned the flicker and darter schools over a long session — `flicker` and `darter` on the
 readout's fourth line are the numbers. Then, on the 4060, whether any of this shows in the frame time (it should not: no new per-frame
 work, one wider radius on a scan that already ran). Not touched: items 7-11, 14 (the shadow-caster performance pass) and 15.
+
+## v11.31.3 — the placement group of the code review: what a cell reads over its own line (13 Sep 2026)
+
+Items 7 and 9 of `analysis_review.md`. Both stood as *bugs*; item 9's cost claim did not, and the measurement is below. Nothing
+here changes a rule — only what the existing rules read.
+
+**Item 7a: a cell laid different ledges depending on where the player came from.** `placeCliffs` sized each ledge by the drop over
+±3 grid steps (13 m) and read it with `groundAt`, which resolves to a *loaded* cell's grid if there is one and to `sample()` if there
+is not. Thirteen metres out of a candidate near a cell line lands in the neighbour, so the same cell answered differently on a visit
+from the north than on a visit from the west. The check: load a cell alone, then unload everything, load its four neighbours and load
+it again, and compare the instance matrices — 14 of the 41 cells that have ledges disagreed. It never flipped an accept/reject in 64
+cells (the count and the creature stream matched every time), so what moved was each ledge's scale and its nudge along the gradient,
+but a flip is one rounding away and would move the cell's whole rng stream, spawns included.
+
+**Item 7b: a plateau in a 14 m band on every cell line.** `ch.h` clamps to the cell's grid, so a probe past the edge reads the edge
+vertex again. Every `settleOn` test that reaches outward — `face`, `drop`, `fit` — therefore saw flat ground in a band as wide as its
+radius along every cell line. Per-cell flora has exactly one such entry, `talus` (`face` [14, 6]: place only where the ground within
+14 m rises 6 above), and the error is one-sided: the face above the point never registered, so the boulders were refused. 2.2% of the
+tries in the band, 294 lost against 3 gained.
+
+**The fix for both: `hOut(ch,x,z)`** (chunks.js) — the cell's own grid inside it, `sample()` beyond its edge. The same rule
+`buildTerrain`'s `hAt1` already uses for the cavity term, and the rule the far layer has always used (`bigH` is `sample`). It is
+`placeFloraType`'s `hAt` now and `placeCliffs`'s drop; inside a cell it is `ch.h` exactly, so nothing away from a line moved.
+Talus over 100 cells 8779 → 9013, and the band's share of them 23.1% → 24.9% against the 24.4% of a cell's area it covers — the band
+now carries its area's worth. Ledges: same 829 over 100 cells, mean scale 11.65 → 11.59, mean |y − ground| 2.24 → 2.23 m. Load-order
+disagreement 14 cells → 0.
+
+**Item 9: `bigsGen`'s yield had never once fired — and it did not matter.** The counter was per entry against 50, and the fattest
+`big` entry is `crag` at 20 tries a cell (65 over all of them), so a cell's whole structure pass was always a single step. The review
+expected that step to be well over `Q.farMs`. It is not: measured over all 256 cells it is 0.27–0.54 ms, against farMs 3 (2 on low),
+because `sample()` warm is 0.7 µs here, not the ~35 µs two comments in far.js were citing (that is the cold figure; DESIGN's "far
+layer" section already had ~2 µs warm). So the guard was dead rather than late. `BIG_YIELD` 16 counted over the whole cell, the cairns
+yielding too: five steps a cell, worst 0.15 ms. Both comments corrected.
+
+**Seen** (dev.html in the app's browser, 800×450, finback, midday). Talus at the x = −215 cell line at (−216, −16, −204) and in
+survey from (−229, −1, −175): boulders lie on the ground across the line, no stripe, no gap, nothing floating or doubled where a
+lump sits in two hashes. Ledges on a face near (−297, −9, −125): wedges half buried in the wall, downhill lip up, as before.
+`node build.js --test` green on both tiers; lint's unused list unchanged.
+
+**Unseen, ask in this order.** The talus change is +2.7% of scattered 1–3 m boulders and no before/after screenshot would show it,
+so the first question is whether the foot of a long face that crosses a cell line now reads *even* — walk one and look for a thinning
+that is no longer there. Then the ledges: they all re-scaled slightly (mean 11.65 → 11.59) and the statistics say that is nothing, but
+a cliff is the place to check that none is now floating or buried. Then, on the 4060: `bigsGen` yields five times a cell where it
+yielded once, which is five budget checks instead of one — it should be invisible, but the far layer's build is the one place a
+regression would show, as a hitch when a new region comes up behind the menu. Not touched: items 8, 10, 11, 14 (the shadow-caster
+performance pass) and 15.
