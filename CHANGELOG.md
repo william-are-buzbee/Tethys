@@ -2111,3 +2111,65 @@ that matters: does a ridge hold you forever (yes on paper) and is that right, or
 (`GRIP.k` down, or a `pull` floor). Then eating a carcass by biting it (heals 3–5 a bite). Then whether the trap re-striking what it
 holds looks right, whether the great's ram still reads (it snaps as before), and the readout's `phys` ms with a hold on (the rope is a
 few dozen flops). Not built: venom or paralysis, wounds slowing a creature, a hunter returning to bled prey (behaviour, next pass).
+
+## v11.31.1 — the combat group of the code review: reach against contact (13 Sep 2026)
+`analysis_review.md` items 2–6, one patch, each re-verified against the code first. All five stood; nothing in the group had been
+fixed since the 12 Sep read.
+
+**2. Most predators could not bite what was directly ahead.** `reach` in DEFS is centre-to-centre and the comment there has always
+said it must exceed the two bodies' contact distance. Measured off the same `hit` capsules physics.js uses (`bodyExt` in
+creatures_ai.js: `hitN`, how far the shape reaches forward of the origin; `hitB`, how far it reaches in any direction), **45 of the
+58 predator/prey pairs were short** — worse than the review's nose-only table said, because a prey's own body counts too: basker
+4.6 against 8.09 to the player, abyssal 10 against 14.06, crusher 4.2 against 7.61, ram 5.5 against 8.16, arrow 0.9 against 1.34 of a
+darter. Since `resolveBodies` holds the capsules apart, those hunters could not land a nose-on bite at all: headless, a basker
+running down a grazer had to blow past it and take it alongside its mid-body, the first bite at a centre gap of 4.4 rather than the
+8.6 where its jaws are, and the kill took 10.2 s against 8.4 now. Off screen, where nothing pushes bodies apart, the same bite landed
+at once — the two halves of the world disagreed. The DEFS numbers are left alone (they are the animal's own reach); the bite test now
+asks `reachOf(c,tg) = max(reach, hitN + hitB + BITE_M)` with the new knob **`BITE_M` 0.3 m**, and every site that measured against
+`reach` uses it: the chase bite, the strike's bite and its trigger range (`S.range`), the trap's strike, the lurker's lunge, the
+coil's ram, the drifters' sting, feeding at a carcass (a hunter could not reach the carcass it had made either), and the player's
+own grab and bite target (`playerTarget`, which had the same bug against a big body pressed on you). The arms' reach is
+**`armReach`** (`max(reach·k, reachOf) + prey·0.5`), never narrower than it was. The extents are measured once per body and cached on
+the creature, not the kind, because a juvenile is compiled smaller.
+
+**3. Hunter regen cancelled bleeding.** 2 hp/s from the frame a wound landed, so nothing a hunter took ever bled out. Now
+**`HUNT_REGEN`** 2 hp/s waits **`HUNT_REGEN_W`** 8 s past the last wound and stops while the body still bleeds (`c.lastHurt`, stamped
+by `wound` and by every tick of the bleed — the player's own 8 s gate is the pattern). A 20 hp wound on an eel now costs it 55 → 37 hp
+and is back at 55 about forty seconds later; before, it healed straight through.
+
+**4. A hold with dt 0 went NaN for good.** `main.js` clamps dt to `[0,0.05]`, not above 0, and the struggle divides by it. One NaN in
+`h.load` was a NaN rope that never cleared. `updateHolds` now returns on `dt <= 1e-4`, the guard `simChain` already had.
+
+**5. `c.grab` leaked after the player died, inked or stunned.** Five places ended a pursuit and each cleared a different subset;
+none but the lost-chase branch cleared `c.grab`, so a rigged hunter's arms went on reaching for the player out of wander. One routine
+now: **`dropTarget(c, cool)`** clears target, `grab`, the hold, `bored`, the tell and strike clocks, the face and the chase clock, and
+returns the animal to wander (an ambusher to `return`; a feeder and a sitter are left in their state). Used by the ink, the finback's
+pulse, the player's death, the lost chase and `combatBite`'s kill.
+
+**6. Stale hit capsules for prey past 90 m.** `startHold` read `shapesW`, which `updateCreatures` refreshes only within 90 m of the
+player, so a hold taken further off anchored its rope where that body last was — tens of metres off the animal, a rope that never
+shortened. `freshShapes` rebuilds both bodies' capsules when they are not this frame's (`c.shapeF`, stamped where `worldShapes` is
+called).
+
+`node build.js --test` green on both tiers. `test/combat.js` gained four sections: the **reach table** (every predator's `reach`
+against `hitN + hitB` for each prey, and the count of short pairs), which fails if any pair's bite distance falls under their contact;
+a basker running a grazer down (kills it in 8.4 s, first bite nose-on at 8.6 m); an eel's wound costing it its hp and healing later;
+two frames of no time leaving a hold finite; and the ink dropping target, arms and hold at once. The hunters' hold table moved a
+little — the lurker now holds 4–6 s for 28–50 hp instead of 2.6 s for 6, its lunge no longer falling short.
+
+**Seen** (dev.html, 1280×720, the app's browser): the world boots and plays with no console errors, 120 fps / 8.3 ms, draws ~390,
+tris 3.7M, phys 1.1–1.2 ms, render 3.9–4.1 ms, heap 227–264M — unchanged from before the pass. The ecology readout is the visible
+difference: over two minutes of play `kills` went 13 → 28 with `carcasses` 9 → 12, and the nearest-hunter line cycled between
+`hunger 1.00` and `hunger 0.03` — hunters catching and eating. The 12 Sep screenshots had hunters pinned at `hunger 1.00 wandering`
+and that was item 13's complaint; item 2 was half of it.
+
+**Unseen, ask in this order.** A hunt at close range: a basker or a ridge on a grazer — does the bite land where the jaws are, or
+does it now read as biting from too far out (`BITE_M`, and `reachOf`'s use of the prey's `hitB`, its widest radius, rather than the
+nearest surface — that is conservative by up to a body radius on a long prey seen side-on). Then the same on you: being run down and
+bitten nose-on rather than shoved past. Then the small end: an arrow or a needle taking a darter — forage dies at the touch, and the
+touch is now 1.6 m instead of 0.9, so does a darter pop out of existence too far from the arrow's mouth. Then the crusher's tell: its
+strike now begins at `reachOf × 1.7` ≈ 11.8 m instead of 7.1 — does it cock too early. Then a lurker's lunge from its rock (it holds
+twice as long now) and whether that reads as earned. Then the player's own grab (`r`) on something big pressed against you — it
+should now take hold where it could not before. Then the ink or the pulse with a hunter's arms already on you: do the arms let go
+cleanly. Then whether a hunter you fight off and drive away now dies of its wounds somewhere off screen (`HUNT_REGEN_W`), and whether
+that is right or too harsh. Not touched in this group: items 7–11 and the readout findings 12–15.

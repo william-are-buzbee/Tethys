@@ -14,6 +14,24 @@ every top-level name with its line is `src/INDEX.md` (generated). Read a DESIGN 
 
 ## Where things stand
 
+**v11.31.1 (13 Sep): the code review's combat group — items 2–6, built, the ecology readout seen.** CHANGELOG v11.31.1; DESIGN,
+Contact and Combat. All five stood. The one that matters is **reach against contact**: `reach` in DEFS is centre-to-centre and 45 of
+the 58 predator/prey pairs were shorter than the distance the two bodies' `hit` capsules force, so near the player — where
+`resolveBodies` holds bodies apart — most hunters could not bite what was in front of them and had to blow past and take the prey
+alongside, while off screen the same bite landed at once. The DEFS numbers are unchanged; the bite test is now
+`reachOf = max(reach, hitN + hitB + BITE_M)` (`BITE_M` 0.3) everywhere a bite, a strike's trigger, a lunge, a sting, a feed or the
+player's own grab measured against `reach`, with `armReach` for the arms. Also: a hunter's regen waits 8 s past its last wound and
+stops while it bleeds (`HUNT_REGEN`, `HUNT_REGEN_W`), so wounds can now kill; `updateHolds` returns on a zero-length frame (the NaN
+rope); one `dropTarget(c,cool)` ends every pursuit, which fixes hunters' arms still reaching for a player who has died or inked; and
+`startHold` refreshes stale capsules (`freshShapes`) so a hold taken past 90 m does not anchor its rope where the body used to be.
+`test/combat.js` prints the reach table and fails if any pair's bite distance falls under their contact.
+**Seen:** the world plays with no errors at 120 fps / 8.3 ms, phys and render unchanged; `kills` 13 → 28 over two minutes with the
+nearest hunter cycling `hunger 1.00` → `0.03`, where the 12 Sep shots had them pinned at 1.00 and wandering (review item 13).
+**Unseen:** every hunt at close range — ask for a basker or a ridge on a grazer first (does the bite land where the jaws are, or does
+it now read as biting from too far out), then one on you, then an arrow on a darter (forage now dies at 1.6 m, not 0.9), then the
+crusher's tell (it cocks at ~11.8 m now, not 7.1), then a lurker's lunge (it holds twice as long), then your own grab on something big
+pressed against you. The rest of CHANGELOG v11.31's unseen list still stands, from the top.
+
 **12 Sep: the direction, decided on paper, nothing built.** `analysis_believability.md` read the world as built and judged it; the
 discussion after it is `DIRECTION.md` and a dated section at the end of `PLANET.md`. Decided: oxygen to ~21%; the chemocline as a silled
 basin's (a sill ridge and gaps replace the v11.28 plate horizon; the pall moves above the line); one island now, a hotspot-chain
@@ -23,9 +41,13 @@ is "the body is the tech" — a player born as the smallest body the creator all
 (mass, minerals, pigments, symbionts, senses), physical doors (current, depth, sulfide, size, air, territory), a den, the builders at the
 bottom. Not a human, not generations. Also decided: a closer moon (~half Earth's lunar distance, a ~10-day month) for the 6–9 m tides; a
 physiology model (temperature, pressure); player hunger; eggs, mating and reproduction within one life; reputation as a facet of
-intelligence. Deferred by the person: how young the island is (until the archipelago), and the ledger's mass for long bodies. The code review of the same day is `analysis_review.md`: eleven real bugs ranked (the shaft colour comment, the reach-vs-contact
-table, hunter regen, the NaN hold on dt 0, the grab leak, the cell-edge determinism, `stranded` on MAT, `bigsGen`'s yield, the smoke
-test's mouse, the lab's NaN inputs), then drift and cosmetics; none fixed yet.
+intelligence. Deferred by the person: how young the island is (until the archipelago), and the ledger's mass for long bodies. The code review of the same day is `analysis_review.md`: eleven real bugs ranked, then drift and cosmetics. The combat
+group (2–6) is fixed as v11.31.1 and struck there; **still open: 1** (the light shafts never take the sun's colour — a one-line
+comment in atmosphere.js), **7** (cell-edge determinism in `placeCliffs`/`settleOn`), **8** (`stranded` on `MAT` draws all three
+variants at once), **9** (`bigsGen`'s yield never fires), **10** (the smoke test's mouse never reaches input.js), **11** (the lab's
+NaN inputs, the clobbered hash, `LAB_NAME`'s duplicate keys), the readout findings **12** (no clutch is ever laid), **14** (the
+shadow map at 3.4–4.0 ms is the performance pass's first target) and **15** (the person's night-readability list), and the drift and
+cosmetics below them.
 
 **v11.31 (11 Sep): combat as the physics — the hold, built, unseen.** CHANGELOG v11.31; DESIGN, Combat (new section). The person asked for the
 combat overhauled from the physics (grab, hold, bite until it dies or bleeds; the player grabbing on a button; blood; losing allowed) and for

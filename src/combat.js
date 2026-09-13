@@ -40,9 +40,14 @@ function bodyPointNear(o,w,out){const W=o.shapesW;let bx=o.pos.x,by=o.pos.y,bz=o
     const d=len3(w.x-qx,w.y-qy,w.z-qz)-c.r;if(d<bd){bd=d;bx=qx;by=qy;bz=qz;}}
   out.x=bx;out.y=by;out.z=bz;return out;}
 function gripOf(o){return o.b&&o.b.grip;}
+// The capsules a hold anchors to must be this frame's (v11.31.1, analysis_review 6): updateCreatures refreshes shapesW only within 90 m
+// of the player, so a hold taken further off read the shapes from wherever that body last was near and anchored the rope at a point
+// tens of metres off the animal — a rope that never shortened. The stamp is updateCreatures' frame counter.
+function freshShapes(o){if(o===player||o.shapeF===frameNo)return;o.g.position.copy(o.pos);o.g.updateMatrix();worldShapes(o);o.shapeF=frameNo;}
 // ---------- holds ----------
 function startHold(a,b){
   const g=gripOf(a);if(!g||a.hold)return null;const K=GRIP[g.kind];
+  freshShapes(a);freshShapes(b);
   const wa=localToWorld(a,g.at,T1),wb=bodyPointNear(b,wa,T2),lb=worldToLocal(b,wb,[0,0,0]);
   const h={a:a,b:b,K:K,kind:g.kind,la:g.at,lb:lb,len:Math.max(0,len3(wa.x-wb.x,wa.y-wb.y,wa.z-wb.z)),biteT:K.cd,load:0,pull:0,t:0};
   holds.push(h);a.hold=h;b.held=(b.held||0)+1;
@@ -57,7 +62,7 @@ function releaseAll(o){for(let i=holds.length-1;i>=0;i--){const h=holds[i];if(h.
 function combatBite(a,b){
   if(b===player){if(player.dead)return;if(player.withdrawn){a.bored++;return;}}
   else{if(!b.alive)return;if(b.def.hp>=1e8){a.bored++;return;}
-    if(b.def.hp<=1||b.def.edible&&massOf(b)<=WHOLE*massOf(a)){kill(b,a);if(a.state!=='feed'){a.state='wander';setWander(a);}a.target=null;a.grab=null;a.cool=6;return;}}
+    if(b.def.hp<=1||b.def.edible&&massOf(b)<=WHOLE*massOf(a)){kill(b,a);dropTarget(a,6);return;}}
   if(!gripOf(a)){wound(b,dmgOf(a),a,null,'snap');return;}
   if(a.hold){if(a.hold.b===b)return;releaseHold(a.hold);}
   startHold(a,b);
@@ -66,7 +71,8 @@ const HP1=V3(),HP2=V3(),HV=V3();
 function shiftBody(o,dx,dy,dz){if(o.shapesW&&o.shapesW.length)shiftShapes(o,dx,dy,dz);else{o.pos.x+=dx;o.pos.y+=dy;o.pos.z+=dz;}}
 // once a frame, after the bodies have pushed apart (creatures_ai.js updateCreatures): every hold's rope, struggle and bite clock
 function updateHolds(dt){
-  const P=player;P.heldK=1;
+  if(!(dt>1e-4))return; // a frame of no time (two rAF in the same millisecond): the struggle divides by dt, and one NaN in h.load
+  const P=player;P.heldK=1; // is a NaN rope for good. simChain guards the same way (v11.31.1, analysis_review 4)
   for(let i=holds.length-1;i>=0;i--){const h=holds[i],a=h.a,b=h.b,K=h.K;h.t+=dt;
     // does the hold stand? the holder must still want the held (the AI's target), both must be alive, the player's key held
     let drop=false;
@@ -117,7 +123,7 @@ function wound(o,dmg,by,at,kind){
     hurtPlayer(imm,held?null:(by&&by!==player?by.pos:null));if(P.dead)return;P.bleed=(P.bleed||0)+bl;P.woundL=worldToLocal(P,at,P.woundL||[0,0,0]);
     if(held&&by&&by!==player){const s=GRIP[by.hold&&by.hold.K?by.hold.kind:'jaw'].shake;P.vel.x+=rnd(-s,s);P.vel.y+=rnd(-s,s)*0.5;P.vel.z+=rnd(-s,s);}}
   else{if(!o.alive)return;if(o.def.hp>=1e8){if(by&&by!==player)by.bored++;bloodBurst(at,2,cladeOf(o));return;}
-    o.hp-=imm;o.bleed=(o.bleed||0)+bl;o.woundL=worldToLocal(o,at,o.woundL||[0,0,0]);
+    o.hp-=imm;o.bleed=(o.bleed||0)+bl;o.lastHurt=t;o.woundL=worldToLocal(o,at,o.woundL||[0,0,0]);
     if(o.hp<=0){bloodBurst(at,10+dmg*0.6,cladeOf(o));kill(o,by);return;}}
   bloodBurst(at,4+dmg*0.4,cladeOf(o));
   if(o!==player)thump(clamp(0.15+dmg*0.01,0.15,0.5),110,45,at,0.9,0.05);
@@ -126,7 +132,7 @@ function wound(o,dmg,by,at,kind){
 function updateWounds(dt){
   const P=player;
   const drain=(o)=>{const b=o.bleed;if(!(b>0))return false;const loss=Math.min(b,(0.4+0.12*b)*dt);o.bleed=Math.max(0,b-loss-0.25*dt);
-    if(o===P){P.hp-=loss;P.lastHurt=t;if(P.hp<=0&&!P.dead)die();}else{o.hp-=loss;if(o.hp<=0&&o.alive){kill(o,null);return false;}}
+    if(o===P){P.hp-=loss;P.lastHurt=t;if(P.hp<=0&&!P.dead)die();}else{o.hp-=loss;o.lastHurt=t;if(o.hp<=0&&o.alive){kill(o,null);return false;}}
     o.bleedT=(o.bleedT||0)-dt;if(o.bleedT<=0&&o.g.visible!==false){o.bleedT=Math.max(0.08,1.2/(1+b));const w=localToWorld(o,o.woundL||[0,0,0],HP1);bloodBurst(w,1,cladeOf(o),0.15);}
     return true;};
   if(!P.dead&&mode==='play')drain(P);else P.bleed=0;
@@ -179,7 +185,7 @@ function playerGrab(want,dt){
 }
 // the nearest live body (or carcass, if `dead`) within reach and ahead: the bite's rule
 function playerTarget(dead){const P=player;T3.set(0,0,1).applyQuaternion(P.g.quaternion);let best=null,bd=1e9;
-  const look=(c)=>{T1.copy(c.pos).sub(P.pos);const dd=T1.length(),reach=2.2+c.def.size*0.45;if(dd>reach)return;if(dd>1.2&&T1.dot(T3)/dd<0.2)return;if(dd<bd){bd=dd;best=c;}};
+  const look=(c)=>{T1.copy(c.pos).sub(P.pos);const dd=T1.length(),reach=Math.max(2.2+c.def.size*0.45,reachOf(P,c));if(dd>reach)return;if(dd>1.2&&T1.dot(T3)/dd<0.2)return;if(dd<bd){bd=dd;best=c;}};
   for(const c of creatures){if(c.alive)look(c);}
   if(dead&&!best)for(const c of carcasses){if(!c.gone&&c.flesh>0)look(c);}
   return best;}

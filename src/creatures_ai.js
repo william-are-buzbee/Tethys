@@ -140,19 +140,50 @@ function findCarcass(o,R){let best=null,bd=R;for(const c of carcasses){if(c.gone
 // with d.burst {on, off} runs its speed and accel on a duty cycle — full for `on` seconds, then a coast for `off` where it only
 // holds a third of the speed with little steering. The anim sees the speed pulse, so the flaps beat and rest with it.
 function burstK(c,dt){const b=c.def.burst;if(!b)return 1;c.burstT-=dt;if(c.burstT<=-b.off)c.burstT=b.on;return c.burstT>0?1:0.3;}
+// Reach against contact (v11.31.1, analysis_review 2). `reach` in DEFS is centre-to-centre, and the comment there has always said it
+// must exceed the contact distance of the two bodies — but it did not: measured off the hit capsules, 44 of the 52 predator/prey
+// pairs had a reach shorter than the distance the two shapes force (basker 4.6 against 8.1 of body to the player, abyssal 10
+// against 14, arrow 0.9 against 1.3 of a darter). resolveBodies keeps the capsules apart, so near the player every hunt was a
+// shove that never became a bite; off screen, where nothing pushes bodies apart, the same bite landed at once. The numbers in DEFS
+// stay what they are — an animal's own reach, what it can bite past its nose — and the test asks for the larger of that and what
+// the two bodies actually measure. Measured once per body from the same capsules physics.js uses; a juvenile is built smaller, so
+// it is cached on the creature, not the kind.
+const BITE_M=0.3; // m past the two bodies' contact: the margin the jaws close over
+function bodyExt(o){
+  if(o.hitN!==undefined)return o;
+  const hit=(o.b&&o.b.hit)||[],s=(o.b&&o.b.g?o.b.g.scale.x:1)||1;let n=0,b=0;
+  for(const h of hit)for(const p of [h.a,h.b]){const f=(p[2]+h.r)*s;if(f>n)n=f;const d=(len3(p[0],p[1],p[2])+h.r)*s;if(d>b)b=d;}
+  const sz=(o.def?o.def.size:1)*0.6;o.hitN=n||sz;o.hitB=b||sz;return o;
+}
+// the centre-to-centre distance at which c's bite lands on tg: its own reach, never less than where the two bodies touch
+function reachOf(c,tg){return Math.max(c.def.reach||0,bodyExt(c).hitN+bodyExt(tg).hitB+BITE_M);}
+// the arms reaching for prey: as wide as it was (reach × k plus the prey's half-length), floored by the same contact
+function armReach(c,tg,k){return Math.max((c.def.reach||0)*k,reachOf(c,tg))+(tg.def?tg.def.size:1)*0.5;}
+// One place to let go of what a creature wants (v11.31.1, analysis_review 5): the ink, the stun, the player's death, a lost chase and
+// a kill each cleared a different subset and left c.grab pointing at the old target, so a rigged hunter's arms went on reaching for
+// the player out of wander. Everything that ends a pursuit goes through here.
+function dropTarget(c,cool){
+  c.target=null;c.grab=null;c.bored=0;c.tellT=0;c.strikeT=0;c.face=null;c.chaseT=0;
+  if(c.hold)releaseHold(c.hold);
+  if(cool!==undefined)c.cool=cool;
+  if(c.state!=='feed'&&c.state!=='sit'){c.state=c.def.role==='ambush'?'return':'wander';if(c.state==='wander')setWander(c);}
+}
 // The bite that lands (v11.31: combat.js): forage dies at the touch; anything that can fight is taken hold of, and the hold bites
 function landBite(c,tg){combatBite(c,tg);}
 // Hunger (v11.26): a hunter's clock runs from fed (0) to starving (1) over its kind's cycle (ecology.js) and it hunts only past
 // ECO.hungry — a fed ridge cruises past the player; a kill sets it back by the prey's mass over its meal; at 1 it starves, and
 // past a cycle and a fifth of that it dies (a carcass). The feed state: it stays at a carcass it made and eats
 const ECO_CHASE=9; // seconds a hunter keeps after prey that is not the player
+// a hunter heals between hunts, not during one: 2 hp/s with no delay outran every wound's bleed, so nothing ever bled out
+// (v11.31.1, analysis_review 3; the player's own gate in player.js is the pattern). Both clocks in seconds since the last wound.
+const HUNT_REGEN=2,HUNT_REGEN_W=8;
 function hungerTick(c,dt){const K=ecoOf(c.kind);c.hunger=Math.min(1,c.hunger+dt/(K.cycle*DAY_S));if(c.hunger>=1){c.starveT+=dt;if(c.starveT>K.cycle*DAY_S*1.2){POP.starved+=1;kill(c,null);return true;}}return false;}
 function updateHunter(c,dt){
   const d=c.def;
   if(c.stun>0){c.stun-=dt;c.vel.multiplyScalar(1-2*dt);return;}
   if(hungerTick(c,dt))return;
   if(c.state==='feed'){const f=c.feedAt;c.feedT-=dt;if(!f||f.gone||f.flesh<=0||c.feedT<=0||c.hunger<=0){c.state='wander';c.feedAt=null;c.cool=d.cool||4;setWander(c);return;}
-    const dist=c.pos.distanceTo(f.pos);if(dist>d.reach*0.9)seek(c,f.pos,d.speed*0.35,dt,1.5);else{c.vel.multiplyScalar(1-3*dt);eatAt(c,f,dt);}c.face=dist<d.reach*1.5?f.pos:null;return;}
+    const dist=c.pos.distanceTo(f.pos),at=reachOf(c,f);if(dist>at*0.9)seek(c,f.pos,d.speed*0.35,dt,1.5);else{c.vel.multiplyScalar(1-3*dt);eatAt(c,f,dt);}c.face=dist<at*1.5?f.pos:null;return;}
   if(c.state==='flee'){c.grab=null;c.fleeT-=dt;if(c.fleeT<=0)c.state='wander';seekAway(c,player.pos,d.speed,dt);return;}
   c.scanT-=dt;c.cool-=dt;
   if(c.state==='chase'){
@@ -163,21 +194,21 @@ function updateHunter(c,dt){
     // every hunter for good before this, and no hunt in the game ever ended in a meal). The clock stops while it has hold of the prey (v11.31)
     if(!c.hold)c.chaseT=(c.chaseT||0)+dt;const chaseK=tg===player?1:1+0.6*smooth(6,2,c.chaseT);
     const lost=!tg||(tg!==player&&!tg.alive)||ashore||dist>d.detect*1.6||(tg===player&&(player.dead||(player.inkT>0&&dist>3.5)))||c.bored>2||c.pos.distanceTo(c.home)>(d.home||30)*1.9||(tg!==player&&c.chaseT>ECO_CHASE);
-    if(lost){c.state='wander';c.target=null;c.grab=null;c.bored=0;c.cool=d.cool||4;c.tellT=0;c.strikeT=0;setWander(c);}
+    if(lost){dropTarget(c,d.cool||4);}
     else if(d.strike){
       // the strike (PLANET, hingeshells; the platebacks' bite): in range, the tell first — it slows, cocks and turns to the prey —
       // then a burst at the prey with the strike pose on, the bite landing once if it gets within reach; then the cooldown
       const S=d.strike;c.biteT-=dt;
-      if(c.strikeT>0){c.strikeT-=dt;c.st.strike=1;seek(c,tpos,S.speed,dt,8);if(!c.bit&&dist<d.reach){c.bit=true;landBite(c,tg);}if(c.strikeT<=0){c.biteT=d.biteCD||1.5;c.grab=null;}}
+      if(c.strikeT>0){c.strikeT-=dt;c.st.strike=1;seek(c,tpos,S.speed,dt,8);if(!c.bit&&dist<reachOf(c,tg)){c.bit=true;landBite(c,tg);}if(c.strikeT<=0){c.biteT=d.biteCD||1.5;c.grab=null;}}
       else if(c.tellT>0){c.tellT-=dt;c.st.tell=Math.min(1,c.st.tell+dt/S.tell*1.5);c.vel.multiplyScalar(1-3*dt);c.face=tpos;if(c.tellT<=0){c.strikeT=S.dur;c.bit=false;c.face=null;}}
       else{const k=burstK(c,dt)*chaseK;seek(c,tpos,d.speed*k,dt,2.2*k);c.grab=null;
-        if(dist<d.reach*(S.range||1.6)&&c.biteT<=0){c.tellT=S.tell;c.st.tell=0;}}
-      if(c.strikeT>0)c.grab=(c.b.rigs&&dist<d.reach*1.3+(tg.def?tg.def.size:1)*0.5)?tg:null;
+        if(dist<reachOf(c,tg)*(S.range||1.6)&&c.biteT<=0){c.tellT=S.tell;c.st.tell=0;}}
+      if(c.strikeT>0)c.grab=(c.b.rigs&&dist<armReach(c,tg,1.3))?tg:null;
     }
     else{
       const k=burstK(c,dt)*chaseK;seek(c,tpos,d.speed*k,dt,2.2*k);c.biteT-=dt;
-      c.grab=(c.b.rigs&&dist<d.reach*1.3+(tg.def?tg.def.size:1)*0.5)?tg:null; // the arms reach for prey in range and close on it (physics.js)
-      if(dist<d.reach&&c.biteT<=0){c.biteT=d.biteCD||1.2;landBite(c,tg);}
+      c.grab=(c.b.rigs&&dist<armReach(c,tg,1.3))?tg:null; // the arms reach for prey in range and close on it (physics.js)
+      if(dist<reachOf(c,tg)&&c.biteT<=0){c.biteT=d.biteCD||1.2;landBite(c,tg);}
     }
   }else{
     if(c.scanT<=0){c.scanT=0.4;if(c.cool<=0&&c.hunger>ECO.hungry){const tg=findPrey(c);if(tg){c.state='chase';c.target=tg;c.bored=0;c.chaseT=0;}}}
@@ -189,7 +220,7 @@ function updateHunter(c,dt){
 // takes the bite. Then it settles for `cool` seconds. A sitting one is as heavy as a rock for contact (updateCreatures).
 function updateTrap(c,dt){
   const d=c.def,S=d.strike;c.vel.set(0,0,0);c.cool-=dt;
-  if(c.strikeT>0){c.strikeT-=dt;c.st.strike=1;const tg=c.target;if(tg&&!c.bit){const tpos=tg===player?player.pos:tg.pos;if(c.pos.distanceTo(tpos)<d.reach&&(tg===player||tg.alive)){c.bit=true;landBite(c,tg);}}if(c.strikeT<=0){c.cool=d.cool||2;c.face=null;if(!c.hold)c.target=null;c.state='sit';}return;} // v11.31: the target stays while it is held
+  if(c.strikeT>0){c.strikeT-=dt;c.st.strike=1;const tg=c.target;if(tg&&!c.bit){const tpos=tg===player?player.pos:tg.pos;if(c.pos.distanceTo(tpos)<reachOf(c,tg)&&(tg===player||tg.alive)){c.bit=true;landBite(c,tg);}}if(c.strikeT<=0){c.cool=d.cool||2;c.face=null;if(!c.hold)c.target=null;c.state='sit';}return;} // v11.31: the target stays while it is held
   if(c.tellT>0){c.tellT-=dt;c.st.tell=Math.min(1,c.st.tell+dt/S.tell*1.5);const tg=c.target;if(tg)c.face=tg===player?player.pos:tg.pos;if(c.tellT<=0){c.strikeT=S.dur;c.bit=false;}return;}
   c.scanT-=dt;if(hungerTick(c,dt))return;if(c.scanT<=0){c.scanT=0.25;if(c.cool<=0&&c.hunger>ECO.hungry*0.4){const tg=findPrey(c);if(tg){c.target=tg;c.tellT=S.tell;c.st.tell=0;c.state='strike';}}} // a trap strikes at most things (a reflex), but not on a full stomach
 }
@@ -257,23 +288,23 @@ function scavenge(c,dt){const d=c.def;if(!d.scav)return false;
   if(dist>at)seek(c,f.pos,d.speed*0.7,dt,1.4);else{c.vel.multiplyScalar(1-3*dt);eatAt(c,f,dt);c.face=f.pos;}return true;}
 function updateCoil(c,dt){
   const d=c.def;c.cool-=dt;const dist=c.pos.distanceTo(player.pos);
-  if(c.state==='ram'){c.ramT-=dt;seek(c,player.pos,d.ram,dt,3);c.biteT-=dt;if(dist<d.reach&&c.biteT<=0){c.biteT=2;wound(player,d.dmg,c,null,'snap');}if(c.ramT<=0||player.dead){c.state='wander';c.cool=8;setWander(c);}}
+  if(c.state==='ram'){c.ramT-=dt;seek(c,player.pos,d.ram,dt,3);c.biteT-=dt;if(dist<reachOf(c,player)&&c.biteT<=0){c.biteT=2;wound(player,d.dmg,c,null,'snap');}if(c.ramT<=0||player.dead){c.state='wander';c.cool=8;setWander(c);}}
   else{if(dist<d.radius&&c.cool<=0&&!player.dead){c.state='ram';c.ramT=3.5;}wander(c,dt);}
 }
 // the ambushers (the lurker, the hook) lunge at their prey (v11.26: a prey list, not only the player), when hungry
 function updateLurker(c,dt){
   const d=c.def;if(hungerTick(c,dt))return;
   if(c.state==='sit'){c.vel.set(0,0,0);c.cool-=dt;c.scanT-=dt;if(c.scanT<=0){c.scanT=0.25;if(c.cool<=0&&c.hunger>ECO.hungry){const tg=findPrey(c,d.radius);if(tg){c.state='lunge';c.target=tg;c.lungeT=1.3;}}}}
-  else if(c.state==='lunge'){const tg=c.target,tp=tg===player?player.pos:tg?tg.pos:c.home,dist=c.pos.distanceTo(tp);c.lungeT-=dt;seek(c,tp,d.lunge,dt,6);c.biteT-=dt;c.grab=c.b.rigs&&dist<d.reach*1.6?tg:null;if(d.hang)c.st.strike=1;
-    if(dist<d.reach&&c.biteT<=0){c.biteT=1;landBite(c,tg);if(c.state!=='feed')c.state='return';}if(c.lungeT<=0||!tg||(tg!==player&&!tg.alive)||(tg===player&&player.dead))c.state='return';}
-  else if(c.state==='feed'){const f=c.feedAt;c.feedT-=dt;if(!f||f.gone||f.flesh<=0||c.feedT<=0){c.state='return';c.feedAt=null;return;}const dist=c.pos.distanceTo(f.pos);if(dist>d.reach*0.8)seek(c,f.pos,3,dt,2);else{c.vel.multiplyScalar(1-3*dt);eatAt(c,f,dt);}}
+  else if(c.state==='lunge'){const tg=c.target,tp=tg===player?player.pos:tg?tg.pos:c.home,dist=c.pos.distanceTo(tp);c.lungeT-=dt;seek(c,tp,d.lunge,dt,6);c.biteT-=dt;c.grab=c.b.rigs&&tg&&dist<armReach(c,tg,1.6)?tg:null;if(d.hang)c.st.strike=1;
+    if(tg&&dist<reachOf(c,tg)&&c.biteT<=0){c.biteT=1;landBite(c,tg);if(c.state!=='feed')c.state='return';}if(c.lungeT<=0||!tg||(tg!==player&&!tg.alive)||(tg===player&&player.dead))c.state='return';}
+  else if(c.state==='feed'){const f=c.feedAt;c.feedT-=dt;if(!f||f.gone||f.flesh<=0||c.feedT<=0){c.state='return';c.feedAt=null;return;}const dist=c.pos.distanceTo(f.pos);if(dist>reachOf(c,f)*0.8)seek(c,f.pos,3,dt,2);else{c.vel.multiplyScalar(1-3*dt);eatAt(c,f,dt);}}
   else{c.grab=null;if(!c.hold)c.target=null;seek(c,c.home,4,dt,2);if(c.pos.distanceTo(c.home)<0.8){c.state='sit';c.cool=3;c.pos.copy(c.home);}} // v11.31: what it has hold of comes home with it
   if(c.stun>0){c.stun-=dt;c.vel.multiplyScalar(1-2*dt);}
   if(c.state==='flee')c.state='return';
 }
 function updateJelly(c,dt){
   const k=c.def.size>3?0.5:1;c.vel.set(0.3*k*Math.sin(t*0.3*k+c.t0),0.15*k*Math.sin(t*0.5*k+c.t0),0.3*k*Math.cos(t*0.27*k+c.t0));
-  c.biteT-=dt;if(c.def.dmg>0&&!player.dead&&c.biteT<=0&&c.pos.distanceTo(player.pos)<c.def.reach+1){c.biteT=0.6;hurtPlayer(c.def.dmg,null);}
+  c.biteT-=dt;if(c.def.dmg>0&&!player.dead&&c.biteT<=0&&c.pos.distanceTo(player.pos)<Math.max((c.def.reach||0)+1,reachOf(c,player))){c.biteT=0.6;hurtPlayer(c.def.dmg,null);}
 }
 // The sailer (DRIFTERS.md): rides the wave (the surface rule below), carried by the current like everything, and sails at ~5% of the
 // wind at 40° off downwind — left- or right-handed by the animal, so one wind sorts a fleet two ways. The whole animal is yawed to its
@@ -342,18 +373,18 @@ function updateCreatures(dt0){
     const st=c.st;if(c.tellT<=0&&c.strikeT<=0){st.tell*=Math.exp(-4*dt);st.strike*=Math.exp(-7*dt);if(d.role==='ambush'&&c.state!=='lunge')st.strike*=Math.exp(-7*dt);}st.jet=c.state==='chase'&&d.jetter===true;
     const vis=dp<c.lodFar;c.g.visible=vis;
     if(vis){visibleCreatures++;if(dp<c.lodNear){setLOD(c,0);c.anim(t+c.t0,Math.min(4,c.vel.length()/(d.size*0.5)),st);}else setLOD(c,1);}
-    if(d.role==='hunter'&&c.hp<d.hp)c.hp=Math.min(d.hp,c.hp+2*dt);
+    if(d.role==='hunter'&&c.hp<d.hp&&!(c.bleed>0)&&t-(c.lastHurt||-1e9)>HUNT_REGEN_W)c.hp=Math.min(d.hp,c.hp+HUNT_REGEN*dt);
     if(vis&&dp<c.lodNear&&c.lod===0)simList.push(c);
     if(vis&&dp<90)near.push(c);
   }
   // contact: bodies near the player push apart by their actual shapes (the player among them), the player is kept out
   // of every arm and tail near it, then the arms and tails of everything at near LOD are simulated against the bodies.
-  for(const c of near){c.g.updateMatrix();worldShapes(c);if((c.def.role==='ambush'&&c.state==='sit')||c.def.role==='trap'||c.dead)c.mass=1e6;else c.mass=Math.max(0.6,c.def.size*c.def.size*c.def.size);}
+  for(const c of near){c.g.updateMatrix();worldShapes(c);c.shapeF=frameNo;if((c.def.role==='ambush'&&c.state==='sit')||c.def.role==='trap'||c.dead)c.mass=1e6;else c.mass=Math.max(0.6,c.def.size*c.def.size*c.def.size);}
   const P=player,live=mode==='play'&&!P.dead;let heldBy=0;bodies.length=0;for(const c of near)bodies.push(c);if(live)bodies.push(P);
   resolveBodies(bodies);
   updateHolds(dt0); // the holds' ropes (combat.js, v11.31): after the bodies have pushed apart, before the arms are simulated
   if(live)for(const c of near){if(c.chainW&&c.chainW.length&&c.pos.distanceTo(P.pos)<c.reach+2)sphereOutOf(P.pos,0.75,P.vel,c.chainW);}
   for(const c of near){c.g.position.copy(c.pos);}
-  for(const c of simList){if(near.indexOf(c)<0){c.g.updateMatrix();worldShapes(c);}stepRigs(c,bodies,dt0);if(c.grab===P&&c.holding)heldBy++;}
+  for(const c of simList){if(near.indexOf(c)<0){c.g.updateMatrix();worldShapes(c);c.shapeF=frameNo;}stepRigs(c,bodies,dt0);if(c.grab===P&&c.holding)heldBy++;}
   if(heldBy)P.heldT=0.2;
 }

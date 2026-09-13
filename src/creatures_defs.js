@@ -2,7 +2,9 @@
 // roles: boid (a loose ribbon: flickers, darters) hunter (chases prey) graze ambush (sits, lunges; hang: from up in the structure)
 // trap (sits, strikes) watch (the curious one) coil drift wander. legs: can move out of the water (walks); everything else is a
 // swimmer and flops when beached. size: rough half-length, used for collision, LOD and floor clearance (clear overrides the
-// clearance: a buried trap sits low). reach must exceed the contact distance of the two bodies (DESIGN, Contact) to land a bite.
+// clearance: a buried trap sits low). reach is centre-to-centre: how far an animal can bite. Since v11.31.1 the bite test floors it
+// at the two bodies' own contact distance (creatures_ai.js reachOf, BITE_M), so a reach shorter than the biter's nose plus the
+// prey's body no longer means it can never bite what is in front of it — 45 of the 58 predator/prey pairs here are such a pair.
 // strike {tell, dur, speed, range}: the tell then the strike (creatures_ai.js); burst {on, off}: burst-and-coast; preyClade: the
 // player is prey only as that clade; calm: ignores threats; deep: keeps below the chemocline; stand: the watcher's standoff.
 const DEFS={

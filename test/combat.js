@@ -1,12 +1,14 @@
 // Headless combat check (combat.js, v11.31): a hunter that reaches prey takes hold of it and the hold kills it; the rope keeps the
 // two together and never NaNs; a hunter that loses interest lets go; the player's grab holds a small thing and is thrown off by a big one;
 // the bite eats forage whole and tears at what is held; blood is emitted and dies; and a table of what each placed hunter's hold means for
-// a player that thrashes at full speed (does it form, how long it lasts, what it costs). Same bundle and stub as the smoke test.
+// a player that thrashes at full speed (does it form, how long it lasts, what it costs); and (v11.31.1) the reach table: every
+// predator's reach against the contact its own nose and its prey's body force, which is the distance it has to bite across, plus
+// the four other combat fixes of that pass. Same bundle and stub as the smoke test.
 const fs=require('fs'),path=require('path');
 const ROOT=path.join(__dirname,'..');
 const ORDER=fs.readFileSync(path.join(ROOT,'src','order.txt'),'utf8').split('\n').map(s=>s.trim()).filter(s=>s&&s[0]!=='#');
 let js=ORDER.map(n=>fs.readFileSync(path.join(ROOT,'src',n+'.js'),'utf8')).join('\n');
-js+='\nglobal.__cb={groundAt,chunkGrid,cellOf,creatures,carcasses,player,DEFS,SPAWN,spawn,choose,V3,keys,holds,GRIP,startHold,releaseHold,playerGrab,playerBite,updateHolds,wound,get blLive(){return blLive;},updateBlood,updateWounds,updateCreatures,updatePlayer,finishPlayer,bodies,updateSchools,get mode(){return mode;},get t(){return t;},setT:(v)=>{t=v;},massOf,cladeOf,gripOf,localToWorld,removeCreature,ECO,setWander};';
+js+='\nglobal.__cb={groundAt,chunkGrid,cellOf,creatures,carcasses,player,DEFS,SPAWN,spawn,choose,V3,keys,holds,GRIP,startHold,releaseHold,playerGrab,playerBite,updateHolds,wound,get blLive(){return blLive;},updateBlood,updateWounds,updateCreatures,updatePlayer,finishPlayer,bodies,updateSchools,get mode(){return mode;},get t(){return t;},setT:(v)=>{t=v;},massOf,cladeOf,gripOf,localToWorld,removeCreature,ECO,setWander,bodyExt,reachOf,BITE_M,ability,CLADES};';
 const tmp=path.join(require('os').tmpdir(),'tethys_combat.js');
 fs.writeFileSync(tmp,'(function(){"use strict";\n'+js+'\n})();');
 process.env.PICK='0';
@@ -109,6 +111,63 @@ const groundY=-12;
     console.log('  '+k.padEnd(13)+(g?g.kind:'none').padEnd(8)+String(X.massOf(c)).padEnd(8)+(formed>=0?'yes':'no ').padEnd(8)+(formed<0?'-':ended<0?'25 s+':((ended-formed)*dt).toFixed(1)+' s').padEnd(11)+(hp0-P.hp).toFixed(0));
     X.keys.KeyW=false;X.keys.ShiftLeft=false;}
   P.hp=P.maxhp=120;
+}
+// ---- 7. reach against contact: every predator, every prey on its list (v11.31.1, analysis_review 2) ----
+{
+  clearAll();
+  const E={};const extOf=(k)=>E[k]||(E[k]=X.bodyExt({b:X.DEFS[k].build(),def:X.DEFS[k]}));
+  const pl=X.bodyExt({b:P.b,def:P.def});
+  const bodyOf=(k)=>k==='player'?pl:extOf(k);
+  console.log('  biter         reach   prey           nose   prey   contact   bites at   short by');
+  let short=0,pairs=0,bad=0;
+  for(const k in X.DEFS){const d=X.DEFS[k];if(!d.prey||!d.reach)continue;const a=extOf(k);
+    for(const pk of d.prey){if(pk!=='player'&&!X.DEFS[pk])continue;const b=bodyOf(pk),contact=a.hitN+b.hitB,at=X.reachOf(a,b);
+      pairs++;if(d.reach<contact)short++;if(at<contact)bad++;
+      console.log('  '+k.padEnd(13)+d.reach.toFixed(2).padStart(5)+'   '+pk.padEnd(12)+a.hitN.toFixed(2).padStart(5)+b.hitB.toFixed(2).padStart(7)+contact.toFixed(2).padStart(10)+at.toFixed(2).padStart(11)+(d.reach<contact?(contact-d.reach).toFixed(2):'-').padStart(11));}}
+  console.log('  '+short+' of '+pairs+' pairs have a DEFS reach shorter than the two bodies\' contact; the bite test floors every one of them');
+  check(bad===0,'every predator bites its prey at or past the distance their bodies force (BITE_M '+X.BITE_M+' m past it)');
+}
+// ---- 8. the nose-on bite: a basker running down a grazer (the case item 2 broke: reach 4.6 against 8.6 of body) ----
+{
+  clearAll();const gy=X.groundAt(0,20);P.pos.set(40,gy+6,10);P.vel.set(0,0,0);P.dead=false; // near: only within 90 m of the player do the bodies push apart, which is where the bug lived
+  const g=put('grazer',X.V3(0,gy+2,20),'wander'),c=put('basker',X.V3(0,gy+4,4),'chase',g);
+  let hp0=g.hp,bites=0,firstD=0,died=-1;const ext=X.bodyExt({b:c.b,def:c.def}),eg=X.bodyExt({b:g.b,def:g.def}),contact=ext.hitN+eg.hitB;
+  for(let i=0;i<60*30;i++){frame();
+    if(g.hp<hp0-0.5){bites++;if(bites===1)firstD=c.pos.distanceTo(g.pos);hp0=g.hp;}
+    if(!g.alive){died=i;break;}}
+  console.log('  the basker bit the grazer '+bites+' times; the first at '+firstD.toFixed(1)+' m, their bodies touching at '+contact.toFixed(1)+' (before this pass it was 4.4 — it had to blow past and take the grazer alongside its mid-body)');
+  check(died>0,'a basker runs a grazer down and kills it ('+(died>0?(died*dt).toFixed(1)+' s':'alive after 30 s')+')');
+  check(firstD>contact-1.5,'and its first bite lands nose-on, where its jaws are');
+}
+// ---- 9. a hunter's regen no longer cancels its wounds (analysis_review 3) ----
+{
+  clearAll();P.pos.set(0,-30,30);const gy=X.groundAt(0,130);
+  const e=put('eel',X.V3(0,gy+4,130),'wander');e.hunger=0;
+  X.wound(e,20,null,e.pos,'snap');const hp0=X.DEFS.eel.hp;
+  for(let i=0;i<60*12;i++){frame();e.hunger=0;}
+  check(e.hp<hp0-15,'a 20 hp wound still costs an eel most of 20 twelve seconds on (hp '+hp0+' → '+e.hp.toFixed(1)+'; it healed straight through it before)');
+  const low=e.hp;for(let i=0;i<60*40;i++){frame();e.hunger=0;}
+  check(e.hp>low+5,'and it heals again once the wound has closed and '+8+' s have passed (hp '+low.toFixed(1)+' → '+e.hp.toFixed(1)+')');
+}
+// ---- 10. a frame of no time leaves no NaN in a hold (analysis_review 4) ----
+{
+  clearAll();P.pos.set(0,-30,30);P.vel.set(0,0,0);P.hp=P.maxhp;P.dead=false;
+  const e=put('eel',X.V3(0,-30,26),'chase',P);
+  for(let i=0;i<60*6&&!e.hold;i++)frame();
+  check(!!e.hold,'the eel has hold for the dt test');
+  if(e.hold){const h=e.hold;X.updateHolds(0);X.updateHolds(0);
+    check(isFinite(h.len)&&isFinite(h.load)&&isFinite(h.pull),'two frames of no time leave the hold finite (len '+h.len.toFixed(2)+' load '+h.load.toFixed(1)+' pull '+h.pull.toFixed(2)+')');}
+}
+// ---- 11. the ink lets go of the arms as well as the target (analysis_review 5) ----
+{
+  let si=0;for(let i=0;i<X.CLADES.length;i++)if(X.CLADES[i].id==='soft')si=i;
+  X.choose(si);clearAll();P.pos.set(0,-30,30);P.vel.set(0,0,0);P.hp=P.maxhp;P.dead=false;P.cd=0;
+  const c=put('sickle',X.V3(0,-30,36),'chase',P);
+  let reached=false;for(let i=0;i<60*8;i++){frame();if(c.grab===P)reached=true;}
+  console.log('  the sickle reached for the player with its arms: '+(reached?'yes':'no (no rig in range)'));
+  c.grab=P;c.target=P;P.cd=0;X.ability();
+  check(c.grab===null&&c.target===null&&!c.hold,'the ink drops the target, the arms and the hold at once (it left c.grab on the player before)');
+  X.choose(1);
 }
 let nanH=0;for(const h of X.holds)for(const v of [h.len,h.load,h.pull])if(!isFinite(v))nanH++;
 check(nanH===0,'no NaN in any hold');

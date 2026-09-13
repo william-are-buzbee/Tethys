@@ -28,13 +28,13 @@ function hurtPlayer(dmg,from){
 }
 function die(){
   const P=player;if(P.dead)return;P.dead=true;P.hp=0;P.bleed=0;releaseAll(P);fadeEl.style.opacity=1;
-  setTimeout(()=>{P.pos.copy(spawnPos);P.vel.set(0,0,0);P.hp=P.maxhp;P.inkT=0;P.bleed=0;P.hold=null;P.held=0;P.camAbove=false;P.camFlipT=0;snapMed=true;P.wet=true;P.sub=1;for(const c of creatures){if(c.target===player){c.target=null;c.state='wander';}}camera.position.copy(P.pos).add(V3(0,2,8));setTimeout(()=>{fadeEl.style.opacity=0;P.dead=false;},500);},2800);
+  setTimeout(()=>{P.pos.copy(spawnPos);P.vel.set(0,0,0);P.hp=P.maxhp;P.inkT=0;P.bleed=0;P.hold=null;P.held=0;P.camAbove=false;P.camFlipT=0;snapMed=true;P.wet=true;P.sub=1;for(const c of creatures){if(c.target===player)dropTarget(c);}camera.position.copy(P.pos).add(V3(0,2,8));setTimeout(()=>{fadeEl.style.opacity=0;P.dead=false;},500);},2800);
 }
 function bite(){playerBite();} // v11.31: combat.js — a gulp, a mouthful of a carcass, or a wound (a tear on what you hold)
 function ability(){
   const P=player,C=P.clade;if(mode!=='play'||P.dead||!C||P.cd>0)return;
-  if(C.id==='soft'){spawnInk(P.pos);P.inkT=6;P.cd=12;for(const c of creatures){if(c.target===player){c.target=null;c.state='wander';c.cool=6;setWander(c);}}}
-  else if(C.id==='fin'){let hit=false;for(const c of creatures){if(!c.alive)continue;const r=c.def.role;if(!(r==='hunter'||r==='ambush'||r==='coil'))continue;if(c.pos.distanceTo(P.pos)<6+c.def.size*0.3){c.stun=2.5;T1.copy(c.pos).sub(P.pos).normalize();c.vel.addScaledVector(T1,9);c.target=null;if(c.state!=='sit')c.state='wander';c.cool=5;hit=true;}}P.cd=hit?9:1.5;P.pulse=1;thump(0.7,60,25,null,0.25,0.12);}
+  if(C.id==='soft'){spawnInk(P.pos);P.inkT=6;P.cd=12;for(const c of creatures){if(c.target===player)dropTarget(c,6);}} // v11.31.1: dropTarget lets go of the arms too, not only the target
+  else if(C.id==='fin'){let hit=false;for(const c of creatures){if(!c.alive)continue;const r=c.def.role;if(!(r==='hunter'||r==='ambush'||r==='coil'))continue;if(c.pos.distanceTo(P.pos)<6+c.def.size*0.3){c.stun=2.5;T1.copy(c.pos).sub(P.pos).normalize();c.vel.addScaledVector(T1,9);dropTarget(c,5);hit=true;}}P.cd=hit?9:1.5;P.pulse=1;thump(0.7,60,25,null,0.25,0.12);}
 }
 // ink clouds (soft-arm ability)
 const inks=[],INKG=new THREE.SphereGeometry(1,7,5);

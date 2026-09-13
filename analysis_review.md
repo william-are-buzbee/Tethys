@@ -1,23 +1,20 @@
-# Code review — 12 Sep 2026 (nothing changed)
+# Code review — 12 Sep 2026
 
 The ranked findings of the read-only review. Each was checked against the code; the top ones re-verified by hand. Kept here so the
 next session can turn them into patch versions; strike a line when it is fixed.
 
+**Fixed: items 2–6, the combat group, v11.31.1 (13 Sep).** All five stood when re-verified. Item 2 was worse than the table below
+said — 45 of 58 predator/prey pairs, not 9 — because a prey's own body counts too. See the CHANGELOG entry.
+
 ## Real bugs, worth a patch each
 1. **Light shafts never take the sun's colour** — `atmosphere.js:296`: the `shU.uCol` update sits inside a trailing `//` comment.
-2. **Most predators cannot bite what is directly ahead** — `creatures_defs.js:11`: `reach` is below the nose-on capsule contact distance
-   for basker (5.88 vs 4.6), crusher (5.40/4.2), stone (3.20/3.0), sickle (6.68/6.4), abyssal (11.85/10), ridge (6.51/6.6 + prey radius),
-   arrow (0.92/0.9), needle (1.24/1.2), ram (5.95/5.5). Near the player every hunt is a shove-then-bite; off screen (no `resolveBodies`)
-   hunts land at once. DESIGN's "by a margin" is false. Either `reach` ≥ nose + prey radius per pair, or the bite test uses capsule gap.
-3. **Hunter regen cancels bleeding** — `creatures_ai.js:345`: 2 hp/s with no delay outruns any wound's bleed; hunters never bleed out.
-   The player's 8 s hurt gate (`player.js:71`) is the pattern.
-4. **A hold with dt 0 goes NaN for good** — `combat.js:97` divides by `dt`; `main.js:57` clamps to `[0,0.05]`, not above 0. `simChain`
-   guards `dt<1e-4`; the hold loop should.
-5. **`c.grab` leaks after the player dies or inks** — `player.js:31,36` reset the hunter's state directly; only `creatures_ai.js:166`
-   clears the grab, so rigged hunters' arms keep reaching for the player from wander. Extract one drop-target routine (die, ink,
-   `combatBite:60` each re-implement a subset).
-6. **Stale hit capsules for prey past 90 m** — `combat.js:37` trusts `shapesW`, refreshed only for near creatures; an off-screen grab
-   can make a rope tens of metres long that never shortens.
+2. ~~**Most predators cannot bite what is directly ahead**~~ — **fixed v11.31.1** (`reachOf`/`BITE_M`/`armReach`, creatures_ai.js; the
+   reach table is a section of `test/combat.js`). 45 of 58 pairs were short once the prey's own radius was counted, not the 9 listed here.
+3. ~~**Hunter regen cancels bleeding**~~ — **fixed v11.31.1** (`HUNT_REGEN` 2 hp/s behind `HUNT_REGEN_W` 8 s and no regen while bleeding).
+4. ~~**A hold with dt 0 goes NaN for good**~~ — **fixed v11.31.1** (`updateHolds` returns on dt ≤ 1e-4).
+5. ~~**`c.grab` leaks after the player dies or inks**~~ — **fixed v11.31.1** (one `dropTarget(c,cool)`, used by the ink, the pulse, death,
+   the lost chase and `combatBite`'s kill).
+6. ~~**Stale hit capsules for prey past 90 m**~~ — **fixed v11.31.1** (`freshShapes` in `startHold`, `c.shapeF` stamped where `worldShapes` runs).
 7. **Placement is not deterministic at cell edges** — `chunks.js:207` (`placeCliffs`) reads `groundAt` before the cell is registered, so
    the drop depends on which neighbours are loaded and the rng draws after it shift ledge and sailer placement; `chunks.js:16` clamps
    heights at the grid edge so `settleOn`'s face test sees a plateau in a 14 m band on every cell line (`hAt1` at `:74` is the fix pattern).
@@ -35,7 +32,8 @@ next session can turn them into patch versions; strike a line when it is fixed.
     Q.creatures − living − eggs)`). Write a headless test: run the tick for a game day with cells loaded, assert `POP.laid > 0`.
 13. **Hunters at hunger 1.00 wandering, not hunting.** Four of ten nearest-hunter samples: hose ×2 (7 and 16 m from the player, 850
     flickers in the world), arrow (the reach finding, item 2: it cannot bite head-on), hook 0.99 sitting. Check `findPrey`'s `detect`
-    against where the prey actually is, and the starvation clock (`starved 0` throughout).
+    against where the prey actually is, and the starvation clock (`starved 0` throughout). **Half-answered by v11.31.1:** with the bite
+    landing, two minutes of play took `kills` 13 → 28 and the nearest hunter cycled 1.00 → 0.03. Look again before digging into `findPrey`.
 14. **Performance, for the pass:** render at the forest edge (300, 0) is 4.5–4.6 ms against the v11.12 mark of 3.2 (+40% since the light
     pass, the shadow map and combat); the shadow map re-render is 3.4–4.0 ms against ~1000 casters, the biggest single lump; render tracks
     tris at ~0.5 ms/M; heap flat at 257M; phys 0.7–1.6 ms with 24–118 near creatures. CPU is not the limit yet; the shadow casters are the

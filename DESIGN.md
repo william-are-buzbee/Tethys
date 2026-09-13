@@ -1014,8 +1014,17 @@ their capsules (Ericson's segment–segment), the lighter one moving more (mass 
 sitting lurker 10⁶ — it is wedged in its rock), and kills the closing velocity. The player is then kept out of every arm
 and tail segment near it (`sphereOutOf`, one-way: the arms are simulated against the player's body from their side, so
 the two meet in the middle). The old `collide()` — a sphere of `size*0.42+1` — is gone, and with it the rule that
-`reach` must exceed it: bites now land whenever `reach` is more than the two bodies' contact distance, which every
-predator's is by a margin.
+`reach` must exceed it: a bite lands when `reach` is more than the two bodies' contact distance. **v11.31.1:** it almost never was.
+Measured off the same `hit` capsules (`bodyExt`: `hitN`, how far the shape reaches forward of the origin; `hitB`, how far it reaches
+in any direction), 45 of the 58 predator/prey pairs in DEFS had a `reach` under `hitN(biter) + hitB(prey)` — basker 4.6 against 8.1
+to the player, abyssal 10 against 14, crusher 4.2 against 7.6, arrow 0.9 against 1.3 of a darter. With `resolveBodies` holding the
+capsules apart, those hunters could not bite what was directly ahead: a basker on a grazer had to blow past and take it alongside its
+mid-body (the first bite landed at a centre gap of 4.4, not the 8.6 its jaws are at), and off screen, where no bodies push apart, the
+same bite landed at once. The DEFS numbers stay what they are — an animal's own reach — and the bite test now asks for
+`reachOf(c,tg) = max(reach, hitN + hitB + BITE_M)`, `BITE_M` 0.3 m, at every site that measured against `reach`: the chase bite, the
+strike's bite and its trigger range, the trap's strike, the lurker's lunge, the coil's ram, the drifters' sting, feeding at a carcass,
+and the player's own grab and bite target (`playerTarget`). The arms' reach is `armReach` (`max(reach·k, reachOf) + prey·0.5`), never
+narrower than it was.
 
 **Chains** (`makeChain/simChain`, the rigs `makeRig/rigSkin/stepRigs`; `parts.js` `armRing/ringPose/tailPose`). Every
 arm ring (soft-arm, coilshell, the great, ortho, arrow, the veil's skirt), the lurker's eight floor-arms, the eel's whole
@@ -1032,7 +1041,8 @@ neighbours'), then the lengths once more and the bodies once more so the last wo
 the first free point never collides with its own body (it sits where the arm leaves the hull, which the capsule overshoots), and
 any other point may sit as deep as its rest point does and no deeper — the coil's, the great's and the watcher's roots sat inside
 their capsules and shivered (pushed out, pulled back, every frame). **Grab:** a hunter with a rig in
-chase and within `reach*1.3 + prey*0.5` (the lurker in its lunge, the player on a bite, and since v11.31 any arms with a hold —
+chase and within `armReach` (`reach*1.3 + prey*0.5`, floored by the two bodies' contact since v11.31.1; the lurker in its lunge at 1.6,
+the player on a bite, and since v11.31 any arms with a hold —
 [Combat](#combat)) has `grab` set; the tips are
 drawn toward the prey's centre (8/s, scaled along the arm) with the rest spring at 30%, and the contact with the prey's
 capsules is what makes them wrap — a hand closing on a ball. `holding` counts the touching points; a player brushed by
@@ -1134,14 +1144,17 @@ at the mouth ring; ringmouths `arms` at the beak (the arms close on it — the c
 or no mouth: no grip (the drifters sting as before; the picker pecks carrion). A hunter that reaches its prey (`landBite` → `combatBite`)
 no longer deals damage: **forage (hp ≤ 1) dies at the touch as before; anything that can fight is taken hold of.** The hold is a rope
 between the grip's world point and a point on the held body's own hit capsule (the nearest axis point at the grab, kept in the held's
-frame), solved every frame after `resolveBodies`, mass-weighted (a sitting lurker at 10⁶ pins you; a grazer drags the player): the
+frame — **v11.31.1:** `freshShapes` rebuilds both bodies' capsules first if they are not this frame's, since `worldShapes` runs only
+within 90 m of the player and a hold taken further off anchored the rope where that body last was, tens of metres from it), solved
+every frame after `resolveBodies`, mass-weighted (a sitting lurker at 10⁶ pins you; a grazer drags the player): the
 separating velocity along the rope is removed, the two velocities are pulled together at `HOLD_DRAG` 3/s, and the rope shortens at
 `close` m/s until the bodies touch — then it is as long as the contact leaves it (`cWith`, set in `resolveBodies`), so the rope and the
 push-apart never fight. A holder's speed is capped at 0.35 of its cruise while the hold stands (its AI still asks for the prey it has;
 without the cap it ploughed off at full speed with the prey pushed ahead of it).
 
 **The struggle.** The held one's steering is untouched — the grazer keeps fleeing, the player keeps swimming — and the velocity the rope
-strips off it each frame is a force on the grip (`F = m_held·Δv/dt`, filtered at 5/s). A grip's strength is `GRIP.k · m_holder^(2/3)`
+strips off it each frame is a force on the grip (`F = m_held·Δv/dt`, filtered at 5/s; **v11.31.1:** `updateHolds` returns on a frame of
+no time — two rAF in the same millisecond divided by zero, and one NaN in `load` was a NaN rope for good; the guard `simChain` already had). A grip's strength is `GRIP.k · m_holder^(2/3)`
 (muscle scales with cross-section; the player's clade multiplies it: `PLAYER_GRIP` soft 1.2, fin 1.0, coil 0.6). `pull` grows at
 `load/str − 0.5` per second and the hold breaks past 1: a struggle at half the grip's strength never breaks it, at the strength in two
 seconds, at twice it in under one. A bite on what holds you adds 0.35. A hold also ends when the holder's AI drops its target (the ink,
@@ -1177,10 +1190,24 @@ per point, lit by the snow's light and the player's torch), the clade's colour �
 (PLANET, blood) — drifting with the current and the flow round the bodies (`flowAt`), spreading, sinking a little, gone in 2.5–4.5 s;
 a puff at every wound, a trickle from a bleeding body at its last wound; none above the water. On the effects list as `blood`.
 
-**On paper** (`test/combat.js`): a ridge takes a grazer in 0.4 s and kills it in the hold in 6 s; a finback holds a fleeing grazer 2.3 s
-before it tears free and is dragged 11 m. Against a finback thrashing at full speed with no ability: eel 4 s / 24 hp, crusher 7 s / 93,
-hook 3 s / 26, lurker 2.6 s / 6; trap, stone, basker, sickle, ridge, ortho, abyssal hold for good at 9–23 hp a second — held by a big
-one you have the ability or ~9 s. That is the person's "allowed to lose"; `GRIP.bite` and `k` are the knobs. Not built: venom or
+**Wounds and healing.** A hunter healed 2 hp/s with no delay, which outran every wound's bleed: nothing a hunter took ever bled out and
+a hunter you fought off was whole again in a minute. Since v11.31.1 the regen waits `HUNT_REGEN_W` (8 s) past the last wound and stops
+while the body is still bleeding (`c.lastHurt`, stamped by `wound` and by every tick of the bleed, the player's own gate as the
+pattern); `HUNT_REGEN` 2 hp/s once it runs. A 20 hp wound on an eel now costs it most of 20 (55 → 37 hp) and it is back at 55 about
+forty seconds later.
+
+**Letting go.** `dropTarget(c, cool)` (creatures_ai.js) is the one routine that ends a pursuit: target, `grab`, the hold, `bored`, the
+tell and strike clocks, the face, the chase clock, and back to wander (an ambusher to `return`, a feeder and a sitter left alone). The
+ink, the finback's pulse, the player's death, a lost chase and a kill each cleared a different subset before v11.31.1, and the one they
+all missed was `c.grab` — a rigged hunter's arms went on reaching for the player from wander.
+
+**On paper** (`test/combat.js`): a ridge takes a grazer in 0.4 s and kills it in the hold in 6 s; a basker runs a grazer down and kills
+it in 8.4 s, its first bite nose-on at 8.6 m; a finback holds a fleeing grazer 2.3 s before it tears free and is dragged 11 m. Against a
+finback thrashing at full speed with no ability (the run varies): eel ~4 s / 24 hp, crusher ~7 s / 90–110, hook ~3 s / 20–26,
+lurker ~4–6 s / 28–50 (it holds longer and costs more than it did, the hold re-forming where the lunge used to fall short); trap,
+stone, basker, sickle, ridge, ortho, abyssal hold for good at 9–23 hp a second — held by a big one you have the ability or ~9 s. That is
+the person's "allowed to lose"; `GRIP.bite` and `k` are the knobs. The test also prints the reach table (every predator's `reach`
+against `hitN + hitB` for each prey) and fails if any pair's bite distance falls under their contact. Not built: venom or
 paralysis (PLANET lists them for the ringmouths), the wound slowing a creature, a hunter returning to bled prey (behaviour — next pass),
 what a held creature's own arms do to its holder.
 
