@@ -10,12 +10,17 @@ said — 45 of 58 predator/prey pairs, not 9 — because a prey's own body count
 never reach a whole animal (and a surplus erased on every unload), 13 was a detect of 9–17 m against a nearest meal 35–50 m off. The new
 `test/live.js` holds both. See the CHANGELOG entry.
 
+**Fixed: items 1, 8, 10 and 11, the render, lab and tests group, v11.31.4 (13 Sep).** All four stood. Item 8 was the shallow half of a
+deeper bug: `stranded` could not be drawn at all, and nor could `tussock` or `scrub` — the surface cap in `placeFloraType` fires on land,
+where the room to the surface is negative, so no plant had ever been placed above the tide line. See the CHANGELOG entry.
+
 **Fixed: items 7 and 9, the placement group, v11.31.3 (13 Sep).** 7 stood in both halves. 9 stood as a dead guard but not as a stall: a
 cell's whole structure pass measures 0.27-0.54 ms over all 256 cells, inside farMs — `sample()` warm is 0.7 µs, not the ~35 µs far.js was
 citing (that is its cold figure). See the CHANGELOG entry.
 
 ## Real bugs, worth a patch each
-1. **Light shafts never take the sun's colour** — `atmosphere.js:296`: the `shU.uCol` update sits inside a trailing `//` comment.
+1. ~~**Light shafts never take the sun's colour**~~ — **fixed v11.31.4** (`shU.uCol` on its own line; the shafts read `K.lumC`, warm at a
+   low sun, silver under the moon).
 2. ~~**Most predators cannot bite what is directly ahead**~~ — **fixed v11.31.1** (`reachOf`/`BITE_M`/`armReach`, creatures_ai.js; the
    reach table is a section of `test/combat.js`). 45 of 58 pairs were short once the prey's own radius was counted, not the 9 listed here.
 3. ~~**Hunter regen cancels bleeding**~~ — **fixed v11.31.1** (`HUNT_REGEN` 2 hp/s behind `HUNT_REGEN_W` 8 s and no regen while bleeding).
@@ -27,14 +32,17 @@ citing (that is its cold figure). See the CHANGELOG entry.
    past its edge; `placeCliffs`'s drop and `placeFloraType`'s `hAt` both read it). Both halves stood. 14 of the 41 cells that have ledges
    laid different ones by load order — though the set and the creature stream held every time, so what moved was each ledge's scale and
    its nudge, not the draws after it. The clamp cost talus 2.2% of its tries in the band, one-sided: 8779 → 9013 over 100 cells.
-8. **`stranded` draws all three variants superimposed** — `flora.js:1098` is a `species()` on `MAT`, which has no variant collapse; wants `MATV`.
+8. ~~**`stranded` draws all three variants superimposed**~~ — **fixed v11.31.4** (`MATVD`, a variant material without the breath: a
+   stranded float is a corpse). It was never drawn at all: the surface cap skipped every land plant, so tussock, scrub and stranded had
+   zero instances in the world. Both fixed; tussock 0 → 797, scrub 0 → 70, stranded 0 → 9 over the cells at the north strand.
 9. ~~**`bigsGen`'s yield never fires**~~ — **fixed v11.31.3** (`BIG_YIELD` 16 counted over the whole cell, the cairns yielding too). The
    dead guard was real; the cost was not — that one step measures 0.27-0.54 ms over all 256 cells against farMs 3/2. Five steps now,
    worst 0.15 ms.
-10. **The smoke test's mouse never reaches input.js** — `test/smoke.js:99` takes the first registered handler (zoo.js's); bites and
-    look are untested headlessly and the test's comment is false.
-11. **Lab**: number inputs write NaN into the spec mid-edit (`lab.js:692`, only `stats.*` guarded); the lab overwrites `location.hash`
-    and loses a forced `#low` (`lab.js:669,782`); `LAB_NAME` has nine duplicate keys so some sliders show the wrong label (`LAB_NAME_BY` exists for this).
+10. ~~**The smoke test's mouse never reaches input.js**~~ — **fixed v11.31.4** (every listener, as a browser does; the stub's pointer lock
+    works, `__nolock` puts the refusal back; smoke.js asserts the look, the bite and the grab, locked and dragged, for all three clades).
+11. ~~**Lab**~~ — **fixed v11.31.4**: the NaN guard is every number field, not only `stats.*`; the hash is a flag list (`HASH_FLAGS`,
+    `HASH_TIER` in scene.js) so `#low&lab=<spec>` works and `labHash` writes the tier back; the nine duplicate `LAB_NAME` keys are one
+    entry each with the part-specific meanings in `LAB_NAME_BY`.
 
 ## From the person's readout screenshots (12 Sep, ten shots on the 4060, all at the 120 fps cap)
 12. ~~**No clutch is ever laid.**~~ — **fixed v11.31.2**. The reconcile fired every tick; the surplus it looks for could not exist. A

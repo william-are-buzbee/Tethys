@@ -65,8 +65,12 @@ const ShaderLib={lambert:{uniforms:{fogColor:{value:new Color(0)}}},phong:{unifo
 global.THREE={DataTexture,Vector4,LineSegments,ShaderMaterial:Material,LineBasicMaterial:Material,InstancedBufferAttribute,DynamicDrawUsage:35048,ShaderChunk,ShaderLib,LinearFilter:1006,ClampToEdgeWrapping:1001,RGBAFormat:1023,UnsignedByteType:1009,Vector3,Vector2,Quaternion,Euler,Matrix4,Color,BufferAttribute,Float32BufferAttribute,BufferGeometry,BoxGeometry,SphereGeometry,CylinderGeometry,ConeGeometry,LatheGeometry,DodecahedronGeometry,PlaneGeometry,Object3D,Group,Mesh,Points,InstancedMesh,Scene,FogExp2,WebGLRenderer,CanvasTexture,PerspectiveCamera:Camera,OrthographicCamera:Camera,Camera,WebGLRenderTarget,MeshDepthMaterial:Material,RGBADepthPacking:3201,HemisphereLight:Light,DirectionalLight:Light,PointLight:Light,MeshLambertMaterial:Material,MeshPhongMaterial:Material,Matrix3,TorusGeometry,Sphere,Frustum,MeshBasicMaterial:Material,PointsMaterial:Material,DoubleSide:2,BackSide:1,AdditiveBlending:2,BasicShadowMap:0};
 // DOM
 const handlers=global.__h={};const els={};
-function el(id){if(!els[id])els[id]={id,style:{},classList:{add(){},remove(){},toggle(){}},textContent:'',dataset:{i:id.replace('pick','')},firstElementChild:{style:{}},addEventListener(n,f){(handlers[id+':'+n]=handlers[id+':'+n]||[]).push(f);},getContext(){return{createRadialGradient(){return{addColorStop(){}}},fillRect(){}}},requestPointerLock(){throw new Error('no lock');}};return els[id];}
-global.document={getElementById:el,querySelectorAll(){return[el('pick0'),el('pick1'),el('pick2')];},addEventListener(n,f){(handlers['doc:'+n]=handlers['doc:'+n]||[]).push(f);},createElement(){return el('cv');},pointerLockElement:null};
+function el(id){if(!els[id])els[id]={id,style:{},classList:{add(){},remove(){},toggle(){}},textContent:'',dataset:{i:id.replace('pick','')},firstElementChild:{style:{}},addEventListener(n,f){(handlers[id+':'+n]=handlers[id+':'+n]||[]).push(f);},getContext(){return{createRadialGradient(){return{addColorStop(){}}},fillRect(){}}},requestPointerLock(){if(global.__nolock)throw new Error('no lock');document.pointerLockElement=this;fire('doc:pointerlockchange');}};return els[id];}
+function fire(k,e){const L=handlers[k];if(L)for(const f of L.slice())f(e||{});} // as the browser does: every listener on the event, in registration order
+// The pointer lock works (v11.31.4): play starts locked (menu.js choose), so a mousemove is the look and a click is the bite —
+// the paths the person actually plays. It threw 'no lock' before, which left the test on the drag fallback and never on either
+// (the mouse reached zoo.js only). `global.__nolock` puts the refusal back, for the drag fallback (smoke.js).
+global.document={getElementById:el,querySelectorAll(){return[el('pick0'),el('pick1'),el('pick2')];},addEventListener(n,f){(handlers['doc:'+n]=handlers['doc:'+n]||[]).push(f);},createElement(){return el('cv');},pointerLockElement:null,exitPointerLock(){this.pointerLockElement=null;fire('doc:pointerlockchange');}};
 global.window=global;global.innerWidth=1280;global.innerHeight=720;global.screen={width:1920,height:1080};global.location={hash:process.env.TIER?'#'+process.env.TIER:''};global.navigator={maxTouchPoints:0};
 global.addEventListener=(n,f)=>{(handlers['win:'+n]=handlers['win:'+n]||[]).push(f);};
 let __now=0;let raf=null;global.requestAnimationFrame=f=>{raf=f;};global.__step=function(n){for(let i=0;i<n;i++){const f=raf;raf=null;__now+=16.7;f(__now);}};global.performance={now:()=>__now};
@@ -96,8 +100,11 @@ global.__run=function(){
   for(let i=0;i<30;i++)frame();
   handlers['pick'+(process.env.PICK||1)+':click'][0]();
   const key=(code,down)=>handlers['win:'+(down?'keydown':'keyup')].forEach(f=>f({code,preventDefault(){}}));
-  const md=handlers['c:mousedown'][0], mu=handlers['win:mouseup'][0], mm=handlers['win:mousemove'][0];
+  // every listener, not the first (v11.31.4): zoo.js and lab.js register on the canvas and the window before input.js does, so
+  // taking [0] meant the mouse never reached input.js at all — no bite, no look, for all of the fifteen hundred frames.
+  const md=e=>fire('c:mousedown',e), mu=e=>fire('win:mouseup',e), mm=e=>fire('win:mousemove',e);
   key('KeyW',true);key('ShiftLeft',true);
-  for(let i=0;i<1500;i++){frame();if(i%97===0){md({button:0,clientX:1,clientY:1});mm({movementX:3,movementY:1});mu({});}if(i%211===0)key('KeyQ',true);if(i%211===5)key('KeyQ',false);if(i%400===0){key('Space',true);}if(i%400===50)key('Space',false);}
+  for(let i=0;i<1500;i++){frame();if(i%97===0){md({button:0,clientX:1,clientY:1});mm({movementX:3,movementY:1});mu({button:0});}if(i%211===0)key('KeyQ',true);if(i%211===5)key('KeyQ',false);if(i%400===0){key('Space',true);}if(i%400===50)key('Space',false);
+    if(i%313===0)md({button:2});if(i%313===60)mu({button:2});} // the right button: the grab held for a second (combat.js, v11.31)
   return 'ran '+now.toFixed(0)+'ms';
 };

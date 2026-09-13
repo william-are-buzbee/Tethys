@@ -83,4 +83,4 @@ addEventListener('wheel',e=>{if(mode!=='zoo')return;zoo.dist=clamp(zoo.dist*(e.d
 canvas.addEventListener('touchstart',e=>{if(mode!=='zoo')return;const tc=e.changedTouches[0];zoo.drag={x:tc.clientX,y:tc.clientY,moved:0,x0:tc.clientX};},{passive:true});
 canvas.addEventListener('touchmove',e=>{if(mode!=='zoo'||!zoo.drag)return;const tc=e.changedTouches[0],dx=tc.clientX-zoo.drag.x,dy=tc.clientY-zoo.drag.y;zoo.drag.x=tc.clientX;zoo.drag.y=tc.clientY;zoo.drag.moved+=Math.abs(dx)+Math.abs(dy);zoo.yaw-=dx*0.008;zoo.pitch=clamp(zoo.pitch+dy*0.005,-0.3,1.2);zoo.auto=4;},{passive:true});
 canvas.addEventListener('touchend',()=>{if(mode!=='zoo'||!zoo.drag)return;const d=zoo.drag;zoo.drag=null;if(d.moved>=12)return;if(d.x0<innerWidth*0.2)zooShow(zoo.i-1);else if(d.x0>innerWidth*0.8)zooShow(zoo.i+1);else zooAct();});
-if((location.hash||'').indexOf('zoo')>=0)zooEnter();
+if(HASH_FLAGS.indexOf('zoo')>=0)zooEnter(); // the flags, not the whole hash (v11.31.4): a spec's base64 in #lab= can hold 'zoo'

@@ -2293,3 +2293,65 @@ a cliff is the place to check that none is now floating or buried. Then, on the 
 yielded once, which is five budget checks instead of one — it should be invisible, but the far layer's build is the one place a
 regression would show, as a hitch when a new region comes up behind the menu. Not touched: items 8, 10, 11, 14 (the shadow-caster
 performance pass) and 15.
+
+## v11.31.4 — the render, lab and tests group of the code review (13 Sep 2026)
+
+Items 1, 8, 10 and 11 of `analysis_review.md`. All four stood. Item 8 was the shallow half of a deeper one: the species it names
+could not be drawn at all, and nor could the other two land species — **no plant has ever stood on the island's land.**
+
+**Item 1: the light shafts never took the sun's colour.** `atmosphere.js:296` ended with the comment "rays are a thing of the top
+of the column" and the `shU.uCol` update was glued to the end of that comment, so it had never run: the shafts were the literal the
+uniform was built with, `(0.55, 0.72, 0.8)`, at every hour. Now on its own line. Read off the running game: a high sun (clockH 7.5)
+`lumC` (1, 0.94, 0.84) → shafts (0.55, 0.68, 0.67); a low one (clockH 10.8) `lumC` (1, 0.71, 0.47) → shafts (0.55, 0.51, 0.37);
+under the moon `lumC` (0.72, 0.8, 0.96) → (0.40, 0.58, 0.77). The change is small by day and largest at dusk — where the shafts are
+also at their faintest, since `uK` carries `SUN_W[3]·skyL` and both fall with the sun. Nothing else about them moved.
+
+**Item 8, and the bug under it: land flora was never placed.** `stranded` (a dead sailer's float on the windward strand) was a
+`species()` — three variants packed into one geometry, the shader picking one per instance — drawn with `MAT`, which has no variant
+collapse, so all three would have drawn on top of each other. It has `MATVD` now: `varMaterial(true)`, the variant material without
+the 2.5% breath (`PULSE_GLSL`), because a stranded float is a corpse. But nothing was drawn, because of the surface cap in
+`placeFloraType` (chunks.js:130): `f.top && !f.air && f.top*sc > -1.4-h` — the rule that keeps a stalk from standing out of the
+water. On land `h` is positive, so `-1.4-h` is negative, the test is true for any plant, `room` is negative and every try was
+skipped. Three species carry `minH >= 0` — `tussock` (per 1500), `scrub` (110) and `stranded` (26) — and not one instance of any of
+them had ever been placed anywhere in the world. The rule now exempts a plant rooted above the tide line (`!(f.minH>=0)`), which is
+what `air:true` already does for the tidal forest. Counted over the cells loaded at the north strand: tussock 0 → 797, scrub 0 → 70,
+stranded 0 → 9. Nothing else in `FLORA` sets `minH` at or above 0, so nothing else moved.
+
+**Item 10: the smoke test's mouse never reached input.js.** `test/stub.js`'s `__run` and `test/smoke.js` both took
+`handlers[...][0]`, the *first* listener registered on an event; zoo.js and lab.js register on the canvas and the window before
+input.js does (src/order.txt), so fifteen hundred frames of clicking drove the bestiary's drag handler and nothing else. The bite
+and the look had never run headlessly, and the file's first comment said they had. Both dispatch to every listener now, as a browser
+does. The stub's `requestPointerLock` works instead of throwing (`global.__nolock` puts the refusal back), so the test plays the way
+the game is played: play starts locked, a move is the look, a click is the bite. A new block in smoke.js asserts, for all three
+clades: the pointer is locked when play starts, a locked mousemove turns the head, a click bites (`player.biteCD`), the right button
+takes and releases the grab, Tab releases the pointer, and then with the lock refused a drag looks and a short click bites — and a
+click takes the pointer back. `__run` also holds the right button down for a second every 313 frames.
+
+**Item 11: the lab.** Three separate things.
+- **NaN into the spec mid-edit**: `labOnInput` guarded only `stats.*`, so a number field holding `-` or `1e` wrote NaN into the
+  build, and a NaN in a build reaches the uniforms. Every number now: `if (typeof v === 'number' && isNaN(v)) return;`.
+- **The lab ate a forced tier.** `location.hash = specToHash(...)` replaced the whole hash, and scene.js read the tier as the whole
+  hash (`h==='low'`), so `#low` and the lab were exclusive and a reload or a shared link came back on high. The hash is a list of
+  flags now, any order, separated by `&` or `,` (scene.js `HASH_FLAGS`, `HASH_TIER`): `#low&lab=<spec>` works, and the lab writes
+  the tier back (`labHash`). zoo.js and lab.js read the flags instead of searching the whole string — a spec's base64 can contain
+  the letters `zoo`.
+- **`LAB_NAME` had nine duplicate keys**, so the later label won and some sliders were captioned for another part: a mouth's `fn`
+  (its feeler count) read "nod rate", a shell's `cy`/`cz` read "collar y/z", an arms `y0` "height", a tail's `ll` "paddle length",
+  a mouth's `pulse` "pulse". `z0` and `col` were duplicated with the same text. One entry each in `LAB_NAME` now, with the
+  part-specific meanings in `LAB_NAME_BY` (`arms.y0`, `shell.cy`, `shell.cz`, `mouth.fn`, `mouth.pulse`, `legs.ll`, `tailplate.w0`,
+  `chain.w0`) — the table that exists for exactly this.
+
+**Seen** (dev.html in the app's browser, 800×450, finback, the camera placed by hand). A stranded float on the north strand at
+(14, 1.1, 242), close up: one body — a grey-lilac deflated hull, five dark-pink sail vanes along its back, tendrils spread on the
+sand — not three superimposed, and it lies flat on the ground. Two more visible down the same beach, different tints. Tussock now
+reads as tufts on the slope above the strand and scrub above that. The shafts render at midday from 16 m down with the surface and
+its caustics above them; the colours above are read off the same session. `node build.js --test` green on both tiers; lint's unused
+list unchanged.
+
+**Unseen, ask in this order.** The land is the big one: three species that have never been on the island are on it now, and the
+density is whatever the entries said when nobody could see them — walk the island above the tide line and say whether the tussock is
+too thick or too thin, whether the scrub reads as scrub, and whether the strand carries the right number of dead floats (`per` 1500,
+110 and 26 in flora.js). Then the cost of that on the 4060: a land cell now carries up to ~800 more instances, which is a draw call
+and some fill, and the readout on a beach is the place to see it. Then the shafts at dusk, which is where the new colour is largest
+and the shafts themselves are faintest — if they are too dim to read warm, `SH_A` is the knob. Not touched: items 12–15 (14, the
+shadow-caster pass, is the next performance job) and the drift list.

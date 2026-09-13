@@ -4,8 +4,11 @@
     {
       "name": "tethys",
       "runtimeExecutable": "node",
-      "runtimeArgs": ["serve.js"],
-      "port": 8080
+      "runtimeArgs": [
+        "serve.js"
+      ],
+      "port": 8080,
+      "autoPort": true
     }
   ]
 }

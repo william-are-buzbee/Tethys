@@ -1,7 +1,9 @@
 // Headless logic check: concatenates src/ in build order (src/order.txt), runs it against a stubbed THREE/DOM (stub.js),
-// drives input. Catches runtime errors (undefined names, bad calls) on the paths it drives — it says nothing about
-// rendering or frame rate. TIER=low runs the low tier. Per clade: 30 menu frames, pick, then 1500 frames sprinting
-// forward with bites, the ability and space every so often (stub.js __run), then a kill and the respawn; the finback
+// drives input — every listener on an event, as a browser does (v11.31.4: taking the first meant the mouse reached zoo.js and
+// never input.js, so neither the bite nor the look had ever run here). Catches runtime errors (undefined names, bad calls) on
+// the paths it drives — it says nothing about rendering or frame rate. TIER=low runs the low tier. Per clade: 30 menu frames,
+// pick, then 1500 frames sprinting forward with bites, the grab, the ability and space every so often (stub.js __run), then the
+// mouse both ways (locked, and the drag with the lock refused), then a kill and the respawn; the finback
 // also swims 8400 frames from the peak straight out into the void, with a mid-run coilshell-style 'C' hold.
 const fs=require('fs'),path=require('path');
 const ROOT=path.join(__dirname,'..');
@@ -10,6 +12,7 @@ let js=ORDER.map(n=>fs.readFileSync(path.join(ROOT,'src',n+'.js'),'utf8')).join(
 js+='\nglobal.__dbg=()=>({cells:chunks.size,creatures:creatures.length,visible:visibleCreatures,pos:[player.pos.x|0,player.pos.y|0,player.pos.z|0],ground:groundAt(player.pos.x,player.pos.z)|0,sub:+(function(){const ch=chunkAt(player.pos.x,player.pos.z);return ch?ch.f(player.pos.x,player.pos.z)[0]:sample(player.pos.x,player.pos.z).f[0];})().toFixed(2),lights:lightSources.length,hp:player.hp|0});';
 js+='\nglobal.__hurt=(d)=>hurtPlayer(d,creatures[0]&&creatures[0].pos);';
 js+='\nglobal.__eco=()=>{let s=0,nan=0;for(const N of POP.n)for(let c=0;c<N.length;c++){if(N[c]!==N[c])nan++;s+=N[c];}return {ledger:s|0,nan,kills:POP.kills,starved:POP.starved|0,laid:POP.laid,hatched:POP.hatched,eggs:eggs.length,carcasses:carcasses.length,juv:creatures.filter(c=>c.alive&&c.def.juv).length};};'
+js+='\nglobal.__mouse=()=>({yaw:player.yaw,pitch:player.pitch,biteCD:player.biteCD,grab:mouseGrab,locked:locked});'; // v11.31.4: the mouse reaches input.js at all
 js+='\nglobal.__zoo={n:()=>ROSTER.length,mode:()=>mode,specs:()=>Object.keys(SPECS),labLoad:(id)=>labLoad(SPECS[id]),labBlank:(c)=>labLoad(SPEC_BLANK[c]),labAdd:(k)=>{lab.spec.parts.push({kind:k,style:stylesFor(k,lab.spec.clade)[0]});labBuild();labRender();}};';
 const tmp=path.join(require('os').tmpdir(),'tethys_bundle.js');
 fs.writeFileSync(tmp,'(function(){"use strict";\n'+js+'\n})();');
@@ -40,6 +43,29 @@ for(const pick of [0,1,2]){
     console.log('  short run:',__run(),JSON.stringify(__dbg()));
     if(__dbg().visible<1)throw new Error('no creature is drawn after the short run (v11.18.1: an edit ate c.lodFar and every creature went invisible while still biting)');
     {const d=__dbg();if(!(d.visible>0))throw new Error('no creature drawn after the short run (v11.18 shipped with lodFar commented out: everything invisible, still biting)');}
+    { // the mouse (v11.31.4): both ways of playing, since the test drove neither. Locked (how play starts): a move is the look, a
+      // click is the bite, the right button is the grab. Tab releases the lock; then a drag looks and a short click bites.
+      const fire=(k,e)=>h[k].forEach(f=>f(e||{})),key=(code,down)=>h['win:'+(down?'keydown':'keyup')].forEach(f=>f({code,preventDefault(){}}));
+      const m0=__mouse();if(!m0.locked)throw new Error('play did not start with the pointer locked (menu.js choose asks for it)');
+      fire('win:mousemove',{movementX:120,movementY:40});const m1=__mouse();
+      if(Math.abs(m1.yaw-m0.yaw)<0.1||Math.abs(m1.pitch-m0.pitch)<0.05)throw new Error('a locked mousemove did not turn the head (the mouse never reached input.js)');
+      fire('c:mousedown',{button:0,clientX:1,clientY:1});const m2=__mouse();if(!(m2.biteCD>0))throw new Error('a click while locked did not bite');
+      fire('win:mouseup',{button:0});
+      fire('c:mousedown',{button:2});if(!__mouse().grab)throw new Error('the right button did not take the grab');
+      fire('win:mouseup',{button:2});if(__mouse().grab)throw new Error('the grab did not let go with the right button');
+      key('Tab',true);key('Tab',false);if(__mouse().locked)throw new Error('Tab did not release the pointer');
+      global.__nolock=true; // as an iframe or the app's browser refuses it: the drag fallback
+      __step(2);const m3=__mouse();
+      fire('c:mousedown',{button:0,clientX:10,clientY:10});fire('win:mousemove',{movementX:90,movementY:0});
+      if(__mouse().locked)throw new Error('the lock was refused and taken anyway');
+      if(Math.abs(__mouse().yaw-m3.yaw)<0.1)throw new Error('a drag did not turn the head with the lock refused');
+      fire('win:mouseup',{button:0});
+      fire('c:mousedown',{button:0,clientX:10,clientY:10});__step(40);const pre=__mouse().biteCD;fire('win:mouseup',{button:0});
+      if(!(__mouse().biteCD>pre))throw new Error('a short click did not bite with the lock refused');
+      global.__nolock=false;fire('c:mousedown',{button:0,clientX:1,clientY:1});fire('win:mouseup',{button:0}); // and back to locked play
+      if(!__mouse().locked)throw new Error('a click did not take the pointer back');
+      console.log('  mouse: look, bite and grab, locked and dragged');
+    }
     if(pick===1){ // the lab from play (v11.11): l beside the player, a part added, l back to play
       const key=(code)=>h['win:keydown'].forEach(f=>f({code,preventDefault(){}}));
       key('KeyL');__step(3);if(__zoo.mode()!=='lab')throw new Error('l in play did not open the lab');
@@ -49,7 +75,9 @@ for(const pick of [0,1,2]){
     if(d.hp<=0||Math.hypot(d.pos[0],d.pos[2])>20)throw new Error('respawn did not put the player back at the peak with health');
     if(pick===1){
       const key=(code,down)=>h['win:'+(down?'keydown':'keyup')].forEach(f=>f({code,preventDefault(){}}));
-      const mm=h['win:mousemove'][0];key('KeyW',true);key('ShiftLeft',true);mm({movementX:0,movementY:60});key('Backquote',true);key('Backquote',false);
+      const mm=e=>h['win:mousemove'].forEach(f=>f(e));
+      h['c:mousedown'].forEach(f=>f({button:0,clientX:1,clientY:1}));h['win:mouseup'].forEach(f=>f({button:0})); // the lab left the pointer free: take it back, or the look below does nothing
+      key('KeyW',true);key('ShiftLeft',true);mm({movementX:0,movementY:60});key('Backquote',true);key('Backquote',false);
       let t1=Date.now();
       for(let k=0;k<12;k++){__step(700);const d=__dbg();console.log('  frame',(k+1)*700,'wall',(Date.now()-t1)+'ms',JSON.stringify(d));t1=Date.now();if(k===6)key('KeyC',true);}
       const e=__eco();console.log('  ecology:',JSON.stringify(e));if(e.nan)throw new Error('NaN in the ledger');if(!(e.ledger>500))throw new Error('the ledger holds almost nothing');

@@ -293,7 +293,8 @@ function updateShafts(above,wk){
     shP[k]=x-rx;shP[k+1]=top;shP[k+2]=z-rz;shP[k+3]=x+rx;shP[k+4]=top;shP[k+5]=z+rz;shP[k+6]=bx+rx;shP[k+7]=top-len;shP[k+8]=bz+rz;shP[k+9]=bx-rx;shP[k+10]=top-len;shP[k+11]=bz-rz;
     shA[b]=shA[b+1]=shA[b+2]=shA[b+3]=a;const ph=shHash(ci,cj,4)*TAU;shPh[b]=shPh[b+1]=shPh[b+2]=shPh[b+3]=ph;n++;}
   shG.attributes.position.needsUpdate=true;shG.attributes.aA.needsUpdate=true;shG.attributes.aPh.needsUpdate=true;
-  shU.uK.value=SH_A*SUN_W[3]*K.skyL*wk*(1-smooth(30,70,TIDE-camera.position.y)); // and gone for a camera deeper than ~50 m: rays are a thing of the top of the columnshU.uCol.value.setRGB(0.55*K.lumC[0],0.72*K.lumC[1],0.8*K.lumC[2]);
+  shU.uK.value=SH_A*SUN_W[3]*K.skyL*wk*(1-smooth(30,70,TIDE-camera.position.y)); // and gone for a camera deeper than ~50 m: rays are a thing of the top of the column
+  shU.uCol.value.setRGB(0.55*K.lumC[0],0.72*K.lumC[1],0.8*K.lumC[2]); // the shafts take the lamp's colour (v11.31.4): warm at a low sun, silver under the moon
 }
 // Rain: streaks that fall round the camera, only drawn above the water while a shower is on — each a short line along its own
 // velocity (the fall plus the wind), wrapped in a box that follows the camera like the marine snow. The drops' crowns on the sea

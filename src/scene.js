@@ -6,11 +6,14 @@ const canvas=document.getElementById('c');
 const hurtEl=document.getElementById('hurt'),fadeEl=document.getElementById('fade'),biomeEl=document.getElementById('biome'),hpEl=document.getElementById('hp'),hpBar=hpEl.firstElementChild,hintEl=document.getElementById('hint'),menuEl=document.getElementById('menu'),picksEl=document.getElementById('picks'),statsEl=document.getElementById('stats'),compassEl=document.getElementById('compass'),cstripEl=document.getElementById('cstrip'),cpeakEl=document.getElementById('cpeak');
 const isTouch=('ontouchstart' in window)||navigator.maxTouchPoints>0;
 
+// The URL's flags, any order, separated by & or , : the tier (#low, #high), #zoo, #lab or #lab=<spec>. v11.31.4: they were read
+// as the whole hash, so a forced tier and the lab were exclusive — and the lab, which writes its spec into the hash, threw away a
+// #low the person had asked for. HASH_TIER is what the lab puts back (lab.js labHash).
+const HASH_FLAGS=(location.hash||'').replace('#','').split(/[&,]/),HASH_TIER=HASH_FLAGS.indexOf('low')>=0?'low':HASH_FLAGS.indexOf('high')>=0?'high':'';
 // Quality tier: numbers only, never code paths. Override with #low or #high in the URL.
 const Q=(function(){
-  const h=(location.hash||'').replace('#','');
   const small=Math.min(screen.width||9999,screen.height||9999)<900;
-  const tier=(h==='low'||h==='high')?h:((isTouch&&small)?'low':'high');
+  const tier=HASH_TIER||((isTouch&&small)?'low':'high');
   return tier==='low'
     ?{tier:tier,pr:1.0,far:1000,flora:0.45,creatures:0.6,lights:2,phong:false,aa:false,budgetMs:8,farMs:2,farQ:6,surf:96,lodNear:0.7,rockLvl:1,target:14,casters:6,shafts:2,cau:1,hrtf:0,vol:1,cloud:2,snow:1000}
     :{tier:tier,pr:1.5,far:1600,flora:1.0,creatures:1.0,lights:4,phong:true,aa:true,budgetMs:6,farMs:3,farQ:12,surf:192,lodNear:1.0,rockLvl:2,target:7.5,casters:16,shafts:4,cau:3,hrtf:1,vol:1,cloud:5,snow:1800};
@@ -453,8 +456,8 @@ function swayMaterial(amp,freq,hn,dir,bob,H,strand,cap,cut,thin){
 // The sessile animals breathe (v11.13): a 2.5% radial pulse of everything above 0.25 m local, 0.4–0.6 Hz, phase from the instance's x,z —
 // the tubes, cups, lilies, tulips, chains, burrs and loops, which were rigid. Crusts and cones under 0.25 m don't move; a collapsed vertex stays at zero.
 const PULSE_GLSL='{float pp=uTime*0.7+instanceMatrix[3][0]*0.37+instanceMatrix[3][2]*0.29;float pk=smoothstep(0.25,1.0,transformed.y)*0.025*(1.0+0.5*sin(pp*1.7));transformed.xz*=1.0+pk*sin(pp);}';
-function varMaterial(){const m=new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide});m.onBeforeCompile=function(sh){sh.uniforms.uTime=timeU;sh.vertexShader='uniform float uTime;\n'+VAR_GLSL+sh.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>'+FAR_CUT+VAR_COLLAPSE+'\n#if defined(USE_INSTANCING)&&!defined(DEPTH_PASS)\n'+PULSE_GLSL+'\n#endif\n');};return addTint(m,'lamv',true);} // no breathing in the world's shadow map (v11.30) // cut beyond FLORA_FAR too (v11.12)
-const MATV=varMaterial();
+function varMaterial(dead){const m=new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide});m.onBeforeCompile=function(sh){sh.uniforms.uTime=timeU;sh.vertexShader='uniform float uTime;\n'+VAR_GLSL+sh.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>'+FAR_CUT+VAR_COLLAPSE+(dead?'':'\n#if defined(USE_INSTANCING)&&!defined(DEPTH_PASS)\n'+PULSE_GLSL+'\n#endif\n'));};return addTint(m,dead?'lamvd':'lamv',true);} // no breathing in the world's shadow map (v11.30) // cut beyond FLORA_FAR too (v11.12)
+const MATV=varMaterial(),MATVD=varMaterial(true); // MATVD: the variants without the breath — a stranded float is a corpse (v11.31.4)
 // Additive (emissive-only) things — the glow clouds — must not take the veil's colour, only lose their own with distance:
 // mixing toward the veil and then adding it leaves a bright smudge at any range (the cyan speckles on the massif floor in
 // the v8.3 screenshots). This swaps the fog for extinction alone, the same transmittance curve.

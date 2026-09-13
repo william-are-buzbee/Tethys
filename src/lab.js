@@ -175,11 +175,9 @@ const LAB_UNIT = {len: 'm', z: 'm'},
     segs: 'segments',
     sz: 'stretch',
     sy: 'squash',
-    y0: 'lift',
     pred: 'forward-facing',
     plen: 'probe length',
     feed: 'mouth parts',
-    fn: 'their count',
     flen: 'their length',
     snap: 'snap to the body',
     tilt: 'tilt forward °',
@@ -192,8 +190,6 @@ const LAB_UNIT = {len: 'm', z: 'm'},
     dz: 'spacing',
     where: 'faces',
     carry: 'carried',
-    cz: 'shell z',
-    cy: 'shell y',
     R0: 'inner radius',
     R1: 'outer radius',
     k: 'whorl',
@@ -204,7 +200,6 @@ const LAB_UNIT = {len: 'm', z: 'm'},
     idle: 'gape',
     tell: 'cock',
     kk: 'strike share',
-    pulse: 'opens on the bite',
     s0: 'spread',
     s1: 'spread, fast',
     a0: 'curl',
@@ -260,11 +255,9 @@ const LAB_UNIT = {len: 'm', z: 'm'},
     pm: 'beat share',
     lean: 'lean per m/s',
     toff: 'phase offset',
-    z0: 'first z',
     y0: 'height',
     taper: 'taper',
     phase: 'phase (steps)',
-    col: 'colour',
     shade: 'countershaded',
     soft: 'soft (no contact)',
     web: 'webbed',
@@ -278,10 +271,8 @@ const LAB_UNIT = {len: 'm', z: 'm'},
     seg: 'segment',
     curl: 'curl',
     flick: 'flick',
-    w0: 'root width',
     dw: 'narrowing',
     wl: 'thickness',
-    ll: 'paddle length',
     kx: 'knee out',
     ky: 'knee up',
     kz: 'knee fore',
@@ -364,7 +355,7 @@ const LAB_UNIT = {len: 'm', z: 'm'},
     ch: 'crest height',
     bodies: 'feeding bodies'
   };
-const LAB_NAME_BY = {'valves.sc': 'shut on the strike', 'weapon.tl': 'tooth length', 'weapon.w': 'width scale', 'legs.swing': 'swing on the tell', 'head.swing': 'swing', 'arms.h': 'box height', 'arms.jet': 'closes on the jet', 'mouth.h': 'thickness', 'bell.H': 'height'}; // where a key means another thing on another part
+const LAB_NAME_BY = {'valves.sc': 'shut on the strike', 'weapon.tl': 'tooth length', 'weapon.w': 'width scale', 'legs.swing': 'swing on the tell', 'head.swing': 'swing', 'arms.h': 'box height', 'arms.jet': 'closes on the jet', 'mouth.h': 'thickness', 'bell.H': 'height', 'arms.y0': 'lift', 'shell.cy': 'shell y', 'shell.cz': 'shell z', 'mouth.fn': 'their count', 'mouth.pulse': 'opens on the bite', 'legs.ll': 'paddle length', 'tailplate.w0': 'root width', 'chain.w0': 'tail width'}; // where a key means another thing on another part. v11.31.4: the nine keys that were twice in LAB_NAME (the later won, so a mouth's fn read 'nod rate' and a shell's cy 'collar y') live here now, one entry each
 function labSlider(path, name, q, val, ref, F, p) {
   const label = LAB_NAME_BY[(p && p.kind ? p.kind : lab.v.core.kind) + '.' + name] || LAB_NAME[name] || name;
   if (q.k === 'b')
@@ -666,8 +657,13 @@ function labLoad(spec) {
   labRender();
   if (lab.v)
     try {
-      location.hash = specToHash(lab.v);
+      location.hash = labHash();
     } catch (e) {}
+}
+// The spec in the address bar, keeping the tier the person asked for (v11.31.4: `location.hash = specToHash(...)` ate a forced
+// #low, so a reload or a shared link came back on high). scene.js reads the flags in any order, separated by &.
+function labHash() {
+  return '#' + (HASH_TIER ? HASH_TIER + '&' : '') + specToHash(lab.v).slice(1);
 }
 function labOnInput(e) {
   const t = e.target;
@@ -695,7 +691,7 @@ function labOnInput(e) {
     lab.coatDepth = v;
     return;
   }
-  if (path.indexOf('stats.') === 0 && isNaN(v)) return;
+  if (typeof v === 'number' && isNaN(v)) return; // a number field mid-edit ('-', '1e') is NaN: it would go into the spec, and a NaN in a build reaches the uniforms (v11.31.4; only stats.* was guarded)
   labSet(path, v);
   const b = t.parentNode && t.parentNode.querySelector ? t.parentNode.querySelector('b') : null;
   if (b && t.type === 'range') {
@@ -778,7 +774,7 @@ function labOnClick(e) {
     labClip(txt);
     labMsg('copied the spec (' + txt.length + ' chars)');
   } else if (act === 'link') {
-    const h = specToHash(lab.v);
+    const h = labHash();
     location.hash = h;
     labClip(location.href.split('#')[0] + h);
     labMsg('the link is in the address bar and the clipboard');
@@ -1057,7 +1053,7 @@ addEventListener(
   },
   {passive: true}
 );
-if ((location.hash || '').indexOf('lab') >= 0) {
+if (HASH_FLAGS.some(f => f === 'lab' || f.indexOf('lab=') === 0)) {
   let sp = null;
   try {
     sp = specFromHash(location.hash);

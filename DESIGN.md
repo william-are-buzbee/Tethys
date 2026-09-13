@@ -188,7 +188,8 @@ by `pigment(h,'green')` at land light. `env {h:[−3.5,2.8], expo:[0,0.75]}`, `p
 rim and the island's tidal flat (~530 before the field noise; none on the surf side). The trunk and props are capsules
 (`col`), the crown is soft. Its material `MATTR` is a slow wind sway from the crown, never capped to the water (`air:true` in
 `placeFloraType` lets it stand into the air) and never leaning to the current (`MATTR.land`: `makeInstanced` gives it no `aCur`).
-A far impostor (`farTreeGeo`, stride 2) so the wood reads across the lagoon. Looked at in the preview rasterizer only. Land flora (`flora.js`): `tussock` (`minH:1.2`), `scrub` (`minH:2`), boulders, bigrock, and `crag` structures (on land they are not scaled down to stay under the surface; tors
+A far impostor (`farTreeGeo`, stride 2) so the wood reads across the lagoon. Looked at in the preview rasterizer only. Land flora (`flora.js`): `tussock` (`minH:1.2`, per 1500), `scrub` (`minH:2`, per 110), `stranded` (`minH:0.4`, per 26 — a dead
+sailer's float on the windward strand, `MATVD`), boulders, bigrock, and `crag` structures (on land they are not scaled down to stay under the surface; tors
 no longer grow on land — the person wanted none above the water). Surface rafts skip ground
 above −4; cliff ledges are allowed above the waterline.
 
@@ -733,7 +734,9 @@ bottom stops 1.5 m over `groundAt`, so a shaft never cuts a rock); × `1 − 0.8
 plane never slices one); in the shader a soft width, a profile rising over the top 14% and decaying down the length, a flicker on two
 slow sines (the sun through waves), and the fog's extinction only (an additive thing takes no veil). Strength `SH_A` 0.16 × the beam's
 share × the sky's light × `wk` (hidden the frame the camera is in air, faded in under it, like the shimmer) × gone for a camera below
-~50 m. One draw, `renderOrder` −3. The one cinematic thing in the pass; `SH_A` 0 is off.
+~50 m. Colour: the lamp's, `(0.55, 0.72, 0.8) × K.lumC` — white-warm under the sun, amber at dusk, silver-blue under the moon
+(v11.31.4; the line that does it had been glued to the end of a comment since the pass, so until then they were the cold literal at
+every hour). One draw, `renderOrder` −3. The one cinematic thing in the pass; `SH_A` 0 is off.
 
 **Translucency (`thinLight`).** r128's Lambert lights both faces of a double-sided material in the vertex shader (`vLightFront`,
 `vLightBack`) and the fragment picks one by `gl_FrontFacing`; `thinLight(sh, k)` replaces the pick with a `mix` so a share `k` of the
@@ -852,7 +855,8 @@ MATR2 MATW`; `MATK` is gone with the kelp.
 since v9.5 `photo` (a weed: tinted by `pigment(ground depth, line)` per instance, `line` one of `green|float|red` since v11.15;
 the `tints` list then only colours the far impostors), `flow` (yaw from `flowYaw`, ±0.25 rad), `band:[lo,hi]` (ground height the species stands in) and the
 surface cap: a floor entry with `top` that would stand into the air is shortened in y to fit under −1.4 or skipped
-below half its scale. `placeFloraType` (chunks.js) applies it per cell. Densities are in FLORA.md's roster and the
+below half its scale — a plant rooted above the tide line (`minH >= 0`) is exempt, as `air:true` is (v11.31.4: the cap fired on
+land too, where the room to the surface is negative, so `tussock`, `scrub` and `stranded` had never been placed anywhere). `placeFloraType` (chunks.js) applies it per cell. Densities are in FLORA.md's roster and the
 comment above the table; a pure cell is ~150k tris on the reef top and the shelf forest, ~80–120k elsewhere (headless
 count, one variant drawn).
 
@@ -1446,7 +1450,8 @@ surface air for finback)? Any persistence, or is a clean cold start the point?
   instanced meshes (every cell still deep-copies every species' geometry and uploads it on its first draw); per-cell variants (struck:
   variety stays plant to plant); simpler crowns and lathes for the tidetree (8268 vertices an instance) and the sacs (1000–2400).
 - **Quality tier `Q` (scene.js): numbers only, never code paths.** Auto: touch + screen < 900px → low. Force with
-  `#low`/`#high` in the URL. Low: draw distance 1000, 45% flora, 60% creatures, 2 pool lights, Lambert terrain, no AA,
+  `#low`/`#high` in the URL — the hash is a flag list since v11.31.4 (scene.js `HASH_FLAGS`/`HASH_TIER`, `&` or `,` between them),
+  so `#low&lab=<spec>` and `#low&zoo` work and the lab writes the tier back into the hash it rewrites. Low: draw distance 1000, 45% flora, 60% creatures, 2 pool lights, Lambert terrain, no AA,
   96² surface, 36-unit far grid, 2 shadow casters, 4 light shafts, a one-band caustic (v11.13: `casters`, `shafts`, `cau`).
 - The person tests on desktop and wants it "fantastically smooth"; mobile is secondary and may sacrifice things. The
   cadence agreed: content freely, a performance pass whenever the readout says frame time is creeping. Readings v5

@@ -127,7 +127,8 @@ function* placeFloraType(ch,rng,f){
     if(f.reach){if(h>-14)continue;sy=-h-0.6;sc=1;}
     else if(f.y==='surface'){y=f.ys!==undefined?f.ys:-0.45;}
     else if(f.y==='mid'){if(h>-30)continue;y=h<-450?-40-rng()*300:clamp(h+12+rng()*70,h+10,-14);}
-    else if(f.top&&!f.air&&f.top*sc>-1.4-h){const room=(-1.4-h)/f.top;if(room<sc*0.5)continue;sy=room;} // nothing stands into the air (bar the tidal forest, `air`): shorten in y or skip
+    // v11.31.4: the rule fired on land too, where the room to the surface is negative, so every land species was skipped at every try — tussock, scrub and stranded had never once been placed anywhere on the island. A plant whose minH is above 0 is not growing up through the water.
+    else if(f.top&&!f.air&&!(f.minH>=0)&&f.top*sc>-1.4-h){const room=(-1.4-h)/f.top;if(room<sc*0.5)continue;sy=room;} // nothing stands into the air (bar the tidal forest, `air`, and a plant rooted above the tide line, minH>=0): shorten in y or skip
     const yaw=f.flow?flowYaw(x,z)+(rng()-0.5)*0.5:rng()*TAU; // flow-faced things turn across the current
     if(f.y==='surface'||f.y==='mid'||f.reach){d.position.set(x,y,z);d.rotation.set(f.tilt?(rng()-0.5)*0.3:0,yaw,f.tilt?(rng()-0.5)*0.3:0,'XYZ');}
     else{if(!settleOn(d,f,x,z,h,sc,yaw,hAt,rng))continue;y=d.position.y;} // on the floor: the one ground rule (a place it can't lie draws nothing)

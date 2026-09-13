@@ -1095,7 +1095,7 @@ const FLORA = [
     env: {h: [-80, -30], sub: [0.45, 1], nut: [0.3, 1]}
   },
   // (the raft, the floater that let go, was struck 9 Sep 2026: "looks terrible"; the surface's weed is gone — TAXA)
-  species('stranded', {mat: MAT, tints: [[0.72, 0.7, 0.9], [0.8, 0.7, 0.86], [0.66, 0.66, 0.78]], s: [0.8, 1.6], tilt: true, per: 26, env: {h: [0.4, 2.6], expo: [0.5, 1]}, minH: 0.4, field: 0.03}, strandedB), // a dead sailer on the windward strand (DRIFTERS: fleets strand where the wind drives them)
+  species('stranded', {mat: MATVD, tints: [[0.72, 0.7, 0.9], [0.8, 0.7, 0.86], [0.66, 0.66, 0.78]], s: [0.8, 1.6], tilt: true, per: 26, env: {h: [0.4, 2.6], expo: [0.5, 1]}, minH: 0.4, field: 0.03}, strandedB), // a dead sailer on the windward strand (DRIFTERS: fleets strand where the wind drives them)
   // the drifters' floats: the button, in fleets (the sailers are creatures)
   species(
     'button',

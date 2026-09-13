@@ -14,6 +14,29 @@ every top-level name with its line is `src/INDEX.md` (generated). Read a DESIGN 
 
 ## Where things stand
 
+**v11.31.4 (13 Sep): the code review's render, lab and tests group — items 1, 8, 10 and 11, built, the strand seen.** CHANGELOG
+v11.31.4; DESIGN, Land, Flora and materials, The light, Performance. All four stood, and item 8 was the shallow half of a bigger one.
+**No plant had ever stood on the island's land.** The surface cap in `placeFloraType` — the rule that stops a stalk growing out of the
+water — tests `f.top*sc > -1.4-h`, and on land `-1.4-h` is negative, so the test is true for any plant, the room is negative and every
+try was skipped: `tussock` (per 1500), `scrub` (110) and `stranded` (26) had zero instances anywhere in the world. A plant rooted above
+the tide line (`minH >= 0`) is exempt now, as the tidal forest's `air:true` already was; over the cells at the north strand tussock
+0 → 797, scrub 0 → 70, stranded 0 → 9. `stranded` itself was on `MAT`, which has no variant collapse, so its three variants would have
+drawn superimposed: it is `MATVD` now, the variant material without the 2.5% breath (a stranded float is a corpse). **The light shafts
+had never taken the sun's colour** — the `shU.uCol` line was glued to the end of a trailing `//` comment, so they were the cold literal
+(0.55, 0.72, 0.8) at every hour; read off the running game they are now (0.55, 0.68, 0.67) under a high sun, (0.55, 0.51, 0.37) at dusk,
+(0.40, 0.58, 0.77) under the moon. **The smoke test's mouse had never reached input.js**: it took the first listener on each event and
+zoo.js registers before input.js, so the bite and the look were untested while the comment claimed otherwise. Every listener now, the
+stub's pointer lock works (`__nolock` puts the refusal back), and smoke.js asserts the look, the bite and the grab for all three clades,
+locked and dragged. **The lab**: the NaN guard covers every number field (not only `stats.*`); the URL hash is a flag list
+(scene.js `HASH_FLAGS`/`HASH_TIER`) so `#low&lab=<spec>` works and the lab writes the tier back instead of eating it; the nine duplicate
+`LAB_NAME` keys are one entry each with the part-specific meanings in `LAB_NAME_BY`.
+**Seen** (dev.html, 800×450, finback): a stranded float close up at (14, 1.1, 242) — one hull, five pink vanes, tendrils on the sand,
+flat on the ground — two more down the beach, tussock and scrub on the slope above, and the shafts rendering at midday from 16 m down.
+**Unseen, ask first:** the land's density — three species nobody could ever see are on the island now at whatever `per` they were given
+(tussock 1500, scrub 110, stranded 26); then what a land cell's ~800 extra instances cost on the 4060; then the shafts at dusk, where the
+new colour is largest and they are faintest (`SH_A` is the knob). Left of the review: items 12–15 (14, the shadow-caster pass, is next)
+and the drift list.
+
 **v11.31.3 (13 Sep): the code review's placement group — items 7 and 9, built, seen at a cell line.** CHANGELOG v11.31.3;
 DESIGN, Structures/solids/cliffs, The far layer and Determinism. Item 7 stood in both halves. **A cell laid different ledges depending
 on where the player came from**: `placeCliffs` sized each by the drop over ±3 grid steps and read it with `groundAt`, which answers from
