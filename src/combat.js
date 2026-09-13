@@ -27,7 +27,7 @@ const WHOLE=0.12,WHOLE_P=0.25; // forage up to this share of the eater's mass is
 const HOLD_DRAG=3; // per second: how fast the two bodies' velocities are pulled together by the grip
 const PLAYER_GRIP={soft:1.2,fin:1.0,coil:0.6}; // the clades' grips: the jetter's arms are for this; the coilshell's are short
 const BLOOD_COL={ringmouths:[0.16,0.24,0.34],slowbloods:[0.32,0.03,0.03],hingeshells:[0.52,0.5,0.32],drifters:[0.6,0.6,0.6]}; // copper, iron, vanadium (PLANET)
-function massOf(o){return o===player?player.mass:(o.mass||Math.max(0.6,o.def.size*o.def.size*o.def.size));}
+function massOf(o){return o===player?player.mass:(o.mass||bodyMass(o.def));} // the physical mass (creatures_ai.js): a hold is a struggle between two bodies
 function cladeOf(o){if(o===player)return player.clade&&player.clade.id==='fin'?'slowbloods':'ringmouths';const sp=SPECS[o.kind];return sp?sp.clade:'hingeshells';}
 function dmgOf(o){return o===player?(player.clade?player.clade.bite:8):(o.def.dmg||0);}
 // a local point of o's frame in the world, with o's current position (the group's matrix may be a shift behind pos: resolveBodies moves pos)

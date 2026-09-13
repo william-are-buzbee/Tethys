@@ -561,7 +561,9 @@ before anything compiles:
    used, and beyond the rim the map is the void's colour, so 30% of near-black was painted into every horizon — the
    "runs into black" the person saw. Then: the canopy's colour (`WATER[12]`, baked into the GLSL) mixed in by the alpha
    for water above −70 and shaded by `1−0.28·cw`; **daylight read at the bounded point** (`dlAt` 1: `0.3+0.7·dl`, `dl`
-   linear to 420 deep with a 0.28 floor), so the veil is darker looking down into the deep and lighter looking up;
+   linear to `DL_REF` 420 deep with a `DL_MIN` 0.28 floor — one definition since v11.32, `daylightAt(y)` in world.js for the JS
+and `DL_GLSL(y)` in scene.js for the four shader sites, both measuring depth from the tide), so the veil is darker looking down
+into the deep and lighter looking up;
    **brighter toward the sun**, `1 + sun·dl·max(dot(ray, sunDir), 0)⁶` (`uFogS`, sun 0.8: ×1.6 looking straight at the
    sun, nothing at the horizon); and `bright` (1.0) scales the whole veil. Above water `fogColor` (`AIR.fog`) is used.
 
@@ -592,8 +594,10 @@ bright, `- =` sun, `[ ]` ground, `, .` reach, `; /` placeMix, `o p` dlAt, `t y` 
 numbers; the readout's second line is the current set, made to be pasted back (`FOG_TUNE`, main.js; `applyFog`,
 atmosphere.js, writes the uniforms). Shares at 1, sun 0, ground 0.15 is close to the pre-v8 fog. `shareS` only matters when it differs from `share`.
 
-The uniforms (`uFogP`: far, share, placeMix, under-water flag — per material, `FOG_P`/`FOG_PS`; `uFogW`: map scale,
-bright, dlAt, reach; `uFogS`: sun direction, sun glow; `uFogC`/`uFogR`: the camera's world position and rotation,
+The uniforms (`uFogP`: far, share, placeMix, under-water flag — per material, `FOG_P`/`FOG_PS`; `uFogW`: **the tide**,
+bright, dlAt, reach (v11.32: `uFogW.x` held the water map's scale, which is `1/(2*HALF)` and so a constant — it is written into
+the shader strings as `WM_SCALE` and the slot carries `TIDE`, which the daylight curve needs and no vector had room for; main.js
+writes `FOG_W[0]` with the other clock uniforms, and `fog_pars_vertex` declares `uFogW` too because `SUNK_V` reads it); `uFogS`: sun direction, sun glow; `uFogC`/`uFogR`: the camera's world position and rotation,
 written per frame by `updateFogCamera`; `uWaterMap`) reach every material through
 `THREE.ShaderLib[*].uniforms` — typed arrays are shared by reference through `cloneUniforms`, and the map returns itself
 from `clone()`; `addTint` then replaces `uFogP` on the small materials. **This is pinned to r128 behaviour**; if a

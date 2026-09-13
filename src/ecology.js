@@ -26,7 +26,7 @@ const ECO={r0:0.12,m:0.1,cyc:0.5,q0:0.05,H:4,take:0.35,mig:0.03,starve:0.35,juv:
 // eating one is worth), r, m, cycle, need (mass a day), meal (need × cycle: what fills it from starving), prey (kinds), mortal
 const ECO_K={};
 function ecoOf(kind){
-  let k=ECO_K[kind];if(k)return k;const d=DEFS[kind],mass=d.size*d.size*d.size,q=Math.pow(mass,0.25);
+  let k=ECO_K[kind];if(k)return k;const d=DEFS[kind],mass=bioMass(d),q=Math.pow(mass,0.25);
   const prey=d.prey?d.prey.filter(p=>p!=='player'&&DEFS[p]):[],stock=d.stock||1;
   const cycle=d.cycle!==undefined?d.cycle:ECO.cyc*q,r=d.r!==undefined?d.r:ECO.r0/q,need=d.need!==undefined?d.need:ECO.q0/q*mass,meal=d.meal!==undefined?d.meal:need*cycle;
   k={mass:mass,stock:stock,food:mass*stock,r:r,m:ECO.m*r,cycle:cycle,meal:meal,need:need,prey:prey,hunter:prey.length>0,mortal:d.hp<1e8||!!d.edible,grow:ECO.grow*q};

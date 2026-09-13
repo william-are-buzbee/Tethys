@@ -14,6 +14,13 @@ never reach a whole animal (and a surplus erased on every unload), 13 was a dete
 deeper bug: `stranded` could not be drawn at all, and nor could `tussock` or `scrub` — the surface cap in `placeFloraType` fires on land,
 where the room to the surface is negative, so no plant had ever been placed above the tide line. See the CHANGELOG entry.
 
+**Fixed: the four duplicated formulas, v11.32 (13 Sep).** The daylight curve, the canopy fade and the chemocline are one
+definition each now; the two slopes are left as two with the reason written at both sites. The six `size^3` copies were **not** one
+formula: three are physical (floored) and three biological (unfloored), and unifying them would have halved a flicker's birth rate
+— they are `bodyMass` and `bioMass` in creatures_defs.js. `--test` was green on both tiers while the world was broken (the curve in
+`SUNK_V` put `uFogW` in the vertex shader, where it was undeclared, so every Lambert program failed): a screenshot against a build
+of the previous commit is what found it. See the CHANGELOG entry.
+
 **Fixed: items 7 and 9, the placement group, v11.31.3 (13 Sep).** 7 stood in both halves. 9 stood as a dead guard but not as a stall: a
 cell's whole structure pass measures 0.27-0.54 ms over all 256 cells, inside farMs — `sample()` warm is 0.7 µs, not the ~35 µs far.js was
 citing (that is its cold figure). See the CHANGELOG entry.
@@ -63,7 +70,9 @@ citing (that is its cold figure). See the CHANGELOG entry.
     stipes at 8 m.
 
 ## Drift and cost, fold in when touched
-- **Duplicated formulas already disagreeing.** Mass in six places, two unfloored (`combat.js:30`, `creatures_ai.js:115`, `ecology.js:29`).
+- ~~**Duplicated formulas already disagreeing.**~~ — **fixed v11.32** (`daylightAt`/`DL_GLSL`, `canopyFade`/`CAN_GLSL`, `CHEMO`,
+  `bodyMass`/`bioMass`; the slopes documented, not unified). Kept below for the record.
+- **(as found)** Mass in six places, two unfloored (`combat.js:30`, `creatures_ai.js:115`, `ecology.js:29`).
   The daylight curve six times; the JS uses tide-relative depth, the GLSL raw y (`scene.js:104`, `atmosphere.js:469`) — **the person
   (12 Sep): tide-relative depth is the right one; unify the GLSL to it.** Canopy fade a smoothstep in the shader, a hard cut at −70 in JS
   (`atmosphere.js:472`, `chunks.js:10`) — **the person: the shader's smoothstep is right; the JS follows it.** (Both answered without

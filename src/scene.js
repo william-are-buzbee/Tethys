@@ -51,7 +51,10 @@ const camera=new THREE.PerspectiveCamera(62,innerWidth/innerHeight,0.2,FAR);
 // water is this veil in every direction. Above water fogColor (the air haze) is used. (4, v11.13) The chemocline PLANET asks for:
 // a thin milky plate at -450 (the ray's length inside [-452,-448] in closed form from the camera's and the fragment's heights, an
 // extinction of 0.25 a metre toward a pale grey) and browner water below it (the veil warmed by the bounded point's depth).
-// uFogP: far, share, placeMix, under-water flag. uFogW: map scale, brightness, dlAt, reach. uFogS: sun direction, sun glow.
+// uFogP: far, share, placeMix, under-water flag. uFogW: the tide, brightness, dlAt, reach. uFogS: sun direction, sun glow.
+// uFogW.x was the water map's scale until v11.32; that is 1/(2*HALF) and HALF is a constant, so it is written into the shader
+// strings as WM_SCALE and the slot carries TIDE instead — the daylight curve needs it (world.js daylightAt) and there was no
+// spare component in any of the four vectors. main.js writes it with the other clock uniforms.
 // uFogC / uFogR: the camera's world position and rotation (updateFogCamera, called from the frame loop).
 // The extra uniforms are shared by every material through ShaderLib: three clones a library's uniforms per material,
 // but assigns typed arrays by reference and calls clone() on textures, and the map returns itself from clone().
@@ -63,7 +66,12 @@ const camera=new THREE.PerspectiveCamera(62,innerWidth/innerHeight,0.2,FAR);
 // of v8.2 and v8.4 exactly: the ground was the one thing fogged to the water it stood in.
 const SUN_POS=[30,100,10],SUN_LEN=Math.hypot(SUN_POS[0],SUN_POS[1],SUN_POS[2]); // the boot direction only: since v11 the sun (or the moon, at night) is placed by the clock every frame (atmosphere.js updateSky)
 const FOG_P=new Float32Array([SEA_FOG.far,SEA_FOG.share,SEA_FOG.placeMix,1]),FOG_PS=new Float32Array([SEA_FOG.far,SEA_FOG.shareS,SEA_FOG.placeMix,1]);
-const FOG_W=new Float32Array([1/(2*HALF),SEA_FOG.bright,SEA_FOG.dlAt,SEA_FOG.reach]),FOG_S=new Float32Array([SUN_POS[0]/SUN_LEN,SUN_POS[1]/SUN_LEN,SUN_POS[2]/SUN_LEN,SEA_FOG.sun]);
+const FOG_W=new Float32Array([0,SEA_FOG.bright,SEA_FOG.dlAt,SEA_FOG.reach]),FOG_S=new Float32Array([SUN_POS[0]/SUN_LEN,SUN_POS[1]/SUN_LEN,SUN_POS[2]/SUN_LEN,SEA_FOG.sun]);
+// the water/floor map's scale, a constant of the world's size, written into every shader that samples them (it was uFogW.x);
+// and the two depth curves of world.js as GLSL, generated from the same constants the JS reads so the two cannot drift again
+const WM_SCALE=(1/(2*HALF)).toFixed(9);
+const DL_GLSL=y=>'clamp(1.0+min(0.0,('+y+')-uFogW.x)/'+DL_REF.toFixed(1)+','+DL_MIN.toFixed(2)+',1.0)';
+const CAN_GLSL=y=>'smoothstep('+CAN_LO.toFixed(1)+','+CAN_HI.toFixed(1)+','+y+')';
 // The veil closes completely between FOG_CUT0 and FOG_CUT1 (v11.27): the slow population never reached zero (1.1% at the far plane), so the black
 // dome and a terrain fragment at the same distance differed by a percent or two of the terrain's lit colour — enough, on a dark gradient,
 // for the far mesh's outline against the dome to read as a horizon. Past FOG_CUT1 every fragment is the veil at that direction exactly,
@@ -95,19 +103,19 @@ const MIST_GLSL='float mistL(float cy,float dy,float d,float rho,float ih){float
   // one every game uses: ±half a level of per-pixel noise before the colour is quantised (three's own `dithering`, an option per
   // material, here made unconditional in the chunk so every built-in material has it; the sky shader adds the same line by hand).
   C.dithering_pars_fragment=DITHER_PARS;C.dithering_fragment='gl_FragColor.rgb=dithering(gl_FragColor.rgb);';
-  C.fog_pars_vertex='#ifdef USE_FOG\nuniform vec3 uFogC;uniform mat3 uFogR;varying float vFogDepth;varying vec3 vFogPos;\n#endif';
+  C.fog_pars_vertex='#ifdef USE_FOG\nuniform vec3 uFogC;uniform mat3 uFogR;uniform vec4 uFogW;varying float vFogDepth;varying vec3 vFogPos;\n#endif'; // uFogW in the vertex stage too since v11.32: SUNK_V (the Lambert sun by depth) reads the tide from it, and until now only the fragment chunk declared it
   C.fog_vertex='#ifdef USE_FOG\nvFogDepth=length(mvPosition.xyz);vFogPos=uFogC+uFogR*mvPosition.xyz;\n#endif';
   C.fog_pars_fragment='#ifdef USE_FOG\nuniform vec3 fogColor;uniform vec3 uFogC;uniform vec4 uFogP;uniform vec4 uFogW;uniform vec4 uFogS;uniform vec4 uFogT;uniform vec4 uMist;uniform vec4 uMistC;uniform vec4 uMistW;uniform sampler2D uWaterMap;uniform sampler2D uFloorMap;varying float vFogDepth;varying vec3 vFogPos;\n#ifdef FOG_EXP2\nuniform float fogDensity;\n#else\nuniform float fogNear;uniform float fogFar;\n#endif\n'+MIST_GLSL+WCOL_GLSL+'\n#endif';
   C.fog_fragment='#ifdef USE_FOG\n{float d=vFogDepth;vec3 fc=fogColor;'+
     'if(uFogP.w>0.5){vec3 rd=(vFogPos-uFogC)/max(d,1e-3);vec3 sp=uFogC+rd*min(d,uFogW.w);'+
-    'vec2 m0=uFogC.xz*uFogW.x+0.5,m1=sp.xz*uFogW.x+0.5;vec4 w0=texture2D(uWaterMap,m0),w1=texture2D(uWaterMap,m1);'+'w0.rgb=mix(wcol(max(-uFogC.y,'+OPEN_D.toFixed(1)+')),w0.rgb,exp(-max(uFogC.y+texture2D(uFloorMap,m0).r*'+FM_SCALE.toFixed(1)+'-'+FLOOR_FREE.toFixed(1)+',0.0)*'+(1/FLOOR_H).toFixed(5)+'));'+ // v11.27: the water's colour at the camera's depth, the floor's where the floor is near (world.js FLOOR_H)
+    'vec2 m0=uFogC.xz*'+WM_SCALE+'+0.5,m1=sp.xz*'+WM_SCALE+'+0.5;vec4 w0=texture2D(uWaterMap,m0),w1=texture2D(uWaterMap,m1);'+'w0.rgb=mix(wcol(max(-uFogC.y,'+OPEN_D.toFixed(1)+')),w0.rgb,exp(-max(uFogC.y+texture2D(uFloorMap,m0).r*'+FM_SCALE.toFixed(1)+'-'+FLOOR_FREE.toFixed(1)+',0.0)*'+(1/FLOOR_H).toFixed(5)+'));'+ // v11.27: the water's colour at the camera's depth, the floor's where the floor is near (world.js FLOOR_H)
     'w1.rgb=mix(wcol(max(-sp.y,'+OPEN_D.toFixed(1)+')),w1.rgb,exp(-max(sp.y+texture2D(uFloorMap,m1).r*'+FM_SCALE.toFixed(1)+'-'+FLOOR_FREE.toFixed(1)+',0.0)*'+(1/FLOOR_H).toFixed(5)+'));'+ // the same at the bounded point
     'vec4 wm=mix(w0,w1,uFogP.z);'+
-    'float y=mix(uFogC.y,sp.y,uFogW.z);float cw=wm.a*smoothstep(-90.0,-60.0,y);'+
-    'float dl=clamp(1.0+min(0.0,y)/420.0,0.28,1.0);float sg=pow(max(dot(rd,uFogS.xyz),0.0),6.0);'+
+    'float y=mix(uFogC.y,sp.y,uFogW.z);float cw=wm.a*'+CAN_GLSL('y')+';'+
+    'float dl='+DL_GLSL('y')+';float sg=pow(max(dot(rd,uFogS.xyz),0.0),6.0);'+
     'fc=mix(wm.rgb,vec3('+WATER_CANOPY.map(v=>v.toFixed(3)).join(',')+'),cw)*(1.0-0.28*cw)*uFogW.y*(0.3+0.7*dl)*(1.0+uFogS.w*sg*dl)*uFogT.x*mix(vec3(1.0),uFogT.yzw,smoothstep(-40.0,0.0,y));'+
-    'fc*=mix(vec3(1.0),vec3(1.12,0.92,0.72),smoothstep(-446.0,-462.0,y));'+ // below the chemocline the water is browner (v11.13, PLANET)
-    'float cy=uFogC.y;float dy=vFogPos.y-cy;if(abs(dy)<1e-3)dy=1e-3;float sl=abs(clamp((-448.0-cy)/dy,0.0,1.0)-clamp((-452.0-cy)/dy,0.0,1.0))*d;'+ // the ray's length inside the plate at -450
+    'fc*=mix(vec3(1.0),vec3(1.12,0.92,0.72),smoothstep('+CHEMO_TINT[0].toFixed(1)+','+CHEMO_TINT[1].toFixed(1)+',y));'+ // below the chemocline the water is browner (v11.13, PLANET)
+    'float cy=uFogC.y;float dy=vFogPos.y-cy;if(abs(dy)<1e-3)dy=1e-3;float sl=abs(clamp(('+(CHEMO+CHEMO_PLATE).toFixed(1)+'-cy)/dy,0.0,1.0)-clamp(('+(CHEMO-CHEMO_PLATE).toFixed(1)+'-cy)/dy,0.0,1.0))*d;'+ // the ray's length inside the plate at the chemocline
     'gl_FragColor.rgb=mix(gl_FragColor.rgb,mix(fc,vec3(0.62,0.64,0.60)*uFogT.x*0.5,0.6),1.0-exp(-0.25*sl));}'+
     'else{vec3 rd=(vFogPos-uFogC)/max(d,1e-3);float mo=mistRay(uFogC.y-uMistW.x,vFogPos.y-uMistW.x,d);'+ // in air: the mist on the water, integrated along the ray (MIST_GLSL), glowing toward the light
     'gl_FragColor.rgb=mix(gl_FragColor.rgb,uMistC.rgb*(1.0+uMistC.w*pow(max(dot(rd,uFogS.xyz),0.0),6.0)),1.0-exp(-mo));}'+
@@ -123,8 +131,8 @@ const MIST_GLSL='float mistL(float cy,float dy,float d,float rho,float ih){float
   // from mvPosition and the fog's camera uniforms — this runs before fog_vertex, so vFogPos isn't set yet), Phong in the
   // fragment (vFogPos from the fog varying). Both need USE_FOG for the uniforms; a Lambert material with fog off gets the
   // plain sun. If a chunk doesn't match, it warns and the sun stays as it was.
-  const SUNK_V='\n#ifdef USE_FOG\ndirectLight.color*=clamp(1.0+min(0.0,(uFogC+uFogR*mvPosition.xyz).y)/420.0,0.28,1.0);\n#endif\n';
-  const SUNK_F='\n#ifdef USE_FOG\ndirectLight.color*=clamp(1.0+min(0.0,vFogPos.y)/420.0,0.28,1.0);\n#endif\n';
+  const SUNK_V='\n#ifdef USE_FOG\ndirectLight.color*='+DL_GLSL('(uFogC+uFogR*mvPosition.xyz).y')+';\n#endif\n';
+  const SUNK_F='\n#ifdef USE_FOG\ndirectLight.color*='+DL_GLSL('vFogPos.y')+';\n#endif\n';
   const reDir=/(getDirectional\w*\s*\(\s*directionalLights?\s*(?:\[\s*i\s*\])?\s*,\s*geometry\s*,\s*directLight\s*\)\s*;)/g;
   let nv=0,nf=0;
   if(C.lights_lambert_vertex)C.lights_lambert_vertex=C.lights_lambert_vertex.replace(reDir,(m)=>{nv++;return m+SUNK_V;});
@@ -335,10 +343,10 @@ const SH_GLSL=s=>'if(uShP'+s+'.y>0.5){vec3 sp=vFogPos+fn*(uShP'+s+'.w*sign(dot(f
 const LIGHT_GLSL=LIGHT_FX?'\n#ifdef USE_FOG\n{float dep=uTint.x-vFogPos.y;if(uSunW.w>0.002){vec3 fn=normalize(cross(dFdx(vFogPos),dFdy(vFogPos)));float wd=clamp(dep*0.7-0.2,0.0,1.0);'+ // 0 in air and at the surface itself (a raft's pad at -0.45 barely), full 1.7 m under
   'float cz=exp(-max(dep,0.0)/14.0)*wd;if(cz>0.01&&uLightK.x>0.0){float T=uTime*0.6;vec2 q=vFogPos.xz*0.42+vec2('+Math.cos(WIND_A).toFixed(3)+','+Math.sin(WIND_A).toFixed(3)+')*uTime*0.35;'+
   'float a=sin(q.x+T+sin(q.y*0.9-T*0.7));'+(Q.cau>1?'float b=sin(q.y*1.1-T*0.8+sin(q.x*0.8+T*0.6));':'float b=a;')+(Q.cau>2?'float c=sin((q.x+q.y)*0.75+T*0.5+sin((q.x-q.y)*0.6-T*0.45));':'float c=a;')+
-  'float k=pow(max(1.0-abs(a+b+c)*0.333,0.0),mix(2.0,4.5,cz));float cw=texture2D(uWaterMap,vFogPos.xz*uFogW.x+0.5).a*smoothstep(-90.0,-60.0,vFogPos.y);'+
+  'float k=pow(max(1.0-abs(a+b+c)*0.333,0.0),mix(2.0,4.5,cz));float cw=texture2D(uWaterMap,vFogPos.xz*'+WM_SCALE+'+0.5).a*'+CAN_GLSL('vFogPos.y')+';'+
   'gl_FragColor.rgb*=1.0+uLightK.x*k*cz*max(fn.y,0.0)*uSunW.w*(1.0-0.85*cw);}'+
   'float sh=1.0;'+SH_GLSL('')+SH_GLSL('S')+ // the creatures' map, then the world's (v11.30): the darker of the two
-  'float dl=clamp(1.0+min(0.0,vFogPos.y)/420.0,0.28,1.0);gl_FragColor.rgb*=1.0-uLightK.y*(1.0-sh)*uSunW.w*dl;}}\n#endif\n':'';
+  'float dl='+DL_GLSL('vFogPos.y')+';gl_FragColor.rgb*=1.0-uLightK.y*(1.0-sh)*uSunW.w*dl;}}\n#endif\n':'';
 // shDepth: three's RGBA depth packing undone (packing.glsl's unpackRGBAToDepth, written out so no chunk is relied on); shTap: one tap of
 // the map, a shadow if the caster is nearer the light than the fragment, faded by the metres between them
 const LIGHT_PARS='uniform float uTime;uniform vec4 uSunW;uniform vec2 uLightK;uniform sampler2D uShMap;uniform mat4 uShMat;uniform vec4 uShP;uniform vec4 uShL;uniform sampler2D uShMapS;uniform mat4 uShMatS;uniform vec4 uShPS;uniform vec4 uShLS;\n'+

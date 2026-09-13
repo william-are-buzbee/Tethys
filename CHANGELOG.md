@@ -2355,3 +2355,52 @@ too thick or too thin, whether the scrub reads as scrub, and whether the strand 
 and some fill, and the readout on a beach is the place to see it. Then the shafts at dusk, which is where the new colour is largest
 and the shafts themselves are faintest — if they are too dim to read warm, `SH_A` is the knob. Not touched: items 12–15 (14, the
 shadow-caster pass, is the next performance job) and the drift list.
+
+## v11.32 — one number, one place: the daylight curve, the canopy fade, the two masses, the chemocline (13 Sep 2026)
+The drift half of the code review (`analysis_review.md`, "Drift and cost"): four numbers that were written out between two and
+twenty-three times each, three of which had already drifted, and one that reads as drift and is not. Nothing here is meant to
+change the look; one of them does, slightly, and it is named below.
+
+- **The daylight curve** — how much of the surface's light is left at a depth, which the fog's veil, the ambient, the sun's own
+  scale (`SUNK_V`/`SUNK_F`) and the shadows all read — was six copies of `0.28..1 over 420 m`, and the two in JS measured depth
+  from the tide while the four in GLSL measured it from sea level. `DL_REF`, `DL_MIN`, `daylightAt(y)` and `DL_GLSL(y)` in
+  world.js and scene.js are the one definition now, generated from the same constants, and the shader follows the JS: depth is
+  from the water's surface (the person, 12 Sep). Read off the running game, the JS and the old GLSL agree to four decimals at
+  slack water, which is the size of the bug — the tide over 420 m is 1.1% of the light each way, and nothing below −302 where the
+  curve clamps. **The shader needs the tide to do it**, and none of the four fog vectors had a spare component, so `uFogW.x` —
+  which held `1/(2*HALF)`, a constant of the world's size — is `TIDE` now and the water map's scale is written into the three
+  shader strings that sample it as `WM_SCALE` (0.000290698). main.js writes `FOG_W[0]` with the other clock uniforms.
+- **The canopy fade** was a `smoothstep(-90,-60)` in the shader and a hard cut at `y>-70` in the JS, so under the mats the
+  ambient light, the fog colour and the light shafts' heads disagreed with the veil actually drawn, and stepped at −70 instead of
+  ramping. `CAN_LO`/`CAN_HI`/`canopyFade(y)`/`CAN_GLSL(y)`; the JS follows the shader (the person, 12 Sep). **This is the one
+  visible change**: between −60 and −90 inside a canopy patch the water now fades in instead of switching, and at −70 the canopy's
+  share is 0.74 of the map rather than all of it. The patches are three, 1400 m out, over deep water.
+- **Two masses, and they are not one.** `size³` appeared six times, three floored at 0.6 and three not, which the review read as
+  drift. It is not: the floored one is physical (contact, the body push, a hold's struggle — a flicker at 0.064 must not vanish
+  against a ridge) and the unfloored one is biological (a birth rate as mass^−0.25, a meal, a carcass's flesh — flooring it would
+  put a flicker's rate at half what `test/census.js` is drawn for). `bioMass(d)` and `bodyMass(d)` in creatures_defs.js, named so
+  the next reader does not unify them; census unchanged to the digit.
+- **The chemocline** was a bare −450 in fourteen places with −444/−446/−448/−452/−455/−458/−462/−464/−465/−470 around it. `CHEMO`
+  in world.js, with `CHEMO_PLATE` (the milky plate's half-thickness) and `CHEMO_TINT` (the band the water browns over) derived,
+  and the pall's spawn and wander bands written as `CHEMO-5`, `CHEMO-8`, `CHEMO-15`, `CHEMO-20`. Moving the chemocline is one edit.
+- **The two slopes are left as two, deliberately** (chunks.js takes a central difference over its own grid, far.js a forward
+  difference from two extra `sample()` calls): a central difference on the far layer would be four samples a point on its budget,
+  and they agree to first order. Both sites say so now, and chunks.js's "so they match where they meet" is corrected to what is
+  actually true — the conditions match, the slope they are measured with does not.
+
+**Found and fixed while looking at it, and the reason to look.** `--test` was green on both tiers with the world broken: putting
+the daylight curve into `SUNK_V` put `uFogW` into the **vertex** shader, where only `fog_pars_fragment` declared it, so every
+Lambert program failed to compile — no flora, no creatures, a washed-out plain. The stub compiles no shaders, so no test could
+catch it; the menu screenshot against a build of the previous commit did, in one frame. `fog_pars_vertex` declares `uFogW` now.
+This is the trap CLAUDE.md names ("the fog is not three's") and it cost one build to find.
+
+**Seen** (dev.html, 800×450): the menu at the peak, identical to a build of v11.31.4 beside it — grass, the three creatures, the
+same water; the weed forest at (330, 0) at 15 m with the readout up, teal water, olive blades, pale floor, a finback; and, read out
+of the running page, `FOG_W[0]` carrying the tide, `WM_SCALE` exact to 1/3440, and the daylight and canopy curves tabulated against
+their old GLSL at six depths each.
+
+**Unseen, ask in this order.** The canopy band at −60..−90 inside a patch (1400 m out, the current's wake) — swim down through it
+and say whether the fade reads better than the step, which is the only thing here that should look different. Then the water's
+colour across a full tide at 20–60 m, where the shader's daylight now moves by a percent either way and did not before. Then the
+light shafts' heads under the mats, which take the same ramp now (`atmosphere.js` `shWM`). Left of the review: the dead code and the
+stale docs (the other half of the drift list), and items 14 and 15 — the shadow-caster pass is the next performance job.

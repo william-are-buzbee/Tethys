@@ -288,7 +288,7 @@ function updateShafts(above,wk){
   for(let jj=0;jj<SH_K;jj++)for(let ii=0;ii<SH_K;ii++){const ci=ci0+ii,cj=cj0+jj,x=(ci+0.15+0.7*shHash(ci,cj,1))*SH_S,z=(cj+0.15+0.7*shHash(ci,cj,2))*SH_S,w=2+2*shHash(ci,cj,3);
     const g=groundAt(x,z),avail=top-g-1.5,len=Math.min(SH_L,Math.max(avail,0.1));
     let a=clamp((avail-4)/12,0,1)*(1-smooth(R*0.32,R*0.5,Math.hypot(x-cx,z-cz)))*smooth(1.5,5,Math.hypot(x-px,z-pz));
-    if(a>0&&top>-70){wmSample(x,z,shWM);a*=1-0.85*shWM[3];}
+    if(a>0){const cf=canopyFade(top);if(cf>0){wmSample(x,z,shWM);a*=1-0.85*shWM[3]*cf;}} // the mats over the shaft's head (v11.32: the shader's ramp)
     const bx=x-sx/sy*len,bz=z-sz/sy*len,vx=px-x,vz=pz-z,vl=Math.max(Math.hypot(vx,vz),1e-3),rx=-vz/vl*w*0.5,rz=vx/vl*w*0.5,b=n*4,k=n*12;
     shP[k]=x-rx;shP[k+1]=top;shP[k+2]=z-rz;shP[k+3]=x+rx;shP[k+4]=top;shP[k+5]=z+rz;shP[k+6]=bx+rx;shP[k+7]=top-len;shP[k+8]=bz+rz;shP[k+9]=bx-rx;shP[k+10]=top-len;shP[k+11]=bz-rz;
     shA[b]=shA[b+1]=shA[b+2]=shA[b+3]=a;const ph=shHash(ci,cj,4)*TAU;shPh[b]=shPh[b+1]=shPh[b+2]=shPh[b+3]=ph;n++;}
@@ -354,7 +354,7 @@ const waterDome=(function(){const m=new THREE.Mesh(new THREE.SphereGeometry(FAR*
 // draws uniform (the old look) rather than not at all.
 const PN=Q.snow,SN_HW=30,pp=new Float32Array(PN*3),pv=new Float32Array(PN*3),pc=new Float32Array(PN*3),ps=new Float32Array(PN*2),pk=new Uint8Array(PN),pr=new Float32Array(PN),ph=new Float32Array(PN),pf=new Float32Array(PN*7);
 const SN_K=[{sz:0.5,fall:0.005},{sz:1.0,fall:0.02},{sz:0.6,fall:0.05},{sz:0.55,fall:-0.28},{sz:1.35,fall:0.006}]; // size × the material's, m/s down
-const SN_TH=-64,SN_CH=-450,SN_W0=0.9,SN_GAIN=3.0,SN_REF=63; // the thermocline, the chemocline (y); the weight that fills the count; weight → alpha; the refresh mask (one point in 64 a frame: a point re-rolls about once a second)
+const SN_TH=-64,SN_CH=CHEMO,SN_W0=0.9,SN_GAIN=3.0,SN_REF=63; // the thermocline, the chemocline (y); the weight that fills the count; weight → alpha; the refresh mask (one point in 64 a frame: a point re-rolls about once a second)
 const pg=new THREE.BufferGeometry();pg.setAttribute('position',new THREE.BufferAttribute(pp,3));pg.setAttribute('color',new THREE.BufferAttribute(pc,3));pg.setAttribute('aSz',new THREE.BufferAttribute(ps,2));
 const plU={value:new THREE.Vector4(0,0,0,0)},plCU={value:new THREE.Color(0x6fbfe0)};
 const pm=new THREE.PointsMaterial({color:0xcfe6ee,size:0.14,transparent:true,opacity:0.55,depthWrite:false,vertexColors:true});
@@ -467,12 +467,12 @@ const seaFogC=new THREE.Color(),airFogC=new THREE.Color(),hemiSea=new THREE.Colo
 function updateAtmosphere(dt){
   updateSky(dt);const K=SKY,tint=K.tint;skyT.setRGB(tint[0],tint[1],tint[2]);
   const uc=underCanopy(player.pos.x,player.pos.z,player.pos.y),depth=TIDE-player.pos.y; // depth under the water level now
-  const dfD=clamp(1-depth/420,0.28,1)*(uc?0.72:1),df=dfD*K.skyLw; // daylight at the player's depth: by depth, then by the sky the water sees (v11; v11.23 skyLw)
+  const dfD=daylightAt(player.pos.y)*(uc?0.72:1),df=dfD*K.skyLw; // daylight at the player's depth (world.js, one curve with the shader's since v11.32): by depth, then by the sky the water sees (v11; v11.23 skyLw)
   // the water here, read from the same blurred map the fog shader reads at the camera (so the background, the ambient
   // light and the fog agree, and a border is a drift over ~100 units of travel, not an event); the canopy mixed in as the shader does
-  wmSample(player.pos.x,player.pos.z,wmHere);const cw=player.pos.y>-70?wmHere[3]:0,w=WATER_CANOPY,bw=SEA_FOG.bright*(1-0.28*cw);
+  wmSample(player.pos.x,player.pos.z,wmHere);const cw=wmHere[3]*canopyFade(player.pos.y),w=WATER_CANOPY,bw=SEA_FOG.bright*(1-0.28*cw); // v11.32: the shader's ramp, not a cut at -70
   {const fw=Math.exp(-Math.max(player.pos.y+wmFloor(player.pos.x,player.pos.z)-FLOOR_FREE,0)/FLOOR_H),oc=wcolAt(Math.max(-player.pos.y,OPEN_D));for(let i=0;i<3;i++)wmHere[i]=lerp(oc[i],wmHere[i],fw);} // v11.27: the floor's colour only within FLOOR_H of it, as the shader has it (world.js FLOOR_H)
-  const wr=lerp(wmHere[0],w[0],cw)*bw,wg=lerp(wmHere[1],w[1],cw)*bw,wb=lerp(wmHere[2],w[2],cw)*bw,dl=clamp(1-depth/420,0.28,1);
+  const wr=lerp(wmHere[0],w[0],cw)*bw,wg=lerp(wmHere[1],w[1],cw)*bw,wb=lerp(wmHere[2],w[2],cw)*bw,dl=daylightAt(player.pos.y);
   // the medium is the camera's: air above the surface, water below. Crossing it snaps fog and light; within it they drift.
   const above=mode==='play'?player.camAbove:camera.position.y>waveH(camera.position.x,camera.position.z); // in play the camera's side is decided with hysteresis and the camera is held clear of the wave (player.js finishPlayer); the raw test here flipped every frame the chop passed the camera (v11.6)
   surfaceU.uDf.value=df;surfaceU.uUnder.value=above?0:1;surfaceU.uRain.value=FX.rain?K.rainA:0;

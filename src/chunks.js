@@ -13,7 +13,7 @@ function groundAt(x,z){const ch=chunkAt(x,z);return ch?ch.h(x,z):sample(x,z).h;}
 // whether a neighbour happens to be loaded. The same rule buildTerrain's hAt1 uses for the cavity term.
 function hOut(ch,x,z){return x<ch.x0||x>ch.x0+CELL||z<ch.z0||z>ch.z0+CELL?sample(x,z).h:ch.h(x,z);}
 // under the canopy mats near the surface (the one place the water's look is not the floor's)
-function underCanopy(x,z,y){return y>-70&&canopyW(x,z)>0.5;}
+function underCanopy(x,z,y){return canopyW(x,z)*canopyFade(y)>0.5;} // v11.32: the shader's ramp (world.js canopyFade), not a cut at -70
 
 function makeChunk(i,j){
   const x0=i*CELL-HALF,z0=j*CELL-HALF,hg=new Float32Array(GR*GR),fg=new Float32Array(GR*GR*NF);
@@ -22,11 +22,15 @@ function makeChunk(i,j){
     h:function(x,z){let fx=clamp((x-x0)/STEP,0,CH_RES-0.001),fz=clamp((z-z0)/STEP,0,CH_RES-0.001);const ix=Math.floor(fx),iz=Math.floor(fz),tx=fx-ix,tz=fz-iz;const a=hg[iz*GR+ix],b=hg[iz*GR+ix+1],c=hg[(iz+1)*GR+ix],d=hg[(iz+1)*GR+ix+1];return a+(b-a)*tx+(c-a)*tz+(a-b-c+d)*tx*tz;},
     f:function(x,z){const ix=clamp(Math.round((x-x0)/STEP),0,CH_RES),iz=clamp(Math.round((z-z0)/STEP),0,CH_RES);return fg.subarray((iz*GR+ix)*NF,(iz*GR+ix+1)*NF);}, // the conditions at the nearest vertex
     w:function(env,x,z){return envW(env,this.h(x,z),this.slope(x,z),this.f(x,z));}, // a species' tolerance here
+    // the slope at the nearest vertex, a central difference over the cell's own grid. far.js takes a forward difference from two
+    // extra sample() calls instead (v11.32: not unified, deliberately — a central difference there would be four samples a point on
+    // the far layer's budget, and the two agree to first order; they differ only on ground that curves inside one STEP, where the
+    // far layer's envelope reads a slope a little high on a convex vertex and low on a concave one)
     slope:function(x,z){const ix=clamp(Math.round((x-x0)/STEP),1,CH_RES-1),iz=clamp(Math.round((z-z0)/STEP),1,CH_RES-1);return Math.hypot((hg[iz*GR+ix+1]-hg[iz*GR+ix-1])/(2*STEP),(hg[(iz+1)*GR+ix]-hg[(iz-1)*GR+ix])/(2*STEP));}
   };
 }
 function sampleRow(ch,jj){
-  for(let ii=0;ii<GR;ii++){const x=(ch.i*CH_RES+ii)*STEP-HALF,z=(ch.j*CH_RES+jj)*STEP-HALF;const n=jj*GR+ii,s=sample(x,z,ch.fg.subarray(n*NF,(n+1)*NF));ch.hg[n]=s.h;if(s.h>0.5)ch.landN++;if(s.h<-450)ch.deepN++;if(s.h<ch.minH)ch.minH=s.h;if(s.h>ch.maxH)ch.maxH=s.h;}
+  for(let ii=0;ii<GR;ii++){const x=(ch.i*CH_RES+ii)*STEP-HALF,z=(ch.j*CH_RES+jj)*STEP-HALF;const n=jj*GR+ii,s=sample(x,z,ch.fg.subarray(n*NF,(n+1)*NF));ch.hg[n]=s.h;if(s.h>0.5)ch.landN++;if(s.h<CHEMO)ch.deepN++;if(s.h<ch.minH)ch.minH=s.h;if(s.h>ch.maxH)ch.maxH=s.h;}
 }
 function finishGrid(ch){
   for(let jj=0;jj<GR;jj++)for(let ii=0;ii<GR;ii++){const n=jj*GR+ii;fixF(ch.fg.subarray(n*NF,(n+1)*NF),ch.slope((ch.i*CH_RES+ii)*STEP-HALF,(ch.j*CH_RES+jj)*STEP-HALF));} // steep faces are rock
@@ -39,7 +43,8 @@ function nearLandmark(x,z,r){for(const p of LM.all)for(const q of (p.keep||[p]))
 // The floor's colour at a vertex, from the conditions: mud, sand, rubble and rock by the substrate (olivine-green sand — the
 // rock is basalt), fresh basalt darker with rust where a mat has it, lime-pink patches on rock in clear bright water (the
 // polyps' crusts), sulfur and white around a vent, the shore by height and bare rock on steep ground. Shared by the cell
-// terrain and the far terrain (far.js) so they match where they meet. Writes rgb into tc at n.
+// terrain and the far terrain (far.js), which pass it the same conditions, so the colour matches where they meet (the slope they
+// hand it is measured differently — see ch.slope — so a face's rock tint can differ by a shade across the seam). Writes rgb into tc at n.
 const ROCK_COL=[0.30,0.31,0.33];
 const SUB_COL=[[0.20,0.23,0.26],[0.70,0.66,0.48],[0.36,0.39,0.41],[0.30,0.31,0.33]]; // mud, sand, rubble, rock
 function terrainColor(x,z,h,f,sl,tc,n){
@@ -61,7 +66,7 @@ function terrainColor(x,z,h,f,sl,tc,n){
       const kl=smooth(6,18,h)*(0.4+0.6*m),kr=smooth(0.55,0.8,fbm(x*0.05+21,z*0.05+8,2))*0.7;r=lerp(r,lerp(land[0],rust[0],kr)*k,kl);g=lerp(g,lerp(land[1],rust[1],kr)*k,kl);bl=lerp(bl,lerp(land[2],rust[2],kr)*k,kl);}
     const q=smooth(0.9,1.9,sl);
     r=lerp(r,rock[0]*k,q);g=lerp(g,rock[1]*k,q);bl=lerp(bl,rock[2]*k,q);
-    if(h>-70){const cw=canopyW(x,z);if(cw>0){const sd=1-0.22*cw;r*=sd;g*=sd;bl*=sd;}} // the shade under the canopy (v11.13): the floor darker under the rafts, by the same mask that places them; the far terrain colours through here too, so they match
+    {const cf=canopyFade(h);if(cf>0){const cw=canopyW(x,z)*cf;if(cw>0){const sd=1-0.22*cw;r*=sd;g*=sd;bl*=sd;}}} // the shade under the canopy (v11.13): the floor darker under the rafts, by the same mask that places them; the far terrain colours through here too, so they match. cf first: it is a smooth and canopyW is fbm, and it is 0 below CAN_LO (v11.32)
     tc[n*3]=r;tc[n*3+1]=g;tc[n*3+2]=bl;
 }
 // a generator (v11.12): the colouring is 2401 vertices with three or four fbm each, ~10 ms in one step against a 6 ms budget; eight rows a step
@@ -118,7 +123,7 @@ function* placeFloraType(ch,rng,f){
     if(f.field)p*=clamp(0.1+4*Math.pow(fbm(x*f.field+31,z*f.field+17,2),2.5),0,1.6);
     if(rng()>=p)continue;
     const h=ch.h(x,z);
-    if(f.y!=='surface'&&h<-450&&!f.band)continue; // nothing sessile below the chemocline but what a band lets through (the seep, the grey mats)
+    if(f.y!=='surface'&&h<CHEMO&&!f.band)continue; // nothing sessile below the chemocline but what a band lets through (the seep, the grey mats)
     if(f.y==='surface'&&h>-4)continue; // rafts don't ground
     if(f.minH!==undefined&&h<f.minH)continue; // land plants keep off the wet sand
     if(f.band&&(h<f.band[0]||h>f.band[1]))continue; // a depth band on the ground (the cones' tide band, the straddlers at the rim)
@@ -126,7 +131,7 @@ function* placeFloraType(ch,rng,f){
     let y=h,sc=f.s?f.s[0]+rng()*(f.s[1]-f.s[0]):1,sy=sc;
     if(f.reach){if(h>-14)continue;sy=-h-0.6;sc=1;}
     else if(f.y==='surface'){y=f.ys!==undefined?f.ys:-0.45;}
-    else if(f.y==='mid'){if(h>-30)continue;y=h<-450?-40-rng()*300:clamp(h+12+rng()*70,h+10,-14);}
+    else if(f.y==='mid'){if(h>-30)continue;y=h<CHEMO?-40-rng()*300:clamp(h+12+rng()*70,h+10,-14);}
     // v11.31.4: the rule fired on land too, where the room to the surface is negative, so every land species was skipped at every try — tussock, scrub and stranded had never once been placed anywhere on the island. A plant whose minH is above 0 is not growing up through the water.
     else if(f.top&&!f.air&&!(f.minH>=0)&&f.top*sc>-1.4-h){const room=(-1.4-h)/f.top;if(room<sc*0.5)continue;sy=room;} // nothing stands into the air (bar the tidal forest, `air`, and a plant rooted above the tide line, minH>=0): shorten in y or skip
     const yaw=f.flow?flowYaw(x,z)+(rng()-0.5)*0.5:rng()*TAU; // flow-faced things turn across the current
@@ -208,7 +213,7 @@ function lieOn(d,gx,gz,yaw){const c=Math.cos(yaw),sn=Math.sin(yaw),sx=gx*c-gz*sn
 function placeCliffs(ch,rng){
   const f=FLORA_BY_ID.ledge,list=[],d=new THREE.Object3D();
   for(let jj=1;jj<GR-1;jj+=2)for(let ii=1;ii<GR-1;ii+=2){
-    const n=jj*GR+ii,h=ch.hg[n];if(h<-450)continue;
+    const n=jj*GR+ii,h=ch.hg[n];if(h<CHEMO)continue;
     const gx=(ch.hg[n+1]-ch.hg[n-1])/(2*STEP),gz=(ch.hg[n+GR]-ch.hg[n-GR])/(2*STEP),g=Math.hypot(gx,gz);
     if(g<1.15)continue;
     const x=ch.x0+ii*STEP,z=ch.z0+jj*STEP,ux=gx/g,uz=gz/g;
@@ -262,7 +267,7 @@ function currentOf(ch,x,z,y,out){steadyOf(ch,x,z,y,out);const r=tideRate(clockH)
 function chunkPoint(ch,rng,env,land){for(let k=0;k<40;k++){const x=ch.x0+rng()*CELL,z=ch.z0+rng()*CELL,h=ch.h(x,z);if(land?h<=0.5:h>=-5)continue;if(env&&rng()>=ch.w(env,x,z))continue;return V3(x,h,z);}return null;}
 // the cell's mean tolerance for an envelope, over a 6x6 grid of points
 function cellW(ch,env){let w=0;for(let j=0;j<6;j++)for(let i=0;i<6;i++){const x=ch.x0+(i+0.5)/6*CELL,z=ch.z0+(j+0.5)/6*CELL;w+=envW(env,ch.h(x,z),ch.slope(x,z),ch.f(x,z));}return w/36;}
-function openY(ch,p,rng,lo,hi){if(p.y<-450)return -60-rng()*260;return clamp(p.y+lo+rng()*(hi-lo),p.y+4,-8);}
+function openY(ch,p,rng,lo,hi){if(p.y<CHEMO)return -60-rng()*260;return clamp(p.y+lo+rng()*(hi-lo),p.y+4,-8);}
 // v11.26: a cell spawns what the ledger holds for it (ecology.js ecoTake), placed by kind through placeKind — the same routine the
 // ledger's recruits use (ecoTick), with off:true (out of the player's sight) and juv:true (born small). The sailers' fleets are the
 // canopy's and outside the ledger: drifters die of nothing.
@@ -295,7 +300,7 @@ function* placeKind(ch,e,count,rng,opt){
     else if(kind==='trap'||kind==='stone'){p.y+=(D.clear!==undefined?D.clear:D.size*0.35)+0.05;if(solidPush(p,1.5,null,ch))continue;const c=spawn(ch,kind,p,rng,o);c.state='sit';c.g.rotation.y=rng()*TAU;placed++;} // lying on its floor, any way round
     else if(kind==='hook'){let ok=false;for(let tr=0;tr<6&&!ok;tr++){const q=chunkPoint(ch,rng,e.env);if(!q)break;p.copy(q);p.y=clamp(p.y+5+rng()*9,p.y+4,-6);ok=!solidPush(p,2.5,null,ch);}if(!ok)continue;const c=spawn(ch,'hook',p,rng,o);c.state='sit';c.g.rotation.y=rng()*TAU;placed++;} // hung up in the structure
     else if(kind==='lurker'){let ok=false;for(let tr=0;tr<6&&!ok;tr++){const q=chunkPoint(ch,rng,e.env);if(!q)break;p.copy(q);p.y+=D.size*0.35+0.1;ok=!solidPush(p,2,null,ch);}if(!ok)continue;const c=spawn(ch,'lurker',p,rng,o);c.state='sit';c.g.rotation.y=rng()*TAU;placed++;}
-    else if(kind==='pall'){p.y=clamp(p.y+15+rng()*120,p.y+10,-465);if(p.y>-455)continue;spawn(ch,'pall',p,rng,o);placed++;} // in the dark, off the mud
+    else if(kind==='pall'){p.y=clamp(p.y+15+rng()*120,p.y+10,CHEMO-15);if(p.y>CHEMO-5)continue;spawn(ch,'pall',p,rng,o);placed++;} // in the dark, off the mud
     else if(D.floor){p.y+=D.size*0.35+0.3;spawn(ch,kind,p,rng,o);placed++;} // rasp, watcher, tread, picker, scuttle: on the floor
     else if(kind==='veil'){p.y=openY(ch,p,rng,30,110);spawn(ch,'veil',p,rng,o);placed++;}
     else if(kind==='ridge'||kind==='ortho'||kind==='abyssal'){p.y=openY(ch,p,rng,15,80);spawn(ch,kind,p,rng,o);placed++;}

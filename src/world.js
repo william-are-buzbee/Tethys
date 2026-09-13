@@ -47,6 +47,23 @@ function tidalAt(x,z,out){const r=Math.hypot(x,z),ex=Math.cos(TIDE_A),ez=Math.si
   const q=Math.max(r,TIDE_R),R2=TIDE_R*TIDE_R/(q*q),rx=x/r,rz=z/r,d=ex*rx+ez*rz; // inside the cylinder the surface flow: 2U tangential
   const ox=TIDE_U*(ex+R2*(ex-2*d*rx)),oz=TIDE_U*(ez+R2*(ez-2*d*rz)),k=smooth(RIM_R+RIM_W,RIM_R-RIM_W,r); // k: 1 inside the rim
   out.set(lerp(ox,ex*TIDE_U*0.5,k),0,lerp(oz,ez*TIDE_U*0.5,k));return out;}
+// ---------- the depth curves: one definition each, for the JS and the GLSL (v11.32) ----------
+// Both of these were written six times between atmosphere.js, chunks.js and scene.js's shader strings, and both had drifted.
+// The daylight curve — how much of the surface's light is left at a depth, the number the fog's veil, the ambient, the sun's
+// own scale and the shadows all read — measured depth from the tide in the JS and from sea level in the GLSL. The difference
+// is the tide over DL_REF: at most 2.2% of the light at spring, nothing below -302 where the curve clamps, so this fixes a
+// disagreement nobody could see rather than a look. The person's call (12 Sep): depth is from the water's surface, so the
+// shader follows the JS. The shader reads TIDE as uFogW.x (scene.js; main.js writes it each frame with the other clock uniforms).
+// The canopy fade — how much of the mats' water a point takes — was a smoothstep over [-90,-60] in the shader and a hard cut
+// at -70 in the JS, so between those depths the ambient light and the fog colour disagreed with the veil actually drawn.
+// The shader's ramp is the right one (the person, 12 Sep) and the JS follows it.
+const DL_REF=420,DL_MIN=0.28; // the depth the daylight curve would reach zero at, and its floor
+function daylightAt(y){return clamp(1+Math.min(0,y-TIDE)/DL_REF,DL_MIN,1);}
+const CAN_LO=-90,CAN_HI=-60; // the canopy's water reaches this far down, faded over the band
+function canopyFade(y){return smooth(CAN_LO,CAN_HI,y);}
+// The chemocline (PLANET): one depth, and the bands the water's look and the sessile life take from it. It was a bare -450
+// in a dozen places with -444/-446/-448/-452/-455/-458/-462/-464/-465/-470 around it, so moving it meant finding all of them.
+const CHEMO=-450,CHEMO_PLATE=2,CHEMO_TINT=[CHEMO+4,CHEMO-12]; // the milky plate's half-thickness; the band the water browns over
 // ---------- the sky's clock: the sun, the moon, the weather (v11) ----------
 // Day and night run on the same clock as the tide (PLANET, Moon: a 30 h day, bright nights under the big moon). The island is
 // tropical (a 26–28 °C mixed layer), so it sits at a low latitude LAT and the sun passes nearly overhead; no axial tilt has
@@ -325,7 +342,7 @@ function findSpot(rng,ok,r0,r1){
 const LM={};
 (function(){const rng=mulberry(4242);
   LM.pit={x:PIT[0],z:PIT[1],h:sample(PIT[0],PIT[1]).h,r:190}; // r: structures keep this clear (the hole is 130 across the rim; a 60 m plate at 111 hung over it)
-  const mud=s=>s.h<-230&&s.h>-450&&s.f[FI.sub]<0.35&&s.f[FI.heat]<0.1;
+  const mud=s=>s.h<-230&&s.h>CHEMO&&s.f[FI.sub]<0.35&&s.f[FI.heat]<0.1;
   LM.bones=findSpot(rng,mud,1290,1430);
   {const vr=(VENT.r0+VENT.r1)/2,x=Math.cos(VENT.a)*vr,z=Math.sin(VENT.a)*vr;LM.chimney={x:x,z:z,h:sample(x,z).h};} // on the fissure
     LM.all=Object.keys(LM).map(k=>LM[k]);})();

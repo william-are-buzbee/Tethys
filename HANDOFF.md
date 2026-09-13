@@ -14,6 +14,24 @@ every top-level name with its line is `src/INDEX.md` (generated). Read a DESIGN 
 
 ## Where things stand
 
+**v11.32 (13 Sep): one number, one place — the drift half of the code review, built, the menu and the forest seen.** CHANGELOG
+v11.32; DESIGN, The medium and The ecology. Four numbers that were written out many times each. The **daylight curve** was six
+copies and the JS measured depth from the tide while the GLSL measured it from sea level: one `daylightAt`/`DL_GLSL` pair now,
+the shader following the JS, which needed the tide in the fog chunk — so `uFogW.x` carries TIDE and the water map's scale, a
+constant of the world's size, is baked into the three shader strings as `WM_SCALE`. The **canopy fade** was a smoothstep in the
+shader and a cut at -70 in the JS; the JS follows the shader now, and **this is the one visible change**: the water under a mat
+fades in over -60..-90 instead of switching. **Two masses** are kept as two on purpose — `bodyMass` floored at 0.6 for contact,
+`bioMass` unfloored for the allometry, because unifying them would halve a flicker's birth rate and the census is drawn on it.
+The **chemocline** is `CHEMO` in world.js with its plate and tint bands derived from it, so moving it is one edit. The two slope
+definitions are left as two (the far layer cannot afford a central difference) and both sites now say why.
+**`node build.js --test` was green on both tiers with the world broken**: the curve in `SUNK_V` put `uFogW` into the *vertex*
+shader, which only `fog_pars_vertex`'s sibling declared, so every Lambert program failed to compile and no flora or creature drew.
+The stub compiles no shaders, so no test could catch it; a menu screenshot against a build of the previous commit found it in one
+frame. **Ask first:** the canopy band at -60..-90 inside a patch (1400 m out, in the current's wake) — does the fade read better
+than the step; then the water's colour across a full tide at 20-60 m, where the shader's daylight now moves by a percent either
+way; then the light shafts' heads under the mats. Left of the review: the dead code and the stale docs (the other half of the
+drift list), and items 14-15 — the shadow-caster pass is the next performance job.
+
 **v11.31.4 (13 Sep): the code review's render, lab and tests group — items 1, 8, 10 and 11, built, the strand seen.** CHANGELOG
 v11.31.4; DESIGN, Land, Flora and materials, The light, Performance. All four stood, and item 8 was the shallow half of a bigger one.
 **No plant had ever stood on the island's land.** The surface cap in `placeFloraType` — the rule that stops a stalk growing out of the

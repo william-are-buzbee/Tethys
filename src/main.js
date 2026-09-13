@@ -55,7 +55,7 @@ let last=performance.now();
 function loop(now){
   requestAnimationFrame(loop);
   const f0=performance.now(),dt=clamp((now-last)/1000,0,0.05);last=now;t+=dt;timeU.value=t;
-  clockH=t*CLOCK_RATE;TIDE=tideAt(clockH);tideU.value=TIDE;tideRU.value=tideRate(clockH);tintU.value.x=TIDE; // the clock and the tide (world.js), once a frame, before anything reads the water level
+  clockH=t*CLOCK_RATE;TIDE=tideAt(clockH);tideU.value=TIDE;tideRU.value=tideRate(clockH);tintU.value.x=TIDE;FOG_W[0]=TIDE; // the clock and the tide (world.js), once a frame, before anything reads the water level (FOG_W[0]: the fog chunk's copy, v11.32 — the daylight curve measures depth from it)
   readTouch();
   // the streaming gets what the rest of the last frame left of Q.target (v11.12): a 3 ms frame leaves 4.5 for the cells, a 6 ms frame 2 (the floor)
   const g0=performance.now();manageChunks(Math.min(Q.budgetMs,Math.max(2,Q.target-(frameMs-genMs))));manageFar(mode==='menu'&&t<2.4?14:Q.farMs);genMs=performance.now()-g0; // the far layer streams in behind the fade (black until ~2.2 s), then in the gaps (v11.12: 14 ms all through the menu had its creatures stuttering for the first second)

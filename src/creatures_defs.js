@@ -7,6 +7,14 @@
 // prey's body no longer means it can never bite what is in front of it — 45 of the 58 predator/prey pairs here are such a pair.
 // strike {tell, dur, speed, range}: the tell then the strike (creatures_ai.js); burst {on, off}: burst-and-coast; preyClade: the
 // player is prey only as that clade; calm: ignores threats; deep: keeps below the chemocline; stand: the watcher's standoff.
+// Two masses, and they are not the same number (v11.32). The cube of size was written six times between here,
+// creatures_ai.js, combat.js and ecology.js, three of them floored at 0.6 and three not, which reads as drift and is not. bodyMass is the physical one —
+// contact, the body push and a hold's struggle — floored so a flicker at 0.064 does not vanish against a ridge. bioMass is
+// the biological one the allometry uses (a birth rate as mass^-0.25, a meal, a carcass's flesh), and flooring it would put
+// a flicker's rate at half what test/census.js is drawn for. Same cube, different floors, named so nobody unifies them.
+const BODY_MIN=0.6;
+function bioMass(d){return d.size*d.size*d.size;}
+function bodyMass(d){return Math.max(BODY_MIN,bioMass(d));}
 const DEFS={
   darter:{build:()=>compile(SPECS.darter),stock:8,size:0.6,speed:3.6,flee:5.5,hp:1,edible:true,food:14,role:'boid',turn:7},
   glim:{build:()=>compile(SPECS.glim),size:0.55,speed:3.0,flee:5,hp:1,edible:true,food:12,role:'boid',turn:7},
@@ -74,7 +82,7 @@ const SPAWN=[
   {kind:'basker',n:4,env:{heat:[0.3,1]}}, // the vents (one cell of them)
   {kind:'picker',n:3,env:{h:[-800,-300]}}, // the lower flank's mud down into the dark (v11.28: to -400 while the void stood; the dark inside the square is the pit and the corners now, and the stone's and basker's food went with it)
   {kind:'picker',n:20,env:{heat:[0.3,1]}}, // and at the vents, in a swarm, picking at the mats (Earth's vent shrimp swarms): the basker's food
-  {kind:'pall',n:0.4,env:{h:[-800,-470]}}, // the dark
+  {kind:'pall',n:0.4,env:{h:[-800,CHEMO-20]}}, // the dark
   {kind:'arrow',grp:5,n:3.75,env:{h:[-62,-5]}}, // arrow squid hunt the shallows and the shelf in packs
   {kind:'great',n:0.1,env:{h:[-150,-8]}},
   {kind:'jelly',n:2,env:{h:[-800,-15]}},

@@ -87,7 +87,7 @@ function* bigsGen(i,j){
       if(u>=q)continue; // the envelope can only lower the chance from here
       const s=sample(x,z),h=s.h,sl=Math.hypot((sample(x+STEP,z).h-h)/STEP,(sample(x,z+STEP).h-h)/STEP);
       if(f.env&&u>=q*envW(f.env,h,sl,fixF(s.f,sl)))continue;
-      if(h<-450)continue;
+      if(h<CHEMO)continue;
       if(nearLandmark(x,z,110))continue;
       let sc=f.s[0]+rng()*(f.s[1]-f.s[0]);
       if(h<0.5&&!f.fill)sc=Math.min(sc,(-(f.clear||12)-h)/(f.top-(f.sink||0)));if(sc<f.s[0]*0.5)continue; // the same test as bigPlace's, here so a rejection draws nothing more
@@ -173,7 +173,7 @@ function* impostorsGen(i,j){
       if(u>=Math.max(pocket,cterm)*field)continue;
       const s=sample(x,z),h=s.h,sl=Math.hypot((sample(x+STEP,z).h-h)/STEP,(sample(x,z+STEP).h-h)/STEP);
       if(u>=Math.max((f.per||0)/maxN*(f.env?envW(f.env,h,sl,fixF(s.f,sl)):1)*pocket,cterm)*field)continue;
-      if(floor&&h<-450)continue;
+      if(floor&&h<CHEMO)continue;
       if(!floor&&h>-4)continue;
       if(floor&&sl>0.9)continue;
       let y=h,sc=f.s?f.s[0]+rng()*(f.s[1]-f.s[0]):1,sy=sc,sxz=sc;
