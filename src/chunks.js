@@ -4,7 +4,10 @@ const CH_RES=48,STEP=CELL/CH_RES,GR=CH_RES+1,LOAD_R=2;
 const chunks=new Map(),chunkGrid=new Array(NCELL*NCELL).fill(null); // same chunks, indexed by cell for cheap 3x3 lookups
 function ckey(i,j){return i+','+j;}
 function cellOf(v){return Math.floor((v+HALF)/CELL);}
-function chunkAt(x,z){return chunks.get(ckey(cellOf(x),cellOf(z)));}
+// the cell at a point, off the grid rather than through a built string key and a Map (v11.33): this is the per-frame ground
+// lookup — every creature, every chain point outside its own cell, the player five times, the audio rays, the snow — and it
+// allocated a string on each call. The range check is not optional: i=1,j=-1 would alias onto cell (0,15) in a flat array.
+function chunkAt(x,z){const i=cellOf(x),j=cellOf(z);return i<0||j<0||i>=NCELL||j>=NCELL?undefined:chunkGrid[i*NCELL+j]||undefined;}
 function groundAt(x,z){const ch=chunkAt(x,z);return ch?ch.h(x,z):sample(x,z).h;}
 // hOut(ch,x,z): the ground for *placing* a thing from a cell being built — the cell's own grid inside it, sample() beyond its
 // edge. ch.h clamps at the grid edge, so a probe that reaches past a cell line reads the edge vertex again and every settleOn
@@ -12,7 +15,8 @@ function groundAt(x,z){const ch=chunkAt(x,z);return ch?ch.h(x,z):sample(x,z).h;}
 // every cell line, one-sided — the face above the point never registered). Deterministic where groundAt is not: it never asks
 // whether a neighbour happens to be loaded. The same rule buildTerrain's hAt1 uses for the cavity term.
 function hOut(ch,x,z){return x<ch.x0||x>ch.x0+CELL||z<ch.z0||z>ch.z0+CELL?sample(x,z).h:ch.h(x,z);}
-// under the canopy mats near the surface (the one place the water's look is not the floor's)
+// Under the canopy near the surface: the one place the water's look is not the floor's. "Mats" until v11.33 — the raft colonies
+// went in v11.16 and the canopy is buttons and sailers now (DRIFTERS.md), which are discs in fleets, not a ceiling.
 function underCanopy(x,z,y){return canopyW(x,z)*canopyFade(y)>0.5;} // v11.32: the shader's ramp (world.js canopyFade), not a cut at -70
 
 function makeChunk(i,j){
@@ -266,7 +270,7 @@ function currentOf(ch,x,z,y,out){steadyOf(ch,x,z,y,out);const r=tideRate(clockH)
 // a point in the cell where the envelope holds (weighted rejection); swimmers get proper water (floor under -5), not the surf
 function chunkPoint(ch,rng,env,land){for(let k=0;k<40;k++){const x=ch.x0+rng()*CELL,z=ch.z0+rng()*CELL,h=ch.h(x,z);if(land?h<=0.5:h>=-5)continue;if(env&&rng()>=ch.w(env,x,z))continue;return V3(x,h,z);}return null;}
 // the cell's mean tolerance for an envelope, over a 6x6 grid of points
-function cellW(ch,env){let w=0;for(let j=0;j<6;j++)for(let i=0;i<6;i++){const x=ch.x0+(i+0.5)/6*CELL,z=ch.z0+(j+0.5)/6*CELL;w+=envW(env,ch.h(x,z),ch.slope(x,z),ch.f(x,z));}return w/36;}
+// (v11.33: cellW is gone — ecology.js ecoCap does the same 6x6 mean over a cell and is the one the ledger uses.)
 function openY(ch,p,rng,lo,hi){if(p.y<CHEMO)return -60-rng()*260;return clamp(p.y+lo+rng()*(hi-lo),p.y+4,-8);}
 // v11.26: a cell spawns what the ledger holds for it (ecology.js ecoTake), placed by kind through placeKind — the same routine the
 // ledger's recruits use (ecoTick), with off:true (out of the player's sight) and juv:true (born small). The sailers' fleets are the

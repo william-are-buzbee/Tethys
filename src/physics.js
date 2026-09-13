@@ -142,6 +142,8 @@ function bodyPush(p,vel,q,len,rc,rn){
 // written into the instance's aDip attribute (scene.js, the bob materials). Only loaded or still-moving pads are ticked.
 const livePads=[];
 function loadPad(s,amount){const I=s.inst;I.load=Math.max(I.load,amount);if(!I.live){I.live=true;livePads.push(I);}}
+// No FLORA entry sets `pads` since the raft went (v11.16.1), so livePads is empty and this is a length check a frame. The path
+// (grow.js vars[].pads, chunks.js f.pads, addPad here) is kept whole: a thing that takes a body’s weight is wanted again (v11.33).
 function updatePads(dt){
   for(let i=livePads.length-1;i>=0;i--){const I=livePads[i];
     I.dv+=((I.load-I.dip)*60-I.dv*7)*dt;I.dip+=I.dv*dt;I.load=0;

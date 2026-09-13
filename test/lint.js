@@ -3,7 +3,7 @@
 // covers the rest: it parses the bundle, tracks scopes, and reports
 //   - every identifier that is not declared anywhere it can see (a typo, a rename missed in another file) -> exit 1
 //   - top-level names no other line references (dead code, or a hook kept on purpose) -> informational
-// Needs acorn. Not vendored: looked for on the usual paths; if it isn't there the check is skipped with a note.
+// Needs acorn, vendored as test/acorn.js (v11.33: this said "not vendored" long after it was).
 const fs=require('fs'),path=require('path');
 const ROOT=path.join(__dirname,'..');
 const ORDER=fs.readFileSync(path.join(ROOT,'src','order.txt'),'utf8').split('\n').map(s=>s.trim()).filter(s=>s&&s[0]!=='#');

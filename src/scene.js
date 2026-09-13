@@ -391,7 +391,7 @@ function farMaterial(){const m=new THREE.MeshLambertMaterial({vertexColors:true,
   sh.vertexShader='uniform float uTime;\n'+sh.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\n#ifdef USE_INSTANCING\n{float sx=length(instanceMatrix[0].xyz),sy=length(instanceMatrix[1].xyz),sz=length(instanceMatrix[2].xyz);float hw=transformed.y*sy;float k=pow(min(hw/25.0,1.0),1.5)*1.2;float ph=uTime*0.55+instanceMatrix[3][0]*0.31+instanceMatrix[3][2]*0.23;transformed.x+=sin(ph)*k/sx;transformed.z+=sin(ph*0.7+1.3)*k*0.6/sz;}\n#endif\n');
   thinLight(sh,0.35);};return m;}
 const MATFAR=addTint(farMaterial(),'lamds',true); // far impostor cards: seen from either side; small-thing fog so the swap with real kelp doesn't pop
-const GLOW=addTint(new THREE.MeshBasicMaterial({vertexColors:true}),'glow');
+const GLOW=addTint(new THREE.MeshBasicMaterial({vertexColors:true}),'glow'); // no FLORA entry sets `glow` since v10.1 took the bioluminescence out; kept, with its branches in chunks.js, for when it returns as events (PLANET Hooks) — one program at the boot warm-up (v11.33)
 const MATT=addTint(new THREE.MeshLambertMaterial({vertexColors:true,transparent:true,opacity:0.7}),'lamt',true); // translucent small creatures (the flicker); bakeLOD skips transparent parts, so they keep their real mesh at far LOD
 const TERRAIN_MAT=addTint(Q.phong?new THREE.MeshPhongMaterial({vertexColors:true,flatShading:true,shininess:0,specular:0x000000}):new THREE.MeshLambertMaterial({vertexColors:true}),'terr',false,0.7);
 // Instanced sway: displacement in world units, scaled per instance so tall and short plants bend alike.
@@ -466,16 +466,9 @@ function swayMaterial(amp,freq,hn,dir,bob,H,strand,cap,cut,thin){
 const PULSE_GLSL='{float pp=uTime*0.7+instanceMatrix[3][0]*0.37+instanceMatrix[3][2]*0.29;float pk=smoothstep(0.25,1.0,transformed.y)*0.025*(1.0+0.5*sin(pp*1.7));transformed.xz*=1.0+pk*sin(pp);}';
 function varMaterial(dead){const m=new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide});m.onBeforeCompile=function(sh){sh.uniforms.uTime=timeU;sh.vertexShader='uniform float uTime;\n'+VAR_GLSL+sh.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>'+FAR_CUT+VAR_COLLAPSE+(dead?'':'\n#if defined(USE_INSTANCING)&&!defined(DEPTH_PASS)\n'+PULSE_GLSL+'\n#endif\n'));};return addTint(m,dead?'lamvd':'lamv',true);} // no breathing in the world's shadow map (v11.30) // cut beyond FLORA_FAR too (v11.12)
 const MATV=varMaterial(),MATVD=varMaterial(true); // MATVD: the variants without the breath — a stranded float is a corpse (v11.31.4)
-// Additive (emissive-only) things — the glow clouds — must not take the veil's colour, only lose their own with distance:
-// mixing toward the veil and then adding it leaves a bright smudge at any range (the cyan speckles on the massif floor in
-// the v8.3 screenshots). This swaps the fog for extinction alone, the same transmittance curve.
-function fogExtinctOnly(m){
-  const prev=m.onBeforeCompile;
-  m.onBeforeCompile=function(sh){if(prev)prev.call(m,sh);sh.fragmentShader=sh.fragmentShader.replace('#include <fog_fragment>','\n#ifdef USE_FOG\n{float d=vFogDepth;\n#ifdef FOG_EXP2\nfloat tn=exp(-fogDensity*fogDensity*d*d);\n#else\nfloat tn=1.0-smoothstep(fogNear,fogFar,d);\n#endif\ngl_FragColor.rgb*=mix(exp(-uFogP.x*d),tn,uFogP.y)'+FOG_CUT_GLSL+';}\n#endif\n');};
-  m.customProgramCacheKey=function(){return 'extinct';};
-  return m;
-}
-const MATG=swayMaterial(0.35,1.6,2.4,1,false,2.4,false,true,true,0.35),MATB=swayMaterial(3.0,0.5,45,1,false,1.0,false,true,false,0.3),MATR=swayMaterial(2.2,0.9,12,-1,true,12,true,false,false,0.2),MATR2=swayMaterial(5.0,0.45,80,-1,true,14,true,false,false,0.15), // the bladder, rafts and colonies: no cut, their cards take over
+// (v11.33: fogExtinctOnly is gone — nothing has called it since the glow clouds went in v10.1. The rule it carried stands and the
+// light shafts re-implement it by hand: an additive thing must lose its own colour with distance and never take the veil's.)
+const MATG=swayMaterial(0.35,1.6,2.4,1,false,2.4,false,true,true,0.35),MATB=swayMaterial(3.0,0.5,45,1,false,1.0,false,true,false,0.3),MATR=swayMaterial(2.2,0.9,12,-1,true,12,true,false,false,0.2), // the bladder, rafts and colonies: no cut, their cards take over
   MATW=swayMaterial(0.5,1.1,6,1,false,6.5,false,true,true,0.35), // whip corals bend too (fans are rigid and solid since v9.1); cut beyond FLORA_FAR
   MATS=swayMaterial(3.2,0.7,40,1,false,1.0,false,true), // the stipe: unit height stretched to the surface like the bladder, a slower deeper sway; no cut (the cards)
   MATM=swayMaterial(1.6,1.0,12,1,false,14,false,true,true,0.35), // mid-height weed (ladder, ribbon, the pen): bends over its top ten metres; cut

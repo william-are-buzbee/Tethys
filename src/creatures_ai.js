@@ -169,7 +169,7 @@ function dropTarget(c,cool){
   if(c.state!=='feed'&&c.state!=='sit'){c.state=c.def.role==='ambush'?'return':'wander';if(c.state==='wander')setWander(c);}
 }
 // The bite that lands (v11.31: combat.js): forage dies at the touch; anything that can fight is taken hold of, and the hold bites
-function landBite(c,tg){combatBite(c,tg);}
+function landBite(c,tg){if(tg)combatBite(c,tg);} // the guard is here and not at the four call sites: dropTarget can null a target mid-strike (v11.33)
 // Hunger (v11.26): a hunter's clock runs from fed (0) to starving (1) over its kind's cycle (ecology.js) and it hunts only past
 // ECO.hungry — a fed ridge cruises past the player; a kill sets it back by the prey's mass over its meal; at 1 it starves, and
 // past a cycle and a fifth of that it dies (a carcass). The feed state: it stays at a carcass it made and eats

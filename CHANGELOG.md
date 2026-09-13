@@ -2417,3 +2417,50 @@ All three are CPU: `renderer.render` is the submit, and the GPU runs behind it.
 still streaming, and `work 23.6/573.5ms` on the frame after a teleport, which is the cell burst showing up exactly as it should.
 **Unseen:** the numbers on the 4060 — that is the first thing the shadow-caster pass wants (`analysis_review.md` item 14), and what
 this change exists to make readable.
+
+## v11.33 — the dead and the stale: the rest of the drift list (13 Sep 2026)
+The second half of `analysis_review.md`'s drift section. Small fixes, five removals, and four inert paths kept on purpose with a
+note at each so the next reader neither deletes them nor has to find out again why they are there.
+
+**Real fixes.**
+- **`chunkAt` off the grid, not through a string key.** It built `i+','+j` and hit a `Map` on every call, and it is *the* per-frame
+  ground lookup: every live creature, every chain point outside its own cell, the player five times a frame, the audio rays, the
+  snow. `chunkGrid` has existed for this since v11.12 and `solidPush` already used it. Range-checked, because `i=1, j=-1` would
+  alias onto cell (0, 15) in a flat array. Verified in the running page: 4000 random points across ±2600 and the six just-outside-the-
+  square cases, zero disagreements with the old path.
+- **The ecology stopped throwing away time.** `ecoTick` clamped the elapsed game days to 0.5 and set `POP.last` to now, so a hidden
+  tab or a long spell in the menu or the lab lost every day past the first half. The excess is carried on `POP.last` now
+  (`ECO_MAX_STEP`), so the model runs it on the following ticks instead of dropping it.
+- **The starvation tally** read `n` after the decrement and undercounted the readout's `starved` by a factor of `1 − s·dt`.
+- **`landBite` guards its target.** `dropTarget` (v11.31.1) can null a target mid-strike and two of the four call sites did not
+  re-check; the guard is in the function, once, rather than at each site.
+- **Alt-tab no longer leaves you swimming.** `blur` cleared the mouse grab and not the held keys, so tabbing away on W came back
+  still moving.
+- **`serve.js` survives a malformed URL.** A stray `%` threw inside the request handler and took the server down; it is a 400 now.
+
+**Removed** (all five were on lint's unused list, and that list is now empty): `fogExtinctOnly` (nothing has called it since the
+bioluminescence went in v10.1; the rule it carried is still true and the light shafts re-implement it by hand), `moonIllum` (the lit
+fraction comes from the two directions since v11), `trunkPose` (no spec ever used it), `cellW` (ecology.js `ecoCap` is the one the
+ledger uses), `ecoCell`. Also **`MATR2`** — a whole sway program with no user, compiled at every boot by the warm-up.
+
+**`ROSTER.new` cleared on the fifteen species that spawn** (rasp, watcher, pall, needle, basker, stone, crusher, trap, hook, tread,
+picker, flicker, comb, deepbell, sailer). `new` means built and not yet placed, and the bestiary captions it "built, not yet
+placed", so it had been lying about fifteen of the thirty-six for several versions. It stands on hood, lash, ram and greatsailer,
+which is correct. The darter's niche no longer says "(unspawned)".
+
+**Kept, with a note where it lives:** `GLOW` and the `f.glow` branches (for when bioluminescence returns as events — PLANET Hooks);
+the whole `pads` path through grow.js, chunks.js and physics.js (an empty loop a frame, and a thing that takes a body's weight is
+wanted again); `y:'mid'`; and `DEFS.glim`/`SPECS.glim`/`PAL.glim` — the darter's pale variant is a roster question for the person,
+not drift. **Not done, deliberately:** the fog tuner's `o`/`p` collide with the lab's `place` and first person, but `g-h`, `j-k` and
+`v-b` are the audio tuner's and the rest of the alphabet is the game's, so picking a new pair blind risked a worse collision.
+
+**Stale lines fixed where they live:** lint.js said acorn was not vendored (it is, as `test/acorn.js`); `creatures_spec.js` cited
+`test/spec.js` (it is `test/ident.js`); `chunks.js`'s `underCanopy` still called the canopy "mats", which it has not been since the
+raft colonies went in v11.16 — it is buttons and sailers, discs in fleets rather than a ceiling. CLAUDE.md's known-stale list is
+rewritten around what is actually left.
+
+**Seen** (dev.html): the menu and the weed forest at (330, 0), unchanged; and the `chunkAt` equivalence run above, read out of the
+running page. `node build.js --test` green on both tiers; lint reports no unused top-level names for the first time.
+**Unseen:** whether anything reads differently at all — nothing here should. The ecology's carried time only shows over a long
+session; the starvation tally only in the readout's `starved`. Left of the review: items 14 and 15 (the shadow-caster pass is next,
+and the person's 4060 now reads `work 5.9/7.9ms` in the forest against an 8.3 ms budget, the 2 ms gap being the shadow re-render).

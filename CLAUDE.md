@@ -193,9 +193,12 @@ Docs, most upstream first. When a doc's Open list says a choice is the person's,
   change; nothing else is cleaned speculatively. Known stale spots: README's Node path and "a lily pad takes your weight" (pads went
   with the raft, v11.16.1) and its doc table (missing TAXA, DRIFTERS, AUDIO); CREATOR.md and TAXA.md headers say nothing is built;
   CHANGELOG has two v11.18.1 entries; DESIGN has two Landmarks sections and opens The medium with `GRAV=14`; "biome" wording in
-  far.js and scene.js; lint.js says acorn is not vendored; `creatures_spec.js` cites `test/spec.js` (it is `test/ident.js`); the
-  hand-builder branches in `creatures_defs.js` and zoo.js; `ROSTER.new` on species that spawn; reef `fill`/`drop`/`clear` handling
-  with no entry setting them; the chemocline depth −450 as a literal in ~10 places.
+  far.js and scene.js; the hand-builder branches in `creatures_defs.js` and zoo.js; reef `fill`/`drop`/`clear` handling with no
+  entry setting them. **Left alive on purpose** (v11.33, and each says so where it lives): `GLOW` and the `f.glow` branches, for
+  when bioluminescence returns as events (PLANET Hooks); the `pads` path through grow.js, chunks.js and physics.js, which costs an
+  empty loop a frame; `y:'mid'`; and `DEFS.glim`, `SPECS.glim` and `PAL.glim` — the darter's pale variant is a roster question, not
+  drift. Fixed in v11.32-11.33: the chemocline literal (`CHEMO`), the daylight and canopy curves, the two masses, `ROSTER.new` on
+  the fifteen species that spawn, lint.js's acorn line and `creatures_spec.js`'s `test/spec.js`.
 
 ## Things that bite
 

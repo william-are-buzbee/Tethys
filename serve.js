@@ -9,7 +9,7 @@ const http=require('http'),fs=require('fs'),path=require('path');
 const ROOT=__dirname,PORT=+(process.env.PORT||8080);
 const MIME={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.json':'application/json','.png':'image/png','.md':'text/plain; charset=utf-8','.txt':'text/plain; charset=utf-8','.css':'text/css'};
 http.createServer((req,res)=>{
-  const url=decodeURIComponent(req.url.split('?')[0].split('#')[0]);
+  let url;try{url=decodeURIComponent(req.url.split('?')[0].split('#')[0]);}catch(e){res.writeHead(400);res.end('bad url');return;} // a stray % threw here and took the server down with it
   const file=path.normalize(path.join(ROOT,url==='/'?'/dev.html':url));
   if(!file.startsWith(ROOT)){res.writeHead(403);res.end();return;}
   fs.readFile(file,(err,data)=>{

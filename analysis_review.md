@@ -25,6 +25,12 @@ of the previous commit is what found it. See the CHANGELOG entry.
 cell's whole structure pass measures 0.27-0.54 ms over all 256 cells, inside farMs — `sample()` warm is 0.7 µs, not the ~35 µs far.js was
 citing (that is its cold figure). See the CHANGELOG entry.
 
+**Fixed: the rest of the drift list, v11.33 (13 Sep).** chunkAt off the grid, the ecology carrying its elapsed time, the
+starvation tally, landBite's guard, blur clearing keys, serve.js's 400; five dead names and MATR2 removed (lint now reports none
+unused); ROSTER.new cleared on the fifteen species that spawn; the acorn, test/spec.js and "canopy mats" lines corrected. GLOW, the
+pads path, y:'mid' and glim are kept on purpose and say so where they live. The fog tuner's o/p collision is NOT fixed: every free
+key pair is already the audio tuner's or the game's. **What is left of this file: items 14 and 15.** See the CHANGELOG entry.
+
 ## Real bugs, worth a patch each
 1. ~~**Light shafts never take the sun's colour**~~ — **fixed v11.31.4** (`shU.uCol` on its own line; the shafts read `K.lumC`, warm at a
    low sun, silver under the moon).

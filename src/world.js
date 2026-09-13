@@ -101,7 +101,7 @@ const PLANETS=[[38,[1.0,0.96,0.88],1.0],[141,[0.98,0.92,0.80],0.7],[-73,[0.85,0.
 function skyDir(ha,out){const c=Math.cos(ha),sl=Math.sin(LAT);return out.set(-Math.sin(ha),Math.cos(LAT)*c,sl*c);} // hour angle 0 at upper transit, declination 0: rises east, transits south of the zenith by LAT, sets west
 function sunHA(h){return TAU*((h+SOLAR_H0)%DAY_H-DAY_H/2)/DAY_H;}
 function moonHA(h){return TAU*(h-MOON_T0)/LUNAR_H;}
-function moonIllum(h){return 0.5+0.5*Math.cos(TAU*h/(2*DAY_H*SPRING_D));} // the lit fraction seen from the ground: 1 at boot (full), 0 at 13 days (new)
+// (v11.33: moonIllum is gone — the lit fraction comes from the sun's and moon's own directions since v11, atmosphere.js updateSky.)
 // The weather: trade-wind weather over a warm sea — fair-weather cloud most of the time (cover 0.15–0.6 on a slow noise over
 // a few game hours), and now and then a shower cell passing through on the wind (rain 0..1 for half an hour to an hour of
 // game time — a minute or so real — under a dark, thicker sky). One function of the hour so it is the same on every visit.

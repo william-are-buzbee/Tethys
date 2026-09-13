@@ -13,7 +13,7 @@ canvas.addEventListener('contextmenu',e=>{e.preventDefault();});
 canvas.addEventListener('mousedown',e=>{if(mode!=='play')return;if(e.button===2){mouseGrab=true;return;}if(e.button!==0)return;if(locked){bite();}else{drag={x:e.clientX,y:e.clientY,moved:0};tryLock();}});
 addEventListener('mousemove',e=>{if(mode!=='play')return;if(locked){look(e.movementX||0,e.movementY||0);}else if(drag){const dx=e.movementX||0,dy=e.movementY||0;drag.moved+=Math.abs(dx)+Math.abs(dy);look(dx,dy);}});
 addEventListener('mouseup',e=>{if(e.button===2){mouseGrab=false;return;}if(drag&&!locked&&drag.moved<4&&!lockArrived)bite();drag=null;lockArrived=false;});
-addEventListener('blur',()=>{mouseGrab=false;});
+addEventListener('blur',()=>{mouseGrab=false;for(const k in keys)keys[k]=false;}); // v11.33: alt-tab while holding W left the player swimming until the key was pressed again
 addEventListener('keydown',e=>{if(e.code==='Space'||e.code==='KeyC'||e.code==='ShiftLeft')e.preventDefault();if(e.code==='Tab'&&mode==='play'){e.preventDefault();if(locked)unlock();else tryLock();}if(!keys[e.code]){keys[e.code]=true;if(e.code==='KeyQ')ability();if(e.code==='KeyM')toggleMute();if(e.code==='KeyF'&&mode==='play')toggleFP();if(e.code==='Backquote'||e.code==='Quote'||e.code==='F3')toggleStats();}if(showStats&&e.code!=='Backquote'&&e.code!=='Quote'&&e.code!=='F3')fogTune(e.code);});
 addEventListener('keyup',e=>{keys[e.code]=false;});
 const tstate={L:null,R:null};

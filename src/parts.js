@@ -131,10 +131,7 @@ function linePose(rig,lx,lz,lean,tf){
 }
 // A trunk in front of a head (the hose's proboscis): n segments of length L running +z from the origin, curling down by
 // `curl` per segment (negative: up) with a slow wobble, and a sideways wander `yaw` per segment. Rest points for the chain.
-function trunkPose(c,L,curl,yaw,tf){
-  const R=c.restL;let y=0,z=0,x=0,S=0,Y=0;R[0]=0;R[1]=0;R[2]=0;
-  for(let k=0;k<c.n;k++){S+=curl+0.08*curl*Math.sin(tf+k*0.7);Y+=yaw*Math.sin(tf*0.6+k*0.5);const cs=Math.cos(S);x+=L*cs*Math.sin(Y);z+=L*cs*Math.cos(Y);y-=L*Math.sin(S);R[(k+1)*3]=x;R[(k+1)*3+1]=y;R[(k+1)*3+2]=z;}
-}
+// (v11.33: trunkPose, a proboscis pose for a chain, is gone — no spec ever used it; the hose's appendage is a rig posed by ringPose.)
 // Flatten an animated creature group into one static mesh per material, in the group's local frame.
 // Used as the far LOD: one draw call instead of thirty. Transparent parts (jelly bells) are skipped.
 function bakeLOD(g){

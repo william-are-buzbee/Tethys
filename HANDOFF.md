@@ -14,6 +14,16 @@ every top-level name with its line is `src/INDEX.md` (generated). Read a DESIGN 
 
 ## Where things stand
 
+**v11.33 (13 Sep): the dead and the stale — the rest of the drift list, built.** CHANGELOG v11.33. Real fixes: `chunkAt`
+reads `chunkGrid` instead of building a string key and hitting a Map on the per-frame ground path (verified equivalent over 4000
+points in the running page); the ecology carries elapsed time past half a game day instead of dropping it; the starvation tally
+reads `n` before the decrement; `landBite` guards a target `dropTarget` can null mid-strike; `blur` clears held keys; serve.js
+survives a malformed URL. Removed: `fogExtinctOnly`, `moonIllum`, `trunkPose`, `cellW`, `ecoCell` and the unused `MATR2` program —
+lint now reports no unused names at all. `ROSTER.new` cleared on the fifteen species that spawn, so the bestiary stops captioning
+them "not yet placed". Kept on purpose with a note at each: `GLOW`, the `pads` path, `y:'mid'` and `glim` (a roster question).
+Not done: the fog tuner's o/p collide with the lab's place — every free pair is already the audio tuner's or the game's.
+**Nothing here should look different.** Left of the review: items 14-15, the shadow-caster pass.
+
 **v11.32.1 (13 Sep): the readout shows the work.** The first line carries `work <ema>/<max>ms` and `gen <ema>ms` now — the
 frame's own cost, the worst frame in the last quarter second, and the streaming's share. Until now it printed only the vsync
 interval, so a capped display read 8.3 ms and 120 fps whatever the frame cost and the headroom was invisible. The max is what the

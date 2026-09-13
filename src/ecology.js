@@ -10,6 +10,7 @@
 // tide and the sky are, so a session sees a turnover a real reef takes seasons over. The *ratios* are Earth's: a rate scales with
 // mass^-1/4 (Fenchel: a flicker breeds sixty times as fast as a ridge), a hunger clock with mass^1/4, and a meal is a fraction of
 // the biggest prey the hunter takes. Nothing here has a biome or a label; capacity is the envelope's tolerance summed over the cell.
+const ECO_MAX_STEP=0.5; // game days the model will run in one tick; the rest is carried on POP.last (v11.33)
 const ECO_STEP=3; // real seconds between ticks of the model
 const ECO_CELLS=NCELL*NCELL,DAY_S=DAY_H/CLOCK_RATE; // cells; real seconds in a game day (2400)
 // the knobs (per game day unless said): r0 the birth rate at unit mass, m the natural death as a fraction of r, cyc the hunger
@@ -42,7 +43,6 @@ function ecoInit(){
   SPAWN.forEach((e,i)=>{POP.n[i]=new Float32Array(ECO_CELLS);POP.k[i]=new Float32Array(ECO_CELLS);POP.ke[i]=new Float32Array(ECO_CELLS);POP.cd[i]=new Float32Array(ECO_CELLS).fill(0.7);POP.ow[i]=new Float32Array(ECO_CELLS);(POP.byKind[e.kind]||(POP.byKind[e.kind]=[])).push(i);ecoOf(e.kind);});
   POP.gen=ecoGen();
 }
-function ecoCell(x,z){return cellOf(x)*NCELL+cellOf(z);}
 // the capacity of a cell for every entry: the envelope's mean tolerance over a 6×6 grid (chunks.js cellW does the same from the
 // cell's own grid; a cell nobody has loaded is sampled here, 36 samples at ~35 µs). The first time a cell is known its count starts
 // at a fraction of capacity; a cell that is known on paper and then loaded keeps its count, rescaled to the grid's capacity
@@ -110,7 +110,7 @@ function* ecoModelGen(dt,isLoaded){
     for(let ei=0;ei<E;ei++){const e=SPAWN[ei],K=ecoOf(e.kind),cap=K.hunter?POP.ke[ei][c]:POP.k[ei][c],ow=loaded?POP.ow[ei][c]:0;let n=POP.n[ei][c]+ow; // a loaded cell breeds from its living plus what it is already owed
       if(!K.mortal){POP.n[ei][c]=cap;continue;}
       if(!loaded&&n>0){const T=ECO_TAKE[e.kind][c];if(T>0){const t=T*n/ECO_B[e.kind][c];n=Math.max(0,n-t);POP.eaten+=t;}} // this entry's share of its kind's take, in individuals
-      let grow;if(K.hunter){const cd=POP.cd[ei][c];grow=K.r*cd*(cap>0?1-n/cap:0);if(!loaded&&cd<ECO.starve){const s=(0.35/K.cycle)*(ECO.starve-cd)/ECO.starve;n-=n*s*dt;POP.starved+=n*s*dt;}}
+      let grow;if(K.hunter){const cd=POP.cd[ei][c];grow=K.r*cd*(cap>0?1-n/cap:0);if(!loaded&&cd<ECO.starve){const lost=n*(0.35/K.cycle)*((ECO.starve-cd)/ECO.starve)*dt;n-=lost;POP.starved+=lost;}}
       else grow=K.r*(cap>0?1-n/cap:0);
       const b=Math.max(0,grow)*n*dt,d=K.m*n*dt;if(b>0)POP.births+=b;POP.deaths+=d;
       if(loaded){POP.ow[ei][c]=clamp(ow+b-d,0,Math.max(cap,1/Q.creatures));continue;} // owed, not banked: n there is the living (v11.31.2), and the natural death the live world never runs pays for the births it never runs either. The ceiling is the cell's capacity or one clutch, whichever is larger, so a rare kind can still owe its one
@@ -135,7 +135,7 @@ const ECO_CNT=new Float32Array(64);
 function ecoTick(dt0){
   if(POP.gen){const r=POP.gen.next();if(r.done)POP.gen=null;}
   if(POP.model){if(!POP.model.next().done)return;POP.model=null;} // a piece of the model a frame, the reconcile when it is done
-  else{POP.acc+=dt0;if(POP.acc<ECO_STEP)return;const dtDays=(clockH-POP.last)/DAY_H;POP.last=clockH;POP.acc=0;if(dtDays<=0)return;POP.model=ecoModelGen(Math.min(dtDays,0.5),c=>chunkGrid[c]!==null);return;}
+  else{POP.acc+=dt0;if(POP.acc<ECO_STEP)return;const dtDays=(clockH-POP.last)/DAY_H;POP.acc=0;if(dtDays<=0)return;const use=Math.min(dtDays,ECO_MAX_STEP);POP.last=clockH-(dtDays-use)*DAY_H;POP.model=ecoModelGen(use,c=>chunkGrid[c]!==null);return;}
   for(const ch of chunks.values()){const c=ch.i*NCELL+ch.j;if(!POP.done[c])continue;ECO_CNT.fill(0);for(const o of ch.creatures)if(o.alive&&o.ent>=0)ECO_CNT[o.ent]+=1;for(const g of ch.eggs)ECO_CNT[g.ent]+=g.n;
     for(let ei=0;ei<SPAWN.length;ei++){const e=SPAWN[ei],K=ecoOf(e.kind);if(!K.mortal)continue;
       const gap=POP.n[ei][c]*Q.creatures-ECO_CNT[ei],ow=POP.ow[ei][c]*Q.creatures,extra=Math.floor(gap+ow+1e-4); // the ledger's own shortfall (a reload rounded down, a creature wandered out) plus the births the cell has been owed since it loaded, both in animals the cell actually shows (Q.creatures)

@@ -3062,7 +3062,7 @@ function coatFor(clade, depth, diet, rng) {
 }
 
 // ---------- the species that are specs ----------
-// Each entry is the hand builder it replaced, parameter for parameter (v11.10: the tris and extents match to the bit; test/spec.js).
+// Each entry is the hand builder it replaced, parameter for parameter (v11.10: the tris and extents match to the bit; test/ident.js).
 // s is the authoring scale DEFS/CLADES built at; size the roster's half-length; coat the PAL key; hit the builder's own capsules.
 const FIN_PROF = [
     [0.02, -0.58],
