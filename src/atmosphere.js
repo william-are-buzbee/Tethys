@@ -49,7 +49,7 @@ const SURF_MAT=(function(){
         'float ph=fract(uTime*0.9+h.x),on=step(fract(h.x*7.3),0.3+0.6*uRain);vec2 o=(h.yz-0.5)*0.36;float dd=length(cf-o)*0.8,rr=ph*0.34;'+
         'float ring=(1.0-smoothstep(0.0,0.045,abs(dd-rr)))*(1.0-ph)*(1.0-ph),dot0=(1.0-smoothstep(0.0,0.05,dd))*(1.0-smoothstep(0.0,0.15,ph));'+
         'diffuseColor.rgb=mix(diffuseColor.rgb,vec3(0.80,0.86,0.88),(ring*0.55+dot0)*on*rk);}}}'+ // a drop's ring (v11.18): per 0.8 m cell a splash then a ring growing out and fading over 1.1 s, within ~30 m; it was a bright 0.67 m square per cell for a frame
-        'else{normal=-normal;snell=smoothstep(0.25,0.65,cv);diffuseColor.rgb=vec3(0.22,0.46,0.56)*snell;diffuseColor.a=mix(0.74,0.62,snell);}}')
+        'else{normal=-normal;snell=smoothstep(0.25,0.65,cv);diffuseColor.rgb=vec3(0.22,0.46,0.56)*snell;diffuseColor.a=1.0;}}') // the underside is opaque (v11.42.1): outside the window it is a total-internal-reflection mirror, inside it the window's own colour until WATER.md B draws the refracted sky. At 0.62–0.74 the shore and the sky behind it — fogged as air since v11.42 — bled through and flickered as the facets flipped (the person's video: a white flash at the water line); the black dome and the shimmer used to be what showed through
       .replace('#include <emissivemap_fragment>','#include <emissivemap_fragment>\nif(!gl_FrontFacing&&uUnder>0.5)totalEmissiveRadiance=mix(fogColor*0.9,vec3(0.16,0.34,0.42)*uWin*(0.35+0.65*uDf),snell);')
       .replace('#include <lights_fragment_end>','#include <lights_fragment_end>\nif(!gl_FrontFacing&&uUnder>0.5){vec3 L=directionalLights[0].direction;vec3 V=normalize(vViewPosition);vec3 T=refract(-V,-normal,1.25);float g=pow(saturate(dot(T,L)),40.0)*smoothstep(0.60,0.72,cv2);reflectedLight.directSpecular+=uGlint*g*1.5*snell;}');
   };
@@ -229,7 +229,7 @@ const hzS={h:0,f:new Float32Array(NF)};
 function updateHaze(dt,above){const K=SKY,rk=K.rainA,wk=K.windK;
   const smp=above?sample(player.pos.x,player.pos.z,hzS):null;const sp=smp?smp.f[FI.expo]:K.spray,lg=smp?smp.f[FI.shel]:K.lag;
   K.spray+=(sp-K.spray)*(1-Math.exp(-0.7*dt));K.lag+=(lg-K.lag)*(1-Math.exp(-0.7*dt));
-  SEA_CHOP=chopU.value=0.25+0.75*wk;
+  SEA_CHOP=chopU.value=FOG_TC[1]=0.25+0.75*wk;
   MIST_P[0]=HAZE.dens*(1+2.5*rk);MIST_P[1]=1/(HAZE.h*(1+1.5*rk));MIST_P[2]=HAZE.spray*K.spray*K.spray*wk*wk*(1+0.8*rk);MIST_P[3]=1/HAZE.sprayH;MIST_W[0]=TIDE;
   // the vog: the plume's axis runs downwind from the cone; s along it, q across; the half-width grows; in a calm it pools round the cone
   {const dx=player.pos.x-FUME.x,dz=player.pos.z-FUME.z,wx=Math.cos(WIND_A),wz=Math.sin(WIND_A),sA=dx*wx+dz*wz,q=-dx*wz+dz*wx;
@@ -265,8 +265,8 @@ function updateFume(dt,above){const K=SKY;fume.visible=above;if(!above)return;co
 // half a metre overhead covering the whole sky), then the near plane sliced it (a straight edge sweeping down to the horizon in five
 // frames), then it was culled: the band of transition at the water line in the person's video.
 const sunTex=(function(){const cv=document.createElement('canvas');cv.width=cv.height=256;const cx=cv.getContext('2d');const gr=cx.createRadialGradient(128,128,0,128,128,128);gr.addColorStop(0,'rgba(255,250,230,0.85)');gr.addColorStop(0.25,'rgba(200,235,240,0.35)');gr.addColorStop(1,'rgba(0,0,0,0)');cx.fillStyle=gr;cx.fillRect(0,0,256,256);return new THREE.CanvasTexture(cv);})();
-const SHIM_H=1.5,SHIM_A=1.4; // the shimmer plane's height above the surface (above the highest crest, WAVE_AMP 1.17) and its strength (0.9 when it drew over the surface; ×1.5 now that the surface blends over it)
-const sunMesh=(function(){const m=new THREE.Mesh(new THREE.PlaneGeometry(90,90),new THREE.MeshBasicMaterial({map:sunTex,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,opacity:0.9}));m.rotation.x=HPI;m.renderOrder=-2;scene.add(m);return m;})();
+const SHIM_H=1.5,SHIM_A=0.9; // the shimmer plane's height above the surface (above the highest crest, WAVE_AMP 1.17) and its strength (v11.42.1: drawn over the opaque underside again, no depth test — nothing but the surface is between it and an underwater camera — so back to 0.9 from the 1.4 that made up for the surface's alpha)
+const sunMesh=(function(){const m=new THREE.Mesh(new THREE.PlaneGeometry(90,90),new THREE.MeshBasicMaterial({map:sunTex,transparent:true,depthWrite:false,depthTest:false,blending:THREE.AdditiveBlending,opacity:0.9}));m.rotation.x=HPI;m.renderOrder=0;scene.add(m);return m;})();
 // Light shafts (v11.13, POLISH.md 3, the person: "as long as it's not forced and is believably based on appropriate water physics").
 // SH_K² tall additive quads (3 × up to 30 m) hanging from SH_TOP under the surface along the refracted sun (SUN_W), on a fixed world
 // grid of SH_S m cells round a centre 12 m ahead of the camera toward the sun's azimuth (where rays are seen): a shaft is a function of

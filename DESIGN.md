@@ -286,7 +286,7 @@ mirror of the water below: no diffuse, emissive `fogColor·0.9` (the veil at the
 horizon is one colour whether the eye lands on the surface, the far floor or the dome. Knobs: the window band
 `0.25/0.65` (raise both to shrink the bright cone; the old look is `snell = 1`), the mirror's `0.9`.
 
-**The camera at the surface (`player.js`).** `player.camAbove` is which side of the water the camera is on. The camera
+**The camera at the surface (`player.js`).** *v11.42: the camera is no longer held clear of the water — `CAM_CLEAR` and the target's nudge are gone; it rests on the line if the player puts it there, and the view is half air, half water, because the fog is decided per fragment (below, The two-segment fog). `camAbove` flips `CAM_FLIP` 0.4 past the wave with `CAM_DWELL` and drives only the light's crossfade, the sound and the water's own things. The paragraph as written describes v11.6–v11.41.* `player.camAbove` is which side of the water the camera is on. The camera
 target is nudged to stay ≥0.5 clear of the wave on its side, and flips only when its natural spot is >0.9 past the
 surface on the other side and not within `CAM_DWELL` (0.5 s) of the last flip; swimming right at the surface puts the camera above, looking down at
 you through the water. **The camera itself is then held `CAM_CLEAR` (0.35, above the near plane) clear of the wave at its own x,z**
@@ -618,7 +618,9 @@ Phong terrain alone while everything else was fogged from the world origin (CHAN
 scene black): comment the four `C.xxx=` assignments out and the game is back to three's planar fog with the far layer
 still working.
 
-**Through-water tint** (`scene.js` `addTint`): injects a `vWy` world-height varying and, before the fog, mixes the
+**The two-segment fog (v11.42, v11.42.1; `scene.js` fog block: `fogVeil`, `fogWater`, `fogAir`; `FOG_A`, `FOG_AC`, `FOG_TC`, `FOG_PSURF`, `UPWELL`, `SCAT`).** The medium is not the camera's: every ray is cut where it crosses the water (the wave at the camera, `uFogAC.w`; the wave sum per fragment within 3 m of the tide; the mean beyond) and each part takes its own medium's fog, the part nearer the fragment first — the water's veil (the old body, now a function of its origin) and the air's haze and mist. `uFogP.w` is now "may split"; 0 on the surface mesh, whose fragments are the boundary. From above a downward ray's water is darkened toward `UPWELL` (the old tint colour over `WCOL[0]`), the water part is fogged over the *whole* ray's length (v11.42.1: the true ray refracts and shows a compressed sliver this geometry cannot draw; by its own length the far forest came through crisp from 2 m up), and its transmittance goes to zero at grazing by the chop's scatter (`SCAT` on the ray's elevation × the chop). The surface's topside body is `SURF_BODY` 0.22 of alpha at normal incidence (0.66 before); its underside is opaque (v11.42.1). The through-water tint below is **gone** (v11.42); the paragraph stays for the history.
+
+**Through-water tint** (`scene.js` `addTint`, v5–v11.41): injects a `vWy` world-height varying and, before the fog, mixes the
 fragment toward `TINT_COL` by `1−exp(−0.05·depth)` × `uTint.y`. `uTint.y` is 1 only when the camera is above water, so
 from above the reef reads pale and the shelf reads deep blue through the transparent surface; under water the ordinary
 fog does the job and the tint is off. Applied to `MAT`, `MATBIG`, `MATFAR`, `GLOW`, `TERRAIN_MAT` and all sway materials;

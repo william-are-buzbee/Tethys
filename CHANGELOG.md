@@ -3097,3 +3097,32 @@ under the surface over the shelf with the sky above the line and the seabed belo
 surface — the waterline's facets, whether the chop sweeping the eye is tolerable (the eye could ride the wave if not); (4) the underside
 within 1.5 m of the surface, where the sky now shows through the mirror's alpha (WATER.md B makes that the window); (5) `SURF_BODY` —
 too glassy or still too teal from above; (6) rain from above (the air's haze thickens by `FOG_A`, as it did).
+
+## v11.42.1 — the water's fog over the whole ray from above, the underside opaque (14 Sep 2026)
+
+The person on v11.42, with a video and three stills: "the clear water looks completely different, huge environmental step up", then
+"the fog goes away once you leave the water. So you gain vision. Looks insanely weird" — the forest crisp to the horizon from just
+above the surface and from the line, a white flash at the water line, creatures seen far off against a pale backdrop from above.
+
+**Why.** (1) v11.42 fogged the water's part of a ray by its own length: from 2 m up, a stalk 200 m off and 5 m deep took 128 m of
+water (51% through) against a bright surface veil, where from below it takes 200 (23%). The true ray refracts at the surface and shows
+a compressed sliver of what is close under the exit point — geometry this engine cannot draw — so the honest stand-in is that nothing
+under water is seen further from above than from below. (2) The surface's underside was still 62–74% opaque, and what lay behind it —
+the shore, the sky within `SKY_NEAR`, the dome — was now fogged as air, pale, and bled through, flickering as the facets flipped.
+(3) A bug: the fog chunk's clock (`uFogTime`) was handed `timeU` itself, and r128's `cloneUniforms` copies a number by value into every
+material, so it stood at zero — the level the ray was cut at was a frozen sea, and a kelp cap on the real wave sat above or below it.
+
+**Built.** scene.js: from above, the water segment is fogged over the whole ray's length `d` (its origin still the crossing, so the veil is
+the surface water's), times the chop's scatter at grazing — `SCAT` [0.06, 0.30] on the ray's elevation × the chop (17°–3° in the trades,
+4°–1° in a calm: a wind sea's slopes scramble a transmitted image within a few slope-widths of the horizon, and what is left is the
+water's colour under the reflected sky) — and the far cut. The clock and the chop go to the chunk as a typed array (`FOG_TC`, main.js
+and `updateHaze` write it). atmosphere.js: the underside's alpha is 1.0 — a total-internal-reflection mirror outside the window, the
+window's own colour inside it until WATER.md B draws the refracted sky; the shimmer sprite draws over it (renderOrder 0, no depth test)
+at `SHIM_A` 0.9 again.
+
+**Seen:** `node build.js --test` green on both tiers; the shaders compile in the app's browser. The app's browser pane would not tick
+the game loop this session, so the sea itself is **unseen — ask, in this order:** (1) from the line and from 2 m up over the forest:
+the far forest should fade as it does from below, the near stalks and the sand stay clear; (2) the water line while swimming at the
+surface: no white flash; (3) the far sea at grazing from above: reflection only, no creatures through it; (4) from just under the surface:
+the underside now opaque — whether the sun's shimmer still reads and the window is not too flat; (5) `SCAT` if the grazing cut-off is too
+near or too far — it is two numbers.
