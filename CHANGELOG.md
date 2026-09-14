@@ -2777,3 +2777,35 @@ the lines were one block wide; at 15 cm and `CAU_T` 2.5 a blocky connected net r
 is the knob (0.2 coarser, 0.1 finer, 0 off); (2) the 25 m rock: soft blobs now, or still a net; (3) whether stop-motion is wanted
 (`CAU_STEP` 8); (4) the follow-ons the shots named — the canopy (world shadows) and the gusts (a slow world-space modulation of the
 rings' amplitude, which wants a small bake of its own); (5) v11.36.1's list.
+
+
+## v11.37 — the sea at the world's scale, with gusts (14 Sep 2026)
+
+Six shots of v11.36.2 from the person and a clear brief: "your main task is to make the caustics look good." What the old one had
+right was metres-wide, soft, irregular, sweeping; v11.36.2 had "reworked it into various circles that move around" — at 11–15 m the
+long rings were below focus and gave blobs, "all still kind of tiny blob looking, so nothing on top of that will sit right". Near the
+surface the fine fast web was "really cool". The 15 cm blocks read a little weird only because the shadows are smoother — two grains.
+And "nothing in the kelp forest, no caustics at all": that was v11.36.2's `CAU_SUN` 0.03, which blurred every floor past ~18 m dark
+(the only intentional cut is the floating colonies' canopy mask, `canopyW`, 85% under a raft mat; kelp is not in it) — back to 0.02.
+
+**Rings ×2.5, equal curvature.** `CAU_RINGS` 5, 3, 2, 1.2, 0.7 m (`Q.cau` 5 high, 3 low) on a 40 m tile at 320². The first try kept
+the steepness, which is the physics of a wind sea — and puts the curvature in the shortest waves, so the folds were still a fine web.
+Amplitude ∝ L² instead (equal curvature a ring, ~0.15 per train: a 5 m wave at 11 cm, honest chop), so the 5 m ring is an equal
+partner and the cells come out at its scale; the 0.7 m ring is a trace of the fine web in the top few metres. **Gusts.** A second
+tile (`CAU_GTEX`, 64², three octaves of the world's value noise at `CAU_GUST` [110 m, 0.75]) modulates the rings' amplitude by
+1 − 0.75·(1 − n): patches of strong net and patches of calm, as a gusty wind ripples a sea, instead of one texture over the whole
+floor. One tap. **Blocks 30 cm** (`CAU_PX`), lines two or three blocks wide at these scales — chunkier, nearer the shadow's grain.
+
+**Seen, in `test/caustic.js` (which now takes the gusts, `OX`/`OZ` and a wide `SPAN`).** At 10 m over 16 m: blocky ribbons metres
+long, half a metre to a metre wide, irregular — the world's grain. Over 120 m at 8 m: dense zones and calm zones, no tile grid (a
+24 m tile showed as a lattice of the same ribbons at 100 m; 40 m does not). Lines over 7% of the floor at 5 m, 14% at 10, 19% at 16
+(`CT` 2.5). The menu in the app's browser boots with no shader error, the whole load 655 ms on this PC with the ~8 M-sine bake in
+it. `node build.js --test` green on both tiers.
+
+**Not built, offered.** The two grains: snapping the shadow lookup to the same block grid as the caustic is a one-line change in
+`SH_GLSL` and would give blocky shadows — the audit argued for a harder shadow edge anyway. The person's call.
+
+**Unseen, ask in this order:** (1) the person's 5–15 m views — big enough now, and do the ribbons read as light; `CAU_RINGS`' first
+entry is the scale, `CAU_T` the density; (2) the gust patches in play — `CAU_GUST[1]` 0.75 is the depth of the calm, 0.5 milder;
+(3) whether the near-surface web survived in a form he still likes (the 0.7 m ring is weak now); (4) the blocky-shadow offer;
+(5) the boot cost on the person's PC (`CAU_N` 320 → 256 halves the bake).

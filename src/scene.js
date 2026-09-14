@@ -15,13 +15,13 @@ const Q=(function(){
   const small=Math.min(screen.width||9999,screen.height||9999)<900;
   const tier=HASH_TIER||((isTouch&&small)?'low':'high');
   return tier==='low'
-    ?{tier:tier,pr:1.0,far:1000,flora:0.45,creatures:0.6,lights:2,phong:false,aa:false,budgetMs:8,farMs:2,farQ:6,surf:96,lodNear:0.7,rockLvl:1,target:14,casters:6,shafts:2,cau:2,hrtf:0,vol:1,cloud:2,snow:1000}
-    :{tier:tier,pr:1.5,far:1600,flora:1.0,creatures:1.0,lights:4,phong:true,aa:true,budgetMs:6,farMs:3,farQ:12,surf:192,lodNear:1.0,rockLvl:2,target:7.5,casters:16,shafts:4,cau:4,hrtf:1,vol:1,cloud:5,snow:1800};
+    ?{tier:tier,pr:1.0,far:1000,flora:0.45,creatures:0.6,lights:2,phong:false,aa:false,budgetMs:8,farMs:2,farQ:6,surf:96,lodNear:0.7,rockLvl:1,target:14,casters:6,shafts:2,cau:3,hrtf:0,vol:1,cloud:2,snow:1000}
+    :{tier:tier,pr:1.5,far:1600,flora:1.0,creatures:1.0,lights:4,phong:true,aa:true,budgetMs:6,farMs:3,farQ:12,surf:192,lodNear:1.0,rockLvl:2,target:7.5,casters:16,shafts:4,cau:5,hrtf:1,vol:1,cloud:5,snow:1800};
   // snow (v11.24): the marine snow's points (atmosphere.js); the deep is sparse, so many of them are dormant at a time
   // cloud (v11.17): the slices the sky shader marches up through the cumulus deck (atmosphere.js SKY_FS), two 4-octave noises per slice per sky pixel
   // hrtf, vol (v11.14, the sound): HRTF panning on the placed voices (front/back and up/down; the audio thread's one real cost) or equal-power; the master volume
   // casters (v11.23): the creatures that cast into the shadow map each frame (the nearest by size; the player always); shafts, cau (v11.13, the light pass): the
-  // light-shaft grid's side (4 = sixteen shafts round the camera); the caustic's ripple trains (CAU_RINGS; 4 the sea, 2 its long half — v11.36)
+  // light-shaft grid's side (4 = sixteen shafts round the camera); the caustic's ripple trains (CAU_RINGS; 5 the sea, 3 its long rings — v11.37)
   // target (v11.12): the frame the streaming must fit in, ms — the cell generator gets what the rest of the frame leaves of it, at most
   // budgetMs (main.js). 7.5 is a 120 Hz frame with a little to spare; 14 a 60 Hz phone's. Before, 6 ms of generation on a 4 ms frame
   // made 10 ms frames all through a cell's load: fine at 60 Hz, a hitch at 120.
@@ -223,10 +223,12 @@ const lightKU={value:LIGHT_K};
 // wind, is baked once at boot into two tiles — the sin and cos parts of (Hxx, Hxy, Hzz), since sin(k·x − ωt + φ) = sin(k·x+φ)cos ωt −
 // cos(k·x+φ)sin ωt — and the fragment recovers the exact field at any time from two taps and one sincos a ring. The wave vectors sit
 // on the CAU_TILE lattice (k = 2π n / T) so the tile wraps; a ring is the lattice vectors whose wavelength lies within ±18% of its own.
-// CAU_RINGS: [wavelength m, amplitude m per train at full chop]; Q.cau rings are used, longest first (4 high, 2 low). Bytes, ±CAU_HMAX.
-const CAU_RINGS=[[3.0,0.022],[1.8,0.014],[1.1,0.008],[0.65,0.0044]],CAU_DIRS=8,CAU_SPREAD=1.2,CAU_TILE=16,CAU_N=192,CAU_HMAX=1.2;
-const CAU_SUN=0.03,CAU_T=2.5,CAU_SOFT=0.0,CAU_HI=1.5,CAU_SWELL=4,CAU_FAR=[30,70],CAU_PX=0.15,CAU_STEP=0; // the beam's angular spread rad (v11.35.2: the sun's half-degree disc plus forward scatter; a ring's contrast at depth d falls by exp(-2(pi d CAU_SUN/L)^2), so the deep is the long rings' alone); the focus a line needs (1/|det J| at or over CAU_T; v11.36: 3 — a fold line is thin only where |det| is small, 1.5 was fat worms over a third of the floor) and the half-width of the step to it (v11.35.3: a hard two-tone at 40 cm read as a print); the line's brightness; how many of WAVES, longest first, the ripples ride; the fade from the eye per ring, in wavelengths
-const CAU_TEX=[];
+// CAU_RINGS: [wavelength m, amplitude m per train at full chop]; Q.cau rings are used, longest first (5 high, 3 low). Bytes, ±CAU_HMAX.
+const CAU_RINGS=[[5.0,0.11],[3.0,0.04],[2.0,0.018],[1.2,0.0065],[0.7,0.0035]],CAU_DIRS=8,CAU_SPREAD=1.2,CAU_TILE=40,CAU_N=320,CAU_HMAX=1.2; // v11.37: ×2.5 in wavelength, and the amplitudes ∝ L² — equal curvature a ring — so the 5 m ring is an equal partner and the cells come out at its scale (the person, 14 Sep: cells of a metre are "tiny blobs" in a world whose grain is a 4 m facet and a 3 m animal; constant steepness, the physics of a wind sea, puts the curvature in the shortest waves and gives the fine web of a snorkel, which is what he did not want). The 0.7 m ring is a trace of that fine web in the top few metres
+// the gusts (v11.37): a second tile, value noise at CAU_GUST[0] m, modulates the rings' amplitude by 1 − CAU_GUST[1]·(1 − n) — patches of strong net and patches of calm, as a gusty wind ripples a sea in patches, instead of one texture over the whole floor (the person's five shots of v11.36.1: "the same density everywhere")
+const CAU_GUST=[110,0.75],CAU_GN=64;
+const CAU_SUN=0.02,CAU_T=2.5,CAU_SOFT=0.0,CAU_HI=1.5,CAU_SWELL=4,CAU_FAR=[30,70],CAU_PX=0.3,CAU_STEP=0; // v11.37: CAU_SUN back to 0.02 — 0.03 left every floor past ~18 m dark (the person: "nothing in the kelp forest"); CAU_PX 0.3, lines two or three blocks wide at these scales // the beam's angular spread rad (v11.35.2: the sun's half-degree disc plus forward scatter; a ring's contrast at depth d falls by exp(-2(pi d CAU_SUN/L)^2), so the deep is the long rings' alone); the focus a line needs (1/|det J| at or over CAU_T; v11.36: 3 — a fold line is thin only where |det| is small, 1.5 was fat worms over a third of the floor) and the half-width of the step to it (v11.35.3: a hard two-tone at 40 cm read as a print); the line's brightness; how many of WAVES, longest first, the ripples ride; the fade from the eye per ring, in wavelengths
+const CAU_TEX=[];let CAU_GTEX=null;
 (function(){ // the bake: for each ring, the lattice vectors in its band, one train per direction bin within the spread, then the tiles
   const rng=mulberry(1717),T=CAU_TILE,N=CAU_N,nmax=Math.ceil(T/CAU_RINGS[CAU_RINGS.length-1][0]*1.25)+1;
   for(let r=0;r<Math.min(Q.cau,CAU_RINGS.length);r++){const L=CAU_RINGS[r][0],A0=CAU_RINGS[r][1],trains=[];
@@ -241,16 +243,18 @@ const CAU_TEX=[];
       const o=(j*N+i)*4;S[o]=clamp(sxx*q+127.5,0,255);S[o+1]=clamp(sxy*q+127.5,0,255);S[o+2]=clamp(szz*q+127.5,0,255);S[o+3]=255;C[o]=clamp(cxx*q+127.5,0,255);C[o+1]=clamp(cxy*q+127.5,0,255);C[o+2]=clamp(czz*q+127.5,0,255);C[o+3]=255;}
     const mk=d=>{const t=new THREE.DataTexture(d,N,N,THREE.RGBAFormat,THREE.UnsignedByteType);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.minFilter=t.magFilter=THREE.LinearFilter;t.generateMipmaps=false;t.needsUpdate=true;t.clone=function(){return this;};return t;};
     CAU_TEX.push({L:L,w:Math.sqrt(9.8*TAU/L),n:trains.length,s:mk(S),c:mk(C)});}
+  {const G=CAU_GN,D=new Uint8Array(G*G*4),sc=CAU_GUST[0];for(let j=0;j<G;j++)for(let i=0;i<G;i++){const o=(j*G+i)*4;let v=0,w=0;for(let k=0;k<3;k++){const f=1<<k;v+=fbm(((i/G)*f%1)*sc*0.035+40,((j/G)*f%1)*sc*0.035+70,2)/f;w+=1/f;}v=clamp((v/w-0.5)*4.0+0.5,0,1);D[o]=D[o+1]=D[o+2]=Math.round(v*255);D[o+3]=255;}
+    const t=new THREE.DataTexture(D,G,G,THREE.RGBAFormat,THREE.UnsignedByteType);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.minFilter=t.magFilter=THREE.LinearFilter;t.generateMipmaps=false;t.needsUpdate=true;t.clone=function(){return this;};CAU_GTEX=t;} // the gust tile: three octaves of the world's value noise, wrapped by taking each octave's coordinate mod 1 of the tile (a seam per octave that the blur hides), stretched to fill 0..1
 })();
-const CAU_PARS=CAU_TEX.map((r,i)=>'uniform sampler2D uCauS'+i+';uniform sampler2D uCauC'+i+';').join('');
+const CAU_PARS=CAU_TEX.map((r,i)=>'uniform sampler2D uCauS'+i+';uniform sampler2D uCauC'+i+';').join('')+'uniform sampler2D uCauG;';
 const CAU_GLSL=(function(){let s='vec2 ps=vFogPos.xz+uSunW.xz*(dep/max(uSunW.y,0.3));vec3 H=vec3(0.0);float ct='+(CAU_STEP>0?'floor(uTime*'+CAU_STEP.toFixed(1)+')/'+CAU_STEP.toFixed(1):'uTime')+';';
   // the ripples ride the swell: the surface's horizontal orbital displacement (A sin, along the wave) carries the ripple field with it — for a 1.6 m ripple on a 46 m swell of 0.5 m that is ~2 rad of phase, and it is what keeps three fixed trains from interfering into a lattice (seen, 13 Sep)
   for(let i=0;i<CAU_SWELL;i++){const w=WAVES[i];s+='ps+=vec2('+w.dx.toFixed(5)+','+w.dz.toFixed(5)+')*('+w.A.toFixed(3)+(w.L<20?'*uChop':'')+'*sin(dot(ps,vec2('+w.dx.toFixed(5)+','+w.dz.toFixed(5)+'))*'+w.k.toFixed(5)+'-'+w.w.toFixed(5)+'*ct+'+w.ph.toFixed(4)+'));';}
   if(CAU_PX>0)s+='ps=(floor(ps*'+(1/CAU_PX).toFixed(4)+')+0.5)*'+CAU_PX.toFixed(4)+';';
-  s+='vec2 cu=ps*'+(1/CAU_TILE).toFixed(6)+';';
+  s+='vec2 cu=ps*'+(1/CAU_TILE).toFixed(6)+';float gu=1.0-'+CAU_GUST[1].toFixed(2)+'*(1.0-texture2D(uCauG,ps*'+(1/CAU_GUST[0]).toFixed(6)+').r);'; // the gust at this point
   for(let i=0;i<CAU_TEX.length;i++){const r=CAU_TEX[i]; // each ring: the field now from its two tiles, blurred by the sun's disc at depth and faded from the eye, both by its wavelength
     s+='{float ph='+r.w.toFixed(5)+'*ct;float g=exp(-dep*dep*'+(2*Math.pow(Math.PI*CAU_SUN/r.L,2)).toFixed(6)+')*(1.0-smoothstep('+(r.L*CAU_FAR[0]).toFixed(1)+','+(r.L*CAU_FAR[1]).toFixed(1)+',vFogDepth));'+
-      'if(g>0.002)H+=((texture2D(uCauS'+i+',cu).rgb*2.0-1.0)*cos(ph)-(texture2D(uCauC'+i+',cu).rgb*2.0-1.0)*sin(ph))*('+CAU_HMAX.toFixed(3)+'*g);}';}
+      'if(g>0.002)H+=((texture2D(uCauS'+i+',cu).rgb*2.0-1.0)*cos(ph)-(texture2D(uCauC'+i+',cu).rgb*2.0-1.0)*sin(ph))*('+CAU_HMAX.toFixed(3)+'*g*gu);}';}
   s+='float jc=dep*0.248*uChop;float dj=(1.0-jc*H.x)*(1.0-jc*H.z)-jc*jc*H.y*H.y;'+
     'float ci=1.0+'+(CAU_HI-1).toFixed(2)+'*'+(CAU_SOFT>0?'smoothstep('+(CAU_T-CAU_SOFT).toFixed(2)+','+(CAU_T+CAU_SOFT).toFixed(2)+',':'step('+CAU_T.toFixed(2)+',')+'1.0/max(abs(dj),0.02));';
   return s;})();
@@ -403,7 +407,7 @@ function addTint(m,key,small,band){
   m.onBeforeCompile=function(sh){
     if(prev)prev.call(m,sh);
     sh.uniforms.uTint=tintU;if(small)sh.uniforms.uFogP={value:FOG_PS};
-    const lit=LIGHT_FX&&key!=='glow';if(lit){sh.uniforms.uTime=timeU;sh.uniforms.uChop=chopU;sh.uniforms.uSunW={value:SUN_W};for(let i=0;i<CAU_TEX.length;i++){sh.uniforms['uCauS'+i]={value:CAU_TEX[i].s};sh.uniforms['uCauC'+i]={value:CAU_TEX[i].c};}sh.uniforms.uLightK=lightKU;sh.uniforms.uShMap=shMapU;sh.uniforms.uShMat=shMatU;sh.uniforms.uShP=shPU;sh.uniforms.uShL=shLU;sh.uniforms.uShMapS=shMapSU;sh.uniforms.uShMatS=shMatSU;sh.uniforms.uShPS=shPSU;sh.uniforms.uShLS=shLSU;}
+    const lit=LIGHT_FX&&key!=='glow';if(lit){sh.uniforms.uTime=timeU;sh.uniforms.uChop=chopU;sh.uniforms.uSunW={value:SUN_W};for(let i=0;i<CAU_TEX.length;i++){sh.uniforms['uCauS'+i]={value:CAU_TEX[i].s};sh.uniforms['uCauC'+i]={value:CAU_TEX[i].c};}sh.uniforms.uCauG={value:CAU_GTEX};sh.uniforms.uLightK=lightKU;sh.uniforms.uShMap=shMapU;sh.uniforms.uShMat=shMatU;sh.uniforms.uShP=shPU;sh.uniforms.uShL=shLU;sh.uniforms.uShMapS=shMapSU;sh.uniforms.uShMatS=shMatSU;sh.uniforms.uShPS=shPSU;sh.uniforms.uShLS=shLSU;}
     sh.vertexShader='varying float vWy;\n'+sh.vertexShader.replace('#include <worldpos_vertex>','#include <worldpos_vertex>\n{vec4 wpp=vec4(transformed,1.0);\n#ifdef USE_INSTANCING\nwpp=instanceMatrix*wpp;\n#endif\nvWy=(modelMatrix*wpp).y;}');
     sh.fragmentShader='uniform vec4 uTint;varying float vWy;\n'+(lit?LIGHT_PARS:'')+sh.fragmentShader.replace('#include <fog_fragment>',(lit?LIGHT_GLSL:'')+(band?BAND_GLSL(band):'')+'{float dd=max(0.0,uTint.x-vWy);float f=uTint.y*(1.0-exp(-dd*0.05));vec3 tc=vec3('+TINT_COL.map(v=>v.toFixed(2)).join(',')+')*uTint.z;\n#ifdef USE_FOG\ntc*=uFogT.yzw;\n#endif\ngl_FragColor.rgb=mix(gl_FragColor.rgb,tc,f);}\n#include <fog_fragment>');
   };
