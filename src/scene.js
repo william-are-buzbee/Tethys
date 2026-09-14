@@ -108,7 +108,16 @@ const WAVE_GLSL='uniform float uChop;float wsh(float s){return 2.0*pow(max((s+1.
   WAVES.map(w=>'h+='+w.A.toFixed(3)+(w.L<20?'*uChop':'')+'*mix('+WSH_MEAN.toFixed(4)+',wsh(sin(dot(p,vec2('+w.dx.toFixed(5)+','+w.dz.toFixed(5)+'))*'+w.k.toFixed(5)+'-'+w.w.toFixed(5)+'*t+'+w.ph.toFixed(4)+')),1.0-smoothstep('+(w.L*0.14).toFixed(2)+','+(w.L*0.30).toFixed(2)+',sp));').join('')+'return h;}\n';
 // The fog chunk sums the same waves per fragment near the water level (v11.42) under its own names, since the lit materials' fragment stage
 // already declares uTime and uChop (LIGHT_PARS) and the surface's declares uTime.
-const WAVE_GLSL_FOG=WAVE_GLSL.replace('uniform float uChop;','uniform vec2 uFogTC;').replace(/uChop/g,'uFogTC.y').replace('float waveH(','float fogWaveH(');
+// The fog chunk's wave sum is the *drawn* surface's (v11.42.2): the mesh fades each wave out where its grid cannot resolve it (aSpace: fully drawn at
+// seven samples a wavelength, gone at three and a third, atmosphere.js sg), so 200 m out it sits at the mean level while the full sum swings ±1.2 m.
+// v11.42–v11.42.1 cut the ray at the full sum, and everything in the band between the two — the far kelp's tops, 1.4 m under mean level — was
+// classed as air on a trough and drawn in the air's haze: a white wall of stalks on the horizon from either side (the person's three stills).
+// The fade is a function of the fragment's distance from the mesh's centre (the camera's x,z) on the grid's per-axis mapping, so the two
+// distances per wave where the fade starts and ends are found here once from the same numbers the mesh is built on (Q.surf, FAR·1.05).
+const FOG_SN=Q.surf,FOG_SR=FAR*1.05; // the surface grid's side and reach, as atmosphere.js SN and SR — change both or neither
+const WAVE_FADE_D=WAVES.map(w=>[w.L*0.14,w.L*0.30].map(sp=>{const s0=FOG_SR*0.06*2/FOG_SN;if(sp<=s0)return 0;const u=Math.sqrt((sp*FOG_SN/(2*FOG_SR)-0.06)/2.82);return FOG_SR*(0.06*u+0.94*u*u*u);})); // per wave: the distance (max of |dx|,|dz| from the camera) at which it starts to fade, and where it is gone
+const WAVE_GLSL_FOG='uniform vec2 uFogTC;float fogWsh(float s){return 2.0*pow(max((s+1.0)*0.5,1e-4),1.7)-1.0;}\nfloat fogWaveH(vec2 p,float t,float rm){float h=0.0;'+
+  WAVES.map((w,i)=>'h+='+w.A.toFixed(3)+(w.L<20?'*uFogTC.y':'')+'*mix('+WSH_MEAN.toFixed(4)+',fogWsh(sin(dot(p,vec2('+w.dx.toFixed(5)+','+w.dz.toFixed(5)+'))*'+w.k.toFixed(5)+'-'+w.w.toFixed(5)+'*t+'+w.ph.toFixed(4)+')),1.0-smoothstep('+WAVE_FADE_D[i][0].toFixed(2)+','+WAVE_FADE_D[i][1].toFixed(2)+',rm));').join('')+'return h;}\n';
 const FOG_TC=new Float32Array([0,1]); // the time and the chop for the fog chunk's wave sum, as a typed array (v11.42.1): v11.42 handed the chunk timeU itself, and r128's cloneUniforms copies a number by value into every material, so the chunk's clock stood at zero — the level it cut the ray at was a frozen sea. main.js writes x, updateHaze y
 const WAVE_MEAN=WSH_MEAN*WAVE_AMP; // the mean water level relative to the tide, the crest sharpening's offset
 const MIST_GLSL='float mistL(float cy,float dy,float d,float rho,float ih){float k=dy*ih;float e=rho*exp(-max(cy,0.0)*ih);return abs(k)<1e-3?e*d:e*(1.0-exp(-k))*d/k;}\n'+
@@ -155,7 +164,7 @@ const MIST_GLSL='float mistL(float cy,float dy,float d,float rho,float ih){float
   // else the mean level; the crossing is found against the level blended between the two. uFogP.w 0 (the surface mesh, FOG_PSURF) keeps the
   // whole ray in the camera's medium: its fragments are the boundary. The far cut (FOG_CUT_GLSL) closes the camera's segment only.
   C.fog_fragment='#ifdef USE_FOG\n{float d=vFogDepth;vec3 rd=(vFogPos-uFogC)/max(d,1e-3);float cy=uFogC.y,fy=vFogPos.y,wl=uFogAC.w;float ck=1.0'+FOG_CUT_GLSL+';'+
-    'bool cu=cy<wl;float lev=uFogW.x+((abs(fy-uFogW.x)<3.0)?fogWaveH(vFogPos.xz,uFogTC.x,0.0):('+WAVE_MEAN.toFixed(4)+'));bool fu=fy<lev;float s=1.0;'+
+    'bool cu=cy<wl;float lev=uFogW.x+((abs(fy-uFogW.x)<3.0)?fogWaveH(vFogPos.xz,uFogTC.x,max(abs(vFogPos.x-uFogC.x),abs(vFogPos.z-uFogC.z))):('+WAVE_MEAN.toFixed(4)+'));bool fu=fy<lev;float s=1.0;'+
     'if(uFogP.w>0.5&&cu!=fu){float den=cy-fy;if(abs(den)<1e-4)den=1e-4;float s0=clamp((cy-wl)/den,0.0,1.0);s=clamp((cy-mix(wl,lev,s0))/den,0.0,1.0);}'+
     'float dC=s*d,dO=d-dC;vec3 cp=uFogC+rd*dC;vec3 col=gl_FragColor.rgb;'+
     'if(cu){if(dO>0.0)col=fogAir(col,cp,rd,dO,1.0);col=fogWater(col,uFogC,rd,dC,vec3(1.0),ck);}'+

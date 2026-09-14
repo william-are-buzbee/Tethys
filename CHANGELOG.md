@@ -3126,3 +3126,21 @@ the far forest should fade as it does from below, the near stalks and the sand s
 surface: no white flash; (3) the far sea at grazing from above: reflection only, no creatures through it; (4) from just under the surface:
 the underside now opaque — whether the sun's shimmer still reads and the window is not too flat; (5) `SCAT` if the grazing cut-off is too
 near or too far — it is two numbers.
+
+## v11.42.2 — the fog cuts the ray at the drawn surface (14 Sep 2026)
+
+The person on v11.42.1, three stills: "still seeing white nothingness out there … high enough in the distance you can still see
+clearly through" — a white wall of kelp stalks on the horizon, from just under the surface and from just above it.
+
+**Why.** The surface mesh fades each wave out where its grid cannot resolve it (`aSpace`, v11.4), so 200 m out it is drawn at the mean
+level; the fog chunk cut the ray at the *full* wave sum, which swings ±1.2 m there. Everything in the band between — the far kelp
+cards' tops, 1.4 m under mean level; a stalk's top on a trough — was classed as in air and took the air's haze: white, visible at any
+distance, from either side of the water.
+
+**Built** (scene.js `WAVE_GLSL_FOG`, `WAVE_FADE_D`, `FOG_SN`/`FOG_SR`): the fog chunk's wave sum is the drawn surface's, each wave faded
+by the fragment's distance from the mesh's centre (max of |dx|, |dz| from the camera — the grid's per-axis mapping) between the two
+distances where the mesh's fade starts and ends, found once from the grid's own numbers (46 m: 90→259; 29 m: 49→136; 15 m: 20→56;
+8.5 m: 6→26; 6 m: 0→15 on high — DESIGN's figures). `FOG_SN`/`FOG_SR` mirror atmosphere.js `SN`/`SR`: change both or neither.
+
+**Seen:** `node build.js --test` green on both tiers. The pane would not tick again; **ask** for the same three views — the far forest
+from just under the surface and from just above it should fade into the water's colour, no white stalks on the horizon.
