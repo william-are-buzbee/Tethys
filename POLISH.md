@@ -305,6 +305,26 @@ night yes, for now. 6. A, then B, then C. 7. The flush (24) and the vignette (28
    cheapest and needs the dark. The default is A, then B, then C, with the forest measured after A.
 7. **The vignette and the flush (24, 28)** — faint by default, easy to strike; say if either is unwanted on principle.
 
+## Found 13 Sep 2026, awaiting the person's call
+
+**Rain halves the night, and only the day was ever fixed for it.** The person: night brightness is fine, but rain makes it
+"incredibly dark occasionally". It does. Rain enters twice. It inflates cloud cover directly (`world.js weatherAt`: `cover =
+0.15 + 1.4*(w-0.32) + 0.5*rain`, clamped at 0.92), and cover then cuts the moon hard in the night branch of `skyL`
+(`atmosphere.js updateSky`: `moonL*(1 - 0.7*cover) + STARL`). Fitting the person's own three night readouts to that formula gives
+`moonL` 0.294 and `STARL` 0.024, so:
+
+| sky | light |
+|---|---|
+| clear night (cover 0.30) | 0.256 |
+| shower (cover 0.72) | 0.17 |
+| full shower (cover 0.92, the clamp) | 0.128 |
+
+**A full shower leaves 50% of a clear night.** By day the same shower leaves 52% of noon — and that is not an accident: v11.18
+already fixed exactly this complaint for daylight, replacing a harsh curve with the gentle linear `shade = 1 - 0.30*cover -
+0.20*rain` after a shower came out darker than night. The night branch never got the same treatment and still runs the 0.7
+coefficient on an already-small `moonL`. **The knobs:** that `0.7` in `updateSky`'s night term, and/or the `0.5*rain` that inflates
+`cover` in `weatherAt`. Not changed — say whether a rainy night should stay at half a clear one, or come up toward the day's ~0.75.
+
 ## Raised 13 Sep 2026, not built
 
 **The player's own light (`plight`) in the effects list.** It is a 40 m point light in pale blue-cyan riding a metre above the

@@ -21,8 +21,10 @@ re-render is 2.9 ms, 105 draws, 2.23M triangles, firing 0.33/s still and ~0.8-1.
 65% to 95% of budget and never over. The creep since v11.12 is the main render's draw calls, and those are **cell flora at roughly
 one InstancedMesh per species per cell** — they scale as species x visible cells, so the archipelago multiplies them. The lever,
 when work's max reaches 8.3, is batching a species across cells: a designed pass, not a knob. Numbers are in DESIGN, Performance.
-The four look questions (item 15) are **answered and closed** (13 Sep). **Night brightness is fine as it is** — the dark screenshot
-was caught at an odd moment, and nothing is wanted. The bright blades are **the player's own light** (`plight`, a 40 m point light
+The four look questions (item 15) are **answered** (13 Sep). **Night brightness is fine as it is**; the dark screenshot was the
+**rain**, and that is a real finding — a full shower leaves 50% of a clear night, where the day was already fixed for the same
+complaint in v11.18 and keeps 52% of noon. Diagnosed with the numbers and the knobs in POLISH.md, **not changed, awaiting the
+person's call**. The bright blades are **the player's own light** (`plight`, a 40 m point light
 riding above the player, brighter with depth and at night), not an emissive and not the pigment; the person notes it carries the mood
 and the starting landscape's brightness and is unsure whether it is a good mechanic, so **whether it belongs in the effects list is
 parked in POLISH.md** — raised, not asked for. The **square marine snow is kept on purpose**: the person likes the blocky read, and
