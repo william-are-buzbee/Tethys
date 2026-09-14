@@ -2864,3 +2864,40 @@ the slider row under caustics, live, the value read back from `tethys.fx`, the s
 **Unseen, ask in this order:** (1) the deep — does the net now fade away by 25–30 m as it should, and is the shelf at 5–15 m still
 as the person liked it (`CAU_D` up if it lost too much); (2) the edges — one softness everywhere now; if the crisp lines are wanted
 crisper, `CAU_SOFT` 0.3; (3) the slider's range (0–2) — whether 2 is ever wanted; (4) v11.38's list.
+
+
+## v11.39 — a wind sea, light moved not made, gusts that blow, shafts on the same clock (14 Sep 2026)
+
+The believability conversation the person deferred until the look settled, held 14 Sep and decided (PLANET, Decided 14 Sep 2026).
+Four answers, four changes.
+
+**No film: a wind sea and nothing else.** v11.38's rings had equal curvature — which is a sea with its short waves damped, a slick —
+and I had offered the floating colonies' organics as a story for it. The person: "I had not intended for the planet's sea to carry a
+film … I simply want to prioritise believability, even if it means smaller caustics. There is no stated stylisation." So `CAU_RINGS`
+are a wind sea: constant steepness ak 0.06 across 8, 4, 2, 1, 0.5 m (7.6 cm down to 5 mm), which puts the curvature in the short
+waves. Each ring folds at its own depth and the sun's disc and the beam's diffusion take the short ones first, so the net grows with
+depth on its own: a fine fast web in the top few metres, metre cells at 5–10, 2 m at 10–15, soft patches by 20, nothing by 24. The
+tile is 384² for the 0.5 m ring (5 texels a wavelength); ~12 M sines at boot, the whole load 725 ms on the dev PC.
+
+**Light moved, not made** (`CAU_DARK` 0.35). The cells of the net — where the surface defocuses, `1/|det J|` < 1 — are darkened by
+`CAU_DARK·(1 − I)`, so what the lines add the cells give back. `test/caustic.js` now prints the drawn factor's mean over the floor:
+0.99–1.00 at 3, 6, 10, 16 and 24 m. v11.35 had this exactly and v11.36–v11.38 lost it to the line threshold.
+
+**Gusts drift downwind** (`uWindOff`). The gust tile is sampled at `ps − windOff`, the wind's integral (`K.windOff`, the clouds'
+drift) modulo the tile: cat's paws cross the floor at the wind's speed, 7 m/s in the trades, a calm's crawl in a calm.
+
+**The shafts read the surface** (`cauFocus`, scene.js; `SH_FOC` 8, atmosphere.js). The focusing at a point, now, on the CPU from the
+same tiles — the swell carry, the gust, the rings at their phases, the disc blur, det J. Each light shaft's alpha is scaled by the
+focusing over its head (0.25 + 0.5·I, clamped 0.2–1.6): a shaft is a beam the surface focused, so it brightens and dims with the
+same field the floor's net is drawn from. The two-sine flicker it had since v11.13 is gone. Of the audit's "four clocks for one
+surface" the shimmer alone remains on its own.
+
+**Seen.** `test/caustic.js` (`PIX=0 DEP=3,6,10,16,24 SPAN=24`): 3 m a fine web of thin lines with darker cells, gust-varied; 10 m a
+net of 1–2 m cells, darker inside, bright lines; 24 m nothing. Lines over 6–10% of the floor, mean 1.00. The menu in the app's
+browser boots with no error (an overcast moment, no net to see); `node build.js --test` green on both tiers, the shafts' CPU read
+included in the smoke.
+
+**Unseen, ask in this order:** (1) the wind sea in play — the fine web at 2–4 m the person once liked and once found "busy" is
+back by decision; whether it reads as water; (2) the darkened cells on the pale sand — too grey, and `CAU_DARK` comes down (0.2), the
+mean then a little over 1; (3) the shafts — do they now flicker with the net beneath them, and is 0.25 + 0.5·I the right range;
+(4) the gusts' drift at 7 m/s — visible, and not a slide; (5) the boot cost (`CAU_N` 384; 320 loses the 0.5 m ring's shape).

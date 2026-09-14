@@ -668,15 +668,17 @@ from surface to floor has Jacobian `J = I − d·c·H` (`c` = 1 − 1/1.33, the 
 irradiance is `1/|det J|` — mean 1 over the floor by construction, so light is redistributed and never added (v11.13's was a gain,
 `1 + 1.3·k`, and blew the sand to white: that was the "looks ridiculously good" of the audit). The swell can't do it — `WAVES`' shortest
 (L 6, A 0.06) focuses at ~60 m, never in the top 30 — the web is the wind's ripples, 1–3 m, which the surface mesh can't hold anyway;
-so `CAU_RINGS` is that ripple layer, living only in the light — and baked (v11.36): five rings of eight trains (8, 5, 3, 1.8, 1 m, the 1 m at half weight — v11.38; 2–0.45, 3–0.65 and 5–0.7 were "small dots",
-"tiny blobs" and "too busy" to the person: the world's grain is a 4 m facet and a 3 m animal; `Q.cau` 5 high, 3 low) on the `CAU_TILE` 40 m lattice, spread ±`CAU_SPREAD`
-1.2 rad round the wind, random phases (`mulberry(1717)`), amplitudes ∝ L² — equal curvature a ring, ~0.15 per train; constant
-steepness, a wind sea's physics, puts the curvature in the shortest waves and gives a snorkeller's fine web — so the 5 m ring sets
-the cells' scale; per ring two 320² byte tiles hold the sin and cos parts of (Hxx, Hxy, Hzz), and the fragment
+so `CAU_RINGS` is that ripple layer, living only in the light — and baked (v11.36): five rings of eight trains (8, 4, 2, 1, 0.5 m at constant steepness ak 0.06 — v11.39, PLANET decided 14 Sep: a wind sea, no film,
+no stated stylisation; "prioritise believability, even if it means smaller caustics" — each ring folds at its own depth and the disc
+blur and the diffusion take the short ones first, so the net grows with depth on its own: a fine web at 2–4 m, metre cells at 5–10,
+soft patches by 20; `Q.cau` 5 high, 3 low) on the `CAU_TILE` 40 m lattice, spread ±`CAU_SPREAD`
+1.2 rad round the wind, random phases (`mulberry(1717)`), (v11.37–v11.38 had amplitudes ∝ L², equal curvature a ring — a slick's sea, in effect, for bigger cells; struck by the person's
+decision); per ring two 384² byte tiles hold the sin and cos parts of (Hxx, Hxy, Hzz), and the fragment
 recovers the exact broadband field at any time from two taps and one sincos a ring, since sin(k·x − ωt + φ) = sin(k·x+φ)cos ωt −
 cos(k·x+φ)sin ωt (v11.35–v11.35.3: three then six per-fragment sines were a lattice, a stripe band, a print, then dots — a net
 needs a random field), each ring at its deep-water speed √(gk) on `uTime`, the whole modulated by the gusts (v11.37: `CAU_GTEX`, a
-64² tile of the world's value noise at `CAU_GUST` [110 m, 0.75] — patches of net and patches of calm, one tap),
+64² tile of the world's value noise at `CAU_GUST` [110 m, 0.75] — patches of net and patches of calm, one tap; v11.39: sampled at
+`ps − uWindOff`, the wind's integral, so the patches cross the floor at the wind's speed),
 amplitude × `uChop` (a calm goes glassy and the web dies). The ripples ride the swell: the surface point is carried by the horizontal
 orbital displacement (`A sin`, along the wave) of the `CAU_SWELL` 4 longest `WAVES` — ~2 rad of ripple phase from the 46 m swell alone —
 which is what keeps three fixed trains from interfering into a lattice (seen: without it, a grid of ovals). The Hessian is the
@@ -691,16 +693,17 @@ the effects list, `uPix`): **pixel** — a hard `step`, the surface point snappe
 read at the same grid (the receiver point snapped and moved along its face's plane, one hard tap; [The shadows](#the-light)) — one grain
 for both; **smooth** — no snap, a `smoothstep` `CAU_SOFT` 0.5 either side of `CAU_T` (v11.38.1: 1.2 painted weak focus as broad faint smears
 beside crisp lines — softness belongs to depth, not to the local strength), the four-tap shadows: the OG's broad sweeping
-patches over the baked structure. `CAU_STEP` frames a second would step the clock too (0, continuous). Pale lines on the floor and
-nothing else, 3% of it at 5 m, 13% at 10, 18% at 16 (v11.35.1: a clamp of 2 was a clip; v11.35.2: quarter steps were a halftone; v11.35.3: a hard two-tone was a print;
+patches over the baked structure. `CAU_STEP` frames a second would step the clock too (0, continuous). and the cells darkened by `CAU_DARK` 0.35 × (1 − I) where the surface
+defocuses (v11.39: light moved, not made — `test/caustic.js` prints the drawn factor's mean, 1.00 at every depth). Lines over 6–10%
+of the floor from 3 to 16 m, nothing by 24 (v11.35.1: a clamp of 2 was a clip; v11.35.2: quarter steps were a halftone; v11.35.3: a hard two-tone was a print;
 v11.36: a threshold of 1.5 was fat worms over a third of the floor — a fold line is thin only where |det| is small; v11.36.2: the
 blocks; v11.38: both versions kept, to compare). Applied as `× (1 + cau·(I − 1))` (`cau` = `SEA_FOG.cau` 0.8 × `FX.cauK`, the effects list's `brightness` slider, v11.38.1; 1 is
 physical; the readout's `t-y`), by the beam's share `uSunW.w`, `1 − 0.85·canopy`, and whether the beam reaches the face
 (`clamp(dot(fn, sun)·2.5)`, the shadows' `nl` rule). Each ring fades from the eye by its own wavelength (`CAU_FAR` [30, 70]
 wavelengths: the 0.65 m ring is gone by 45 m, the 3 m one by 210). `wd` gates the block to under water. Cost: 4 sines a fragment (the
-carry), 2 taps and a sincos a ring, 1 tap for the gust; ~8 M sines once at boot (655 ms for the whole load on the dev PC); skipped whole at night
-and under a shower (`uSunW.w` < 0.002). Seen (13 Sep, v11.36) in `test/caustic.js`'s pictures: sparse chunky patches 1–2 m across at 10 m in pixel, the same as soft broad gradients in smooth (v11.38); dense zones
-and calm zones over 120 m, no tile grid (v11.37); on the menu's sand thin pale lines — white sand gives it little to show against. Tune in `test/caustic.js` first.
+carry), 2 taps and a sincos a ring, 1 tap for the gust; ~12 M sines once at boot (725 ms for the whole load on the dev PC); skipped whole at night
+and under a shower (`uSunW.w` < 0.002). Seen (13 Sep, v11.36) in `test/caustic.js`'s pictures: a fine web with darker cells at 3 m, a net of 1–2 m cells at 10 m, nothing at 24 (v11.39); dense zones and calm
+zones over 120 m, no tile grid (v11.37); on the menu's sand thin pale lines — white sand gives it little to show against. Tune in `test/caustic.js` first.
 
 **The sun under water (`atmosphere.js` `updateSky` → `SUN_W`).** The luminary refracted at the surface, `sin θw = sin θa / 1.33`, so a
 setting sun's beam under water is never flatter than 48° from the vertical; `w` = the beam's share of the light,
@@ -777,8 +780,9 @@ function of its cell (position, width, phase hashed from the cell), so the set s
 edge of the patch is faded by distance from the centre. Vertices are written on the CPU each frame (the snow's way, 64 vertices), each
 quad turned to face the camera about the vertical. Alpha per shaft: none over water shallower than 4 m under its top, full at 16 (the
 bottom stops 1.5 m over `groundAt`, so a shaft never cuts a rock); × `1 − 0.85·canopy`; × a fade within 5 m of the camera (the near
-plane never slices one); in the shader a soft width, a profile rising over the top 14% and decaying down the length, a flicker on two
-slow sines (the sun through waves), and the fog's extinction only (an additive thing takes no veil). Strength `SH_A` 0.16 × the beam's
+plane never slices one); in the shader a soft width, a profile rising over the top 14% and decaying down the length, since v11.39 the surface's own focusing
+over its head in place of the two-sine flicker it had (× (0.25 + 0.5·I), I from scene.js `cauFocus` at `SH_FOC` 8 m, the same tiles the
+floor's net is drawn from — a shaft is a beam the surface focused), and the fog's extinction only (an additive thing takes no veil). Strength `SH_A` 0.16 × the beam's
 share × the sky's light × `wk` (hidden the frame the camera is in air, faded in under it, like the shimmer) × gone for a camera below
 ~50 m. Colour: the lamp's, `(0.55, 0.72, 0.8) × K.lumC` — white-warm under the sun, amber at dusk, silver-blue under the moon
 (v11.31.4; the line that does it had been glued to the end of a comment since the pass, so until then they were the cold literal at

@@ -376,6 +376,23 @@ Decided, not built; the sections above stand as written until the passes that bu
   allows** are decided (DIRECTION). Reputation is a facet of intelligence, per species. Deferred: how young "young" is (until the
   archipelago); the ledger's mass for long bodies.
 
+## Decided 14 Sep 2026 — the caustic, and the sea it needs (the effects audit; DESIGN The light)
+
+Built as v11.35–v11.39. The caustic on the floor is derived, not painted: the sun focused by the surface's curvature, `1/|det J|` of a
+ripple layer that lives only in the light (the swell cannot focus in the top 30 m; the surface mesh cannot hold ripples). The person's
+answers, 14 Sep 2026:
+
+- **The sea carries no film.** "A normal ocean." The ripple spectrum is a wind sea's — constant steepness across 8 m down to 0.5 —
+  which puts the curvature in the short waves and gives a snorkeller's fine web in the shallows, metre cells at 5–10 m, soft patches
+  by 20, nothing by 25. Chosen over bigger cells: "prioritise believability, even if it means smaller caustics." **There is no stated
+  stylisation.** (A film or clouding microbial colonies somewhere in the world is not ruled out — "that sounds awesome" — but it is
+  not on this sea, and the caustic does not claim it.)
+- **Light is moved, not made.** The net's cells are darkened by what its lines add; the drawn factor's mean over the floor is 1.
+- **Gusts drift with the wind.** Patches of net and calm cross the floor at the wind's speed.
+- **The light shafts read the same surface.** A shaft's brightness is the focusing over its head, from the same field as the floor's net.
+
+Still its own clock, unasked: the shimmer on the surface (atmosphere.js) — a canvas radial gradient, the audit's most foreign thing.
+
 ## Open
 
 Asked and not yet answered; do not decide these for the person.

@@ -104,7 +104,7 @@ function updateSky(dt){const K=SKY;
   K.night=Math.max(smooth(-0.02,-0.14,K.sunAlt),0.8*smooth(0.93,1.0,K.eclS))*(1-0.55*K.moonUp*K.illum*(1-K.eclL))*(1-0.9*gk); // how much the stars show: from the sun a degree under to eight (civil twilight's end), washed by the moon and hidden by cloud (v11.17: it was (1-dayK)², which had stars out at sunset with the sun still up)
   K.bow=K.rainA*K.sunL*smooth(0.66,0.35,K.sunAlt)*smooth(0.0,0.04,K.sunAlt); // a bow needs sun behind you and rain in front; below 42° or there is no bow above the horizon
   {const u=WIND_U*(0.15+0.85*K.windK)*(1+0.8*K.rainA);K.wind[0]=Math.cos(WIND_A)*u;K.wind[1]=Math.sin(WIND_A)*u;} // a calm leaves a breath of the trades
-  K.windOff[0]+=K.wind[0]*dt;K.windOff[1]+=K.wind[1]*dt; // the clouds' drift, real time
+  K.windOff[0]+=K.wind[0]*dt;K.windOff[1]+=K.wind[1]*dt;windOffU.value.set(K.windOff[0]%CAU_GUST[0],K.windOff[1]%CAU_GUST[0]); // the clouds' drift, real time; and the caustic's gusts' (scene.js, v11.39), modulo the gust tile
   K.starT=sunHA(clockH); // the stars turn with the sun (no year is decided: the same stars every night)
   // the cirrus' colour: at CIRRUS_H it stays in the sun until the sun is ~3 degrees under the horizon (the depression for 9.5 km),
   // lit then by the reddened light of a sun that low — the pink after sunset — and by day a white a touch warmer than the sky; unlit it
@@ -273,7 +273,7 @@ const sunMesh=(function(){const m=new THREE.Mesh(new THREE.PlaneGeometry(90,90),
 // the length, a flicker on two slow sines (the sun through waves), the fog's extinction only (an additive thing takes no veil, DESIGN).
 // Strength: SH_A × the beam's share × the sky's light × wk (hidden the frame the camera is in air, faded in under it, like the shimmer).
 // Believability: crepuscular rays through a wave surface, only from a sun that is up and clear, never under the canopy or a shower.
-const SH_K=Q.shafts,SH_N=SH_K*SH_K,SH_S=7.0,SH_L=30,SH_TOP=3,SH_A=0.16;
+const SH_K=Q.shafts,SH_N=SH_K*SH_K,SH_S=7.0,SH_L=30,SH_TOP=3,SH_A=0.16,SH_FOC=8; // SH_FOC (v11.39): the depth at which a shaft reads the surface's focusing (scene.js cauFocus) — its brightness is the same field the floor's net is drawn from; the two-sine flicker it had is gone
 const shP=new Float32Array(SH_N*12),shA=new Float32Array(SH_N*4),shV=new Float32Array(SH_N*4),shPh=new Float32Array(SH_N*4),shUV=new Float32Array(SH_N*8);
 for(let i=0;i<SH_N;i++){const b=i*4;shV[b]=0;shV[b+1]=0;shV[b+2]=1;shV[b+3]=1;shUV.set([0,0,1,0,1,1,0,1],i*8);}
 const shI=new Uint16Array(SH_N*6);for(let i=0;i<SH_N;i++){const b=i*4,k=i*6;shI[k]=b;shI[k+1]=b+1;shI[k+2]=b+2;shI[k+3]=b;shI[k+4]=b+2;shI[k+5]=b+3;}
@@ -282,7 +282,7 @@ const shU={uTime:timeU,uCol:{value:new THREE.Color(0.55,0.72,0.8)},uK:{value:0},
 const shM=new THREE.ShaderMaterial({uniforms:shU,transparent:true,depthWrite:false,depthTest:true,blending:THREE.AdditiveBlending,side:THREE.DoubleSide,
   vertexShader:'attribute float aA;attribute float aV;attribute float aPh;varying float vA;varying float vV;varying float vPh;varying float vD;varying vec2 vU;\nvoid main(){vA=aA;vV=aV;vPh=aPh;vU=uv;vec4 mv=modelViewMatrix*vec4(position,1.0);vD=length(mv.xyz);gl_Position=projectionMatrix*mv;}',
   fragmentShader:'uniform float uTime;uniform vec3 uCol;uniform float uK;uniform vec4 uFogP;uniform float uFogD;varying float vA;varying float vV;varying float vPh;varying float vD;varying vec2 vU;\n'+
-    'void main(){float w=1.0-abs(vU.x*2.0-1.0);w*=w;float pr=smoothstep(0.0,0.14,vV)*exp(-vV*2.4);float fl=0.6+0.4*sin(uTime*1.1+vPh)*sin(uTime*0.37+vPh*1.7);'+
+    'void main(){float w=1.0-abs(vU.x*2.0-1.0);w*=w;float pr=smoothstep(0.0,0.14,vV)*exp(-vV*2.4);float fl=1.0;'+
     'float d=vD;float tn=exp(-uFogD*uFogD*d*d);float ex=mix(exp(-uFogP.x*d),tn,uFogP.y)'+FOG_CUT_GLSL+';gl_FragColor=vec4(uCol*(uK*vA*w*pr*fl*ex),1.0);}'});
 const shafts=new THREE.Mesh(shG,shM);shafts.frustumCulled=false;shafts.renderOrder=-3;shafts.visible=false;scene.add(shafts);
 function shHash(i,j,k){let n=(Math.imul(i,73856093)^Math.imul(j,19349663)^Math.imul(k,83492791))|0;n=Math.imul(n^(n>>>13),1274126177);n=(n^(n>>>16))>>>0;return n/4294967296;}
@@ -298,6 +298,7 @@ function updateShafts(above,wk){
     if(a>0){const cf=canopyFade(top);if(cf>0){wmSample(x,z,shWM);a*=1-0.85*shWM[3]*cf;}} // the mats over the shaft's head (v11.32: the shader's ramp)
     const bx=x-sx/sy*len,bz=z-sz/sy*len,vx=px-x,vz=pz-z,vl=Math.max(Math.hypot(vx,vz),1e-3),rx=-vz/vl*w*0.5,rz=vx/vl*w*0.5,b=n*4,k=n*12;
     shP[k]=x-rx;shP[k+1]=top;shP[k+2]=z-rz;shP[k+3]=x+rx;shP[k+4]=top;shP[k+5]=z+rz;shP[k+6]=bx+rx;shP[k+7]=top-len;shP[k+8]=bz+rz;shP[k+9]=bx-rx;shP[k+10]=top-len;shP[k+11]=bz-rz;
+    if(a>0)a*=clamp(0.25+0.5*cauFocus(x,z,SH_FOC,t),0.2,1.6); // the surface's focusing over this shaft (v11.39)
     shA[b]=shA[b+1]=shA[b+2]=shA[b+3]=a;const ph=shHash(ci,cj,4)*TAU;shPh[b]=shPh[b+1]=shPh[b+2]=shPh[b+3]=ph;n++;}
   shG.attributes.position.needsUpdate=true;shG.attributes.aA.needsUpdate=true;shG.attributes.aPh.needsUpdate=true;
   shU.uK.value=SH_A*SUN_W[3]*K.skyL*wk*(1-smooth(30,70,TIDE-camera.position.y)); // and gone for a camera deeper than ~50 m: rays are a thing of the top of the column
