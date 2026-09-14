@@ -678,16 +678,20 @@ amplitude × `uChop` (a calm goes glassy and the web dies). The ripples ride the
 orbital displacement (`A sin`, along the wave) of the `CAU_SWELL` 4 longest `WAVES` — ~2 rad of ripple phase from the 46 m swell alone —
 which is what keeps three fixed trains from interfering into a lattice (seen: without it, a grid of ovals). The Hessian is the
 tiles' (`−A k² sin · dir⊗dir` per train, summed at the bake), each ring blurred by the sun's disc and the beam's scatter (v11.35.2: `exp(−2(π·d·CAU_SUN/L)²)`,
-`CAU_SUN` 0.02 rad — at 14 m only the 1.4–2.2 m trains survive, cells ~1 m; by 25 m it is quiet; the mean stays 1 at every depth; at
-the surface `d·c·H → 0` gives 1 on its own), then a line where the focus `1/|det J|` reaches `CAU_T` 3 — `smoothstep(CAU_T ±
-`CAU_SOFT` 0.8)` × `CAU_HI` 1.5 — pale lines on the floor and nothing else, ~22% of it from 5 to 16 m, Wind Waker's caustic
-with a soft edge (v11.35.1: a clamp of 2 was a clip; v11.35.2: quarter steps were a halftone; v11.35.3: a hard two-tone was a print;
-v11.36: a threshold of 1.5 was fat worms over a third of the floor — a fold line is thin only where |det| is small). Applied as `× (1 + cau·(I − 1))` (`cau` = `SEA_FOG.cau` 0.8; 1 is
+`CAU_SUN` 0.03 rad (v11.36.2; 0.02 had the 25 m rock as crisp as the 6 m sand) — at 25 m the spread is 0.75 m, the 1.8 m ring gone and
+the 3 m one soft blobs, so the cells grow with depth; the mean stays 1 at every depth; at
+the surface `d·c·H → 0` gives 1 on its own), then a line where the focus `1/|det J|` reaches `CAU_T` 2.5 — a hard `step` (`CAU_SOFT` 0; a
+width above 0 makes it a `smoothstep`) × `CAU_HI` 1.5 — drawn in world-fixed blocks: the surface point is snapped to a `CAU_PX` 0.15 m
+grid after the swell carry (v11.36.2, the person: the shader was too clean for the world; 25 cm blocks were confetti at 5 m), the
+pattern moving through them like a display; `CAU_STEP` frames a second would step the clock too (0, continuous). Pale blocky lines on
+the floor and nothing else, 18% of it at 5 m, 10% at 16, Wind Waker's caustic in the world's grain (v11.35.1: a clamp of 2 was a clip; v11.35.2: quarter steps were a halftone; v11.35.3: a hard two-tone was a print;
+v11.36: a threshold of 1.5 was fat worms over a third of the floor — a fold line is thin only where |det| is small; v11.36.2: the
+blocks). Applied as `× (1 + cau·(I − 1))` (`cau` = `SEA_FOG.cau` 0.8; 1 is
 physical; the readout's `t-y`), by the beam's share `uSunW.w`, `1 − 0.85·canopy`, and whether the beam reaches the face
 (`clamp(dot(fn, sun)·2.5)`, the shadows' `nl` rule). Each ring fades from the eye by its own wavelength (`CAU_FAR` [30, 70]
 wavelengths: the 0.65 m ring is gone by 45 m, the 3 m one by 210). `wd` gates the block to under water. Cost: 4 sines a fragment (the
 carry), 2 taps and a sincos a ring; ~2.4 M sines once at boot; skipped whole at night
-and under a shower (`uSunW.w` < 0.002). Seen (13 Sep, v11.36) in `test/caustic.js`'s pictures: a net of connected lines round 1–1.5 m cells at 10 m (v11.36.1); on the menu's sand thin pale lines — white sand gives it little to show against. Tune in `test/caustic.js` first.
+and under a shower (`uSunW.w` < 0.002). Seen (13 Sep, v11.36) in `test/caustic.js`'s pictures: a blocky connected net round 0.7–1.5 m cells at 5 m and sparse soft blobs 1–2 m across at 16 m (v11.36.2); on the menu's sand thin pale lines — white sand gives it little to show against. Tune in `test/caustic.js` first.
 
 **The sun under water (`atmosphere.js` `updateSky` → `SUN_W`).** The luminary refracted at the surface, `sin θw = sin θa / 1.33`, so a
 setting sun's beam under water is never flatter than 48° from the vertical; `w` = the beam's share of the light,

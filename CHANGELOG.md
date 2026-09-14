@@ -2750,3 +2750,30 @@ nothing the picture doesn't, and the person is the one swimming.
 **Unseen, ask in this order:** (1) the same 10–12 m views — if the cells are still small, the rings can go ×1.5 again (the tile holds
 it: a 1 m ring at 12 texels a wavelength) though 4.5 m ripples are a stretch to call wind ripples; if the net is now too dense,
 `CAU_T` 3.5; (2) v11.36's list.
+
+
+## v11.36.2 — the net in blocks, and a wider sun (14 Sep 2026)
+
+Five shots from the person of v11.36.1 (kelp forest 9 m, rock 25 m, sand 6 m and 5 m, a field at 7 m): "the best by far … not great";
+and, on reflection, that the shader "might be too nice or clean for the low poly game — maybe a more pixelated effect would land better".
+What the shots said, in order: the net at 25 m was as crisp as at 6 m, the same cell size (the deep should be soft big blobs); the
+forest floor had a full net under a dense canopy (the canopy term is the water map's 36 m texels — the honest fix is the world shadows,
+a separate pass); the density was the same everywhere (a gusty modulation, a follow-on); and the lines were anti-aliased curves
+sliding across flat facets — the last thing on the floor no vertex explained. This pass takes the first and the last.
+
+**Blocks (`CAU_PX` 0.15 m).** The surface point is snapped to a world grid after the swell carry, so the net is drawn in world-fixed
+blocks the pattern moves through, like a display; a block is lit or it isn't (`CAU_SOFT` 0, and the step is `step()` — `smoothstep`
+with equal edges is undefined GLSL). `CAU_STEP` (frames a second the clock steps in; 0 continuous) is there for stop-motion water and
+off by default, since it can read as lag. **A wider sun (`CAU_SUN` 0.03).** At 25 m the spread is 0.75 m: the 1.8 m ring is gone and
+the 3 m one is soft blobs 1–2 m across; the cells grow with depth, which is what deep caustics do and answers "small dots" the
+physical way. `CAU_T` 2.5 (was 3) to keep the shallows' lines two blocks wide.
+
+**Seen** in `test/caustic.js` (which now snaps to `CAU_PX` and takes a hard step at `CAU_SOFT` 0): 25 cm blocks at 5 m were confetti —
+the lines were one block wide; at 15 cm and `CAU_T` 2.5 a blocky connected net round 0.7–1.5 m cells (18% of the floor), and at
+16 m sparse soft blobs 1–2 m across (10%). The menu in the app's browser boots with no shader error on either tier; `node build.js
+--test` green on both.
+
+**Unseen, ask in this order:** (1) the person's 5–7 m views: do the blocks read as the world's grain or as a screen door — `CAU_PX`
+is the knob (0.2 coarser, 0.1 finer, 0 off); (2) the 25 m rock: soft blobs now, or still a net; (3) whether stop-motion is wanted
+(`CAU_STEP` 8); (4) the follow-ons the shots named — the canopy (world shadows) and the gusts (a slow world-space modulation of the
+rings' amplitude, which wants a small bake of its own); (5) v11.36.1's list.

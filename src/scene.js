@@ -225,7 +225,7 @@ const lightKU={value:LIGHT_K};
 // on the CAU_TILE lattice (k = 2π n / T) so the tile wraps; a ring is the lattice vectors whose wavelength lies within ±18% of its own.
 // CAU_RINGS: [wavelength m, amplitude m per train at full chop]; Q.cau rings are used, longest first (4 high, 2 low). Bytes, ±CAU_HMAX.
 const CAU_RINGS=[[3.0,0.022],[1.8,0.014],[1.1,0.008],[0.65,0.0044]],CAU_DIRS=8,CAU_SPREAD=1.2,CAU_TILE=16,CAU_N=192,CAU_HMAX=1.2;
-const CAU_SUN=0.02,CAU_T=3.0,CAU_SOFT=0.8,CAU_HI=1.5,CAU_SWELL=4,CAU_FAR=[30,70]; // the beam's angular spread rad (v11.35.2: the sun's half-degree disc plus forward scatter; a ring's contrast at depth d falls by exp(-2(pi d CAU_SUN/L)^2), so the deep is the long rings' alone); the focus a line needs (1/|det J| at or over CAU_T; v11.36: 3 — a fold line is thin only where |det| is small, 1.5 was fat worms over a third of the floor) and the half-width of the step to it (v11.35.3: a hard two-tone at 40 cm read as a print); the line's brightness; how many of WAVES, longest first, the ripples ride; the fade from the eye per ring, in wavelengths
+const CAU_SUN=0.03,CAU_T=2.5,CAU_SOFT=0.0,CAU_HI=1.5,CAU_SWELL=4,CAU_FAR=[30,70],CAU_PX=0.15,CAU_STEP=0; // the beam's angular spread rad (v11.35.2: the sun's half-degree disc plus forward scatter; a ring's contrast at depth d falls by exp(-2(pi d CAU_SUN/L)^2), so the deep is the long rings' alone); the focus a line needs (1/|det J| at or over CAU_T; v11.36: 3 — a fold line is thin only where |det| is small, 1.5 was fat worms over a third of the floor) and the half-width of the step to it (v11.35.3: a hard two-tone at 40 cm read as a print); the line's brightness; how many of WAVES, longest first, the ripples ride; the fade from the eye per ring, in wavelengths
 const CAU_TEX=[];
 (function(){ // the bake: for each ring, the lattice vectors in its band, one train per direction bin within the spread, then the tiles
   const rng=mulberry(1717),T=CAU_TILE,N=CAU_N,nmax=Math.ceil(T/CAU_RINGS[CAU_RINGS.length-1][0]*1.25)+1;
@@ -243,15 +243,16 @@ const CAU_TEX=[];
     CAU_TEX.push({L:L,w:Math.sqrt(9.8*TAU/L),n:trains.length,s:mk(S),c:mk(C)});}
 })();
 const CAU_PARS=CAU_TEX.map((r,i)=>'uniform sampler2D uCauS'+i+';uniform sampler2D uCauC'+i+';').join('');
-const CAU_GLSL=(function(){let s='vec2 ps=vFogPos.xz+uSunW.xz*(dep/max(uSunW.y,0.3));vec3 H=vec3(0.0);';
+const CAU_GLSL=(function(){let s='vec2 ps=vFogPos.xz+uSunW.xz*(dep/max(uSunW.y,0.3));vec3 H=vec3(0.0);float ct='+(CAU_STEP>0?'floor(uTime*'+CAU_STEP.toFixed(1)+')/'+CAU_STEP.toFixed(1):'uTime')+';';
   // the ripples ride the swell: the surface's horizontal orbital displacement (A sin, along the wave) carries the ripple field with it — for a 1.6 m ripple on a 46 m swell of 0.5 m that is ~2 rad of phase, and it is what keeps three fixed trains from interfering into a lattice (seen, 13 Sep)
-  for(let i=0;i<CAU_SWELL;i++){const w=WAVES[i];s+='ps+=vec2('+w.dx.toFixed(5)+','+w.dz.toFixed(5)+')*('+w.A.toFixed(3)+(w.L<20?'*uChop':'')+'*sin(dot(ps,vec2('+w.dx.toFixed(5)+','+w.dz.toFixed(5)+'))*'+w.k.toFixed(5)+'-'+w.w.toFixed(5)+'*uTime+'+w.ph.toFixed(4)+'));';}
+  for(let i=0;i<CAU_SWELL;i++){const w=WAVES[i];s+='ps+=vec2('+w.dx.toFixed(5)+','+w.dz.toFixed(5)+')*('+w.A.toFixed(3)+(w.L<20?'*uChop':'')+'*sin(dot(ps,vec2('+w.dx.toFixed(5)+','+w.dz.toFixed(5)+'))*'+w.k.toFixed(5)+'-'+w.w.toFixed(5)+'*ct+'+w.ph.toFixed(4)+'));';}
+  if(CAU_PX>0)s+='ps=(floor(ps*'+(1/CAU_PX).toFixed(4)+')+0.5)*'+CAU_PX.toFixed(4)+';';
   s+='vec2 cu=ps*'+(1/CAU_TILE).toFixed(6)+';';
   for(let i=0;i<CAU_TEX.length;i++){const r=CAU_TEX[i]; // each ring: the field now from its two tiles, blurred by the sun's disc at depth and faded from the eye, both by its wavelength
-    s+='{float ph='+r.w.toFixed(5)+'*uTime;float g=exp(-dep*dep*'+(2*Math.pow(Math.PI*CAU_SUN/r.L,2)).toFixed(6)+')*(1.0-smoothstep('+(r.L*CAU_FAR[0]).toFixed(1)+','+(r.L*CAU_FAR[1]).toFixed(1)+',vFogDepth));'+
+    s+='{float ph='+r.w.toFixed(5)+'*ct;float g=exp(-dep*dep*'+(2*Math.pow(Math.PI*CAU_SUN/r.L,2)).toFixed(6)+')*(1.0-smoothstep('+(r.L*CAU_FAR[0]).toFixed(1)+','+(r.L*CAU_FAR[1]).toFixed(1)+',vFogDepth));'+
       'if(g>0.002)H+=((texture2D(uCauS'+i+',cu).rgb*2.0-1.0)*cos(ph)-(texture2D(uCauC'+i+',cu).rgb*2.0-1.0)*sin(ph))*('+CAU_HMAX.toFixed(3)+'*g);}';}
   s+='float jc=dep*0.248*uChop;float dj=(1.0-jc*H.x)*(1.0-jc*H.z)-jc*jc*H.y*H.y;'+
-    'float ci=1.0+'+(CAU_HI-1).toFixed(2)+'*smoothstep('+(CAU_T-CAU_SOFT).toFixed(2)+','+(CAU_T+CAU_SOFT).toFixed(2)+',1.0/max(abs(dj),0.02));';
+    'float ci=1.0+'+(CAU_HI-1).toFixed(2)+'*'+(CAU_SOFT>0?'smoothstep('+(CAU_T-CAU_SOFT).toFixed(2)+','+(CAU_T+CAU_SOFT).toFixed(2)+',':'step('+CAU_T.toFixed(2)+',')+'1.0/max(abs(dj),0.02));';
   return s;})();
 const SHM_R=Q.tier==='low'?40:64,SHM_D=120,SHM_BIAS=0.3; // the box's half-side, its half-depth along the light, the depth bias in metres
 const SHM_P=new Float32Array([0,0,0,0]),SHM_L=new Float32Array([0,1,0,2*SHM_D]); // uShP: texel size (map units), on, bias (depth units), the receiver's normal offset (m); uShL: the map's light direction, its depth range in metres
