@@ -1,14 +1,14 @@
 // test/caustic.js — the baked caustic as a picture (v11.36): runs scene.js's bake (CAU_RINGS … CAU_TEX) against the stub and draws
 // 1/|det J| through the line step at a few depths, t = 0, full chop, no swell carry, into test/preview/caustic_<d>m.png with the
 // line's coverage printed. Not in --test. Env: DEP (depths, "5,10,16"), CT and CS (the line's threshold and half-width, scene.js
-// CAU_T/CAU_SOFT; CS 0 is a hard step), SPAN (metres across, 16), W (pixels, 512), OX/OZ (the world offset, m — the gust tile varies over ~100 m, so SPAN=100 shows the patches). Snaps to CAU_PX blocks as the shader does (v11.36.2). What it proved on 13 Sep: six sines are dots or stripes, thirty-two are
+// CAU_T/CAU_SOFT; CS 0 is a hard step), PIX (1 the pixel version: blocks and a hard step; 0 the smooth one, v11.38), SPAN (metres across, 16), W (pixels, 512), OX/OZ (the world offset, m — the gust tile varies over ~100 m, so SPAN=100 shows the patches). Snaps to CAU_PX blocks as the shader does (v11.36.2). What it proved on 13 Sep: six sines are dots or stripes, thirty-two are
 // a net; a line is thin only where |det| is small (CT 1.5 was fat worms over a third of the floor, 3 is a net at 5 m).
 const fs=require('fs'),path=require('path'),root=path.join(__dirname,'..'),{png}=require('./png.js');
 require('./stub.js');const THREE=global.THREE;THREE.DataTexture=function(d,n){this.d=d;this.n=n;};
 const util=fs.readFileSync(path.join(root,'src/util.js'),'utf8'),src=fs.readFileSync(path.join(root,'src/scene.js'),'utf8');
 const a=src.indexOf('const CAU_RINGS='),b=src.indexOf('const CAU_PARS=');if(a<0||b<0)throw new Error('caustic: scene.js markers not found');
 const num=k=>+(src.match(new RegExp(k+'=([0-9.]+)'))||[])[1];
-const PX=num('CAU_PX')||0,T=num('CAU_TILE'),N=num('CAU_N'),HMAX=num('CAU_HMAX'),SUN=num('CAU_SUN'),CT=+(process.env.CT||num('CAU_T')),CS=+(process.env.CS||num('CAU_SOFT')),HI=num('CAU_HI');
+const PIX=process.env.PIX===undefined?1:+process.env.PIX,PX=PIX?(num('CAU_PX')||0):0,T=num('CAU_TILE'),N=num('CAU_N'),HMAX=num('CAU_HMAX'),SUN=num('CAU_SUN'),CT=+(process.env.CT||num('CAU_T')),CS=+(process.env.CS||(PIX?0:num('CAU_SOFT'))),HI=num('CAU_HI');
 const R=new Function('THREE','WIND_A','Q',util+'\n'+src.slice(a,b)+'\nreturn {t:CAU_TEX,g:CAU_GTEX,gs:CAU_GUST,gn:CAU_GN};')(THREE,3.49,{cau:9}),TEX=R.t,GT=R.g,GS=R.gs,GN=R.gn;
 console.log('rings',TEX.map(r=>r.L+'m x'+r.n).join(', '),' tile',T,'m',N,'texels  CT',CT,'CS',CS,'PX',PX);
 function tap(t,x,z){const u=((x/T)%1+1)%1,v=((z/T)%1+1)%1;const i=Math.floor(u*N)%N,j=Math.floor(v*N)%N,o=(j*N+i)*4;return [(t.d[o]/127.5-1)*HMAX,(t.d[o+1]/127.5-1)*HMAX,(t.d[o+2]/127.5-1)*HMAX];}

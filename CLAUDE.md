@@ -236,6 +236,7 @@ Docs, most upstream first. When a doc's Open list says a choice is the person's,
 ## Dev tools in the game
 
 - URL: `#low` `#high` (tier), `#zoo` (bestiary), `#lab` or `#lab=<base64 spec>` (the lab), `#bench` (the sound bench; it arms the first click, since an audio context needs a gesture).
+- The effects list (`e`): `pixel light` (v11.38) is the caustic and the shadows in 30 cm blocks with hard edges, or smooth — two versions kept to compare; `test/caustic.js` draws either (`PIX=0`).
 - Keys: `z` bestiary (left/right step, space strike, s cruise, drag turn, wheel zoom); `l` lab, `p` place the spec; `e` the effects
   list; `b` the sound bench (1 one-shots, 2 noise and irs, 3 the beds, 4 a live capture; `node serve.js` must be running); `f` first person; `r` or right mouse grab, click bite; `Q` the clade ability; `M` mute.
 - Readout: backquote (also `'` or F3): fps, frame ms, draws, tris, cells, far regions, creatures, physics ms, render ms (when it

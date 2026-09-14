@@ -668,8 +668,8 @@ from surface to floor has Jacobian `J = I − d·c·H` (`c` = 1 − 1/1.33, the 
 irradiance is `1/|det J|` — mean 1 over the floor by construction, so light is redistributed and never added (v11.13's was a gain,
 `1 + 1.3·k`, and blew the sand to white: that was the "looks ridiculously good" of the audit). The swell can't do it — `WAVES`' shortest
 (L 6, A 0.06) focuses at ~60 m, never in the top 30 — the web is the wind's ripples, 1–3 m, which the surface mesh can't hold anyway;
-so `CAU_RINGS` is that ripple layer, living only in the light — and baked (v11.36): five rings of eight trains (5, 3, 2, 1.2, 0.7 m — v11.37; 2–0.45 and then 3–0.65 were "small dots" and "tiny blobs" to the
-person: the world's grain is a 4 m facet and a 3 m animal; `Q.cau` 5 high, 3 low) on the `CAU_TILE` 40 m lattice, spread ±`CAU_SPREAD`
+so `CAU_RINGS` is that ripple layer, living only in the light — and baked (v11.36): five rings of eight trains (8, 5, 3, 1.8, 1 m, the 1 m at half weight — v11.38; 2–0.45, 3–0.65 and 5–0.7 were "small dots",
+"tiny blobs" and "too busy" to the person: the world's grain is a 4 m facet and a 3 m animal; `Q.cau` 5 high, 3 low) on the `CAU_TILE` 40 m lattice, spread ±`CAU_SPREAD`
 1.2 rad round the wind, random phases (`mulberry(1717)`), amplitudes ∝ L² — equal curvature a ring, ~0.15 per train; constant
 steepness, a wind sea's physics, puts the curvature in the shortest waves and gives a snorkeller's fine web — so the 5 m ring sets
 the cells' scale; per ring two 320² byte tiles hold the sin and cos parts of (Hxx, Hxy, Hzz), and the fragment
@@ -683,19 +683,21 @@ which is what keeps three fixed trains from interfering into a lattice (seen: wi
 tiles' (`−A k² sin · dir⊗dir` per train, summed at the bake), each ring blurred by the sun's disc and the beam's scatter (v11.35.2: `exp(−2(π·d·CAU_SUN/L)²)`,
 `CAU_SUN` 0.02 rad (v11.36.2's 0.03 left every floor past ~18 m dark — the person's "nothing in the kelp forest"; the only intentional
 cut is the floating colonies' canopy mask, 85% under a raft mat) — the short rings go first, so the cells grow with depth; the mean stays 1 at every depth; at
-the surface `d·c·H → 0` gives 1 on its own), then a line where the focus `1/|det J|` reaches `CAU_T` 2.5 — a hard `step` (`CAU_SOFT` 0; a
-width above 0 makes it a `smoothstep`) × `CAU_HI` 1.5 — drawn in world-fixed blocks: the surface point is snapped to a `CAU_PX` 0.3 m
-grid after the swell carry (v11.36.2, the person: the shader was too clean for the world; v11.37: 30 cm, two or three blocks a line at
-the new scale), the
-pattern moving through them like a display; `CAU_STEP` frames a second would step the clock too (0, continuous). Pale blocky lines on
-the floor and nothing else, 7% of it at 5 m, 14% at 10, 19% at 16, Wind Waker's caustic in the world's grain (v11.35.1: a clamp of 2 was a clip; v11.35.2: quarter steps were a halftone; v11.35.3: a hard two-tone was a print;
+the surface `d·c·H → 0` gives 1 on its own), then a line where the focus `1/|det J|` reaches `CAU_T` 3 × `CAU_HI` 1.5 — in one of two versions, one switch (v11.38, `pixel light` on
+the effects list, `uPix`): **pixel** — a hard `step`, the surface point snapped to a `CAU_PX` 0.3 m world grid after the swell carry
+(v11.36.2, the person: the shader was too clean for the world), the pattern moving through the blocks like a display, and the shadows
+read at the same grid (the receiver point snapped and moved along its face's plane, one hard tap; [The shadows](#the-light)) — one grain
+for both; **smooth** — no snap, a `smoothstep` `CAU_SOFT` 1.2 either side of `CAU_T`, the four-tap shadows: the OG's broad sweeping
+patches over the baked structure. `CAU_STEP` frames a second would step the clock too (0, continuous). Pale lines on the floor and
+nothing else, 3% of it at 5 m, 13% at 10, 18% at 16 (v11.35.1: a clamp of 2 was a clip; v11.35.2: quarter steps were a halftone; v11.35.3: a hard two-tone was a print;
 v11.36: a threshold of 1.5 was fat worms over a third of the floor — a fold line is thin only where |det| is small; v11.36.2: the
-blocks). Applied as `× (1 + cau·(I − 1))` (`cau` = `SEA_FOG.cau` 0.8; 1 is
+blocks; v11.38: both versions kept, to compare). Applied as `× (1 + cau·(I − 1))` (`cau` = `SEA_FOG.cau` 0.8; 1 is
 physical; the readout's `t-y`), by the beam's share `uSunW.w`, `1 − 0.85·canopy`, and whether the beam reaches the face
 (`clamp(dot(fn, sun)·2.5)`, the shadows' `nl` rule). Each ring fades from the eye by its own wavelength (`CAU_FAR` [30, 70]
 wavelengths: the 0.65 m ring is gone by 45 m, the 3 m one by 210). `wd` gates the block to under water. Cost: 4 sines a fragment (the
 carry), 2 taps and a sincos a ring, 1 tap for the gust; ~8 M sines once at boot (655 ms for the whole load on the dev PC); skipped whole at night
-and under a shower (`uSunW.w` < 0.002). Seen (13 Sep, v11.36) in `test/caustic.js`'s pictures: blocky ribbons metres long at 10 m, dense zones and calm zones over 120 m, no tile grid (v11.37); on the menu's sand thin pale lines — white sand gives it little to show against. Tune in `test/caustic.js` first.
+and under a shower (`uSunW.w` < 0.002). Seen (13 Sep, v11.36) in `test/caustic.js`'s pictures: sparse chunky patches 1–2 m across at 10 m in pixel, the same as soft broad gradients in smooth (v11.38); dense zones
+and calm zones over 120 m, no tile grid (v11.37); on the menu's sand thin pale lines — white sand gives it little to show against. Tune in `test/caustic.js` first.
 
 **The sun under water (`atmosphere.js` `updateSky` → `SUN_W`).** The luminary refracted at the surface, `sin θw = sin θa / 1.33`, so a
 setting sun's beam under water is never flatter than 48° from the vertical; `w` = the beam's share of the light,
@@ -1547,7 +1549,7 @@ distance — a designed pass, not a knob. `render` is CPU submission; the GPU ru
   260 px window; JS only translates the strip (`updateCompass`). North is −z; heading = −yaw. Fades in while moving or
   turning, out after 3.5 s still. The dot under the letters is the bearing of the peak (respawn), shown beyond 150 units
   from it; clamped to the window edge and dimmed when behind you. Remove it by deleting the `dist>150` block.
-- **The effects list (v11.23, `effects.js`, `#fx`):** the cosmetic systems switchable live — caustics, shadows, world shadows, ground shadows (v11.30), sharp shadows, light shafts,
+- **The effects list (v11.23, `effects.js`, `#fx`):** the cosmetic systems switchable live — caustics, pixel light (v11.38: the caustic and the shadows in blocks, or smooth), shadows, world shadows, ground shadows (v11.30), sharp shadows, light shafts,
   marine snow, rain, clouds, surface glow, vignette — in the lab panel's look, on the right. The word `effects` at the bottom right of the menu,
   or `e` on the menu and in play (the pointer is released while it is open, taken back on close; escape or a click on the canvas closes it).
   Saved in localStorage (`tethys.fx`). Each system reads `FX.key` where it draws; a switch is a key in `FX_DEF`, a row in `FX_LIST`, a read.

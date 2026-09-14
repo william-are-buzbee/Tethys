@@ -2809,3 +2809,32 @@ it. `node build.js --test` green on both tiers.
 entry is the scale, `CAU_T` the density; (2) the gust patches in play — `CAU_GUST[1]` 0.75 is the depth of the calm, 0.5 milder;
 (3) whether the near-surface web survived in a form he still likes (the 0.7 m ring is weak now); (4) the blocky-shadow offer;
 (5) the boot cost on the person's PC (`CAU_N` 320 → 256 halves the bake).
+
+
+## v11.38 — two lights, one switch: pixel and smooth (14 Sep 2026)
+
+Three shots of v11.37 from the person: "this does look cool. A little too busy — too many pieces and small things going on. Maybe even
+bigger? The ribbons don't always read as light." And the decision: keep the pixel style as its own version and the high-resolution
+one as its own, snap the shadows to the caustic's grain in the pixel one, and compare — "this may be one of those games where nice
+effects work well with low poly textures. But for now we need to try both."
+
+**The switch.** `pixel light` on the effects list (`e`; default on; `FX.pixel` → `pixU`, scene.js `uPix`). Pixel: the caustic in
+`CAU_PX` 30 cm world-fixed blocks with a hard step, and the shadows read at the same grid — the receiver point snapped to it and moved
+along its face's plane so it stays on the surface (a face steeper than ~72° is left alone), one hard tap instead of the four-tap
+penumbra. One grain for both systems. Smooth: no snap, the caustic through a wide soft step (`CAU_SOFT` 1.2 either side of `CAU_T` 3),
+the shadows as v11.23 built them — the OG's broad sweeping patches, now over a real structure. Both are the same bake; the switch is
+a uniform read in the fragment. `test/caustic.js` draws either (`PIX=0`).
+
+**Bigger and quieter.** `CAU_RINGS` 8, 5, 3, 1.8, 1 m (the 8 m wave at 28 cm, honest chop), the 1 m ring at half weight; `CAU_T` 3.
+Fewer pieces: lines over 3% of the floor at 5 m, 13% at 10, 18% at 16.
+
+**Seen.** `test/caustic.js` at 10 m over 16 m: pixel — sparse chunky patches 1–2 m across, a calm gust over the top half; smooth — the
+same shapes as soft broad patches with gradients, unmistakably the OG's look. The menu in the app's browser: the row is on the list,
+the switch flips live both ways and persists in `tethys.fx`; with pixel on the creature shadows have stepped edges and the sand
+blocky patches, with it off both are soft; no shader errors. `node build.js --test` green on both tiers.
+
+**Unseen, ask in this order:** (1) the comparison itself, in play, at 5–15 m — which the person prefers, and whether the pixel
+shadows' steps sit well on a body's shadow (they are world-fixed, so a swimming animal's shadow crawls through them); (2) whether
+8 m is big enough or too big — `CAU_RINGS[0]`; (3) whether the smooth version wants a lower `CAU_T` (denser, more like the OG's
+coverage) — the two versions share it today; (4) acne on steep slopes in pixel mode (the snap is skipped past 72°, the band between
+is untested); (5) v11.37's list.
