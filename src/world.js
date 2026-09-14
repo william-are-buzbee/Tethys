@@ -154,7 +154,9 @@ const HAZE={dens:1.7e-4,h:70,spray:0.0025,sprayH:4.0,glow:0.8,lift:0.3}; // the 
 // The surface is a sum of directional waves obeying deep-water dispersion (long waves travel faster) with crests sharpened by
 // wsh(), on top of the tide. waveH(x,z) is the water level at a point now: the player and creature physics, the surface mesh
 // (the wave sum in GLSL, see WAVE_GLSL in scene.js, plus uTide) and the rafts' bob all read it. [wavelength, amplitude, direction].
-const WAVES=[[46,0.50,0.35],[29,0.32,1.25],[15,0.18,2.6],[8.5,0.11,4.3],[6,0.06,5.5]].map(w=>{const k=TAU/w[0];return {L:w[0],A:w[1],dx:Math.cos(w[2]),dz:Math.sin(w[2]),k:k,w:Math.sqrt(9.8*k),ph:w[2]*7.3};});
+// The direction is where the wave *travels toward* (the phase is dot(p,dir)·k − ω·t): the swell runs with the wind (WIND_A) and the wind sea fans
+// ±0.6 rad round it (v11.42, WATER.md item 1: to v11.41 the swell ran toward 0.35 — dead against the wind and the caustic's ripple trains — and the rest to every quarter).
+const WAVES=[[46,0.50,WIND_A],[29,0.32,WIND_A-0.19],[15,0.18,WIND_A+0.36],[8.5,0.11,WIND_A-0.49],[6,0.06,WIND_A+0.56]].map(w=>{const k=TAU/w[0];return {L:w[0],A:w[1],dx:Math.cos(w[2]),dz:Math.sin(w[2]),k:k,w:Math.sqrt(9.8*k),ph:w[2]*7.3};});
 const WAVE_AMP=WAVES.reduce((a,w)=>a+w.A,0);
 const GRAV=9.8; // 1 g, 1 unit = 1 m (PLANET.md); what pulls a body back down once it is out of the water. Was 14 to v9.3.
 function wsh(s){return 2*Math.pow((s+1)*0.5,1.7)-1;}

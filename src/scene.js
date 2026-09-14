@@ -66,6 +66,9 @@ const camera=new THREE.PerspectiveCamera(62,innerWidth/innerHeight,0.2,FAR);
 // of v8.2 and v8.4 exactly: the ground was the one thing fogged to the water it stood in.
 const SUN_POS=[30,100,10],SUN_LEN=Math.hypot(SUN_POS[0],SUN_POS[1],SUN_POS[2]); // the boot direction only: since v11 the sun (or the moon, at night) is placed by the clock every frame (atmosphere.js updateSky)
 const FOG_P=new Float32Array([SEA_FOG.far,SEA_FOG.share,SEA_FOG.placeMix,1]),FOG_PS=new Float32Array([SEA_FOG.far,SEA_FOG.shareS,SEA_FOG.placeMix,1]);
+const FOG_PSURF=new Float32Array([SEA_FOG.far,SEA_FOG.share,SEA_FOG.placeMix,0]); // the surface mesh's own set (v11.42): w 0 — its fragments are the boundary, so its ray is in the camera's medium whole (the plane test would put a far crest's fragment on the wrong side and fog the underside as air — v8.3's pale horizon again)
+const FOG_A=new Float32Array([AIR.far,AIR.share,AIR.dens,SEA_FOG.dens]),FOG_AC=new Float32Array([AIR.fog[0],AIR.fog[1],AIR.fog[2],0]); // v11.42, the two-segment fog: the air's far, share and density and the sea's density; the air's colour (the sky's horizon by the hour) and, in w, the water level at the camera now (atmosphere.js applyFog / updateAtmosphere)
+const UPWELL=[0.50,0.43,0.60]; // v11.42: the water seen from above along a downward ray is the upwelling light, darker and bluer than the horizontal veil; this is the old TINT_COL (0.05,0.20,0.34) over WCOL[0] — straight down the deep is the colour it was, at grazing it is the veil
 const FOG_W=new Float32Array([0,SEA_FOG.bright,SEA_FOG.dlAt,SEA_FOG.reach]),FOG_S=new Float32Array([SUN_POS[0]/SUN_LEN,SUN_POS[1]/SUN_LEN,SUN_POS[2]/SUN_LEN,SEA_FOG.sun]);
 // the water/floor map's scale, a constant of the world's size, written into every shader that samples them (it was uFogW.x);
 // and the two depth curves of world.js as GLSL, generated from the same constants the JS reads so the two cannot drift again
@@ -91,6 +94,21 @@ const FM_SCALE=1024;floorMap.minFilter=floorMap.magFilter=THREE.LinearFilter;flo
 // (the marine haze and the surf's spray; y above the level), integrated in closed form along a ray from height cy to height fy over
 // length d — the ray is cut at the water level, a fragment beneath it (the floor through the surface) counts only its part in air.
 // mistFar is the same to infinity for a ray leaving the ground at slope up (the dome): the boundary layer seen edge-on.
+const timeU={value:0},tideU={value:0},tideRU={value:0}; // the time; the tide now and its rate (world.js, set by main.js each frame)
+// The wave sum from world.js as GLSL, so the surface mesh and the rafts move with exactly the water level the physics uses.
+// sp is the local grid spacing: waves the mesh can't resolve fade out (used by the far, coarse part of the surface mesh).
+// A wave the grid can't resolve is faded out (sp: the local vertex spacing) — fully drawn at seven samples a wavelength, gone at
+// three and a third (v11.4; it was 3.6 to 2.0, i.e. drawn aliased right up to the Nyquist limit, a sawtooth of facets the noon sun
+// lit evenly and a low sun lights light/dark: the rows of wedges on the far sea). The crest sharpening puts a wave's mean at
+// WSH_MEAN of its amplitude below zero; a faded wave keeps that mean, so the far, flat sea sits at the same level as the near one.
+const WSH_MEAN=-0.19514;
+const chopU={value:1}; // SEA_CHOP for the shaders (atmosphere.js writes it)
+const WAVE_GLSL='uniform float uChop;float wsh(float s){return 2.0*pow(max((s+1.0)*0.5,1e-4),1.7)-1.0;}\nfloat waveH(vec2 p,float t,float sp){float h=0.0;'+
+  WAVES.map(w=>'h+='+w.A.toFixed(3)+(w.L<20?'*uChop':'')+'*mix('+WSH_MEAN.toFixed(4)+',wsh(sin(dot(p,vec2('+w.dx.toFixed(5)+','+w.dz.toFixed(5)+'))*'+w.k.toFixed(5)+'-'+w.w.toFixed(5)+'*t+'+w.ph.toFixed(4)+')),1.0-smoothstep('+(w.L*0.14).toFixed(2)+','+(w.L*0.30).toFixed(2)+',sp));').join('')+'return h;}\n';
+// The fog chunk sums the same waves per fragment near the water level (v11.42) under its own names, since the lit materials' fragment stage
+// already declares uTime and uChop (LIGHT_PARS) and the surface's declares uTime.
+const WAVE_GLSL_FOG=WAVE_GLSL.replace('uniform float uChop;','uniform float uFogChop;').replace(/uChop/g,'uFogChop').replace('float waveH(','float fogWaveH(');
+const WAVE_MEAN=WSH_MEAN*WAVE_AMP; // the mean water level relative to the tide, the crest sharpening's offset
 const MIST_GLSL='float mistL(float cy,float dy,float d,float rho,float ih){float k=dy*ih;float e=rho*exp(-max(cy,0.0)*ih);return abs(k)<1e-3?e*d:e*(1.0-exp(-k))*d/k;}\n'+
   'float mistRay(float cy,float fy0,float d){float fy=max(fy0,0.0);float dy0=fy0-cy;float dd=abs(dy0)>1e-3?d*clamp((fy-cy)/dy0,0.0,1.0):d;float dy=fy-cy;return mistL(cy,dy,dd,uMist.x,uMist.y)+mistL(cy,dy,dd,uMist.z,uMist.w)+mistL(cy,dy,dd,uMistW.y,uMistW.z);}\n'+
   'float mistFar(float cy,float up){float u=max(up,0.012);return (uMist.x*exp(-max(cy,0.0)*uMist.y)/uMist.y+uMist.z*exp(-max(cy,0.0)*uMist.w)/uMist.w+uMistW.y*exp(-max(cy,0.0)*uMistW.z)/uMistW.z)/u;}\n';
@@ -105,23 +123,38 @@ const MIST_GLSL='float mistL(float cy,float dy,float d,float rho,float ih){float
   C.dithering_pars_fragment=DITHER_PARS;C.dithering_fragment='gl_FragColor.rgb=dithering(gl_FragColor.rgb);';
   C.fog_pars_vertex='#ifdef USE_FOG\nuniform vec3 uFogC;uniform mat3 uFogR;uniform vec4 uFogW;varying float vFogDepth;varying vec3 vFogPos;\n#endif'; // uFogW in the vertex stage too since v11.32: SUNK_V (the Lambert sun by depth) reads the tide from it, and until now only the fragment chunk declared it
   C.fog_vertex='#ifdef USE_FOG\nvFogDepth=length(mvPosition.xyz);vFogPos=uFogC+uFogR*mvPosition.xyz;\n#endif';
-  C.fog_pars_fragment='#ifdef USE_FOG\nuniform vec3 fogColor;uniform vec3 uFogC;uniform vec4 uFogP;uniform vec4 uFogW;uniform vec4 uFogS;uniform vec4 uFogT;uniform vec4 uMist;uniform vec4 uMistC;uniform vec4 uMistW;uniform sampler2D uWaterMap;uniform sampler2D uFloorMap;varying float vFogDepth;varying vec3 vFogPos;\n#ifdef FOG_EXP2\nuniform float fogDensity;\n#else\nuniform float fogNear;uniform float fogFar;\n#endif\n'+MIST_GLSL+WCOL_GLSL+'\n#endif';
-  C.fog_fragment='#ifdef USE_FOG\n{float d=vFogDepth;vec3 fc=fogColor;'+
-    'if(uFogP.w>0.5){vec3 rd=(vFogPos-uFogC)/max(d,1e-3);vec3 sp=uFogC+rd*min(d,uFogW.w);'+
-    'vec2 m0=uFogC.xz*'+WM_SCALE+'+0.5,m1=sp.xz*'+WM_SCALE+'+0.5;vec4 w0=texture2D(uWaterMap,m0),w1=texture2D(uWaterMap,m1);'+'w0.rgb=mix(wcol(max(-uFogC.y,'+OPEN_D.toFixed(1)+')),w0.rgb,exp(-max(uFogC.y+texture2D(uFloorMap,m0).r*'+FM_SCALE.toFixed(1)+'-'+FLOOR_FREE.toFixed(1)+',0.0)*'+(1/FLOOR_H).toFixed(5)+'));'+ // v11.27: the water's colour at the camera's depth, the floor's where the floor is near (world.js FLOOR_H)
-    'w1.rgb=mix(wcol(max(-sp.y,'+OPEN_D.toFixed(1)+')),w1.rgb,exp(-max(sp.y+texture2D(uFloorMap,m1).r*'+FM_SCALE.toFixed(1)+'-'+FLOOR_FREE.toFixed(1)+',0.0)*'+(1/FLOOR_H).toFixed(5)+'));'+ // the same at the bounded point
-    'vec4 wm=mix(w0,w1,uFogP.z);'+
-    'float y=mix(uFogC.y,sp.y,uFogW.z);float cw=wm.a*'+CAN_GLSL('y')+';'+
-    'float dl='+DL_GLSL('y')+';float sg=pow(max(dot(rd,uFogS.xyz),0.0),6.0);'+
-    'fc=mix(wm.rgb,vec3('+WATER_CANOPY.map(v=>v.toFixed(3)).join(',')+'),cw)*(1.0-0.28*cw)*uFogW.y*(0.3+0.7*dl)*(1.0+uFogS.w*sg*dl)*uFogT.x*mix(vec3(1.0),uFogT.yzw,smoothstep(-40.0,0.0,y));'+
-    'fc*=mix(vec3(1.0),vec3(1.12,0.92,0.72),smoothstep('+CHEMO_TINT[0].toFixed(1)+','+CHEMO_TINT[1].toFixed(1)+',y));'+ // below the chemocline the water is browner (v11.13, PLANET)
-    'float cy=uFogC.y;float dy=vFogPos.y-cy;if(abs(dy)<1e-3)dy=1e-3;float sl=abs(clamp(('+(CHEMO+CHEMO_PLATE).toFixed(1)+'-cy)/dy,0.0,1.0)-clamp(('+(CHEMO-CHEMO_PLATE).toFixed(1)+'-cy)/dy,0.0,1.0))*d;'+ // the ray's length inside the plate at the chemocline
-    'gl_FragColor.rgb=mix(gl_FragColor.rgb,mix(fc,vec3(0.62,0.64,0.60)*uFogT.x*0.5,0.6),1.0-exp(-0.25*sl));}'+
-    'else{vec3 rd=(vFogPos-uFogC)/max(d,1e-3);float mo=mistRay(uFogC.y-uMistW.x,vFogPos.y-uMistW.x,d);'+ // in air: the mist on the water, integrated along the ray (MIST_GLSL), glowing toward the light
-    'gl_FragColor.rgb=mix(gl_FragColor.rgb,uMistC.rgb*(1.0+uMistC.w*pow(max(dot(rd,uFogS.xyz),0.0),6.0)),1.0-exp(-mo));}'+
-    '\n#ifdef FOG_EXP2\nfloat tn=exp(-fogDensity*fogDensity*d*d);\n#else\nfloat tn=1.0-smoothstep(fogNear,fogFar,d);\n#endif\n'+
-    'float f=1.0-mix(exp(-uFogP.x*d),tn,uFogP.y)'+FOG_CUT_GLSL+';gl_FragColor.rgb=mix(gl_FragColor.rgb,fc,f);}\n#endif';
-  for(const k in THREE.ShaderLib){const u=THREE.ShaderLib[k]&&THREE.ShaderLib[k].uniforms;if(u&&u.fogColor){u.uFogP={value:FOG_P};u.uFogW={value:FOG_W};u.uFogS={value:FOG_S};u.uFogT={value:FOG_T};u.uMist={value:MIST_P};u.uMistC={value:MIST_C};u.uMistW={value:MIST_W};u.uFogC={value:FOG_C};u.uFogR={value:FOG_R};u.uWaterMap={value:waterMap};u.uFloorMap={value:floorMap};}}
+  C.fog_pars_fragment='#ifdef USE_FOG\nuniform vec3 fogColor;uniform vec3 uFogC;uniform vec4 uFogP;uniform vec4 uFogW;uniform vec4 uFogS;uniform vec4 uFogT;uniform vec4 uFogA;uniform vec4 uFogAC;uniform float uFogTime;uniform vec4 uMist;uniform vec4 uMistC;uniform vec4 uMistW;uniform sampler2D uWaterMap;uniform sampler2D uFloorMap;varying float vFogDepth;varying vec3 vFogPos;\n#ifdef FOG_EXP2\nuniform float fogDensity;\n#else\nuniform float fogNear;uniform float fogFar;\n#endif\n'+MIST_GLSL+WCOL_GLSL+WAVE_GLSL_FOG+
+    // the veil seen along a ray in water from o for L (v8–v11.32's fog body, now a function of its origin, v11.42): the water map at o and at the bounded point, the floor's colour only near the floor, the canopy, daylight, the sun's glow, the sky's light and tint, the chemocline's brown
+    'vec3 fogVeil(vec3 o,vec3 rd,float L){vec3 sp=o+rd*min(L,uFogW.w);vec2 m0=o.xz*'+WM_SCALE+'+0.5,m1=sp.xz*'+WM_SCALE+'+0.5;vec4 w0=texture2D(uWaterMap,m0),w1=texture2D(uWaterMap,m1);'+
+    'w0.rgb=mix(wcol(max(-o.y,'+OPEN_D.toFixed(1)+')),w0.rgb,exp(-max(o.y+texture2D(uFloorMap,m0).r*'+FM_SCALE.toFixed(1)+'-'+FLOOR_FREE.toFixed(1)+',0.0)*'+(1/FLOOR_H).toFixed(5)+'));w1.rgb=mix(wcol(max(-sp.y,'+OPEN_D.toFixed(1)+')),w1.rgb,exp(-max(sp.y+texture2D(uFloorMap,m1).r*'+FM_SCALE.toFixed(1)+'-'+FLOOR_FREE.toFixed(1)+',0.0)*'+(1/FLOOR_H).toFixed(5)+'));'+
+    'vec4 wm=mix(w0,w1,uFogP.z);float y=mix(o.y,sp.y,uFogW.z);float cw=wm.a*'+CAN_GLSL('y')+';float dl='+DL_GLSL('y')+';float sg=pow(max(dot(rd,uFogS.xyz),0.0),6.0);'+
+    'vec3 fc=mix(wm.rgb,vec3('+WATER_CANOPY.map(v=>v.toFixed(3)).join(',')+'),cw)*(1.0-0.28*cw)*uFogW.y*(0.3+0.7*dl)*(1.0+uFogS.w*sg*dl)*uFogT.x*mix(vec3(1.0),uFogT.yzw,smoothstep(-40.0,0.0,y));'+
+    'fc*=mix(vec3(1.0),vec3(1.12,0.92,0.72),smoothstep('+CHEMO_TINT[0].toFixed(1)+','+CHEMO_TINT[1].toFixed(1)+',y));return fc;}\n'+
+    // the water segment: the chemocline's milky plate by the ray's length inside it, then the veil by the two-population transmittance (uFogP.y the material's share); dn: the downward darkening from above; ck: the far cut, on the camera's segment only
+    'vec3 fogWater(vec3 col,vec3 o,vec3 rd,float L,vec3 dn,float ck){vec3 fc=fogVeil(o,rd,L)*dn;float dy=rd.y*L;if(abs(dy)<1e-3)dy=1e-3;float sl=abs(clamp(('+(CHEMO+CHEMO_PLATE).toFixed(1)+'-o.y)/dy,0.0,1.0)-clamp(('+(CHEMO-CHEMO_PLATE).toFixed(1)+'-o.y)/dy,0.0,1.0))*L;'+
+    'col=mix(col,mix(fc,vec3(0.62,0.64,0.60)*uFogT.x*0.5,0.6),1.0-exp(-0.25*sl));float tr=mix(exp(-uFogP.x*L),exp(-uFogA.w*uFogA.w*L*L),uFogP.y)*ck;return mix(col,fc,1.0-tr);}\n'+
+    // the air segment: the mist on the water integrated over the segment (MIST_GLSL, heights over the water level), glowing toward the light, then the haze toward the sky's horizon colour
+    'vec3 fogAir(vec3 col,vec3 o,vec3 rd,float L,float ck){float mo=mistRay(o.y-uMistW.x,o.y+rd.y*L-uMistW.x,L);col=mix(col,uMistC.rgb*(1.0+uMistC.w*pow(max(dot(rd,uFogS.xyz),0.0),6.0)),1.0-exp(-mo));'+
+    'float tr=mix(exp(-uFogA.x*L),exp(-uFogA.z*uFogA.z*L*L),uFogA.y)*ck;return mix(col,uFogAC.rgb,1.0-tr);}\n#endif';
+
+  // The two-segment fog (v11.42, WATER.md A and L). The medium is not the camera's: each ray is cut at the water where it crosses it, and
+  // each part takes its own medium's fog — the water's veil over the part in water, the air's haze and mist over the part in air, the part
+  // nearer the fragment applied first. So from above a stalk 300 m off at 4 m depth is gone into the water's colour (91%), not drawn crisp
+  // through 53% of air haze and an 18% depth tint as it was (the person's third screenshot, 14 Sep: the forest readable to the horizon under
+  // glass); the shallows clear over sand, the deep the upwelling blue (UPWELL); the lagoon and the open shelf differ from above as they do
+  // from below; and a camera at the line sees air above the water and water below it in one frame — the split camera POLISH struck as a pass
+  // is a plane test here. The water level: at the camera the wave itself (uFogAC.w, JS waveH); at a fragment within 3 m of the tide the same
+  // wave sum per fragment (fogWaveH: a raft's pad on a crest is *at* the surface, not 0.4 m above a plane, so it is seen through water whole),
+  // else the mean level; the crossing is found against the level blended between the two. uFogP.w 0 (the surface mesh, FOG_PSURF) keeps the
+  // whole ray in the camera's medium: its fragments are the boundary. The far cut (FOG_CUT_GLSL) closes the camera's segment only.
+  C.fog_fragment='#ifdef USE_FOG\n{float d=vFogDepth;vec3 rd=(vFogPos-uFogC)/max(d,1e-3);float cy=uFogC.y,fy=vFogPos.y,wl=uFogAC.w;float ck=1.0'+FOG_CUT_GLSL+';'+
+    'bool cu=cy<wl;float lev=uFogW.x+((abs(fy-uFogW.x)<3.0)?fogWaveH(vFogPos.xz,uFogTime,0.0):('+WAVE_MEAN.toFixed(4)+'));bool fu=fy<lev;float s=1.0;'+
+    'if(uFogP.w>0.5&&cu!=fu){float den=cy-fy;if(abs(den)<1e-4)den=1e-4;float s0=clamp((cy-wl)/den,0.0,1.0);s=clamp((cy-mix(wl,lev,s0))/den,0.0,1.0);}'+
+    'float dC=s*d,dO=d-dC;vec3 cp=uFogC+rd*dC;vec3 col=gl_FragColor.rgb;'+
+    'if(cu){if(dO>0.0)col=fogAir(col,cp,rd,dO,1.0);col=fogWater(col,uFogC,rd,dC,vec3(1.0),ck);}'+
+    'else{if(dO>0.0)col=fogWater(col,cp,rd,dO,mix(vec3(1.0),vec3('+UPWELL.map(v=>v.toFixed(2)).join(',')+'),clamp(-rd.y,0.0,1.0)),1.0);col=fogAir(col,uFogC,rd,dC,ck);}'+
+    'gl_FragColor.rgb=col;}\n#endif';
+  for(const k in THREE.ShaderLib){const u=THREE.ShaderLib[k]&&THREE.ShaderLib[k].uniforms;if(u&&u.fogColor){u.uFogP={value:FOG_P};u.uFogW={value:FOG_W};u.uFogS={value:FOG_S};u.uFogT={value:FOG_T};u.uMist={value:MIST_P};u.uMistC={value:MIST_C};u.uMistW={value:MIST_W};u.uFogC={value:FOG_C};u.uFogR={value:FOG_R};u.uWaterMap={value:waterMap};u.uFloorMap={value:floorMap};u.uFogA={value:FOG_A};u.uFogAC={value:FOG_AC};u.uFogTime=timeU;u.uFogChop=chopU;}}
   // Sunlight by the fragment's own depth (v8.4). sun.intensity is the surface value (atmosphere.js); the directional light
   // is scaled here by the daylight at the lit point's world height (the same 0.28..1 curve the fog and the ambient use),
   // so a floor 150 under a player at the surface is lit by 64% sun, not 100% — before this, everything was lit by the
@@ -154,22 +187,11 @@ function assignLights(){
   for(let i=0;i<lightPool.length;i++){const l=lightPool[i],s=lightSources[i];if(s&&s.d<FAR){l.position.set(s.x,s.y,s.z);l.color.setHex(s.color);l.intensity=s.intensity;l.distance=s.distance;}else l.intensity=0;}
 }
 
-const timeU={value:0},tideU={value:0},tideRU={value:0}; // the time; the tide now and its rate (world.js, set by main.js each frame)
-// The wave sum from world.js as GLSL, so the surface mesh and the rafts move with exactly the water level the physics uses.
-// sp is the local grid spacing: waves the mesh can't resolve fade out (used by the far, coarse part of the surface mesh).
-// A wave the grid can't resolve is faded out (sp: the local vertex spacing) — fully drawn at seven samples a wavelength, gone at
-// three and a third (v11.4; it was 3.6 to 2.0, i.e. drawn aliased right up to the Nyquist limit, a sawtooth of facets the noon sun
-// lit evenly and a low sun lights light/dark: the rows of wedges on the far sea). The crest sharpening puts a wave's mean at
-// WSH_MEAN of its amplitude below zero; a faded wave keeps that mean, so the far, flat sea sits at the same level as the near one.
-const WSH_MEAN=-0.19514;
-const chopU={value:1}; // SEA_CHOP for the shaders (atmosphere.js writes it)
-const WAVE_GLSL='uniform float uChop;float wsh(float s){return 2.0*pow(max((s+1.0)*0.5,1e-4),1.7)-1.0;}\nfloat waveH(vec2 p,float t,float sp){float h=0.0;'+
-  WAVES.map(w=>'h+='+w.A.toFixed(3)+(w.L<20?'*uChop':'')+'*mix('+WSH_MEAN.toFixed(4)+',wsh(sin(dot(p,vec2('+w.dx.toFixed(5)+','+w.dz.toFixed(5)+'))*'+w.k.toFixed(5)+'-'+w.w.toFixed(5)+'*t+'+w.ph.toFixed(4)+')),1.0-smoothstep('+(w.L*0.14).toFixed(2)+','+(w.L*0.30).toFixed(2)+',sp));').join('')+'return h;}\n';
-// Seen from above the water, everything below the surface is tinted toward deep water by its depth (the scene fog is air then).
-// uTint: x = sea level, y = strength (1 when the camera is above water, else 0).
+// The through-water tint from above (v5–v11.41: every fragment under the water level mixed toward TINT_COL by 1−exp(−0.05·depth) when the camera
+// was in air) is gone in v11.42: the two-segment fog paints the water's part of the ray instead, by path length and place (UPWELL is what is left of
+// TINT_COL). uTint stays: x the water level now (LIGHT_GLSL reads it for the depth), y 1 when the camera is above the water, z the sky's light.
 // `small` gives the material the small-thing fog (FOG_PS: a smaller far ghost) instead of the big-thing fog (FOG_P).
-const tintU={value:new THREE.Vector4(0,0,1,0)}; // x: the water level now (the tide), y: 1 when the camera is above the water, z: the sky's light (v11: the sea from above is black at night)
-const TINT_COL=[0.05,0.20,0.34];
+const tintU={value:new THREE.Vector4(0,0,1,0)};
 // band: the tide's mark on rock (v10.3, the person's ask): the intertidal — the spring range ±TIDE_A1 — is a dark olive film (a
 // mat of what lives between the tides: the film the cones and crusts sit in), bleached pale above it in the spray zone, and the
 // rock just above the water *now* is darker, wet (the line walks with the tide). By world height in the fragment (vWy), so a
@@ -485,7 +507,7 @@ function addTint(m,key,small,band,grid,cls){ // grid (v11.40): 'world' puts the 
     sh.uniforms.uTint=tintU;if(small)sh.uniforms.uFogP={value:FOG_PS};
     const lit=LIGHT_FX&&key!=='glow';if(lit){sh.uniforms.uTime=timeU;sh.uniforms.uChop=chopU;sh.uniforms.uSunW={value:SUN_W};for(let i=0;i<CAU_TEX.length;i++){sh.uniforms['uCauS'+i]={value:CAU_TEX[i].s};sh.uniforms['uCauC'+i]={value:CAU_TEX[i].c};}sh.uniforms.uCauG={value:CAU_GTEX};sh.uniforms.uPix=pixU;sh.uniforms.uTex=texU;sh.uniforms.uTexL=texLU;sh.uniforms.uWindOff=windOffU;sh.uniforms.uLightK=lightKU;sh.uniforms.uShMap=shMapU;sh.uniforms.uShMat=shMatU;sh.uniforms.uShP=shPU;sh.uniforms.uShL=shLU;sh.uniforms.uShMapS=shMapSU;sh.uniforms.uShMatS=shMatSU;sh.uniforms.uShPS=shPSU;sh.uniforms.uShLS=shLSU;}
     sh.vertexShader='varying float vWy;'+(lit?'varying vec3 vGrid;':'')+(lit&&cls==='body'?'varying vec3 vPat;\n#ifndef USE_INSTANCING\nattribute vec3 aPat;\n#endif\n':'')+'\n'+(lit?sh.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvec3 pGrid=transformed;'):sh.vertexShader).replace('#include <worldpos_vertex>','#include <worldpos_vertex>\n{vec4 wpp=vec4(transformed,1.0);\n#ifdef USE_INSTANCING\nwpp=instanceMatrix*wpp;\n#endif\nvWy=(modelMatrix*wpp).y;'+(lit?PIX_GRID_V(grid):'')+(lit&&cls==='body'?'\n#ifdef USE_INSTANCING\nvPat=vec3(0.0);\n#else\nvPat=aPat;\n#endif\n':'')+'}');
-    sh.fragmentShader='uniform vec4 uTint;varying float vWy;'+(lit?'varying vec3 vGrid;':'')+(lit&&cls==='body'?'varying vec3 vPat;':'')+'\n'+(lit?LIGHT_PARS:'')+sh.fragmentShader.replace('#include <fog_fragment>',(lit?PIX_GLSL(grid,cls)+LIGHT_GLSL:'')+(band?BAND_GLSL(band):'')+'{float dd=max(0.0,uTint.x-vWy);float f=uTint.y*(1.0-exp(-dd*0.05));vec3 tc=vec3('+TINT_COL.map(v=>v.toFixed(2)).join(',')+')*uTint.z;\n#ifdef USE_FOG\ntc*=uFogT.yzw;\n#endif\ngl_FragColor.rgb=mix(gl_FragColor.rgb,tc,f);}\n#include <fog_fragment>');
+    sh.fragmentShader='uniform vec4 uTint;varying float vWy;'+(lit?'varying vec3 vGrid;':'')+(lit&&cls==='body'?'varying vec3 vPat;':'')+'\n'+(lit?LIGHT_PARS:'')+sh.fragmentShader.replace('#include <fog_fragment>',(lit?PIX_GLSL(grid,cls)+LIGHT_GLSL:'')+(band?BAND_GLSL(band):'')+'\n#include <fog_fragment>');
   };
   m.customProgramCacheKey=function(){return key+'tint'+(band||'')+(grid||'')+(cls||'');};
   if(LIGHT_FX&&key!=='glow')m.extensions={derivatives:true}; // dFdx/dFdy on WebGL1 (WebGL2 has them)

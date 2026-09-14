@@ -12,7 +12,7 @@ const player={clade:null,pos:V3(0,dispY,0),vel:V3(0,0,0),yaw:0,pitch:0,hp:100,ma
   mass:6,bound:0,reach:0,shapesW:null,chainW:null,grab:null,grabT:0,heldT:0,heldK:1,holding:0,hold:null,held:0,grabKey:false,grabCD:0,bleed:0,woundL:null,cWith:null,onPad:null,def:{size:1.6},hitRk:0,hitFl:0,landV:0,wasGrounded:false}; // hitRk/hitFl: this frame's push was against rock / a plant; landV: the speed of the last landing on the floor (audio.js consumes both) // def.size: creatures read it when the player is their target
 const keys={};let locked=false,drag=null,touchL=null,touchAbility=false;
 const JET_W=0.18; // s of thrust per 0.5 s jet cycle
-const CAM_CLEAR=0.35,CAM_DWELL=0.5;
+const CAM_DWELL=0.5,CAM_FLIP=0.4; // v11.42: CAM_CLEAR (0.35, the camera held clear of the wave) is gone — the camera may rest on the line, half in and half out (WATER.md L; the fog is per fragment, scene.js); camAbove flips CAM_FLIP past the wave, for the light, the sound and the water's things only
 // First person (v11.18, the person's ask): f toggles it in play. The camera sits a little ahead of the nose (the spec's frame gives it,
 // or the clade's size) looking along the view; the body wears the ghost material (scene.js MATGHOST: it draws nothing, but it is still
 // there for the shadow map — v11.23, so your own shadow is under you in first person; before, the body was hidden and three's depth
@@ -141,19 +141,15 @@ function finishPlayer(dt,near){
   if(P.fp){const nose=(P.b&&P.b.F?P.b.F.nose*P.g.scale.x:C.size)+FP_AHEAD;T2.copy(P.pos).addScaledVector(fwd,nose);}
   else{T2.copy(P.pos).addScaledVector(fwd,-C.cam).addScaledVector(UP,1.4);
   const ch=groundAt(T2.x,T2.z)+1.0;if(T2.y<ch)T2.y=ch;}
-  // the camera keeps clear of the surface, staying on its side of the water until its natural spot is well past it, and
-  // never within CAM_DWELL of the last flip (a wave passing the natural spot is not a reason to change medium)
+  // camAbove is which side the camera's natural spot is on, with hysteresis: it flips CAM_FLIP past the wave and never within CAM_DWELL of
+  // the last flip (a wave passing the spot is not a reason to change the light). Since v11.42 it drives only the light's crossfade, the sound
+  // and the water's own things (updateAtmosphere): the fog and the surface's look are decided per fragment, so the camera itself is no longer
+  // nudged or held clear of the water — it goes where the player takes it, and at the line the view is half air, half water.
   const cw=waveH(T2.x,T2.z);P.camFlipT=Math.max(0,(P.camFlipT||0)-dt);
-  if(P.camAbove){if(T2.y<cw-0.9&&P.camFlipT<=0){P.camAbove=false;P.camFlipT=CAM_DWELL;}else if(T2.y<cw+0.5)T2.y=cw+0.5;}
-  else{if(T2.y>cw+0.9&&P.camFlipT<=0){P.camAbove=true;P.camFlipT=CAM_DWELL;}else if(T2.y>cw-0.5)T2.y=cw-0.5;}
+  if(P.camAbove){if(T2.y<cw-CAM_FLIP&&P.camFlipT<=0){P.camAbove=false;P.camFlipT=CAM_DWELL;}}
+  else{if(T2.y>cw+CAM_FLIP&&P.camFlipT<=0){P.camAbove=true;P.camFlipT=CAM_DWELL;}}
   if(P.fp)camera.position.copy(T2);else{solidPush(T2,0.6,null,null,true);camera.position.lerp(T2,1-Math.exp(-8*dt));}
-  // The camera itself, not only its target, stays on its side: the lerp lags the target and the chop moves under it, so the
-  // camera could sit a few centimetres on the wrong side of the wave for a frame — and the medium (updateAtmosphere) is the
-  // camera's, so the whole lighting flipped with it (v11.6). CAM_CLEAR is above the near plane (0.2), so the wave never cuts the view.
   if(P.hurtT>0){camera.position.x+=rnd(-1,1)*P.hurtT*0.3;camera.position.y+=rnd(-1,1)*P.hurtT*0.3;}
-  const cc=waveH(camera.position.x,camera.position.z);
-  if(P.camAbove){if(camera.position.y<cc+CAM_CLEAR)camera.position.y=cc+CAM_CLEAR;}
-  else if(camera.position.y>cc-CAM_CLEAR)camera.position.y=cc-CAM_CLEAR;
   if(P.fp)T2.copy(camera.position).add(fwd);else T2.copy(P.pos).addScaledVector(fwd,3);camera.lookAt(T2);
   plight.position.copy(P.pos).add(V3(0,1,0));
 }

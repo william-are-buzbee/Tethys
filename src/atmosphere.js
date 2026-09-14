@@ -1,9 +1,11 @@
 // atmosphere.js — the sea surface, the sky, marine snow, fog and light by medium/biome/depth, HUD
 // ---------- the surface ----------
 // One mesh, both faces. A non-uniform grid (dense under the camera, coarse far out) displaced in the vertex shader by the
-// same wave sum the physics uses. Flat-shaded Phong so the facets catch the sun. The look is chosen by the *camera's medium*
-// (uUnder), not by which face is in front (v8.3: until then the far slopes — front faces, seen from under water — wore the
-// topside's sky Fresnel at 96% alpha, which painted the underwater horizon a pale sky-cyan no fog could reach). Since v11.5 the
+// same wave sum the physics uses. Flat-shaded Phong so the facets catch the sun. The look is chosen by the *face* (v11.42: the top
+// face is the topside, the back face the underside — since the mesh writes depth and is a height field, a ray from air only ever
+// meets a top face first and a ray from water a back face, so the face is the medium the ray is in; v8.3–v11.41 chose by the camera's
+// medium (uUnder), which the split camera cannot use — with the eye at the line the top half of the view is air and the bottom water in one
+// frame). uUnder stays for one case: a back face seen with the camera in air (v11.5, below). Since v11.5 the
 // mesh writes depth, so a crest's front slope hides the slopes behind it, and a back face seen with the camera in air — the
 // inside of a wave, from a camera in a trough looking through a crest — is drawn as the water body, opaque and dark, not as the
 // far surface's underside in sky colour (the pale ceiling with a hard edge at the crest line that v11–v11.4 chased). Seen from above: teal, Fresnel toward the sky at grazing angles, foam at the crests. Seen from below: the
@@ -13,6 +15,9 @@
 // total-internal-reflection mirror of the water below, so it takes the veil's colour (fogColor, the veil at the camera)
 // and the underwater horizon is one colour whether you look at the surface, the far floor or the dome. The mesh follows
 // the camera, snapped to the finest spacing so the tessellation doesn't swim.
+// The topside's body (v11.42, WATER.md item 3): the water's own colour is the column's, painted by the two-segment fog on what is beneath (scene.js), so the surface
+// itself keeps only SURF_BODY of its dark diffuse at normal incidence (0.66 to v11.41 — the shallows wore the deep's teal), the Fresnel sky to 1.0 at grazing, and the foam opaque.
+const SURF_BODY=0.22;
 const SN=Q.surf,SR=FAR*1.05,SSTEP=SR*0.06*2/SN; // reaches past the far plane; ~1 unit between vertices under the camera (v11.4: was 2.1, which could not resolve the chop), ~50 at the edge
 const sg=(function(){
   const n=SN+1,pos=new Float32Array(n*n*3),sp=new Float32Array(n*n),idx=[];
@@ -21,7 +26,7 @@ const sg=(function(){
   for(let j=0;j<SN;j++)for(let i=0;i<SN;i++){const a=j*n+i,b=a+1,c=a+n,d=c+1;idx.push(a,c,b,b,c,d);}
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(pos,3));g.setAttribute('aSpace',new THREE.BufferAttribute(sp,1));g.setIndex(idx);return g;
 })();
-const surfaceU={uAmp:{value:WAVE_AMP},uDf:{value:1},uUnder:{value:1},uSkyR:{value:new THREE.Vector3(0.62,0.76,0.86)},uWin:{value:new THREE.Vector3(1,1,1)},uGlint:{value:new THREE.Vector3(1.0,0.97,0.88)},uRain:{value:0}};
+const surfaceU={uAmp:{value:WAVE_AMP},uDf:{value:1},uUnder:{value:1},uSkyR:{value:new THREE.Vector3(0.62,0.76,0.86)},uWin:{value:new THREE.Vector3(1,1,1)},uGlint:{value:new THREE.Vector3(1.0,0.97,0.88)},uRain:{value:0},uBody:{value:SURF_BODY}};
 // uDf: how much daylight reaches the player's depth (× the sky's light since v11); uUnder: 1 when the camera is under water; uSkyR: the sky the
 // top face reflects at grazing angles (the sky's own colour now, so a sunset lies on the water); uWin: Snell's window's light relative to noon;
 // uGlint: the sun's (or the moon's) colour for the refracted glint; uRain: rain 0..1 — bright specks where drops hit the water
@@ -32,21 +37,21 @@ const SURF_MAT=(function(){
   // the mirror is what makes the surface from below read as moving water (v11.7's first cut smoothed it too, and the person missed it).
   const m=new THREE.MeshPhongMaterial({color:0x123a4c,specular:0x8a8a8a,shininess:90,emissive:0x081820,transparent:true,opacity:0.66,side:THREE.DoubleSide,flatShading:true,depthWrite:true}); // depth is written since v11.5: a crest's front slope hides the slopes behind it (from a low camera the far waves' back slopes are back faces, and they were drawn over the front ones in index order)
   m.onBeforeCompile=function(sh){
-    sh.uniforms.uTime=timeU;sh.uniforms.uChop=chopU;sh.uniforms.uAmp=surfaceU.uAmp;sh.uniforms.uDf=surfaceU.uDf;sh.uniforms.uUnder=surfaceU.uUnder;sh.uniforms.uSkyR=surfaceU.uSkyR;sh.uniforms.uWin=surfaceU.uWin;sh.uniforms.uGlint=surfaceU.uGlint;sh.uniforms.uRain=surfaceU.uRain;
+    sh.uniforms.uTime=timeU;sh.uniforms.uChop=chopU;sh.uniforms.uAmp=surfaceU.uAmp;sh.uniforms.uDf=surfaceU.uDf;sh.uniforms.uUnder=surfaceU.uUnder;sh.uniforms.uSkyR=surfaceU.uSkyR;sh.uniforms.uWin=surfaceU.uWin;sh.uniforms.uGlint=surfaceU.uGlint;sh.uniforms.uRain=surfaceU.uRain;sh.uniforms.uBody=surfaceU.uBody;sh.uniforms.uFogP={value:FOG_PSURF}; // FOG_PSURF (v11.42): the surface is the boundary — its ray is fogged in the camera's medium whole (scene.js)
     sh.vertexShader='uniform float uTime;attribute float aSpace;varying float vH;varying vec2 vWp;varying vec3 vNup;\n'+WAVE_GLSL+sh.vertexShader.replace('#include <begin_vertex>',
       '#include <begin_vertex>\n{vWp=transformed.xz+modelMatrix[3].xz;float hh=waveH(vWp,uTime,aSpace);transformed.y+=hh;vH=hh;vNup=normalMatrix*vec3(0.0,1.0,0.0);}'); // vNup: the mean surface's normal (up) in view space — the Fresnel and the window are judged against it, not the facet (v11.6)
-    sh.fragmentShader='uniform float uTime;uniform float uAmp;uniform float uDf;uniform float uUnder;uniform vec3 uSkyR;uniform vec3 uWin;uniform vec3 uGlint;uniform float uRain;varying float vH;varying vec2 vWp;varying vec3 vNup;float snell=1.0;float cv2=1.0;\n'+sh.fragmentShader
+    sh.fragmentShader='uniform float uTime;uniform float uAmp;uniform float uDf;uniform float uUnder;uniform vec3 uSkyR;uniform vec3 uWin;uniform vec3 uGlint;uniform float uRain;uniform float uBody;varying float vH;varying vec2 vWp;varying vec3 vNup;float snell=1.0;float cv2=1.0;\n'+sh.fragmentShader
       .replace('#include <normal_fragment_begin>','#include <normal_fragment_begin>\n{vec3 V=normalize(vViewPosition);float cv=abs(dot(V,normal)),cm=abs(dot(V,normalize(vNup)));cv2=cv;'+
-        'if(uUnder<0.5){if(!gl_FrontFacing){diffuseColor.rgb=vec3(0.0);diffuseColor.a=1.0;specularStrength=0.0;totalEmissiveRadiance=vec3(0.05,0.20,0.34)*uWin;}'+ // seen from the water's side with the camera in air — through a crest from a trough — this is the water itself: opaque, dark, unlit (v11.5)
-        'else{float fr=pow(1.0-cm,3.0),fm=smoothstep(0.62,0.98,vH/uAmp)*0.85,k=fr*0.85*(1.0-fm);diffuseColor.rgb=mix(diffuseColor.rgb*(1.0-k),vec3(0.88,0.92,0.92),fm);totalEmissiveRadiance=totalEmissiveRadiance*uWin+uSkyR*k;diffuseColor.a=mix(diffuseColor.a,1.0,fr);'+ // the reflected sky is emissive (a reflection is not lit by the sun) and the surface is opaque at grazing angles (v11.3)
+        'if(!gl_FrontFacing&&uUnder<0.5){diffuseColor.rgb=vec3(0.0);diffuseColor.a=1.0;specularStrength=0.0;totalEmissiveRadiance=vec3(0.05,0.20,0.34)*uWin;}'+ // seen from the water's side with the camera in air — through a crest from a trough — this is the water itself: opaque, dark, unlit (v11.5)
+        'else if(gl_FrontFacing){float fr=pow(1.0-cm,3.0),fm=smoothstep(0.62,0.98,vH/uAmp)*0.85,k=fr*0.85*(1.0-fm);diffuseColor.rgb=mix(diffuseColor.rgb*(1.0-k),vec3(0.88,0.92,0.92),fm);totalEmissiveRadiance=totalEmissiveRadiance*uWin+uSkyR*k;diffuseColor.a=max(mix(uBody,1.0,fr),fm);'+ // the reflected sky is emissive (a reflection is not lit by the sun) and the surface is opaque at grazing angles (v11.3); the body's alpha is uBody (v11.42), the foam opaque
         'if(uRain>0.0){float rd=length(vViewPosition),rk=uRain*(1.0-smoothstep(10.0,34.0,rd));specularStrength*=1.0-0.6*uRain;'+ // rain: the surface goes matte
         'if(rk>0.001){vec2 cw=vWp*1.25,ci=floor(cw),cf=cw-ci-0.5;vec3 h=fract(sin(vec3(dot(ci,vec2(127.1,311.7)),dot(ci,vec2(269.5,183.3)),dot(ci,vec2(419.2,371.9))))*43758.5);'+
         'float ph=fract(uTime*0.9+h.x),on=step(fract(h.x*7.3),0.3+0.6*uRain);vec2 o=(h.yz-0.5)*0.36;float dd=length(cf-o)*0.8,rr=ph*0.34;'+
         'float ring=(1.0-smoothstep(0.0,0.045,abs(dd-rr)))*(1.0-ph)*(1.0-ph),dot0=(1.0-smoothstep(0.0,0.05,dd))*(1.0-smoothstep(0.0,0.15,ph));'+
-        'diffuseColor.rgb=mix(diffuseColor.rgb,vec3(0.80,0.86,0.88),(ring*0.55+dot0)*on*rk);}}}}'+ // a drop's ring (v11.18): per 0.8 m cell a splash then a ring growing out and fading over 1.1 s, within ~30 m; it was a bright 0.67 m square per cell for a frame
+        'diffuseColor.rgb=mix(diffuseColor.rgb,vec3(0.80,0.86,0.88),(ring*0.55+dot0)*on*rk);}}}'+ // a drop's ring (v11.18): per 0.8 m cell a splash then a ring growing out and fading over 1.1 s, within ~30 m; it was a bright 0.67 m square per cell for a frame
         'else{normal=-normal;snell=smoothstep(0.25,0.65,cv);diffuseColor.rgb=vec3(0.22,0.46,0.56)*snell;diffuseColor.a=mix(0.74,0.62,snell);}}')
-      .replace('#include <emissivemap_fragment>','#include <emissivemap_fragment>\nif(uUnder>0.5)totalEmissiveRadiance=mix(fogColor*0.9,vec3(0.16,0.34,0.42)*uWin*(0.35+0.65*uDf),snell);')
-      .replace('#include <lights_fragment_end>','#include <lights_fragment_end>\nif(uUnder>0.5){vec3 L=directionalLights[0].direction;vec3 V=normalize(vViewPosition);vec3 T=refract(-V,-normal,1.25);float g=pow(saturate(dot(T,L)),40.0)*smoothstep(0.60,0.72,cv2);reflectedLight.directSpecular+=uGlint*g*1.5*snell;}');
+      .replace('#include <emissivemap_fragment>','#include <emissivemap_fragment>\nif(!gl_FrontFacing&&uUnder>0.5)totalEmissiveRadiance=mix(fogColor*0.9,vec3(0.16,0.34,0.42)*uWin*(0.35+0.65*uDf),snell);')
+      .replace('#include <lights_fragment_end>','#include <lights_fragment_end>\nif(!gl_FrontFacing&&uUnder>0.5){vec3 L=directionalLights[0].direction;vec3 V=normalize(vViewPosition);vec3 T=refract(-V,-normal,1.25);float g=pow(saturate(dot(T,L)),40.0)*smoothstep(0.60,0.72,cv2);reflectedLight.directSpecular+=uGlint*g*1.5*snell;}');
   };
   m.customProgramCacheKey=function(){return 'surf';};
   return m;
@@ -456,13 +461,13 @@ function updatePlankton(dt){
 
 const fogTarget=new THREE.Color(),hemiSkyA=new THREE.Color(AIR.hemiSky),hemiGroundA=new THREE.Color(AIR.hemiGround),wmHere=[0,0,0,0],skyT=new THREE.Color(),skyT2=new THREE.Color(),WHITE=new THREE.Color(1,1,1);
 let curDepth=-1,wasAbove=null,snapMed=true; // snapMed: the next medium change is instant (boot, respawn), not a crossfade
-// One density per medium. Writes the fog uniforms for the medium the camera is in (both the big-thing and the small-thing
-// sets, see scene.js) — called on a surface crossing and by the readout's fog tuner (main.js). In air the haze thickens with rain.
+// One density per medium, both media in every shader (v11.42, the two-segment fog): the sea's sets (big-thing, small-thing, the surface's own —
+// scene.js) and the air's (FOG_A) are written together; the ray decides per fragment. Called every frame in air (the haze thickens with rain), on
+// a crossing, and by the readout's fog tuner (main.js). `above` only scales the air by the rain.
 function applyFog(above){
   const rk=above?SKY.rainA:0;
-  scene.fog.density=above?AIR.dens*(1+1.2*rk):SEA_FOG.dens;
-  if(above){FOG_P[0]=FOG_PS[0]=AIR.far*(1+1.0*rk);FOG_P[1]=FOG_PS[1]=AIR.share;FOG_P[2]=FOG_PS[2]=0;FOG_P[3]=FOG_PS[3]=0;}
-  else{FOG_P[0]=FOG_PS[0]=SEA_FOG.far;FOG_P[1]=SEA_FOG.share;FOG_PS[1]=SEA_FOG.shareS;FOG_P[2]=FOG_PS[2]=SEA_FOG.placeMix;FOG_P[3]=FOG_PS[3]=1;}
+  FOG_P[0]=FOG_PS[0]=FOG_PSURF[0]=SEA_FOG.far;FOG_P[1]=FOG_PSURF[1]=SEA_FOG.share;FOG_PS[1]=SEA_FOG.shareS;FOG_P[2]=FOG_PS[2]=FOG_PSURF[2]=SEA_FOG.placeMix;FOG_P[3]=FOG_PS[3]=1;FOG_PSURF[3]=0;
+  FOG_A[0]=AIR.far*(1+1.0*rk);FOG_A[1]=AIR.share;FOG_A[2]=AIR.dens*(1+1.2*rk);FOG_A[3]=SEA_FOG.dens;
   FOG_W[1]=SEA_FOG.bright;FOG_W[2]=SEA_FOG.dlAt;FOG_W[3]=SEA_FOG.reach;LIGHT_K[0]=FX.caustics?SEA_FOG.cau*FX.cauK:0;LIGHT_K[1]=FX.shadows?SEA_FOG.shd:0; // the effects list (effects.js) can zero either
 }
 // The crossing (v11.7). The medium changes in one frame — the camera's side, the surface's look, the fog, the domes and the tint from
@@ -472,7 +477,7 @@ function applyFog(above){
 // and 90 m wide, sat a metre over a camera that had just surfaced — an additive ceiling over the whole sky for a quarter of a second,
 // the sky three times too bright at the flip and dimming: the flash on every breach in the person's fifth video. (v11.7's first cut
 // also mixed the fogs and the domes; the water's veil read into the air wrapped the shore in teal on every breach — seen, struck.)
-const MED_T=0.25;let medK=0;
+const MED_T=0.25,SKY_NEAR=1.5;let medK=0; // SKY_NEAR (v11.42): how far under the wave the camera can be with the sky still drawn; deeper the surface's underside covers it (through its alpha the sky would tint the mirror — WATER.md B makes that the window)
 const seaFogC=new THREE.Color(),airFogC=new THREE.Color(),hemiSea=new THREE.Color(),hemiSeaG=new THREE.Color(),hemiAir=new THREE.Color(),hemiAirG=new THREE.Color();
 function updateAtmosphere(dt){
   updateSky(dt);const K=SKY,tint=K.tint;skyT.setRGB(tint[0],tint[1],tint[2]);
@@ -485,7 +490,8 @@ function updateAtmosphere(dt){
   const wr=lerp(wmHere[0],w[0],cw)*bw,wg=lerp(wmHere[1],w[1],cw)*bw,wb=lerp(wmHere[2],w[2],cw)*bw,dl=daylightAt(player.pos.y);
   // the medium is the camera's: air above the surface, water below. Crossing it snaps fog and light; within it they drift.
   const above=mode==='play'?player.camAbove:camera.position.y>waveH(camera.position.x,camera.position.z); // in play the camera's side is decided with hysteresis and the camera is held clear of the wave (player.js finishPlayer); the raw test here flipped every frame the chop passed the camera (v11.6)
-  surfaceU.uDf.value=df;surfaceU.uUnder.value=above?0:1;surfaceU.uRain.value=FX.rain?K.rainA:0;
+  const wlc=waveH(camera.position.x,camera.position.z),camUnder=camera.position.y<wlc; // the wave at the camera and the camera's true side, this frame (v11.42): the fog's split (uFogAC.w) and the surface's one camera-side branch read these, not the lagging flag
+  surfaceU.uDf.value=df;surfaceU.uUnder.value=camUnder?1:0;surfaceU.uRain.value=FX.rain?K.rainA:0;FOG_AC[3]=wlc;
   // Where the surface sits in the transparent pass, by the medium, not by three's sort (v11.6). Three orders transparent objects by the
   // NDC depth of each object's *origin*; the surface's origin is the camera's snapped x,z at TIDE, so near the line it is within a metre
   // of the camera and hops a grid step at a time — in front of the camera plane one frame, behind it the next — and the surface swapped
@@ -498,7 +504,7 @@ function updateAtmosphere(dt){
   const snap=above!==wasAbove;wasAbove=above;const dK=dt/MED_T;medK=above?Math.min(1,medK+dK):Math.max(0,medK-dK);if(snapMed){medK=above?1:0;snapMed=false;}
   const k=medK;
   const shallow=smooth(-40,0,-depth); // the light's colour reaches the shallows only (red is gone by -15)
-  airFogC.setRGB(K.hor[0],K.hor[1],K.hor[2]);
+  airFogC.setRGB(K.hor[0],K.hor[1],K.hor[2]);FOG_AC[0]=airFogC.r;FOG_AC[1]=airFogC.g;FOG_AC[2]=airFogC.b; // the air segment's colour in every shader (v11.42)
   fogTarget.setRGB(wr,wg,wb).multiplyScalar((0.3+0.7*dl)*K.skyLw).multiply(skyT2.copy(skyT).lerp(WHITE,1-shallow));
   FOG_T[0]=above?K.skyL:K.skyLw; // the veil and the shader-side daylight scale by the medium's sky (v11.23)
   // Under water scene.fog.color only drives the hemisphere light and the background behind the dome (the fog itself reads
@@ -522,8 +528,8 @@ function updateAtmosphere(dt){
   sunMesh.visible=!above&&FX.shimmer&&!FX.texels;sunMesh.material.opacity=SHIM_A*dfD*dfD*Math.min(1,K.lumL*1.4)*Math.min(1,ly*4)*wk;sunMesh.position.set(player.pos.x+L.x*sl,TIDE+SHIM_H,player.pos.z+L.z*sl);
   sunMesh.material.color.setRGB(K.lumC[0],K.lumC[1],K.lumC[2]);
   updateShafts(above,wk);
-  updateHaze(dt,above);sky.visible=above;sky.position.copy(camera.position);if(above)pushSky();
-  plankton.visible=!above&&FX.snow;tintU.value.set(TIDE,above?1:0,K.skyL,0); // the tint is the water column seen from above: the medium's, so it switches with it
+  updateHaze(dt,above);sky.visible=above||wlc-camera.position.y<SKY_NEAR;sky.position.copy(camera.position);if(sky.visible)pushSky(); // the sky stays up within SKY_NEAR under the line (v11.42): a camera just under sees air through the near plane's gap above the water, and that is the sky, not the dome
+  plankton.visible=!above&&FX.snow;tintU.value.set(TIDE,above?1:0,K.skyL,0); // x the water level (LIGHT_GLSL's depth); the through-water tint that read y and z went with v11.42 (scene.js)
   pm.color.setRGB(lerp(0.45,1,df),lerp(0.75,1,df),lerp(0.95,1,df));pm.opacity=0.6*(0.45+0.55*df)*wk; // the light on the snow (v11.24: the particle's own colour is per point): blue-green and dim with depth and the night; the player's light is added in the shader
   updateRain(dt,above);
   if(mode!=='play')return;

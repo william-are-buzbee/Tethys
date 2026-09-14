@@ -3065,3 +3065,35 @@ own point light computed exactly per fragment (its position, colour and range as
 back smooth) so only the sun and the ambient are posterised — a bigger change, held until this is seen.
 
 **Seen by the person (14 Sep 2026, on v11.41.3):** "It looks interesting … certainly its own look — not one to scoff at, but the game is still built around a kind of minimalist vibe that gets filled in by space as opposed to noise." Undecided which is the right call; "it can look incredibly cool and old school". Down the line: possibly a really, really subtle version of the texels — an incredibly small amount, to touch up what look like smooth objects normally. Nothing to change now; both looks stay on the effects list, off by default.
+
+## v11.42 — the fog in two segments, the swell with the wind, the camera on the line (14 Sep 2026)
+
+From `WATER.md` (the 14 Sep audit of the surface from both sides; the person: "two segment fog please", and for the half-and-half
+camera "the most believable outcome"). Three changes, one version:
+
+- **The swell runs with the wind** (world.js `WAVES`): the directions are `WIND_A` ± a fan (the swell on it, the wind sea within ±0.6 rad).
+  To v11.41 the 46 m swell travelled toward 0.35 — dead against the wind, the caustic's ripple trains, the spray and the flats — and the
+  rest fanned to every quarter (WATER.md item 1). Five numbers; the physics and both shaders read the same table.
+- **The two-segment fog** (scene.js, the fog block: `fogVeil`, `fogWater`, `fogAir`; `FOG_A`, `FOG_AC`, `FOG_PSURF`, `UPWELL`,
+  `WAVE_GLSL_FOG`). Every ray is cut where it crosses the water and each part takes its own medium's fog, the part nearer the fragment
+  first: the water's veil (the old body, now a function of its origin) over the part in water, the air's haze and mist over the part in
+  air. The medium is no longer the camera's (`applyFog` writes both media's sets every time; `uFogP.w` is now "may split", 0 on the
+  surface mesh, whose fragments are the boundary). The level: the wave at the camera (`uFogAC.w`, JS `waveH`), the wave sum per fragment
+  within 3 m of the tide (a pad on a crest is *at* the surface), the mean elsewhere. From above, a downward ray's water is darkened toward
+  `UPWELL` (the old `TINT_COL` over `WCOL[0]`), so the deep straight down is the blue it was and at grazing it is the veil. **The
+  through-water depth tint is gone** (`addTint`; `uTint.y/z` unread) — the fog paints the column by path length and place instead. **The
+  surface's topside body** (atmosphere.js `SURF_BODY` 0.22, `uBody`): the dark diffuse at 0.66 alpha is down to 0.22 at normal
+  incidence; the Fresnel sky still takes it to 1.0 at grazing; the foam is opaque. The surface's look is chosen by the face
+  (`gl_FrontFacing`), not the camera's medium; `uUnder` (the camera's true side, this frame) remains for v11.5's back-face-in-air case.
+- **The camera on the line** (player.js): `CAM_CLEAR` and the target's 0.5 nudge are gone; `camAbove` flips `CAM_FLIP` 0.4 past the wave
+  (with `CAM_DWELL`) and drives only the light's crossfade, the sound and the water's things. The sky stays drawn within `SKY_NEAR` 1.5
+  under the wave (atmosphere.js): a camera just under sees air through the near plane's gap, and that is the sky. POLISH's "split water
+  line" entry is superseded by this: it was a pass; with the fog per fragment it is a plane test.
+
+**Seen:** `node build.js --test` green on both tiers; the shaders compile in the app's browser (no console errors); one frame from just
+under the surface over the shelf with the sky above the line and the seabed below it. **Unseen, ask in this order:** (1) the sea from
+15 m up over the forest (the person's fourth screenshot): the far seabed should be gone into the water's colour, the near sand clear;
+(2) the shore from the water's edge: sand-coloured shallows, blue past them; (3) the camera resting on the line while swimming at the
+surface — the waterline's facets, whether the chop sweeping the eye is tolerable (the eye could ride the wave if not); (4) the underside
+within 1.5 m of the surface, where the sky now shows through the mirror's alpha (WATER.md B makes that the window); (5) `SURF_BODY` —
+too glassy or still too teal from above; (6) rain from above (the air's haze thickens by `FOG_A`, as it did).
