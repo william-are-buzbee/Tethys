@@ -3063,3 +3063,5 @@ no rigid ring; the finback's flank the same. `node build.js --test` green on bot
 **Unseen, ask:** whether the checkered edges read as light in motion; if the bands are still too visible, the next step is the player's
 own point light computed exactly per fragment (its position, colour and range as uniforms, subtracted from the vertex light and added
 back smooth) so only the sun and the ambient are posterised — a bigger change, held until this is seen.
+
+**Seen by the person (14 Sep 2026, on v11.41.3):** "It looks interesting … certainly its own look — not one to scoff at, but the game is still built around a kind of minimalist vibe that gets filled in by space as opposed to noise." Undecided which is the right call; "it can look incredibly cool and old school". Down the line: possibly a really, really subtle version of the texels — an incredibly small amount, to touch up what look like smooth objects normally. Nothing to change now; both looks stay on the effects list, off by default.
