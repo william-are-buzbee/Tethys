@@ -2464,3 +2464,35 @@ running page. `node build.js --test` green on both tiers; lint reports no unused
 **Unseen:** whether anything reads differently at all — nothing here should. The ecology's carried time only shows over a long
 session; the starvation tally only in the readout's `starved`. Left of the review: items 14 and 15 (the shadow-caster pass is next,
 and the person's 4060 now reads `work 5.9/7.9ms` in the forest against an 8.3 ms budget, the 2 ms gap being the shadow re-render).
+
+## v11.33.1 — a rainy night keeps three quarters, and the daylight tuner leaves `p` alone (13 Sep 2026)
+Two things the person asked for after looking.
+
+**Rain was halving the night.** The dark screenshots were not the night — the person: "night time brightness is perfectly fine…
+it's actually the rain making it incredibly dark occasionally". Rain reached the night twice: `weatherAt` adds `0.5·rain` straight
+into `cover` (world.js), and the night branch of `skyL` then took `0.7` of that off the moon (atmosphere.js `updateSky`). Fitting
+the person's own three night readouts to that formula gives `moonL` 0.294 and `STARL` 0.024, so a full shower left **0.128 against
+a clear night's 0.256 — half.** The day was fixed for the same complaint in v11.18 and keeps 52% of noon, and the ratios are in
+fact almost identical; the point is that half of noon is grey and half of a night is unreadable. `coverN` is the cover rain did not
+put there (`max(0.08, cover − 0.5·rain)`), with the rain's own share a gentle `0.15` on top, in both `skyL` and `skyLw`:
+
+| sky | cover | rain | before | after |
+|---|---|---|---|---|
+| clear night | 0.30 | 0 | 0.256 | **0.256** |
+| light shower | 0.57 | 0.25 | 0.201 | 0.215 |
+| shower | 0.72 | 0.69 | 0.170 | 0.210 |
+| full shower | 0.92 | 1.00 | 0.129 | **0.187** |
+
+A rainy night keeps 0.73 of a clear one (the person: "it should come up to the day's three quarters"), and a clear night is
+unchanged to the digit. The moon's *beam* is deliberately left alone (`moonP`, below it): no direct moonlight survives thick
+cloud, and an overcast sky scatters rather than extinguishes — which is exactly what the term this touches is.
+
+**The daylight tuner is `o`–`n`, not `o`–`p`.** `p` places the lab's creature, so with the readout open in the lab it did both at
+once (`analysis_review.md`, left unfixed in v11.33 for want of a free pair). The person: "k and l or something like that… whatever
+it is" — but `k` is the audio tuner's and `l` opens the lab, and in fact **every letter on the keyboard is taken except `n`**.
+`KeyO` had no other use, so only the one key moved. The readout's hint line says `o-n`.
+
+**Seen:** the numbers above, computed against the person's own readouts; `node build.js --test` green on both tiers.
+**Unseen:** a real shower at night in the game — the change is arithmetic in one term and was verified against the readouts
+rather than by waiting for weather. Ask whether a rainy night now reads as "dimmer" rather than "blind", and whether the light
+shower (0.215) and the full one (0.187) are far enough apart to feel like different weather.

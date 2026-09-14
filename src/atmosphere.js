@@ -76,13 +76,20 @@ function updateSky(dt){const K=SKY;
   K.windK=WX.wind;
   K.moonUp=smooth(-0.05,0.25,K.moonAlt);K.moonL=MOONL*K.moonUp*Math.pow(K.illum,1.8)*(1-0.97*K.eclL); // a half moon gives a tenth of a full one's light; an eclipsed moon almost none
   const shade=1-0.30*K.cover-0.20*K.rain; // cloud takes what it takes from the whole sky (v11.18: a shower leaves ~0.52 of noon; it left 0.24, under a full-moon night's 0.31 — 'much worse than nighttime'. The beam still dies under it, below)
+  // The night's cloud (v11.34). Rain reached the night twice: weatherAt adds 0.5*rain straight into cover, and the night term then
+  // took 0.7 of that off the moon — so a full shower left half of a clear night (0.128 against 0.256, fitted from the person's own
+  // readouts), and half of a night is unreadable where half of noon is merely grey. coverN is the cover rain did not put there, and
+  // the rain's own share is a gentle 0.15 on top, so a rainy night keeps ~0.75 of a clear one and a clear night is unchanged to the
+  // digit (the person, 13 Sep: night itself is 'perfectly fine'; it was the rain). The beam is left alone below: no direct moonlight
+  // survives thick cloud, and an overcast sky scatters rather than extinguishes, which is what this term is.
+  const coverN=Math.max(0.08,K.cover-0.5*K.rain);
   K.sunL=K.dayK*(1-0.85*Math.pow(K.cover,1.5))*(1-0.7*K.rain); // the direct beam: gone under a shower
-  K.skyL=K.dayK*shade+(1-K.dayK)*(K.moonL*(1-0.7*K.cover)+STARL);
+  K.skyL=K.dayK*shade+(1-K.dayK)*(K.moonL*(1-0.7*coverN-0.15*K.rain)+STARL);
   // the water's light (v11.23): the sea is lit by the whole sky's downwelling light, and an overcast sky is still a sky — cloud takes
   // its share of the *beam* (the caustics, the shafts, the shadows die with sunL) but little of the diffuse light the water sees; and
   // the renderer has no exposure, so the look is what counts (the person: a shower under water was 'extremely dark'). skyLw is what
   // everything under the water scales by (the veil, the ambient, the depth's daylight); skyL stays the air's and the surface's from above.
-  K.skyLw=K.dayK*(1-0.12*K.cover-0.08*K.rain)+(1-K.dayK)*(K.moonL*(1-0.4*K.cover)+STARL);
+  K.skyLw=K.dayK*(1-0.12*K.cover-0.08*K.rain)+(1-K.dayK)*(K.moonL*(1-0.4*coverN-0.08*K.rain)+STARL);
   skyLerp(K.zen,SKYC,1,K.sunAlt);skyLerp(K.hor,SKYC,2,K.sunAlt);skyLerp(K.glow,SKYC,3,K.sunAlt);skyLerp(K.sunC,SKYC,4,K.sunAlt);
   const ml=K.moonL/MOONL*(1-K.dayK); // the moonlit sky: a little brighter and blue
   for(let i=0;i<3;i++){K.zen[i]+=[0.030,0.045,0.080][i]*ml;K.hor[i]+=[0.050,0.060,0.090][i]*ml;}

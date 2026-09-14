@@ -23,7 +23,7 @@ const FOG_TUNE=[
   {k:'ground',lo:'BracketLeft',hi:'BracketRight',step:0.05,min:0,max:2,d:2},
   {k:'reach',lo:'Comma',hi:'Period',step:20,min:20,max:1600,d:0},
   {k:'placeMix',lo:'Semicolon',hi:'Slash',step:0.05,min:0,max:1,d:2},
-  {k:'dlAt',lo:'KeyO',hi:'KeyP',step:0.1,min:0,max:1,d:1}, // 1: daylight at the sample point; 0: at the camera (with placeMix 0, the pre-v8 uniform veil)
+  {k:'dlAt',lo:'KeyO',hi:'KeyN',step:0.1,min:0,max:1,d:1}, // 1: daylight at the sample point; 0: at the camera (with placeMix 0, the pre-v8 uniform veil). v11.34: was o-p, and p places the lab's creature, so with the readout open in the lab it did both. KeyO has no other use and KeyN none at all — every other letter is taken (the game's, or AU_TUNE's g-h j-k v-b)
   {k:'cau',lo:'KeyT',hi:'KeyY',step:0.1,min:0,max:4,d:1}, // the caustics' strength (v11.13; 0 is none)
   {k:'shd',lo:'KeyU',hi:'KeyI',step:0.05,min:0,max:1,d:2}]; // the bodies' shadows' strength (v11.13; 0 is none)
 function fogTune(code){
@@ -31,7 +31,7 @@ function fogTune(code){
   else{if(audioTune(code)){statT=0;return;}const e=FOG_TUNE.find(e=>e.lo===code||e.hi===code);if(!e)return;SEA_FOG[e.k]=clamp(SEA_FOG[e.k]+(code===e.hi?e.step:-e.step),e.min,e.max);}
   applyFog(wasAbove===true);statT=0;
 }
-function fogLine(){return 'fog  '+FOG_TUNE.map(e=>e.k+' '+SEA_FOG[e.k].toFixed(e.d)).join('  ')+'   (1-2 3-4 5-6 7-8 9-0 -= [] ,. ;/ o-p t-y u-i  backspace resets)';}
+function fogLine(){return 'fog  '+FOG_TUNE.map(e=>e.k+' '+SEA_FOG[e.k].toFixed(e.d)).join('  ')+'   (1-2 3-4 5-6 7-8 9-0 -= [] ,. ;/ o-n t-y u-i  backspace resets)';}
 function updateStats(dt){
   fpsEma+=(1/Math.max(dt,0.001)-fpsEma)*0.05;msEma+=(dt*1000-msEma)*0.05;physEma+=(physMs-physEma)*0.05;renderEma+=(renderMs-renderEma)*0.05;
   frameEma+=(frameMs-frameEma)*0.05;genEma+=(genMs-genEma)*0.05;if(frameMs>frameMax)frameMax=frameMs; // the worst frame since the last draw, below

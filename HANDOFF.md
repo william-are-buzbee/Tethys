@@ -14,6 +14,14 @@ every top-level name with its line is `src/INDEX.md` (generated). Read a DESIGN 
 
 ## Where things stand
 
+**v11.33.1 (13 Sep): a rainy night keeps three quarters; the daylight tuner is o-n.** CHANGELOG v11.33.1. The dark night
+shots were the **rain**, not the night — rain reached the night twice (it inflates `cover`, and the night branch took 0.7 of that off
+the moon), so a full shower left half of a clear night. `coverN` in atmosphere.js `updateSky` is the cover rain did not put there,
+with a gentle 0.15 for the rain itself: a full shower now keeps 0.73 of clear (0.187 against 0.256) and a **clear night is unchanged**.
+The moon's beam is untouched on purpose — no direct moonlight survives thick cloud. The fog tuner's `dlAt` moved off `p` (the lab's
+place) to `o`-`n`; every other letter is taken. **Unseen: a real shower at night** — the change was verified against the person's own
+readouts, not by waiting for weather.
+
 **13 Sep, items 14 and 15 of the code review: measured, no change made.** The performance item assumed the world shadow map
 was the lump; it is not, and the field it was read from (`shsN`) is the count of re-renders since boot, not casters. Measured at the
 forest on the 4060: frame work 5.4-5.9 ms average and 7.9 ms worst against an 8.3 ms budget, **no dropped frames**; the shadow
