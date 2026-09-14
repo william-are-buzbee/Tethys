@@ -2699,3 +2699,39 @@ show against. `node build.js --test` green on both tiers. The 14 m view was tune
 **Unseen, ask in this order:** (1) the person's 14 m view over the shelf — the metre trains alone, soft, about a fifth of the floor;
 if it is too faint `CAU_T` 1.3 doubles the lines, if too sharp `CAU_SOFT` 0.4; (2) whether the shallows (2–5 m) still read as a
 net at all now that the threshold is high — they should, the short trains are sharp there; (3) v11.35.2's list.
+
+
+## v11.36 — the sea baked: thirty-two ripple trains in two tiles a ring, and the net comes out (13 Sep 2026)
+
+The person put v11.35.3 at 16 m beside the old one: "certainly looks cuter … it looks good actually, it's just not accurate", and asked
+whether the problem could be made easier. It could. Polka dots on a near-grid are the signature of two plane waves below their focal
+depth — `|det J|` never reaches zero, so its minima are isolated curvature peaks — and a real net (connected fold lines round cells)
+needs a broadband surface: the sea is a random field, not six sines. Thirty-two sines a fragment is silly; but the Hessian is linear
+in the trains, and trains of one wavelength share one frequency (dispersion), so a ring of trains at that wavelength can be baked once.
+
+**The bake (`scene.js` `CAU_RINGS` … `CAU_TEX`).** Four rings (2, 1.2, 0.75, 0.45 m; `Q.cau` 4 high, 2 low), `CAU_DIRS` 8 trains each on
+the `CAU_TILE` 16 m lattice (k = 2π n / T, so the tile wraps; a ring is the lattice vectors within ±18% of its wavelength, one per
+direction bin within ±`CAU_SPREAD` 1.2 rad of the wind), random phases and amplitudes (`mulberry(1717)`), amplitude by `cos` of the
+angle off the wind. For each ring two 192² byte tiles: the sin and cos parts of (Hxx, Hxy, Hzz), since sin(k·x − ωt + φ) =
+sin(k·x + φ)cos ωt − cos(k·x + φ)sin ωt. The fragment recovers the exact broadband field at any time from two taps and one sincos a
+ring (`CAU_GLSL`), the sun-disc blur and the far fade now per ring — where they belong, by wavelength. ~2.4 M sines at boot, in the
+scene's load. `CAU_R` and the per-fragment trains are gone; the swell carry, `det J`, the line step stay.
+
+**Two numbers, found with a picture.** The first bake at millimetre amplitudes gave blobs at every depth: RMS `jc·H` ≈ 0.4 at 5 m,
+so `det` never crossed zero and the bright set was the curvature peaks again. ×2.5 (RMS slope ~0.15, a breeze-ruffled sea) and the folds
+appear — as fat worms over 36% of the floor, because a threshold of 1.5 on `1/|det|` is `|det| < 0.67`, a wide band round each fold.
+A fold line is thin only where `|det|` is small: `CAU_T` 3, `CAU_SOFT` 0.8 — 18% at 5 m, 10% at 16. And an 8 m tile repeated visibly
+inside a 16 m view; 16 m at 192 texels (8 cm; the 0.45 m ring at 5.4 texels a wavelength).
+
+**`test/caustic.js` (new, not in `--test`).** The picture that found those numbers: runs the bake against the stub and draws
+`1/|det J|` through the line step at a few depths into `test/preview/caustic_<d>m.png`, printing the lines' coverage. `DEP`, `CT`,
+`CS`, `SPAN`, `W`. Tune there first; the menu's white sand shows nothing.
+
+**Seen.** `test/caustic.js` at 5 m: thin wandering connected lines round 0.5–1 m cells — a net; at 16 m soft sparse dashes from the
+long rings alone, which is what deep caustics do. The menu's sand in the app's browser: thin pale lines, no errors either tier.
+`node build.js --test` green on both.
+
+**Unseen, ask in this order:** (1) the person's 16 m and 5 m views over the shelf — the net's density is `CAU_T` (down for more),
+its softness `CAU_SOFT`, its strength `t-y`; (2) whether the 16 m tile's repeat shows on a long flat (the swell carry warps it; a
+32 m tile at 384² would cost ~10 M sines at boot); (3) the low tier's two long rings; (4) the boot cost on the person's PC — the bake
+is synchronous in scene.js's load, behind the fade.

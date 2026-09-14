@@ -44,10 +44,11 @@ node serve.js            static server; open http://localhost:8080/dev.html (edi
 | `test/live.js` | the ecology where the player is: four game days of clutches laid and hatched with cells loaded, then a table of every hunter's hunger against the distance to its nearest meal | `node test/live.js`, `TIER=low …` |
 | `test/smoke.js` | boots, walks the bestiary and the lab, swims all three clades headlessly; fails on any runtime error | `node test/smoke.js`, `TIER=low …` |
 | `test/preview.js` | renders creature builders to `test/preview/<id>.png` with real geometry (`test/geo.js`); not in `--test` | `node test/preview.js sickle trap`; `FLORA=1 … reed`; `SPEC=f.json …` |
+| `test/caustic.js` | the baked caustic (`CAU_RINGS`, scene.js) as a picture: `1/|det J|` through the line step at a few depths to `test/preview/caustic_<d>m.png`, with the lines' coverage; not in `--test` | `node test/caustic.js`; `DEP=5 CT=2.5 …` |
 | `test/spectro.js` | the sound bench's wavs (`test/render/`, written by `#bench`) as spectrograms and a table of numbers; not in `--test` | `node test/spectro.js`; `node test/spectro.js shot_` |
 | `test/ident.js` | compiled specs against old hand builders; skipped without `OLD=path` | `OLD=… node test/ident.js` |
 
-Env vars: `TIER` (`low`), `PICK` (menu pick for smoke), `T0`, `OLD`, and for preview `POSE TILE T SPD PALV COATS NORIG SPEC FLORA DEPTH`.
+Env vars: `TIER` (`low`), `PICK` (menu pick for smoke), `T0`, `OLD`, for preview `POSE TILE T SPD PALV COATS NORIG SPEC FLORA DEPTH`, for caustic `DEP CT CS SPAN W`.
 
 ## Delivering a change
 

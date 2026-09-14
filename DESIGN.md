@@ -668,23 +668,27 @@ from surface to floor has Jacobian `J = I − d·c·H` (`c` = 1 − 1/1.33, the 
 irradiance is `1/|det J|` — mean 1 over the floor by construction, so light is redistributed and never added (v11.13's was a gain,
 `1 + 1.3·k`, and blew the sand to white: that was the "looks ridiculously good" of the audit). The swell can't do it — `WAVES`' shortest
 (L 6, A 0.06) focuses at ~60 m, never in the top 30 — the web is the wind's ripples, 1–3 m, which the surface mesh can't hold anyway;
-so `CAU_R` is that ripple layer, living only in the light: `Q.cau` trains (6 high, 3 low: the same web, coarser) of [L, A at full
-chop, offset from `WIND_A`] from [0.35, 0.0018, 0.3] to [2.2, 0.012, 0.7] — capillary-gravity ripples at millimetres, spread ±70° round
-the wind (v11.35.1: 1.6–2.5 m at 2 cm was a lattice of white ovals in play, three trains a stripe band whenever one dominated), each at its deep-water speed √(gk) on `uTime`,
+so `CAU_RINGS` is that ripple layer, living only in the light — and baked (v11.36): four rings of eight trains (2, 1.2, 0.75, 0.45 m;
+`Q.cau` 4 high, 2 low) on the `CAU_TILE` 16 m lattice, spread ±`CAU_SPREAD` 1.2 rad round the wind, random phases (`mulberry(1717)`),
+amplitudes at RMS slope ~0.15; per ring two 192² byte tiles hold the sin and cos parts of (Hxx, Hxy, Hzz), and the fragment
+recovers the exact broadband field at any time from two taps and one sincos a ring, since sin(k·x − ωt + φ) = sin(k·x+φ)cos ωt −
+cos(k·x+φ)sin ωt (v11.35–v11.35.3: three then six per-fragment sines were a lattice, a stripe band, a print, then dots — a net
+needs a random field), each ring at its deep-water speed √(gk) on `uTime`,
 amplitude × `uChop` (a calm goes glassy and the web dies). The ripples ride the swell: the surface point is carried by the horizontal
 orbital displacement (`A sin`, along the wave) of the `CAU_SWELL` 4 longest `WAVES` — ~2 rad of ripple phase from the 46 m swell alone —
-which is what keeps three fixed trains from interfering into a lattice (seen: without it, a grid of ovals). The Hessian is analytic
-(`−A k² sin · dir⊗dir` per train), each train blurred by the sun's disc and the beam's scatter (v11.35.2: `exp(−2(π·d·CAU_SUN/L)²)`,
+which is what keeps three fixed trains from interfering into a lattice (seen: without it, a grid of ovals). The Hessian is the
+tiles' (`−A k² sin · dir⊗dir` per train, summed at the bake), each ring blurred by the sun's disc and the beam's scatter (v11.35.2: `exp(−2(π·d·CAU_SUN/L)²)`,
 `CAU_SUN` 0.02 rad — at 14 m only the 1.4–2.2 m trains survive, cells ~1 m; by 25 m it is quiet; the mean stays 1 at every depth; at
-the surface `d·c·H → 0` gives 1 on its own), then a line where the focus `1/|det J|` reaches `CAU_T` 1.5 — `smoothstep(CAU_T ±
-`CAU_SOFT` 0.25)` × `CAU_HI` 1.5 — pale lines on the floor and nothing else, about a fifth of it, Wind Waker's caustic with a soft
-edge (v11.35.1: a clamp of 2 was a clip; v11.35.2: quarter steps were a halftone on 30 cm cells; v11.35.3: a hard two-tone at
-40 cm was a print, and the short trains at 14 m too small). Applied as `× (1 + cau·(I − 1))` (`cau` = `SEA_FOG.cau` 0.8; 1 is
+the surface `d·c·H → 0` gives 1 on its own), then a line where the focus `1/|det J|` reaches `CAU_T` 3 — `smoothstep(CAU_T ±
+`CAU_SOFT` 0.8)` × `CAU_HI` 1.5 — pale lines on the floor and nothing else, 18% of it at 5 m and 10% at 16, Wind Waker's caustic
+with a soft edge (v11.35.1: a clamp of 2 was a clip; v11.35.2: quarter steps were a halftone; v11.35.3: a hard two-tone was a print;
+v11.36: a threshold of 1.5 was fat worms over a third of the floor — a fold line is thin only where |det| is small). Applied as `× (1 + cau·(I − 1))` (`cau` = `SEA_FOG.cau` 0.8; 1 is
 physical; the readout's `t-y`), by the beam's share `uSunW.w`, `1 − 0.85·canopy`, and whether the beam reaches the face
-(`clamp(dot(fn, sun)·2.5)`, the shadows' `nl` rule). Each train fades from the eye by its own wavelength (`CAU_FAR` [30, 70]
-wavelengths: the 0.35 m train is gone by 25 m, the 2.2 m one by 150 — one distance for all had the short train speckling while the
-long one was still legible). `wd` gates the block to under water. Cost: 10 sines a fragment (4 carry, 6 trains); skipped whole at night
-and under a shower (`uSunW.w` < 0.002). Seen on the menu's sand (13 Sep, v11.35.3): sparse pale flecks; white sand gives it little to show against.
+(`clamp(dot(fn, sun)·2.5)`, the shadows' `nl` rule). Each ring fades from the eye by its own wavelength (`CAU_FAR` [30, 70]
+wavelengths: the 0.45 m ring is gone by 32 m, the 2 m one by 140). `wd` gates the block to under water. Cost: 4 sines a fragment (the
+carry), 2 taps and a sincos a ring; ~2.4 M sines once at boot; skipped whole at night
+and under a shower (`uSunW.w` < 0.002). Seen (13 Sep, v11.36) in `test/caustic.js`'s pictures: a net of thin wandering lines round 0.5–1 m cells at 5 m, soft sparse dashes
+at 16 m; on the menu's sand thin pale lines — white sand gives it little to show against. Tune in `test/caustic.js` first.
 
 **The sun under water (`atmosphere.js` `updateSky` → `SUN_W`).** The luminary refracted at the surface, `sin θw = sin θa / 1.33`, so a
 setting sun's beam under water is never flatter than 48° from the vertical; `w` = the beam's share of the light,
@@ -1508,7 +1512,7 @@ distance — a designed pass, not a knob. `render` is CPU submission; the GPU ru
 - **Quality tier `Q` (scene.js): numbers only, never code paths.** Auto: touch + screen < 900px → low. Force with
   `#low`/`#high` in the URL — the hash is a flag list since v11.31.4 (scene.js `HASH_FLAGS`/`HASH_TIER`, `&` or `,` between them),
   so `#low&lab=<spec>` and `#low&zoo` work and the lab writes the tier back into the hash it rewrites. Low: draw distance 1000, 45% flora, 60% creatures, 2 pool lights, Lambert terrain, no AA,
-  96² surface, 36-unit far grid, 2 shadow casters, 4 light shafts, a three-train caustic (v11.13: `casters`, `shafts`, `cau`; v11.35.1: the same web coarser).
+  96² surface, 36-unit far grid, 2 shadow casters, 4 light shafts, a two-ring caustic (v11.13: `casters`, `shafts`, `cau`; v11.36: the sea's long half).
 - The person tests on desktop and wants it "fantastically smooth"; mobile is secondary and may sacrifice things. The
   cadence agreed: content freely, a performance pass whenever the readout says frame time is creeping. Readings v5
   (thickest kelp, desktop, high): 120 fps, 8.3 ms, 130 draws, 416k tris. **Readings v8.3 (the arch canopy, desktop,
