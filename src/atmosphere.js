@@ -40,7 +40,7 @@ const SURF_MAT=(function(){
     sh.uniforms.uTime=timeU;sh.uniforms.uChop=chopU;sh.uniforms.uAmp=surfaceU.uAmp;sh.uniforms.uDf=surfaceU.uDf;sh.uniforms.uUnder=surfaceU.uUnder;sh.uniforms.uSkyR=surfaceU.uSkyR;sh.uniforms.uWin=surfaceU.uWin;sh.uniforms.uGlint=surfaceU.uGlint;sh.uniforms.uRain=surfaceU.uRain;sh.uniforms.uBody=surfaceU.uBody;sh.uniforms.uFogP={value:FOG_PSURF}; // FOG_PSURF (v11.42): the surface is the boundary — its ray is fogged in the camera's medium whole (scene.js)
     sh.vertexShader='uniform float uTime;attribute float aSpace;varying float vH;varying vec2 vWp;varying vec3 vNup;\n'+WAVE_GLSL+sh.vertexShader.replace('#include <begin_vertex>',
       '#include <begin_vertex>\n{vWp=transformed.xz+modelMatrix[3].xz;float hh=waveH(vWp,uTime,aSpace);transformed.y+=hh;vH=hh;vNup=normalMatrix*vec3(0.0,1.0,0.0);}'); // vNup: the mean surface's normal (up) in view space — the Fresnel and the window are judged against it, not the facet (v11.6)
-    sh.fragmentShader='uniform float uTime;uniform float uAmp;uniform float uDf;uniform float uUnder;uniform vec3 uSkyR;uniform vec3 uWin;uniform vec3 uGlint;uniform float uRain;uniform float uBody;varying float vH;varying vec2 vWp;varying vec3 vNup;float snell=1.0;float cv2=1.0;\n'+sh.fragmentShader
+    sh.fragmentShader='uniform float uTime;uniform float uAmp;uniform float uDf;uniform float uUnder;uniform vec3 uSkyR;uniform vec3 uWin;uniform vec3 uGlint;uniform float uRain;uniform float uBody;uniform mat3 uFogR;varying float vH;varying vec2 vWp;varying vec3 vNup;float snell=1.0;float cv2=1.0;\n'+sh.fragmentShader
       .replace('#include <normal_fragment_begin>','#include <normal_fragment_begin>\n{vec3 V=normalize(vViewPosition);float cv=abs(dot(V,normal)),cm=abs(dot(V,normalize(vNup)));cv2=cv;'+
         'if(!gl_FrontFacing&&uUnder<0.5){diffuseColor.rgb=vec3(0.0);diffuseColor.a=1.0;specularStrength=0.0;totalEmissiveRadiance=vec3(0.05,0.20,0.34)*uWin;}'+ // seen from the water's side with the camera in air — through a crest from a trough — this is the water itself: opaque, dark, unlit (v11.5)
         'else if(gl_FrontFacing){float fr=pow(1.0-cm,3.0),fm=smoothstep(0.62,0.98,vH/uAmp)*0.85,k=fr*0.85*(1.0-fm);diffuseColor.rgb=mix(diffuseColor.rgb*(1.0-k),vec3(0.88,0.92,0.92),fm);totalEmissiveRadiance=totalEmissiveRadiance*uWin+uSkyR*k;diffuseColor.a=max(mix(uBody,1.0,fr),fm);'+ // the reflected sky is emissive (a reflection is not lit by the sun) and the surface is opaque at grazing angles (v11.3); the body's alpha is uBody (v11.42), the foam opaque
@@ -50,7 +50,7 @@ const SURF_MAT=(function(){
         'float ring=(1.0-smoothstep(0.0,0.045,abs(dd-rr)))*(1.0-ph)*(1.0-ph),dot0=(1.0-smoothstep(0.0,0.05,dd))*(1.0-smoothstep(0.0,0.15,ph));'+
         'diffuseColor.rgb=mix(diffuseColor.rgb,vec3(0.80,0.86,0.88),(ring*0.55+dot0)*on*rk);}}}'+ // a drop's ring (v11.18): per 0.8 m cell a splash then a ring growing out and fading over 1.1 s, within ~30 m; it was a bright 0.67 m square per cell for a frame
         'else{normal=-normal;snell=smoothstep(0.25,0.65,cv);diffuseColor.rgb=vec3(0.22,0.46,0.56)*snell;diffuseColor.a=1.0;}}') // the underside is opaque (v11.42.1): outside the window it is a total-internal-reflection mirror, inside it the window's own colour until WATER.md B draws the refracted sky. At 0.62–0.74 the shore and the sky behind it — fogged as air since v11.42 — bled through and flickered as the facets flipped (the person's video: a white flash at the water line); the black dome and the shimmer used to be what showed through
-      .replace('#include <emissivemap_fragment>','#include <emissivemap_fragment>\nif(!gl_FrontFacing&&uUnder>0.5)totalEmissiveRadiance=mix(fogColor*0.9,vec3(0.16,0.34,0.42)*uWin*(0.35+0.65*uDf),snell);')
+      .replace('#include <emissivemap_fragment>','#include <emissivemap_fragment>\nif(!gl_FrontFacing&&uUnder>0.5){vec3 rdw=normalize(vFogPos-uFogC);vec3 R=reflect(rdw,normalize(uFogR*normal));float fd=texture2D(uFloorMap,vFogPos.xz*'+WM_SCALE+'+0.5).r*'+FM_SCALE.toFixed(1)+';float L=min(uFogW.w,(vFogPos.y+fd)/max(-R.y,0.05));totalEmissiveRadiance=mix(fogVeil(vFogPos,R,L),vec3(0.16,0.34,0.42)*uWin*(0.35+0.65*uDf),snell);}') // the mirror is the veil in the reflected direction (v11.42.3, WATER.md C): the ray reflected off the facet, the water along it as far as the floor (uFloorMap) or the veil's reach, through the fog chunk's own fogVeil. To v11.42.2 it was fogColor·0.9, the CPU's veil at the camera — one flat colour with no daylight by direction and no sun — and with the underside opaque a camera at the line saw the near facets overhead as a dark slab against the sunlit water beside them
       .replace('#include <lights_fragment_end>','#include <lights_fragment_end>\nif(!gl_FrontFacing&&uUnder>0.5){vec3 L=directionalLights[0].direction;vec3 V=normalize(vViewPosition);vec3 T=refract(-V,-normal,1.25);float g=pow(saturate(dot(T,L)),40.0)*smoothstep(0.60,0.72,cv2);reflectedLight.directSpecular+=uGlint*g*1.5*snell;}');
   };
   m.customProgramCacheKey=function(){return 'surf';};
@@ -161,7 +161,7 @@ const SKY_FS=[DITHER_PARS,'uniform vec3 uZen,uHor,uGlow,uSunC,uLumC,uCirrC,uSun,
   '  vec3 o=vec3(h31(i+7.1),h31(i+3.3),h31(i+5.9))*0.6+0.2;vec3 q=normalize((i+o)/N);float br=(h-thr)/(1.0-thr);float r=sz*(0.5+br);float dd=length(s-q);',
   '  float tw=0.8+0.2*sin(uTime*(2.0+5.0*h31(i+1.7))+h31(i+2.9)*6.28);float v=(1.0-smoothstep(r*0.35,r,dd))*tw*(0.3+0.7*br)+br*br*0.10*exp(-dd*dd/(r*r*12.0));',
   '  float hc=h31(i+4.4);c=hc<0.14?vec3(0.72,0.82,1.0):(hc<0.34?vec3(1.0,0.84,0.66):vec3(1.0));return v;}',
-  'void main(){vec3 d=normalize(vDir);float up=d.y;float cs=dot(d,uSun);',
+  'void main(){if(uCamH+normalize(vDir).y*'+(FAR*0.94).toFixed(1)+'<0.0)discard;vec3 d=normalize(vDir);float up=d.y;float cs=dot(d,uSun);',
   // the gradient: horizon to zenith, brightest toward the sun and darkest 90 degrees from it, a broad haze aureole round the sun
   '  float k=smoothstep(-0.04,0.55,up);vec3 col=mix(uHor,uZen,k)*(0.92+0.10*cs*cs);',
   '  col+=(uSunC*0.55+uHor*0.45)*0.17*pow(max(cs,0.0),6.0)*uDay*(1.4-0.6*k);',
@@ -330,7 +330,13 @@ function updateRain(dt,above){const K=SKY,on=above&&K.rainA>0.02&&FX.rain;rainL.
 // Under water the "sky" is the fog itself: a black dome just inside the far plane, fogged like everything else, so the last
 // of the water in every direction is the water's colour there (the map) at its daylight — dark toward the deep, sunlit
 // toward the shallows and the surface — instead of one flat background colour with a visible edge against the surface.
-const waterDome=(function(){const m=new THREE.Mesh(new THREE.SphereGeometry(FAR*0.95,24,12),new THREE.MeshBasicMaterial({color:0x000000,side:THREE.BackSide,depthWrite:false}));m.frustumCulled=false;m.renderOrder=-11;scene.add(m);return m;})();
+// The dome is the water's far wall, on both sides of the water (v11.42.3): black, fogged by the chunk into the veil in every direction, drawn only
+// below the water level (its fragments above it are discarded), while the sky sphere is drawn only above it (SKY_FS discards a direction whose
+// point at its radius lies under the water). The two tile at the water plane at the far plane. Until v11.42.3 the sky was a whole sphere and the
+// dome was hidden in air: from above, and from within SKY_NEAR of the surface (v11.42), the sky's lower half showed wherever the far terrain
+// was clipped by the draw distance — a white band under the horizon just beneath the surface line, the "white nothingness" the far kelp stood
+// against in the person's stills, gone the moment the camera went below SKY_NEAR.
+const waterDome=(function(){const mat=new THREE.MeshBasicMaterial({color:0x000000,side:THREE.BackSide,depthWrite:false});mat.onBeforeCompile=function(sh){sh.fragmentShader=sh.fragmentShader.replace('#include <fog_fragment>','\n#ifdef USE_FOG\nif(vFogPos.y>uFogW.x)discard;\n#endif\n#include <fog_fragment>');};mat.customProgramCacheKey=function(){return 'dome';};const m=new THREE.Mesh(new THREE.SphereGeometry(FAR*0.95,24,12),mat);m.frustumCulled=false;m.renderOrder=-11;scene.add(m);return m;})();
 
 // ---------- marine snow (v11.24) ----------
 // What is in the water, by what the column is doing (the person's ask, 10 Sep: the stuff at the bottom of the world is not the stuff
@@ -510,7 +516,7 @@ function updateAtmosphere(dt){
   // Under water scene.fog.color only drives the hemisphere light and the background behind the dome (the fog itself reads
   // the map in the shader); it follows the map with a short lag. In air it is the sky's horizon, which moves with the hour.
   seaFogC.lerp(fogTarget,1-Math.exp(-1.5*dt));scene.fog.color.copy(above?airFogC:seaFogC);if(snap||above)applyFog(above);
-  waterDome.visible=!above;waterDome.position.copy(camera.position);
+  waterDome.visible=true;waterDome.position.copy(camera.position); // both media since v11.42.3: the dome draws only under the water level, the sky only over it
   // the ambient. Air: the sky's — the approved noon pair scaled by the sky's light and coloured by it, the sun (or the moon) as the
   // key. Water: the water's — sky = the veil colour lifted, ground = the same colour dimmed (upwelling light — undersides seen from
   // below, the pads of the canopy above all, read as water-dark rather than black)

@@ -114,6 +114,8 @@ const WAVE_GLSL='uniform float uChop;float wsh(float s){return 2.0*pow(max((s+1.
 // classed as air on a trough and drawn in the air's haze: a white wall of stalks on the horizon from either side (the person's three stills).
 // The fade is a function of the fragment's distance from the mesh's centre (the camera's x,z) on the grid's per-axis mapping, so the two
 // distances per wave where the fade starts and ends are found here once from the same numbers the mesh is built on (Q.surf, FAR·1.05).
+// The level is the higher of the drawn surface and the true wave (v11.42.3): the kelp folds to the true wave (the sway shader's cap, 0.45 m
+// under it) and a raft rides it, so far out a folded top on a crest stands above the drawn mean surface — under the water all the same.
 const FOG_SN=Q.surf,FOG_SR=FAR*1.05; // the surface grid's side and reach, as atmosphere.js SN and SR — change both or neither
 const WAVE_FADE_D=WAVES.map(w=>[w.L*0.14,w.L*0.30].map(sp=>{const s0=FOG_SR*0.06*2/FOG_SN;if(sp<=s0)return 0;const u=Math.sqrt((sp*FOG_SN/(2*FOG_SR)-0.06)/2.82);return FOG_SR*(0.06*u+0.94*u*u*u);})); // per wave: the distance (max of |dx|,|dz| from the camera) at which it starts to fade, and where it is gone
 const WAVE_GLSL_FOG='uniform vec2 uFogTC;float fogWsh(float s){return 2.0*pow(max((s+1.0)*0.5,1e-4),1.7)-1.0;}\nfloat fogWaveH(vec2 p,float t,float rm){float h=0.0;'+
@@ -164,11 +166,11 @@ const MIST_GLSL='float mistL(float cy,float dy,float d,float rho,float ih){float
   // else the mean level; the crossing is found against the level blended between the two. uFogP.w 0 (the surface mesh, FOG_PSURF) keeps the
   // whole ray in the camera's medium: its fragments are the boundary. The far cut (FOG_CUT_GLSL) closes the camera's segment only.
   C.fog_fragment='#ifdef USE_FOG\n{float d=vFogDepth;vec3 rd=(vFogPos-uFogC)/max(d,1e-3);float cy=uFogC.y,fy=vFogPos.y,wl=uFogAC.w;float ck=1.0'+FOG_CUT_GLSL+';'+
-    'bool cu=cy<wl;float lev=uFogW.x+((abs(fy-uFogW.x)<3.0)?fogWaveH(vFogPos.xz,uFogTC.x,max(abs(vFogPos.x-uFogC.x),abs(vFogPos.z-uFogC.z))):('+WAVE_MEAN.toFixed(4)+'));bool fu=fy<lev;float s=1.0;'+
+    'bool cu=cy<wl;float lev=uFogW.x+((abs(fy-uFogW.x)<3.0)?max(fogWaveH(vFogPos.xz,uFogTC.x,max(abs(vFogPos.x-uFogC.x),abs(vFogPos.z-uFogC.z))),fogWaveH(vFogPos.xz,uFogTC.x,0.0)):('+WAVE_MEAN.toFixed(4)+'));bool fu=fy<lev;float s=1.0;'+
     'if(uFogP.w>0.5&&cu!=fu){float den=cy-fy;if(abs(den)<1e-4)den=1e-4;float s0=clamp((cy-wl)/den,0.0,1.0);s=clamp((cy-mix(wl,lev,s0))/den,0.0,1.0);}'+
     'float dC=s*d,dO=d-dC;vec3 cp=uFogC+rd*dC;vec3 col=gl_FragColor.rgb;'+
     'if(cu){if(dO>0.0)col=fogAir(col,cp,rd,dO,1.0);col=fogWater(col,uFogC,rd,dC,vec3(1.0),ck);}'+
-    'else{if(dO>0.0){float sc=smoothstep('+SCAT[0].toFixed(2)+'*uFogTC.y,'+SCAT[1].toFixed(2)+'*uFogTC.y,-rd.y);col=fogWater(col,cp,rd,d,mix(vec3(1.0),vec3('+UPWELL.map(v=>v.toFixed(2)).join(',')+'),clamp(-rd.y,0.0,1.0)),sc*ck);}col=fogAir(col,uFogC,rd,dC,ck);}'+ // the water part over the whole length d (v11.42.1), its transmittance scaled by the chop's scatter at grazing (sc, SCAT: 0 at the horizon) and the far cut
+    'else{if(dO>0.0){float sc=smoothstep('+SCAT[0].toFixed(2)+'*uFogTC.y,'+SCAT[1].toFixed(2)+'*uFogTC.y,-rd.y);col=fogWater(col,cp,rd,d,mix(vec3(1.0),vec3('+UPWELL.map(v=>v.toFixed(2)).join(',')+'),clamp(-rd.y,0.0,1.0)),sc*ck);}col=fogAir(col,uFogC,rd,dC,dO>0.0?1.0:ck);}'+ // the water part over the whole length d (v11.42.1), its transmittance scaled by the chop's scatter at grazing (sc, SCAT: 0 at the horizon) and the far cut; the cut closes the ray to the medium the *fragment* is in (v11.42.3): on a split ray the air part takes none, or the dome and the far floor past the cut came out the sky's horizon white under the water — the white backdrop from above
     'gl_FragColor.rgb=col;}\n#endif';
   for(const k in THREE.ShaderLib){const u=THREE.ShaderLib[k]&&THREE.ShaderLib[k].uniforms;if(u&&u.fogColor){u.uFogP={value:FOG_P};u.uFogW={value:FOG_W};u.uFogS={value:FOG_S};u.uFogT={value:FOG_T};u.uMist={value:MIST_P};u.uMistC={value:MIST_C};u.uMistW={value:MIST_W};u.uFogC={value:FOG_C};u.uFogR={value:FOG_R};u.uWaterMap={value:waterMap};u.uFloorMap={value:floorMap};u.uFogA={value:FOG_A};u.uFogAC={value:FOG_AC};u.uFogTC={value:FOG_TC};}}
   // Sunlight by the fragment's own depth (v8.4). sun.intensity is the surface value (atmosphere.js); the directional light

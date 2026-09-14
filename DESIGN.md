@@ -581,7 +581,7 @@ three agree; it lerps at 0.25/s, so the ambient light shifts slowly across a bor
 hemi from it. **The hemisphere light is the water's:** sky = fog × 1.8, **ground = fog × `ground` (0.8)** — v8's ground
 was a fixed near-black (0x101c1c), so everything seen from below (the canopy's pads above all) was black; upwelling light
 in water is water-coloured. Pads straight overhead are still silhouettes against the bright surface, which is right.
-Under water a black **dome** at 0.95·FAR (`waterDome`, atmosphere.js) is the sky: fogged like everything else (2.5%
+A black **dome** at 0.95·FAR (`waterDome`, atmosphere.js; both media since v11.42.3, drawn only below the water level, while the sky sphere draws only above it — the two tile at the water plane) is the sky under water: fogged like everything else (2.5%
 black at its distance), it is the veil in every direction — dark toward the deep, sunlit toward the surface — with no
 visible edge against the surface (both are the same shader at the same distance). **The veil closes fully between 0.62·FAR and
 0.9·FAR** (`FOG_CUT_GLSL`, v11.27, in the fog block, `fogExtinctOnly` and the shafts): the slow population alone left 1.1% at the far

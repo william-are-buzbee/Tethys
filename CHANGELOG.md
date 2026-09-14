@@ -3144,3 +3144,31 @@ distances where the mesh's fade starts and ends, found once from the grid's own 
 
 **Seen:** `node build.js --test` green on both tiers. The pane would not tick again; **ask** for the same three views — the far forest
 from just under the surface and from just above it should fade into the water's colour, no white stalks on the horizon.
+
+## v11.42.3 — the sky above the water only, the dome below it, the mirror the reflected veil (14 Sep 2026)
+
+The person on v11.42.2: "I see the same thing pretty much. In the same spot." — and then opened the app's browser pane, so this one was
+seen. Hiding the kelp showed the white was never the stalks: a **solid white band on the horizon** between the surface line and the far
+floor, the stalks dark against it.
+
+**Why.** The sky is a whole sphere at 0.94·FAR and the far terrain clips at the draw distance, so just under the surface line — where a
+ray runs nearly level for more than the draw distance before it meets the floor — the sky's lower half showed. Under water it had been
+hidden by the black dome until v11.42 kept the sky drawn within `SKY_NEAR` of the surface (which is why it vanished "once I get low
+enough"); from above it always showed through the surface at grazing, and v11.42's thinner topside body made it plain. Two more found
+on the way: (1) the far cut closed a split ray to the *camera's* medium, so from above the dome and the far floor past 0.9·FAR came out
+the air's horizon white under the water; (2) far out the kelp folds to the true wave while the fog's level was the drawn (faded) surface,
+so a folded top on a crest counted as air.
+
+**Built.** atmosphere.js: the sky discards any direction whose point at its radius lies under the water (`uCamH`), the dome discards its
+fragments above the water level and is drawn in both media — the two tile at the water plane at the far plane, and the dome is the water's
+far wall from either side, fogged into the veil. scene.js: on a split ray the far cut belongs to the water segment only; the fog's level
+is the higher of the drawn surface and the true wave (`fogWaveH` twice, within the 3 m band). And WATER.md C, brought forward because a
+camera at the line saw the near facets overhead as a dark slab against sunlit water: **the underside mirror is the veil in the reflected
+direction** — the ray reflected off the facet, the water along it to the floor (`uFloorMap`) or the veil's reach, through the fog chunk's
+`fogVeil` — in place of `fogColor·0.9`, one flat colour with no daylight by direction and no sun.
+
+**Seen** (the app's browser, the shelf forest at x 180): from 0.25 m above the water at noon — the sea at grazing the sky's pale
+reflection, the near forest through it, the far forest dissolving, no white; from 2 m under — the far forest fading into the veil, the
+underside a continuous luminous ceiling; from 10 m under looking up — the window with the sun. `node build.js --test` green on both
+tiers. **Unseen, ask:** the line itself while swimming at the surface (the waterline's facets; the eye riding the chop); dusk and night
+from both sides (the reflected veil takes the daylight, the window `uWin`); the shore.

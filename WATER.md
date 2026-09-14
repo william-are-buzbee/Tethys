@@ -103,7 +103,7 @@ seen from either side. A 3 m animal through the surface leaves both for several 
 Every one of these keeps the rule: nothing that is not the physics of water, air and light. Cost notes assume AUDIT's finding that fill is
 nearly free and vertices are the frame.
 
-**A. Two-segment fog: the water's share of the ray, from above.** In `addTint`'s block, when `uTint.y > 0.5` and `vWy < uTint.x`: the ray
+**A. Two-segment fog: the water's share of the ray, from above.** *Built v11.42–v11.42.3; the water's part is fogged over the whole ray from above (v11.42.1), and the chop's scatter at grazing (`SCAT`) was added.* In `addTint`'s block, when `uTint.y > 0.5` and `vWy < uTint.x`: the ray
 from the camera `uFogC` to `vFogPos` crosses `y = TIDE` at `s = (uFogC.y − TIDE)/(uFogC.y − vFogPos.y)`; the water path is `d·(1−s)`. Apply
 the sea's extinction over that path and mix toward the veil for the water part (the fog chunk's `fc`: `wcol` at the fragment's depth, the water
 map's colour of the place, daylight at that depth), then the air fog over the air part as now. Refraction shortens the water path by up to ~25%
@@ -120,7 +120,7 @@ shimmer sprite — `SHIM_A`, `sunMesh` — which is a stand-in for exactly this)
 person likes comes free, since each facet bends the sky differently. Keep the widened band as a knob on the window's edge softness. Cost:
 ~30 ALU on the surface's fragments only.
 
-**C. The mirror as the reflected veil.** Outside the window: `R = reflect(ray, N)`, a sample point along `R` at `min(reach, distance to the floor
+**C. The mirror as the reflected veil.** *Built v11.42.3.* Outside the window: `R = reflect(ray, N)`, a sample point along `R` at `min(reach, distance to the floor
 from floorMap)`, the veil `fc` there. Darker over the deep, floor-coloured over a shelf, no glow away from the sun. Fixes 7. Cost: one more `fc`
 evaluation on the surface's underside fragments.
 
@@ -149,7 +149,7 @@ Drawn to ~700 m, so the far sea heaves and the surface from below has the slow r
 every wave sum — the physics per creature (cheap), the surface, and the sway shader's `cap` and the rafts' bob (`WAVE_GLSL` per vertex; check the
 weed forest's 3.2 ms on the 4060 before and after).
 
-**H. Wave directions.** Item 1's fix: swell within ±0.2 rad of `WIND_A`, the wind sea within ±0.6, and the phases re-rolled. Do this first; it is
+**H. Wave directions.** *Built v11.42.* Item 1's fix: swell within ±0.2 rad of `WIND_A`, the wind sea within ±0.6, and the phases re-rolled. Do this first; it is
 five numbers.
 
 **I. Breach residue.** A foam disc on the surface where a body crossed (a small sprite in the surface's render order, growing and fading over
