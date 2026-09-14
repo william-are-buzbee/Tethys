@@ -2963,3 +2963,5 @@ colour picks the dominant axis, so on a face between 17° and 35° off vertical 
 (`BAND_GLSL`) runs after the snap and is still a smooth gradient across the texels (pass C, the edges; the boulder's foot runs
 before it and is snapped); (7) cost — ~40 ops a fragment in every lit program, behind a uniform branch: `render` ms on the 4060
 with the switch on and off, in the forest.
+
+**Seen by the person (14 Sep 2026):** "Looks great. Literally zero complaints." The animals and their rigs look right; render cost is a later thing — pixel mode is an optional style, kept so the two looks can be compared. Nothing on the unseen list was raised.
