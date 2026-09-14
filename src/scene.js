@@ -194,8 +194,8 @@ const BAND_GLSL=b=>'{float y=vWy;float it=smoothstep('+(-TIDE_A1-1.1).toFixed(2)
 // deep-water speed (√(g k), as WAVES), amplitude by uChop (a calm goes glassy and the web dies — true). The surface point read is the
 // one the fragment's beam came through (up the refracted sun, uSunW, by d), the Hessian is analytic (−A k² sin · dir⊗dir per train),
 // each train blurred by the sun's disc and the beam's scatter at depth (CAU_SUN; the contrast fades by wavelength, the mean stays 1), and the result is
-// clamped to [CAU_LO, CAU_HI] and quantised in steps of 1/CAU_Q — drawn in the facets' vocabulary, as the cloud deck's three-step
-// light is — then applied as 1 + cau·(I − 1) (cau = LIGHT_K.x, 1 physical; the readout's t-y) by the beam's share (uSunW.w), by
+// a line where the focus reaches CAU_T (a soft step of CAU_SOFT either side, ×CAU_HI; two tones, pale lines on the floor and nothing
+// else — v11.35.2–3) — then applied as 1 + cau·(I − 1) (cau = LIGHT_K.x, 1 physical; the readout's t-y) by the beam's share (uSunW.w), by
 // 1 − 0.85 canopy, and by whether the beam reaches this face at all (the shadows' nl rule, v11.34.1: clamp(dot(fn, sun)·2.5)).
 // Nothing at the surface itself (d·c·H → 0 gives I → 1 on its own); wd gates the block to under water.
 // Shadows (v11.23, the second pass): one low-resolution shadow map along the sun, rendered by three's own depth pass (sun.castShadow)
@@ -221,7 +221,7 @@ const lightKU={value:LIGHT_K};
 // Q.cau trains are used (6 high, 3 low — the same web, coarser). A k² is the train's curvature; a train focuses at 1/(c·A·k²),
 // the depth its web is sharpest; shallower it's a mild dapple, deeper the sheets fold over and the damping takes it
 const CAU_R=[[0.35,0.0018,0.3],[0.5,0.0022,-0.9],[0.7,0.004,0.0],[1.0,0.005,1.2],[1.4,0.008,-0.5],[2.2,0.012,0.7]]; // six trains (v11.35.1): three read as stripes whenever one dominated; the spread is ±70° round the wind, as wind ripples are // v11.35.1: the person saw 1.6–2.5 m at 2 cm as a lattice of white ovals in play — too long (the cells at the facets' scale) and too steep (|det J| under the clamp over broad regions: a plateau, not fold lines). Capillary ripples at millimetres: 0.4 m at 2 mm focuses at ~8 m, 0.9 at ~14, the 2 m train never (a gentle large-scale variation); the swell carry is now 10–20 rad of phase for the short trains and shreds the lattice
-const CAU_SUN=0.012,CAU_Q=2,CAU_LO=0.75,CAU_HI=1.5,CAU_SWELL=4,CAU_FAR=[30,70]; // the beam's angular spread rad (v11.35.2: the sun's half-degree disc plus forward scatter; a train's contrast at depth d falls by exp(-2(pi d CAU_SUN/L)^2) — a 35 cm train is gone by 12 m, the metre ones carry the deep; it replaced a crude exp(-d/18) on the whole); the quantisation steps per unit (2: one visible level, x1.5 where the focus is 1.25 or more — pale lines and nothing else, Wind Waker's caustic; 4 was a halftone on 30 cm cells); the clamp on 1/|det J|; how many of WAVES, longest first, the ripples ride
+const CAU_SUN=0.02,CAU_T=1.5,CAU_SOFT=0.25,CAU_HI=1.5,CAU_SWELL=4,CAU_FAR=[30,70]; // the beam's angular spread rad (v11.35.2: the sun's half-degree disc plus forward scatter; a train's contrast at depth d falls by exp(-2(pi d CAU_SUN/L)^2) — v11.35.3 0.02: at 14 m only the 1.4–2.2 m trains survive, cells ~1 m, and by 25 m it is quiet); the focus a line needs (1/|det J| at or over CAU_T) and the half-width of the step to it (v11.35.3: a hard two-tone at 40 cm read as a print — the cloud deck's hard steps work because its shapes are huge on screen); the line's brightness
 // each train fades from the eye by its own wavelength (v11.35.1, CAU_FAR in wavelengths): the 0.4 m train was a moiré band at 15 m while the 2 m one was still legible
 const CAU_GLSL=(function(){let s='vec2 ps=vFogPos.xz+uSunW.xz*(dep/max(uSunW.y,0.3));float Hxx=0.0,Hxy=0.0,Hzz=0.0;';
   // the ripples ride the swell: the surface's horizontal orbital displacement (A sin, along the wave) carries the ripple field with it — for a 1.6 m ripple on a 46 m swell of 0.5 m that is ~2 rad of phase, and it is what keeps three fixed trains from interfering into a lattice (seen, 13 Sep)
@@ -229,7 +229,7 @@ const CAU_GLSL=(function(){let s='vec2 ps=vFogPos.xz+uSunW.xz*(dep/max(uSunW.y,0
   for(let i=0;i<Math.min(Q.cau,CAU_R.length);i++){const r=CAU_R[i],k=TAU/r[0],w=Math.sqrt(9.8*k),a=WIND_A+r[2],dx=Math.cos(a),dz=Math.sin(a);
     s+='{float s=sin(dot(ps,vec2('+dx.toFixed(5)+','+dz.toFixed(5)+'))*'+k.toFixed(5)+'-'+w.toFixed(5)+'*uTime+'+(i*2.1).toFixed(2)+')*'+(-r[1]*k*k).toFixed(5)+'*(1.0-smoothstep('+(r[0]*CAU_FAR[0]).toFixed(1)+','+(r[0]*CAU_FAR[1]).toFixed(1)+',vFogDepth))*exp(-dep*dep*'+(2*Math.pow(Math.PI*CAU_SUN/r[0],2)).toFixed(6)+');Hxx+=s*'+(dx*dx).toFixed(5)+';Hxy+=s*'+(dx*dz).toFixed(5)+';Hzz+=s*'+(dz*dz).toFixed(5)+';}';}
   s+='float jc=dep*0.248*uChop;float dj=(1.0-jc*Hxx)*(1.0-jc*Hzz)-jc*jc*Hxy*Hxy;'+
-    'float ci=clamp(1.0/max(abs(dj),0.02),'+CAU_LO.toFixed(2)+','+CAU_HI.toFixed(2)+');ci=floor(ci*'+CAU_Q.toFixed(1)+'+0.5)/'+CAU_Q.toFixed(1)+';';
+    'float ci=1.0+'+(CAU_HI-1).toFixed(2)+'*smoothstep('+(CAU_T-CAU_SOFT).toFixed(2)+','+(CAU_T+CAU_SOFT).toFixed(2)+',1.0/max(abs(dj),0.02));';
   return s;})();
 const SHM_R=Q.tier==='low'?40:64,SHM_D=120,SHM_BIAS=0.3; // the box's half-side, its half-depth along the light, the depth bias in metres
 const SHM_P=new Float32Array([0,0,0,0]),SHM_L=new Float32Array([0,1,0,2*SHM_D]); // uShP: texel size (map units), on, bias (depth units), the receiver's normal offset (m); uShL: the map's light direction, its depth range in metres

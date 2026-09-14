@@ -2678,3 +2678,24 @@ its own colour. `node build.js --test` green on both tiers.
 
 **Unseen, ask in this order:** (1) the person's 12 m view: the metre trains alone should give a soft, sparse net there, cells ~1 m;
 (2) whether the lines' coverage in the shallows is too dense — `CAU_LO` up (0.8: only focus ≥1.3 shows) thins them; (3) v11.35.1's list.
+
+
+## v11.35.3 — softer, sparser, bigger: what the old one had right (13 Sep 2026)
+
+The person put v11.35.2 at 14 m beside two shots of v11.13's caustic: "still kinda weird, a little too small maybe". Side by side
+the lesson was plain. The old one looked right because it was soft, sparse and big; the clip was its only real crime. The new one
+was right in scale for a snorkeller and on screen was a dense two-tone camo print: half the floor covered, hard edges, the same
+density everywhere. Three knobs, each with its reason.
+
+**Bigger at depth.** `CAU_SUN` 0.012 → 0.02: the blur at 14 m is 28 cm, which leaves only the 1.4–2.2 m trains — cells of about a
+metre, not 40 cm — and by 25 m the net is quiet on its own, as the old one was in the kelp. **Thinner lines.** A line now needs a
+focus of `CAU_T` 1.5 (was 1.25): coverage falls to roughly a fifth. **A soft step.** The hard two-tone was most of the "weird": the
+cloud deck's hard steps work because its shapes are huge on screen; at 40 cm they are a print. `smoothstep(CAU_T − CAU_SOFT,
+CAU_T + CAU_SOFT)` with `CAU_SOFT` 0.25 replaces the floor; 0 gets the hard edge back. `CAU_Q` and `CAU_LO` are gone.
+
+**Seen** on the menu's sand at 800×450, two frames: sparse pale flecks between the blades, no print; white sand gives it little to
+show against. `node build.js --test` green on both tiers. The 14 m view was tuned from the physics, not seen.
+
+**Unseen, ask in this order:** (1) the person's 14 m view over the shelf — the metre trains alone, soft, about a fifth of the floor;
+if it is too faint `CAU_T` 1.3 doubles the lines, if too sharp `CAU_SOFT` 0.4; (2) whether the shallows (2–5 m) still read as a
+net at all now that the threshold is high — they should, the short trains are sharp there; (3) v11.35.2's list.
