@@ -691,7 +691,9 @@ face along the light's side of it (a normal offset; the face normal is the caust
 outer 7% of the box, one centre tap for the metres between the caster and the fragment (`dm`, from the depth difference × the box's depth
 range), four taps on a rotated square whose radius is 1.5 texels + 5%·dm (the penumbra widening with distance), each a shadow if the
 caster is nearer the light, faded by `exp(−dm/35)` under water (scattering) and `/300` in air; a 0.3 m bias (`SHM_BIAS`). Strength
-`shd` 0.55 × the beam's share × the sun patch's 0.28..1 depth curve, on the whole lit colour. Casters: every creature's meshes
+`shd` 0.55 × the beam's share × the sun patch's 0.28..1 depth curve × `nl` (v11.34.1: `clamp(dot(fn,uShL.xyz)·2.5,0,1)` — the shadow
+takes the beam away, so a face the beam never reached has nothing to lose; without it a body's own map printed its dorsal silhouette,
+chevrons and all, on its belly, which the flat-shaded Lambert had already left unlit), on the whole lit colour. Casters: every creature's meshes
 (`c.shM`, gathered at spawn) when the creature is among the nearest `Q.casters` bodies by `distance − 8·size` within the box's reach
 (`updateShadow` flips `castShadow` per creature so the depth pass is a few dozen draws); the player always; the menu's, the bestiary's and
 the lab's creature (`castOn`). Nothing else casts into this map (the world has its own, below). In first person the body wears `MATGHOST` (no colour, no depth written) instead of
@@ -876,6 +878,10 @@ count, one variant drawn).
 `parts.js` is the geometry kit both flora and creatures use: `G` primitive constructors, `part()` (geometry +
 transform + colour + optional belly colour), `merge()` (bakes parts to one flat-shaded vertex-coloured geometry;
 countershading by face-normal y), `eyes`, `armRing`/`animArms` (n arms on a ring around +z), `bakeLOD()`.
+`G.lathe` reverses a profile written top-down before handing it to three (v11.34.1): `LatheGeometry`'s winding follows the point
+order, so a descending profile comes out inside-out — invisible under `MAT`'s front-side culling, and countershaded upside down on
+a double-sided material. The geometry is identical either way; only the normals turn out. Callers still read the array they passed
+(`profR`, `nose`, `tail` in `creatures_spec.js`), so the reversed copy stays inside `G.lathe`.
 
 Materials (`scene.js`; since v11.13 every tinted one but `GLOW` carries the caustics and the bodies' shadows in its fragment — [The light](#the-light)): `MAT` (Lambert, vertex colours) for creatures and rigid one-variant flora (fans, rocks),
 `MATBIG` (the same, with the big-thing fog — see Visibility) for structures, landmarks and big creatures' far LOD,

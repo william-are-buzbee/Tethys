@@ -14,6 +14,14 @@ every top-level name with its line is `src/INDEX.md` (generated). Read a DESIGN 
 
 ## Where things stand
 
+**v11.34.1 (13 Sep): the finback's tail, and a body's shadow on its own belly.** CHANGELOG v11.34.1. Two one-line fixes in shared
+code, both from the person's screenshots. `G.lathe` now reverses a profile written top-down before three sees it: `FIN_TPROF` descends,
+so the tail stem was built inside out and front-side culling dropped it — the finback has been swimming with no tail since v11.10.
+Only the `tail` part uses a descending profile; nothing else moved. And the hand-read shadow is now multiplied by how far the
+fragment faces the light (`nl`), so a surface the beam never reached is no longer darkened a second time with the shape of
+whatever stood above it — the chevrons were printing on the belly. **Ask the person to look at:** the tail's shape, now that it is drawn
+at all (`FIN_TPROF` was tuned blind), and whether the belly reads too flat.
+
 **v11.34 (13 Sep): the sound bench.** CHANGELOG v11.34. Nothing the player hears changed. `#bench` (or `b`) renders every
 sound the game makes to a wav — one-shots through the real `thump()` offline, the twenty-one live chains soloed off `master`, and
 the master bus itself in situ — and posts them to serve.js, which writes them under `test/render/`. `node test/spectro.js` turns

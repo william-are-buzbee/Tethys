@@ -346,7 +346,8 @@ const LIGHT_GLSL=LIGHT_FX?'\n#ifdef USE_FOG\n{float dep=uTint.x-vFogPos.y;if(uSu
   'float k=pow(max(1.0-abs(a+b+c)*0.333,0.0),mix(2.0,4.5,cz));float cw=texture2D(uWaterMap,vFogPos.xz*'+WM_SCALE+'+0.5).a*'+CAN_GLSL('vFogPos.y')+';'+
   'gl_FragColor.rgb*=1.0+uLightK.x*k*cz*max(fn.y,0.0)*uSunW.w*(1.0-0.85*cw);}'+
   'float sh=1.0;'+SH_GLSL('')+SH_GLSL('S')+ // the creatures' map, then the world's (v11.30): the darker of the two
-  'float dl='+DL_GLSL('vFogPos.y')+';gl_FragColor.rgb*=1.0-uLightK.y*(1.0-sh)*uSunW.w*dl;}}\n#endif\n':'';
+  'float nl=clamp(dot(fn,uShL.xyz)*2.5,0.0,1.0);'+ // the shadow takes away the beam, so a face the beam never reached loses nothing (v11.34.1)
+  'float dl='+DL_GLSL('vFogPos.y')+';gl_FragColor.rgb*=1.0-uLightK.y*(1.0-sh)*uSunW.w*dl*nl;}}\n#endif\n':'';
 // shDepth: three's RGBA depth packing undone (packing.glsl's unpackRGBAToDepth, written out so no chunk is relied on); shTap: one tap of
 // the map, a shadow if the caster is nearer the light than the fragment, faded by the metres between them
 const LIGHT_PARS='uniform float uTime;uniform vec4 uSunW;uniform vec2 uLightK;uniform sampler2D uShMap;uniform mat4 uShMat;uniform vec4 uShP;uniform vec4 uShL;uniform sampler2D uShMapS;uniform mat4 uShMatS;uniform vec4 uShPS;uniform vec4 uShLS;\n'+

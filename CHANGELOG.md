@@ -2549,3 +2549,39 @@ bench is that the person's ear and these numbers should be describing the same o
 wrong; (2) whether `bed_crackle` should be let up in play; (3) the live capture (`4` in the panel) has been built but not taken —
 it wants a real place and a real swim; (4) whether the one-shots get fixed before the creature voices are built or after, since
 the voice synthesiser will want the same transient that `thump` is currently losing.
+
+## v11.34.1 — the tail that wasn't there, and a shadow on the wrong side (13 Sep 2026)
+
+Two things the person pointed at in four screenshots of the finback. Both are one-line fixes in shared code, and both were wrong
+for every clade, not just the slowbloods.
+
+**The tail stem was inside out.** `FIN_TPROF` is written nose-to-tip — `[0.02,0.03]` down to `[0.02,-1.35]` — where every other
+lathe profile in the game climbs. `THREE.LatheGeometry` takes its winding and its normals from the point order, so a descending
+profile builds the surface facing inward: under `MAT`'s front-side culling the finback's tail stem was simply not drawn, and the
+flukes hung off the end of a body that stopped behind the dorsal fin. It has been like that since the tail became a spec part
+(v11.10). `G.lathe` (parts.js) now reverses a profile whose last point is below its first before handing it to three — the
+geometry is identical, only the normals come out — and the copy stays local, so `profR`, `nose` and `tail` still read the array
+the caller wrote. Instrumenting the reversal and walking `test/smoke.js` over all three clades, the bestiary and the lab found
+exactly one call site affected: the `tail` part with `style:'lathe'`. No flora profile and no core profile descends, so nothing
+else moved. The tail is now countershaded the right way up too, which it could not have been before.
+
+**A body printed its own dorsal silhouette on its belly.** The hand-read shadow (`SH_GLSL`, v11.23) multiplied the lit colour by
+`1 − shd·(1−sh)·beam·dl` with no reference to which way the fragment faced. A shadow takes the beam away; a face the beam never
+reached has nothing to lose, and the flat-shaded Lambert had already left it unlit. So the belly got darkened a second time, and
+because the darkening came from a depth map it arrived with the shape of what was above it — the chevron plates, the fin roots,
+the hull's edge — in hard-edged patches on an underside that should read as one even pale sheet. Added `nl =
+clamp(dot(fn,uShL.xyz)·2.5, 0, 1)` to the final multiply. The ×2.5 means a face 24° into the light already takes the full shadow,
+so nothing that was correctly shadowed has weakened: the ground under a creature, a cliff face, the dorsal fin's shadow on the
+back are all unchanged. Only the grazing and away-facing fragments stop double-counting. This also removes the acne a
+near-edge-on facet could show, which the normal offset was carrying alone.
+
+**Seen.** `node test/preview.js fin` before and after: the tail stem goes from a dark inverted wedge to a tapered, countershaded
+continuation of the body. The bestiary's finback, the clade pick and the game in the app's browser, at 1400×800: the tail is
+attached; and with the camera pitched under the player, the finback's and the soft-arm's bellies go from grey hard-edged blotches
+to an even pale underside in the same frame with the same sun. `node build.js --test` green on both tiers.
+
+**Unseen, ask in this order:** (1) whether the tail's shape, now that it is actually drawn, is the shape the finback should have —
+it has never been looked at, and `FIN_TPROF`'s taper was tuned blind; (2) whether the belly now reads too flat — `nl` is a linear
+cut at the terminator and the person may want a softer one; (3) whether any *other* creature's self-shadow still looks wrong from
+below (the ringmouths' arms and the coilshell's whorl were never checked); (4) the hand-written normal offset (`SHM_P.w`, 2 texels)
+could probably come down now that `nl` carries the away-facing case, which would sharpen contact shadows — not touched here.
