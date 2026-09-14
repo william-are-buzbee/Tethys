@@ -242,7 +242,7 @@ walks. Boulders, bigrocks and ledges draw with `MATROCK` (small-thing fog), ever
 the terrain at 0.7 (the flats and the passes get the wet mark and less film). Creatures (`MAT`, `MATBIG`) and the sessile
 animals (`MATV`) have no band.
 
-**Waves (`world.js` `WAVES`, `waveH`).** Mean sea level is 0; `waveH(x,z)` is the water level at a point *now* (the tide plus the waves). Five
+**Waves (`world.js` `WAVES`, `waveH`).** *v11.44: each wave's amplitude at a point is its deep-water amplitude × Green's law as the floor comes up (≤ ×1.6) × the place's wave energy (the floor map's green channel: exposure and the lagoon's shelter; the wind sea whole, the swell by half), capped at 0.39 × the water depth — the breaking limit — with the excess drawn as foam; `waveFac` in world.js and `waveAmpGLSL` in scene.js are the one rule, read by every sum. v11.42: the directions follow `WIND_A`.* Mean sea level is 0; `waveH(x,z)` is the water level at a point *now* (the tide plus the waves). Five
 directional components, wavelengths 46/29/15/8.5/6, amplitudes summing to 1.17 (`WAVE_AMP`), deep-water dispersion
 `ω=√(gk)` so the swell outruns the chop, crests sharpened by `wsh()` (which also puts the mean level at about −0.3).
 The physics, the surface mesh and the rafts' bob all read the same formula: `scene.js` `WAVE_GLSL` is generated from

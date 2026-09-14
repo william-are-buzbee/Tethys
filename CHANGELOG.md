@@ -3207,3 +3207,38 @@ by the facets; from 2 m under — a pale sky through every facet, the far surfac
 along the rim. `node build.js --test` green on both tiers. **Ask:** the window at night under the full moon; whether the sun through
 the facets reads brighter or duller than the sprite did (`skyLite`'s `uSunC*1.4` disc and the 0.92 on the window); the rim's
 horizon colour in the soft band (`snell`'s 0.25–0.65) — it is the sky's horizon now, not teal.
+
+## v11.44 — shoaling, breaking and shelter; the foam emissive; a comment that ate six bindings (14 Sep 2026)
+
+WATER.md D, on the person's "go ahead and do it".
+
+**The sea by the floor** (world.js `waveFac`, `WAVE_BRK` 0.39, `WAVE_SHOAL_MAX` 1.6; scene.js `waveAmpGLSL`/`waveSumGLSL`/`WAVE_DEP_GLSL`;
+far.js `wfRaw`, `wmWave`). Every wave sum — the JS physics (`waveH`), the surface mesh, the kelp's fold and the rafts' bob (the sway
+shader), the fog's level (`fogWaveH`) and the caustic's swell carry (`cauFocus`) — reads the water depth and the place's wave energy
+at its point from the floor map (red: the floor; green, new: `mix(0.35,1,expo)·(1−0.75·shel)` — 1 on the struck flank, 0.35 in the lee, a
+quarter of that inside the lagoon), and each wave's amplitude is its deep-water amplitude × Green's law as the floor comes up
+(`(L/2d)^¼` past half a wavelength of depth, at most ×1.6) × the energy (the wind sea whole, the swell by half — it wraps) and no more
+than 0.39 × the depth, the breaking limit H/d 0.78. The excess over it is white water: the surface vertex hands it to the fragment as
+`vBrk`, foam on the topside and a pale patch on the underside. The wavelength does not shorten (a phase integral, not a local factor).
+At the strand the amplitude goes to nothing and the water stands at the tide. The map is initialised deep and fully exposed
+(`FM_DATA.fill(255)`) so headless tests without the far layer keep the deep-water sea. Vertex texture fetch: 16 units on the 4060.
+
+**Foam** (atmosphere.js `SURF_MAT`): the breaking excess and the crests' whitecaps — by height as before but halved and by the chop
+(`uChop` in the fragment now), a wind sea's, since shoaling raises the swell over the whole shelf — drawn *emissive* in the sky's
+light (`uWin`); lit foam went dark far off, where the flat normal comes from screen derivatives across triangles under a pixel quad.
+
+**A bug of v11.43's**: the comment after the window's sky bindings sat mid-line and commented out the six bindings after it — `uSkyR`,
+`uWin`, `uGlint`, `uRain`, `uBody` and the surface's own fog set `FOG_PSURF`. The surface fell back to the split fog, its own crests were
+classed under water wherever the true wave stood above the drawn one, and from above every far crest wore a dark patch; found by
+reading the compiled uniforms (`renderer.properties.get(SURF_MAT).uniforms.uFogP.value !== FOG_PSURF`) after foam, depth, back faces,
+the dome and the rafts had each been ruled out by toggling them live. Fixed by moving the comment.
+
+**Seen:** the shelf from 0.2 m above — clean again, the sea at grazing the sky's reflection, the near sea clear; 2.5 m under — the
+window and the far forest as before; the exposed shore at (124, 220) from the water's edge — the amplitudes there 0.57/0.32/0.14
+(shoaled from 0.50/0.32/0.18 with the wind sea scaled by 0.81), the strip along the strand pale, though at the pane's resolution the surf
+band could not be told from the wet sand. `node build.js --test` green on both tiers. **Unseen, ask in this order:** (1) the surf line
+on the struck flank at a low spring (the strand at tide −4.5 exposes the flats: the map's depth is blurred over ~70 m, so the band is
+broad and soft — `WAVE_BRK` and the map's blur are the knobs); (2) the lagoon in the trades against the open shelf — the chop should be
+a quarter of the open sea's, the swell three quarters; (3) the weed forest's frame time at (330, 0) — the sway shader's fold now
+fetches the floor map and takes five `pow`s per vertex; the last pass had it at 3.2 ms on the 4060; (4) whether the whitecaps
+(halved, by the chop) are missed in the trades.

@@ -90,6 +90,7 @@ const WM_N=96,WM_DATA=new Uint8Array(WM_N*WM_N*4);
 const waterMap=new THREE.DataTexture(WM_DATA,WM_N,WM_N,THREE.RGBAFormat,THREE.UnsignedByteType);
 waterMap.minFilter=waterMap.magFilter=THREE.LinearFilter;waterMap.wrapS=waterMap.wrapT=THREE.ClampToEdgeWrapping;waterMap.generateMipmaps=false;waterMap.clone=function(){return this;};
 const FM_DATA=new Uint8Array(WM_N*WM_N*4),floorMap=new THREE.DataTexture(FM_DATA,WM_N,WM_N,THREE.RGBAFormat,THREE.UnsignedByteType); // (v11.27) the floor's depth under each texel of the water map, r = depth/FM_SCALE, blurred like it (far.js fmBlur): the veil blends the floor's colour out by the height above it (world.js FLOOR_H)
+FM_DATA.fill(255); // deep water and full waves everywhere until the far layer fills the map (v11.44): the wave sum reads it, and headless tests without the far layer keep the deep-water sea
 const FM_SCALE=1024;floorMap.minFilter=floorMap.magFilter=THREE.LinearFilter;floorMap.wrapS=floorMap.wrapT=THREE.ClampToEdgeWrapping;floorMap.generateMipmaps=false;floorMap.clone=function(){return this;};
 // The mist above the water (v11.17): two exponential layers on the water level, rho(y) = uMist.x·exp(-y·uMist.y) + uMist.z·exp(-y·uMist.w)
 // (the marine haze and the surf's spray; y above the level), integrated in closed form along a ray from height cy to height fy over
@@ -103,9 +104,19 @@ const timeU={value:0},tideU={value:0},tideRU={value:0}; // the time; the tide no
 // lit evenly and a low sun lights light/dark: the rows of wedges on the far sea). The crest sharpening puts a wave's mean at
 // WSH_MEAN of its amplitude below zero; a faded wave keeps that mean, so the far, flat sea sits at the same level as the near one.
 const WSH_MEAN=-0.19514;
+const FOG_SN=Q.surf,FOG_SR=FAR*1.05; // the surface grid's side and reach, as atmosphere.js SN and SR — change both or neither
+const WAVE_FADE_D=WAVES.map(w=>[w.L*0.14,w.L*0.30].map(sp=>{const s0=FOG_SR*0.06*2/FOG_SN;if(sp<=s0)return 0;const u=Math.sqrt((sp*FOG_SN/(2*FOG_SR)-0.06)/2.82);return FOG_SR*(0.06*u+0.94*u*u*u);})); // per wave: the distance (max of |dx|,|dz| from the camera) at which it starts to fade, and where it is gone (the fog chunk's sum, v11.42.2)
 const chopU={value:1}; // SEA_CHOP for the shaders (atmosphere.js writes it)
-const WAVE_GLSL='uniform float uChop;float wsh(float s){return 2.0*pow(max((s+1.0)*0.5,1e-4),1.7)-1.0;}\nfloat waveH(vec2 p,float t,float sp){float h=0.0;'+
-  WAVES.map(w=>'h+='+w.A.toFixed(3)+(w.L<20?'*uChop':'')+'*mix('+WSH_MEAN.toFixed(4)+',wsh(sin(dot(p,vec2('+w.dx.toFixed(5)+','+w.dz.toFixed(5)+'))*'+w.k.toFixed(5)+'-'+w.w.toFixed(5)+'*t+'+w.ph.toFixed(4)+')),1.0-smoothstep('+(w.L*0.14).toFixed(2)+','+(w.L*0.30).toFixed(2)+',sp));').join('')+'return h;}\n';
+// The sums (v11.44): waveAmpGLSL is a wave's amplitude at a point — its deep-water amplitude × the chop (the wind sea) or half the place's wave
+// energy (the swell) × Green's law as the floor comes up, no more than the breaking limit (world.js waveFac, the same numbers: WAVE_BRK,
+// WAVE_SHOAL_MAX); dw is (the water depth, the wave energy) from waveDep. waveSumGLSL builds a sum with the mesh's fade either by a spacing
+// parameter (the surface's aSpace, 'sp') or by the distance from the camera ('rm', the fog chunk, WAVE_FADE_D). waveBrk is the breaking excess.
+const WAVE_DEP_GLSL='vec2 waveDep(vec2 p,float tide){vec4 f=texture2D(uFloorMap,p*'+WM_SCALE+'+0.5);return vec2(max(f.r*'+FM_SCALE.toFixed(1)+'+tide,0.05),f.g);}\n';
+const waveAmpGLSL=(w,chop)=>'min('+w.A.toFixed(3)+'*'+(w.L<20?'('+chop+'*dw.y)':'(0.5+0.5*dw.y)')+'*clamp(pow('+(w.L*0.5).toFixed(2)+'/dw.x,0.25),1.0,'+WAVE_SHOAL_MAX.toFixed(2)+'),cap)';
+const waveSumGLSL=(name,chop,wshName,fade)=>'float '+name+'(vec2 p,float t,float '+(fade==='sp'?'sp':'rm')+',vec2 dw){float h=0.0;float cap='+WAVE_BRK.toFixed(2)+'*dw.x;'+
+  WAVES.map((w,i)=>'h+='+waveAmpGLSL(w,chop)+'*mix('+WSH_MEAN.toFixed(4)+','+wshName+'(sin(dot(p,vec2('+w.dx.toFixed(5)+','+w.dz.toFixed(5)+'))*'+w.k.toFixed(5)+'-'+w.w.toFixed(5)+'*t+'+w.ph.toFixed(4)+')),1.0-smoothstep('+(fade==='sp'?(w.L*0.14).toFixed(2)+','+(w.L*0.30).toFixed(2):WAVE_FADE_D[i][0].toFixed(2)+','+WAVE_FADE_D[i][1].toFixed(2))+','+(fade==='sp'?'sp':'rm')+'));').join('')+'return h;}\n';
+const WAVE_GLSL='uniform float uChop;float wsh(float s){return 2.0*pow(max((s+1.0)*0.5,1e-4),1.7)-1.0;}\n'+waveSumGLSL('waveH','uChop','wsh','sp')+
+  'float waveBrk(vec2 p,vec2 dw){float cap='+WAVE_BRK.toFixed(2)+'*dw.x;float b=0.0;'+WAVES.map(w=>'b=max(b,('+waveAmpGLSL(w,'uChop').replace(/^min\(/,'(').replace(/,cap\)$/,')')+'-cap)/cap);').join('')+'return clamp(b,0.0,1.0);}\n';
 // The fog chunk sums the same waves per fragment near the water level (v11.42) under its own names, since the lit materials' fragment stage
 // already declares uTime and uChop (LIGHT_PARS) and the surface's declares uTime.
 // The fog chunk's wave sum is the *drawn* surface's (v11.42.2): the mesh fades each wave out where its grid cannot resolve it (aSpace: fully drawn at
@@ -116,10 +127,7 @@ const WAVE_GLSL='uniform float uChop;float wsh(float s){return 2.0*pow(max((s+1.
 // distances per wave where the fade starts and ends are found here once from the same numbers the mesh is built on (Q.surf, FAR·1.05).
 // The level is the higher of the drawn surface and the true wave (v11.42.3): the kelp folds to the true wave (the sway shader's cap, 0.45 m
 // under it) and a raft rides it, so far out a folded top on a crest stands above the drawn mean surface — under the water all the same.
-const FOG_SN=Q.surf,FOG_SR=FAR*1.05; // the surface grid's side and reach, as atmosphere.js SN and SR — change both or neither
-const WAVE_FADE_D=WAVES.map(w=>[w.L*0.14,w.L*0.30].map(sp=>{const s0=FOG_SR*0.06*2/FOG_SN;if(sp<=s0)return 0;const u=Math.sqrt((sp*FOG_SN/(2*FOG_SR)-0.06)/2.82);return FOG_SR*(0.06*u+0.94*u*u*u);})); // per wave: the distance (max of |dx|,|dz| from the camera) at which it starts to fade, and where it is gone
-const WAVE_GLSL_FOG='uniform vec2 uFogTC;float fogWsh(float s){return 2.0*pow(max((s+1.0)*0.5,1e-4),1.7)-1.0;}\nfloat fogWaveH(vec2 p,float t,float rm){float h=0.0;'+
-  WAVES.map((w,i)=>'h+='+w.A.toFixed(3)+(w.L<20?'*uFogTC.y':'')+'*mix('+WSH_MEAN.toFixed(4)+',fogWsh(sin(dot(p,vec2('+w.dx.toFixed(5)+','+w.dz.toFixed(5)+'))*'+w.k.toFixed(5)+'-'+w.w.toFixed(5)+'*t+'+w.ph.toFixed(4)+')),1.0-smoothstep('+WAVE_FADE_D[i][0].toFixed(2)+','+WAVE_FADE_D[i][1].toFixed(2)+',rm));').join('')+'return h;}\n';
+const WAVE_GLSL_FOG='uniform vec2 uFogTC;float fogWsh(float s){return 2.0*pow(max((s+1.0)*0.5,1e-4),1.7)-1.0;}\n'+WAVE_DEP_GLSL+waveSumGLSL('fogWaveH','uFogTC.y','fogWsh','rm');
 const FOG_TC=new Float32Array([0,1]); // the time and the chop for the fog chunk's wave sum, as a typed array (v11.42.1): v11.42 handed the chunk timeU itself, and r128's cloneUniforms copies a number by value into every material, so the chunk's clock stood at zero — the level it cut the ray at was a frozen sea. main.js writes x, updateHaze y
 const WAVE_MEAN=WSH_MEAN*WAVE_AMP; // the mean water level relative to the tide, the crest sharpening's offset
 const MIST_GLSL='float mistL(float cy,float dy,float d,float rho,float ih){float k=dy*ih;float e=rho*exp(-max(cy,0.0)*ih);return abs(k)<1e-3?e*d:e*(1.0-exp(-k))*d/k;}\n'+
@@ -166,7 +174,7 @@ const MIST_GLSL='float mistL(float cy,float dy,float d,float rho,float ih){float
   // else the mean level; the crossing is found against the level blended between the two. uFogP.w 0 (the surface mesh, FOG_PSURF) keeps the
   // whole ray in the camera's medium: its fragments are the boundary. The far cut (FOG_CUT_GLSL) closes the camera's segment only.
   C.fog_fragment='#ifdef USE_FOG\n{float d=vFogDepth;vec3 rd=(vFogPos-uFogC)/max(d,1e-3);float cy=uFogC.y,fy=vFogPos.y,wl=uFogAC.w;float ck=1.0'+FOG_CUT_GLSL+';'+
-    'bool cu=cy<wl;float lev=uFogW.x+((abs(fy-uFogW.x)<3.0)?max(fogWaveH(vFogPos.xz,uFogTC.x,max(abs(vFogPos.x-uFogC.x),abs(vFogPos.z-uFogC.z))),fogWaveH(vFogPos.xz,uFogTC.x,0.0)):('+WAVE_MEAN.toFixed(4)+'));bool fu=fy<lev;float s=1.0;'+
+    'bool cu=cy<wl;float lev=uFogW.x+((abs(fy-uFogW.x)<3.0)?max(fogWaveH(vFogPos.xz,uFogTC.x,max(abs(vFogPos.x-uFogC.x),abs(vFogPos.z-uFogC.z)),waveDep(vFogPos.xz,uFogW.x)),fogWaveH(vFogPos.xz,uFogTC.x,0.0,waveDep(vFogPos.xz,uFogW.x))):('+WAVE_MEAN.toFixed(4)+'));bool fu=fy<lev;float s=1.0;'+
     'if(uFogP.w>0.5&&cu!=fu){float den=cy-fy;if(abs(den)<1e-4)den=1e-4;float s0=clamp((cy-wl)/den,0.0,1.0);s=clamp((cy-mix(wl,lev,s0))/den,0.0,1.0);}'+
     'float dC=s*d,dO=d-dC;vec3 cp=uFogC+rd*dC;vec3 col=gl_FragColor.rgb;'+
     'if(cu){if(dO>0.0)col=fogAir(col,cp,rd,dO,1.0);col=fogWater(col,uFogC,rd,dC,vec3(1.0),ck);}'+
@@ -353,7 +361,7 @@ const PIX_GRID_V=grid=>grid==='world'?'vGrid=(modelMatrix*wpp).xyz;':'vGrid=pGri
 // their phases, the sun-disc blur, det J. The light shafts read it at their heads (atmosphere.js updateShafts): a shaft is a beam the surface focused, so its
 // brightness is the same field the floor's net is drawn from — one clock for both, and the audit's "four clocks for one surface" is down to the shimmer.
 function cauFocus(x,z,dep,t){
-  let px=x,pz=z;for(let i=0;i<CAU_SWELL;i++){const w=WAVES[i],a=w.A*(w.L<20?SEA_CHOP:1)*Math.sin((px*w.dx+pz*w.dz)*w.k-w.w*t+w.ph);px+=w.dx*a;pz+=w.dz*a;}
+  let px=x,pz=z;const wf=waveFac(x,z,_wfac);for(let i=0;i<CAU_SWELL;i++){const w=WAVES[i],a=wf[i]*Math.sin((px*w.dx+pz*w.dz)*w.k-w.w*t+w.ph);px+=w.dx*a;pz+=w.dz*a;} // the amplitude now (v11.44: shoaled, sheltered, capped — world.js waveFac)
   const G=CAU_GN,gd=CAU_GTEX.image.data,gs=1/CAU_GUST[0],gx=((px-windOffU.value.x)*gs%1+1)%1,gz=((pz-windOffU.value.y)*gs%1+1)%1,gu=1-CAU_GUST[1]*(1-gd[((Math.floor(gz*G)%G)*G+Math.floor(gx*G)%G)*4]/255);
   const N=CAU_N,u=((px/CAU_TILE)%1+1)%1,v=((pz/CAU_TILE)%1+1)%1,o=((Math.floor(v*N)%N)*N+Math.floor(u*N)%N)*4,q=CAU_HMAX/127.5;let hxx=0,hxy=0,hzz=0;
   for(const r of CAU_TEX){const g=Math.exp(-dep*dep*2*Math.pow(Math.PI*CAU_SUN/r.L,2))*gu;if(g<0.002)continue;const S=r.s.image.data,C=r.c.image.data,ph=r.w*t,cp=Math.cos(ph)*g*q,sp=Math.sin(ph)*g*q;
@@ -608,7 +616,7 @@ function swayMaterial(amp,freq,hn,dir,bob,H,strand,cap,cut,thin){
   m.onBeforeCompile=function(sh){
     if(thin)thinLight(sh,thin);
     sh.uniforms.uChop=chopU;sh.uniforms.uTime=timeU;sh.uniforms.uDistA=distU;sh.uniforms.uDistB=distBU;sh.uniforms.uDistU=distUU;sh.uniforms.uTide=tideU;sh.uniforms.uTideR=tideRU;
-    sh.vertexShader='uniform float uTime;uniform float uTide;uniform float uTideR;attribute vec2 aCur;attribute vec2 aTide;\n'+VAR_GLSL+DIST_GLSL+(bob?'attribute float aDip;\n':'')+(bob||cap?WAVE_GLSL:'')+sh.vertexShader.replace('#include <begin_vertex>',
+    sh.vertexShader='uniform float uTime;uniform float uTide;uniform float uTideR;attribute vec2 aCur;attribute vec2 aTide;\n'+VAR_GLSL+DIST_GLSL+(bob?'attribute float aDip;\n':'')+(bob||cap?'uniform sampler2D uFloorMap;\n'+WAVE_DEP_GLSL+WAVE_GLSL:'')+sh.vertexShader.replace('#include <begin_vertex>',
       '#include <begin_vertex>\n'+(cut?FAR_CUT:'')+VAR_BRANCH+'{float sx=length(instanceMatrix[0].xyz),sy=length(instanceMatrix[1].xyz),sz=length(instanceMatrix[2].xyz);float ph=uTime*'+freq.toFixed(2)+'+instanceMatrix[3][0]*0.31+instanceMatrix[3][2]*0.23;float hw=max(transformed.y*'+dir.toFixed(1)+',0.0)*sy;float k=clamp(hw/'+hn.toFixed(2)+',0.0,1.3);k=k*k;'+
       'vec3 gd=normalize((modelMatrix*vec4(instanceMatrix[1].xyz,0.0)).xyz)*'+dir.toFixed(1)+';float hmax='+H.toFixed(2)+'*sy;'+
       (strand?'vec3 base=(modelMatrix*instanceMatrix*vec4(transformed,1.0)).xyz-gd*hw;':'vec3 base=(modelMatrix*vec4(instanceMatrix[3].xyz,1.0)).xyz;')+
@@ -622,7 +630,7 @@ function swayMaterial(amp,freq,hn,dir,bob,H,strand,cap,cut,thin){
       'vec2 cv=aCur+aTide*uTideR;float cs=length(cv),cf=min(cs*'+(1/CUR_MAX).toFixed(4)+',1.0);if(cs>0.001&&hw>0.0){float dl=min('+(LEAN*amp).toFixed(3)+'*k*cf,hw*0.85);push+=vec3(cv.x,0.0,cv.y)*(dl/cs)-gd*(dl*dl/(2.0*max(hw,0.3)));}'+
       'mat3 im=mat3(instanceMatrix);transformed+=vec3(dot(im[0],push)/(sx*sx),dot(im[1],push)/(sy*sy),dot(im[2],push)/(sz*sz));'+
       '\n#ifndef DEPTH_PASS\nfloat sa=1.0-0.5*cf;transformed.x+=sin(ph)*k*sa*'+amp.toFixed(2)+'/sx;transformed.z+=sin(ph*0.7+1.3)*k*sa*'+(amp*0.6).toFixed(2)+'/sz;\n#endif\n'+
-      (bob?'\n#ifdef DEPTH_PASS\ntransformed.y+=(uTide-aDip)/sy;\n#else\ntransformed.y+=(waveH(instanceMatrix[3].xz,uTime,0.0)+uTide-aDip)/sy;\n#endif\n':cap?'float wy=(modelMatrix*instanceMatrix*vec4(transformed,1.0)).y;float wl=uTide-0.45;\n#ifndef DEPTH_PASS\nif(wy>uTide-1.8)wl+=waveH(base.xz,uTime,0.0);\n#endif\ntransformed.y-=max(wy-wl,0.0)*0.96/sy;':'')+'}');
+      (bob?'\n#ifdef DEPTH_PASS\ntransformed.y+=(uTide-aDip)/sy;\n#else\ntransformed.y+=(waveH(instanceMatrix[3].xz,uTime,0.0,waveDep(instanceMatrix[3].xz,uTide))+uTide-aDip)/sy;\n#endif\n':cap?'float wy=(modelMatrix*instanceMatrix*vec4(transformed,1.0)).y;float wl=uTide-0.45;\n#ifndef DEPTH_PASS\nif(wy>uTide-1.8)wl+=waveH(base.xz,uTime,0.0,waveDep(base.xz,uTide));\n#endif\ntransformed.y-=max(wy-wl,0.0)*0.96/sy;':'')+'}');
   };
   m.sway=true; // the cell gives its instances aCur (chunks.js makeInstanced)
   return addTint(m,'sway'+amp+freq+hn+dir+(bob?'b':'')+H+(strand?'s':'')+(cap?'c':'')+(cut?'x':'')+(thin?'t'+thin:''),true,undefined,undefined,thin?'blade':'plant');

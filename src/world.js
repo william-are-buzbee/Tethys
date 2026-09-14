@@ -160,7 +160,19 @@ const WAVES=[[46,0.50,WIND_A],[29,0.32,WIND_A-0.19],[15,0.18,WIND_A+0.36],[8.5,0
 const WAVE_AMP=WAVES.reduce((a,w)=>a+w.A,0);
 const GRAV=9.8; // 1 g, 1 unit = 1 m (PLANET.md); what pulls a body back down once it is out of the water. Was 14 to v9.3.
 function wsh(s){return 2*Math.pow((s+1)*0.5,1.7)-1;}
-function waveH(x,z){let h=TIDE;for(const w of WAVES)h+=w.A*(w.L<20?SEA_CHOP:1)*wsh(Math.sin((x*w.dx+z*w.dz)*w.k-w.w*t+w.ph));return h;}
+// Shoaling, breaking and shelter (v11.44, WATER.md D). Each wave's amplitude at a point is its deep-water amplitude × Green's law as the floor
+// comes up (the energy flux held as the group slows: (L/2d)^¼ once the water is shallower than half the wavelength, capped at WAVE_SHOAL_MAX),
+// × the place's wave energy (WF: the wind sea by it whole, the swell by half — the swell wraps the island, the chop does not; 1 on the struck
+// flank, 0.35 in the lee, a quarter of that inside the lagoon; far.js wmFill from the expo and shel fields), and no more than WAVE_BRK × the
+// water depth — the breaking limit H/d 0.78, past which the crest is white water (the surface's foam). The wavelength does not shorten: that is
+// a phase integral along the wave's path, not a local factor, and a local k(d) would scramble the phase. The depth is the blurred floor map
+// (far.js wmFloor, ~70 m) plus the tide, so the surf zone is a band along the shore where the map says the water is shallower than a wave or
+// two; at the strand itself the amplitude goes to nothing and the water stands at the tide — no more puddles winking on the sand. Every wave
+// sum reads waveFac: this, the GLSL (scene.js WAVE_GLSL, the surface, the kelp's fold, the rafts, the fog's level) and the caustic's carry.
+const WAVE_BRK=0.39,WAVE_SHOAL_MAX=1.6; // the breaking limit as amplitude over depth (H/d 0.78); the most Green's law may raise a wave
+const _wfac=new Float32Array(WAVES.length*2);
+function waveFac(x,z,out){const d=Math.max(wmFloor(x,z)+TIDE,0.05),wf=wmWave(x,z),cap=WAVE_BRK*d;for(let i=0;i<WAVES.length;i++){const w=WAVES[i];const a=w.A*(w.L<20?SEA_CHOP*wf:0.5+0.5*wf)*Math.min(Math.max(Math.pow(w.L*0.5/d,0.25),1),WAVE_SHOAL_MAX);out[i]=Math.min(a,cap);out[WAVES.length+i]=Math.max(0,(a-cap)/cap);}return out;} // out: the amplitude now per wave, then the breaking excess per wave
+function waveH(x,z){const f=waveFac(x,z,_wfac);let h=TIDE;for(let i=0;i<WAVES.length;i++){const w=WAVES[i];h+=f[i]*wsh(Math.sin((x*w.dx+z*w.dz)*w.k-w.w*t+w.ph));}return h;}
 // ---------- land ----------
 // Three things break the surface: the caldera rim (broken by passes), the flank cone on rift arm 1 (the island, with a tidal
 // flat), and a few blocks of the collapse near its scarp. Ground above 0.5 is the strand at mean sea level; with the tide the

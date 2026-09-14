@@ -9,11 +9,11 @@
 // ---------- the water map ----------
 // waterColor() of the floor's conditions (world.js), canopy weight in alpha, one texel per ~36 units, box-blurred so borders
 // blend over ~70 units. A coarse pass at boot (every 4th texel); each region refines its own block as it is built.
-const WM_T=2*HALF/WM_N,wmRaw=new Float32Array(WM_N*WM_N*4),fmRaw=new Float32Array(WM_N*WM_N); // fmRaw (v11.27): the floor's depth, 0..1 of FM_SCALE, filled and blurred beside the colour
+const WM_T=2*HALF/WM_N,wmRaw=new Float32Array(WM_N*WM_N*4),fmRaw=new Float32Array(WM_N*WM_N),wfRaw=new Float32Array(WM_N*WM_N); // fmRaw (v11.27): the floor's depth, 0..1 of FM_SCALE, filled and blurred beside the colour; wfRaw (v11.44): the place's wave energy (world.js waveFac) in the floor map's green
 function wmFill(i0,i1,j0,j1,step){
   for(let j=j0;j<j1;j+=step)for(let i=i0;i<i1;i+=step){
-    const x=-HALF+(i+0.5*step)*WM_T,z=-HALF+(j+0.5*step)*WM_T,s=sample(x,z),c=waterColor(s),a=canopyW(x,z),fd=clamp(-s.h/FM_SCALE,0,1);
-    for(let jj=j;jj<Math.min(j1,j+step);jj++)for(let ii=i;ii<Math.min(i1,i+step);ii++){const n=(jj*WM_N+ii)*4;wmRaw[n]=c[0];wmRaw[n+1]=c[1];wmRaw[n+2]=c[2];wmRaw[n+3]=a;fmRaw[jj*WM_N+ii]=fd;}
+    const x=-HALF+(i+0.5*step)*WM_T,z=-HALF+(j+0.5*step)*WM_T,s=sample(x,z),c=waterColor(s),a=canopyW(x,z),fd=clamp(-s.h/FM_SCALE,0,1),wf=lerp(0.35,1,s.f[FI.expo])*(1-0.75*s.f[FI.shel]);
+    for(let jj=j;jj<Math.min(j1,j+step);jj++)for(let ii=i;ii<Math.min(i1,i+step);ii++){const n=(jj*WM_N+ii)*4;wmRaw[n]=c[0];wmRaw[n+1]=c[1];wmRaw[n+2]=c[2];wmRaw[n+3]=a;fmRaw[jj*WM_N+ii]=fd;wfRaw[jj*WM_N+ii]=wf;}
   }
 }
 // the floor's depth at a point as the shader reads it (bilinear on the blurred map), in units (v11.27)
@@ -21,6 +21,12 @@ function wmFloor(x,z){
   const u=(x+HALF)/WM_T-0.5,v=(z+HALF)/WM_T-0.5,i0=clamp(Math.floor(u),0,WM_N-1),j0=clamp(Math.floor(v),0,WM_N-1),i1=Math.min(i0+1,WM_N-1),j1=Math.min(j0+1,WM_N-1);
   const fu=clamp(u-i0,0,1),fv=clamp(v-j0,0,1),D=FM_DATA;
   const a=D[(j0*WM_N+i0)*4]*(1-fu)+D[(j0*WM_N+i1)*4]*fu,b=D[(j1*WM_N+i0)*4]*(1-fu)+D[(j1*WM_N+i1)*4]*fu;return (a*(1-fv)+b*fv)/255*FM_SCALE;
+}
+// the place's wave energy at a point (v11.44, the floor map's green), bilinear like the GPU reads it
+function wmWave(x,z){
+  const u=(x+HALF)/WM_T-0.5,v=(z+HALF)/WM_T-0.5,i0=clamp(Math.floor(u),0,WM_N-1),j0=clamp(Math.floor(v),0,WM_N-1),i1=Math.min(i0+1,WM_N-1),j1=Math.min(j0+1,WM_N-1);
+  const fu=clamp(u-i0,0,1),fv=clamp(v-j0,0,1),D=FM_DATA;
+  const a=D[(j0*WM_N+i0)*4+1]*(1-fu)+D[(j0*WM_N+i1)*4+1]*fu,b=D[(j1*WM_N+i0)*4+1]*(1-fu)+D[(j1*WM_N+i1)*4+1]*fu;return (a*(1-fv)+b*fv)/255;
 }
 // the map at a point, bilinear like the GPU reads it: rgb the floor's water, a the canopy weight (0..1 floats)
 function wmSample(x,z,out){
@@ -31,10 +37,10 @@ function wmSample(x,z,out){
 }
 function wmBlur(i0,i1,j0,j1){
   for(let j=Math.max(0,j0);j<Math.min(WM_N,j1);j++)for(let i=Math.max(0,i0);i<Math.min(WM_N,i1);i++){
-    let r=0,g=0,b=0,a=0,f=0,n=0;
-    for(let dj=-1;dj<=1;dj++){const jj=j+dj;if(jj<0||jj>=WM_N)continue;for(let di=-1;di<=1;di++){const ii=i+di;if(ii<0||ii>=WM_N)continue;const k=(jj*WM_N+ii)*4;r+=wmRaw[k];g+=wmRaw[k+1];b+=wmRaw[k+2];a+=wmRaw[k+3];f+=fmRaw[jj*WM_N+ii];n++;}}
+    let r=0,g=0,b=0,a=0,f=0,wf=0,n=0;
+    for(let dj=-1;dj<=1;dj++){const jj=j+dj;if(jj<0||jj>=WM_N)continue;for(let di=-1;di<=1;di++){const ii=i+di;if(ii<0||ii>=WM_N)continue;const k=(jj*WM_N+ii)*4;r+=wmRaw[k];g+=wmRaw[k+1];b+=wmRaw[k+2];a+=wmRaw[k+3];f+=fmRaw[jj*WM_N+ii];wf+=wfRaw[jj*WM_N+ii];n++;}}
     const k=(j*WM_N+i)*4;WM_DATA[k]=Math.round(255*clamp(r/n,0,1));WM_DATA[k+1]=Math.round(255*clamp(g/n,0,1));WM_DATA[k+2]=Math.round(255*clamp(b/n,0,1));WM_DATA[k+3]=Math.round(255*clamp(a/n,0,1));
-    FM_DATA[k]=Math.round(255*clamp(f/n,0,1));
+    FM_DATA[k]=Math.round(255*clamp(f/n,0,1));FM_DATA[k+1]=Math.round(255*clamp(wf/n,0,1));
   }
   waterMap.needsUpdate=true;floorMap.needsUpdate=true;
 }

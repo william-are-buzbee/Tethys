@@ -124,7 +124,7 @@ person likes comes free, since each facet bends the sky differently. Keep the wi
 from floorMap)`, the veil `fc` there. Darker over the deep, floor-coloured over a shelf, no glow away from the sun. Fixes 7. Cost: one more `fc`
 evaluation on the surface's underside fragments.
 
-**D. Shoaling, breaking and the lee.** The floor's depth is on the GPU (`floorMap.r`, 4 m steps, blurred over ~70 m) and on the CPU (`wmFloor`).
+**D. Shoaling, breaking and the lee.** *Built v11.44 (no wavelength shortening; the map's blur sets the surf band's width).* The floor's depth is on the GPU (`floorMap.r`, 4 m steps, blurred over ~70 m) and on the CPU (`wmFloor`).
 Per component, with `d` the local depth: amplitude by Green's law `(d0/d)^¼` (capped), wavenumber from `ω² = gk·tanh(kd)` (shorter, steeper
 inshore — a two-term approximation is enough), and breaking where `H > 0.78·d`: foam and a lowered crest. Shelter: the lagoon's `shel` and the
 wind exposure `expo` are fields of `sample()`; write one of them into a free channel of `floorMap` (g or b) at `wmFill` and scale the wind sea by
