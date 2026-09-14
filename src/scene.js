@@ -278,7 +278,7 @@ const PIX_CLS_GLSL=cls=>(cls==='terr'?'\n#ifdef USE_COLOR\nfloat pw=mix('+PIX_CL
     'else if(pk<4.5){float prow=floor(cid.y/psc);float pcx=cid.x+(mod(prow,2.0)<0.5?0.0:floor(psc*0.5));if(mod(cid.y,psc)<0.5||mod(pcx,psc)<0.5)tn-=pto;}':'');
 const PIX_GLSL=(grid,cls)=>'if(uTex>0.5){vec3 gx=dFdx(vGrid),gy=dFdy(vGrid);float xx=dot(gx,gx),xy=dot(gx,gy),yy=dot(gy,gy),det=xx*yy-xy*xy;if(det>1e-4*xx*yy){'+(grid==='world'?'float pt='+PIX_T.toFixed(3)+';':'\n#ifdef USE_INSTANCING\nfloat pt='+PIX_T.toFixed(3)+';\n#else\nfloat pt='+PIX_TB.toFixed(3)+';\n#endif\n')+
   'vec3 nn=cross(gx,gy),an=abs(nn);vec3 ci=floor(vGrid/pt);vec3 d=(ci+0.5)*pt-vGrid;vec2 cid;float ca;if(an.y>=an.x&&an.y>=an.z){d.y=-(nn.x*d.x+nn.z*d.z)/nn.y;cid=ci.xz;ca=ci.x;}else if(an.x>=an.z){d.x=-(nn.y*d.y+nn.z*d.z)/nn.x;cid=ci.yz;ca=ci.z;}else{d.z=-(nn.x*d.x+nn.y*d.y)/nn.z;cid=ci.xy;ca=ci.x;}'+
-  'float bx=dot(gx,d),by=dot(gy,d),a=(yy*bx-xy*by)/det,b=(xx*by-xy*bx)/det;vec3 lt=vec3(1.0),c0=gl_FragColor.rgb;if(uTexL<0.5){vec3 alb=max(diffuseColor.rgb,vec3(0.002));lt=c0/alb;c0=alb;}c0+=a*dFdx(c0)+b*dFdy(c0);c0=floor(clamp(c0,0.0,1.0)*'+(PIX_TONES-1).toFixed(1)+'+0.5)/'+(PIX_TONES-1).toFixed(1)+';'+
+  'float bx=dot(gx,d),by=dot(gy,d),a=(yy*bx-xy*by)/det,b=(xx*by-xy*bx)/det;vec3 lt=vec3(1.0),c0=gl_FragColor.rgb;if(uTexL<0.5){vec3 alb=max(diffuseColor.rgb,vec3(0.002));lt=c0/alb;c0=alb;}c0+=a*dFdx(c0)+b*dFdy(c0);float bdx=mod(cid.x,2.0),bdy=mod(cid.y,2.0),bd=0.125+0.5*bdx+0.75*bdy-bdx*bdy;c0=floor(clamp(c0,0.0,1.0)*'+(PIX_TONES-1).toFixed(1)+'+bd)/'+(PIX_TONES-1).toFixed(1)+';'+
   'float ph=fract(sin(dot(cid,vec2(12.9898,78.233)))*43758.5453);'+PIX_CLS_GLSL(cls)+'gl_FragColor.rgb=c0*(1.0+tn)*lt;}}';
 // The light in the texel (v11.41.2). The person's v11.41.1 screenshots: the ground's light — the player's own point light, the sun's falloff — is a smooth
 // ramp per vertex, and sixteen tones turn a ramp into level rings that travel with the player ("like light sources glow with rigid contours … reminds
@@ -286,6 +286,9 @@ const PIX_GLSL=(grid,cls)=>'if(uTex>0.5){vec3 gx=dFdx(vGrid),gy=dFdy(vGrid);floa
 // vertex colour times the material's, in scope at fog_fragment in r128's Lambert and Phong), the light is what is left after dividing it out; the albedo
 // alone is extrapolated to the cell, posterised and grained, and the smooth light multiplies back — colour in cells, light continuous, countershade
 // still banded since it is in the vertex colour. `banded light` on the effects list (uTexL, texLU) is the v11.41 look, kept to compare.
+// v11.41.3: the person on the smooth light — "rainbow sherbet", the ground's colour patches frozen and the light no longer read as light. So the posterise is
+// dithered instead: a 2×2 Bayer offset per cell (bd: 1/8, 5/8, 7/8, 3/8 on the cell's parity) in place of the half-step rounding, in both modes — a tone
+// boundary becomes a checkered band of cells instead of a rigid contour, the way pixel art has always drawn a gradient. Banded light is the default again.
 // the grid varying (vertex): the position before the model and instance matrices, read at begin_vertex (before the sway, the collapse, the wave), scaled
 // to metres by the object's and the instance's scale; 'world' takes the world position instead so the cells' terrain and the far terrain share one grid
 const PIX_GRID_V=grid=>grid==='world'?'vGrid=(modelMatrix*wpp).xyz;':'vGrid=pGrid*vec3(length(modelMatrix[0].xyz),length(modelMatrix[1].xyz),length(modelMatrix[2].xyz));\n#ifdef USE_INSTANCING\nvGrid*=vec3(length(instanceMatrix[0].xyz),length(instanceMatrix[1].xyz),length(instanceMatrix[2].xyz));\n#endif\n';

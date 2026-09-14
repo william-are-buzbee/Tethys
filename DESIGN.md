@@ -844,7 +844,9 @@ plates and scales on the bodies. Left: C and D.
 **The light out of the texel (v11.41.2).** The posterise banded the light too — the player's point light and the sun's falloff are smooth
 per-vertex ramps, and sixteen tones made them level rings that travel with the player (the person: Morrowind). By default the fragment now
 splits albedo (`diffuseColor.rgb`) from light (the rest), texelises and posterises the albedo alone and multiplies the smooth light back;
-`banded light` on the effects list (`uTexL`) is the old look, off by default.
+`banded light` on the effects list (`uTexL`) is the old look. v11.41.3: the smooth light froze the ground's colour patches (the person: "rainbow
+sherbet"), so the posterise is dithered instead — a 2×2 Bayer offset per cell in place of the half-step rounding, in both modes — and a tone
+boundary is a checkered band of cells, not a contour; banded light is the default again.
 
 ## The far layer
 

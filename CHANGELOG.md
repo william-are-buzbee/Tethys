@@ -3044,3 +3044,22 @@ rings; the same with banded light on: the rings back. `node build.js --test` gre
 
 **Unseen, ask:** whether the smooth light is the one — and whether without the bands a body's countershade still reads as pixel art or now as
 a smooth-lit sprite (the tones are in the vertex colour and still band, but the sun's own Lambert gradient across the flank no longer does).
+
+
+## v11.41.3 — the posterise dithered (14 Sep 2026)
+
+The person on v11.41.2's smooth light, with two videos: "freezing the lighting just makes it look like rainbow sherbet … static … like the
+dirt has changed colours"; the banded light is "distracting to the point I know people would beg me to let them turn it off"; "is it
+possible to have the light at a higher resolution?" The rings were the posterise's hard steps on a smooth ramp; the smooth light took the
+steps out of the light and left the ground's colour patches frozen under a light that no longer read as light.
+
+**Built:** the posterise is dithered (scene.js `PIX_GLSL`, `bd`): a 2×2 Bayer offset per cell — 1/8, 5/8, 7/8, 3/8 on the cell's parity — in
+place of the half-step rounding, in both modes. A tone boundary is now a checkered band of cells instead of a contour, the way pixel art
+has always drawn a gradient; the light still moves and pools. `banded light` is on by default again; off is still the smooth light.
+
+**Seen:** the talus slope with texels and the pixel light on, banded light on — the player's pool over the sand with its edges checkered,
+no rigid ring; the finback's flank the same. `node build.js --test` green on both tiers.
+
+**Unseen, ask:** whether the checkered edges read as light in motion; if the bands are still too visible, the next step is the player's
+own point light computed exactly per fragment (its position, colour and range as uniforms, subtracted from the vertex light and added
+back smooth) so only the sun and the ambient are posterised — a bigger change, held until this is seen.
