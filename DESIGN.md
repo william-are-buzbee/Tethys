@@ -471,6 +471,15 @@ no zipper noise, no per-frame writes) and probes the space every `AU_PT` 0.25 s.
 non-finite value. `updateAudio(dt)` runs last in the frame (main.js), with the camera where it is. Nothing reads a label: place is the
 condition fields at the listener, the geometry round it, the depth.
 
+**The bench** (bench.js, v11.34; `#bench` in the URL, `b` in play or on the menu) is how a sound gets looked at from a machine
+that cannot hear one. It renders each one-shot through the real `thump()` into an `OfflineAudioContext` (`actx`, `AU.dry`,
+`AU.send` and `AU.whiteBuf` swapped and restored in a `finally`), records each of the twenty-one live chains off `master` with
+everything else hushed (`bnHush`/`bnRestore`, six seconds each, real time), and can record the master bus in situ. `AU.bench`
+stops `updateAudio` while it holds the graph. The wavs go by `POST /_bench/<name>` to serve.js, which writes `test/render/`;
+`node test/spectro.js` draws the log-frequency spectrogram and prints peak, rms, crest, centroid, rolloff85, the five band shares,
+attack, decay to −40 dB, steadiness, clipping and DC. **The bench never reimplements a sound** — it calls the game's own code, so
+it cannot go stale; `BN_SHOTS` (the arguments each call site passes) is the single exception and each entry names its site.
+
 **The graph.** Sources → `dry` → `med` (a lowpass: 2.4 kHz at the surface to 600 Hz at 260 m, × `AU_K.cut`, 16 kHz in air, dipped 55% while hurt) →
 `shelf` (a low shelf at 180 Hz: +3 dB with the floor within a metre, +5 while hurt, +2 below the chemocline) → a compressor (−3 dB, 8:1: a guard on
 peaks only — the browser's compressor adds makeup gain by its threshold, and −14 dB lifted the whole bed) → `master` (`AU_K.vol` 0.5 · `Q.vol`; `m` mutes). Also from `dry`: the three **early-reflection taps** (dulled at 2.5 kHz, a delay each, a stereo pan

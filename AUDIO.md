@@ -1,5 +1,7 @@
 # AUDIO — the sound of the water (IDEAS #6), 9 Sep 2026
 
+**v11.34: there is now a bench — `#bench` renders every sound here to a wav and `node test/spectro.js` draws it, so a number in this file can be checked against what it actually makes. The first run's findings are in CHANGELOG v11.34; nothing below has been struck by them yet.**
+
 **Built as v11.14 with the defaults below (the person: "defaults are good"); the numbers as built are in DESIGN, The sound, and the unheard list in CHANGELOG v11.14. This file is the design as proposed.**
 
 The design for the audio overhaul, for the person's strikes before it is built. Downstream of `PLANET.md` (no lamps, no magic:

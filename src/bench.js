@@ -151,10 +151,11 @@ function bnRun(fn,what){
 addEventListener('keydown',e=>{
   if(e.code==='KeyB'&&!e.ctrlKey&&!e.metaKey&&(mode==='menu'||mode==='play')&&!showStats){bnOpen(!bench.on);return;} // not while the readout is open: v-b tune the water there
   if(!bench.on)return;
-  if(e.code==='Digit1')bnRun(bnShots,'one-shots');
-  else if(e.code==='Digit2')bnRun(bnNoises,'noise + irs');
-  else if(e.code==='Digit3')bnRun(bnBeds,'beds');
-  else if(e.code==='Digit4')bnRun(()=>bnLive(BN_LIVE),'live capture');
-  else if(e.code==='Digit0')bnRun(()=>bnShots().then(bnNoises).then(bnBeds),'everything');
+  const k=e.code&&e.code.indexOf('Digit')===0?e.code.slice(5):e.key; // Digit1 or '1': a synthetic keydown may carry only one of them
+  if(k==='1')bnRun(bnShots,'one-shots');
+  else if(k==='2')bnRun(bnNoises,'noise + irs');
+  else if(k==='3')bnRun(bnBeds,'beds');
+  else if(k==='4')bnRun(()=>bnLive(BN_LIVE),'live capture');
+  else if(k==='0')bnRun(()=>bnShots().then(bnNoises).then(bnBeds),'everything');
   else if(e.code==='Escape')bnOpen(false);});
 if(HASH_FLAGS.indexOf('bench')>=0)addEventListener('click',function once(){removeEventListener('click',once);bnOpen(true);bnRun(()=>bnShots().then(bnNoises),'one-shots + noise (press 3 for the beds)');}); // a context needs a gesture; #bench arms the first click

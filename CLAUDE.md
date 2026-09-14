@@ -44,6 +44,7 @@ node serve.js            static server; open http://localhost:8080/dev.html (edi
 | `test/live.js` | the ecology where the player is: four game days of clutches laid and hatched with cells loaded, then a table of every hunter's hunger against the distance to its nearest meal | `node test/live.js`, `TIER=low …` |
 | `test/smoke.js` | boots, walks the bestiary and the lab, swims all three clades headlessly; fails on any runtime error | `node test/smoke.js`, `TIER=low …` |
 | `test/preview.js` | renders creature builders to `test/preview/<id>.png` with real geometry (`test/geo.js`); not in `--test` | `node test/preview.js sickle trap`; `FLORA=1 … reed`; `SPEC=f.json …` |
+| `test/spectro.js` | the sound bench's wavs (`test/render/`, written by `#bench`) as spectrograms and a table of numbers; not in `--test` | `node test/spectro.js`; `node test/spectro.js shot_` |
 | `test/ident.js` | compiled specs against old hand builders; skipped without `OLD=path` | `OLD=… node test/ident.js` |
 
 Env vars: `TIER` (`low`), `PICK` (menu pick for smoke), `T0`, `OLD`, and for preview `POSE TILE T SPD PALV COATS NORIG SPEC FLORA DEPTH`.
@@ -76,8 +77,8 @@ shell.html         the HTML/CSS shell; <!--SCRIPTS--> is where the build puts th
 src/order.txt      build order (one shared scope, so only load-time statements care)
 src/*.js           the game, below
 build.js build.py  the build (Node / Python, in step)
-serve.js           static server for looking at the game; not part of the game
-test/              headless tests, the THREE stub, real geometry for previews, vendored acorn
+serve.js           static server for looking at the game, and the sink the sound bench posts its wavs to; not part of the game
+test/              headless tests, the THREE stub, real geometry for previews, the png writer and font, vendored acorn
 *.md IDEAS.txt     the design docs and the person's backlog, below
 .claude/           settings (deny/ask rules) and the launch config
 ```
@@ -105,6 +106,7 @@ test/              headless tests, the THREE stub, real geometry for previews, v
 | combat.js | holds (a rope between a grip and a hit capsule), the struggle, bites, wounds that bleed, blood, the player's grab and bite |
 | effects.js | the effects list (`e`): cosmetic systems switched live, saved in `localStorage['tethys.fx']` |
 | menu.js zoo.js lab.js | the clade pick screen; the bestiary (`#zoo`, `z`); the creature lab (`#lab`, `l`; `p` places the spec in the world) |
+| bench.js | the sound bench (`#bench`, `b`): every sound rendered to a wav and posted to serve.js for `test/spectro.js` to draw |
 | input.js main.js | pointer lock, keys, touch; boot, the frame loop, the debug readout |
 
 Docs, most upstream first. When a doc's Open list says a choice is the person's, it is: ask, don't guess.
@@ -232,9 +234,9 @@ Docs, most upstream first. When a doc's Open list says a choice is the person's,
 
 ## Dev tools in the game
 
-- URL: `#low` `#high` (tier), `#zoo` (bestiary), `#lab` or `#lab=<base64 spec>` (the lab).
+- URL: `#low` `#high` (tier), `#zoo` (bestiary), `#lab` or `#lab=<base64 spec>` (the lab), `#bench` (the sound bench; it arms the first click, since an audio context needs a gesture).
 - Keys: `z` bestiary (left/right step, space strike, s cruise, drag turn, wheel zoom); `l` lab, `p` place the spec; `e` the effects
-  list; `f` first person; `r` or right mouse grab, click bite; `Q` the clade ability; `M` mute.
+  list; `b` the sound bench (1 one-shots, 2 noise and irs, 3 the beds, 4 a live capture; `node serve.js` must be running); `f` first person; `r` or right mouse grab, click bite; `Q` the clade ability; `M` mute.
 - Readout: backquote (also `'` or F3): fps, frame ms, draws, tris, cells, far regions, creatures, physics ms, render ms (when it
   runs away from the rest, the GPU is the limit), heap, medium, tide, hour, sun, moon, light, cloud, rain; the fog, audio and
   ecology lines. With it open the keys tune (`FOG_TUNE`: 1-2 … o-p t-y u-i; `AU_TUNE`: g-h j-k v-b); Backspace resets.

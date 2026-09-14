@@ -2496,3 +2496,56 @@ it is" — but `k` is the audio tuner's and `l` opens the lab, and in fact **eve
 **Unseen:** a real shower at night in the game — the change is arithmetic in one term and was verified against the readouts
 rather than by waiting for weather. Ask whether a rainy night now reads as "dimmer" rather than "blind", and whether the light
 shower (0.215) and the full one (0.187) are far enough apart to feel like different weather.
+
+## v11.34 — the sound bench: what a sound is, as a picture (13 Sep 2026)
+
+Nobody working on this game from here can hear it. Every number in audio.js was chosen blind (AUDIO.md says so at its head), and
+the next thing the person wants is *more* sound — creature voices, combat, the punctuation. So before making any of it: an
+instrument. This version adds nothing the player hears. It adds the ability to look at what they already hear.
+
+**`src/bench.js` (new), `#bench` in the URL or `b` in play or on the menu.** Renders every sound the game makes to a wav and
+posts it to serve.js, which writes it under `test/render/`. Three engines:
+
+- **offline** — a one-shot through the real `thump()`, into an `OfflineAudioContext`, faster than real time. `actx`, `AU.dry`,
+  `AU.send` and `AU.whiteBuf` are swapped out from under audio.js's own helpers and put back in a `finally`; one shared scope
+  makes this three lines instead of a refactor.
+- **solo** — one *live* chain (the ones `initAudio` built) recorded off `master` with every other gain at zero, the medium wide
+  open and the reverb shut. Real time, six seconds, twenty-one chains, about two minutes.
+- **live** — the master bus exactly as the person hears it, wherever the player is standing, space and all. The take names itself
+  by depth and the condition fields, not by a place (PLANET: no place has a name).
+
+**The rule the bench obeys: it never reimplements a sound.** A bench with its own copy of the recipes would measure the copy, and
+the copy would go stale the first time a knob moved. `BN_SHOTS` is the one place a value is repeated — the arguments each
+`thump()` call site passes — and each entry names its call site so a grep catches drift.
+
+**`test/spectro.js` (new)** turns the wavs into `test/render/<name>.png`: the envelope over a log-frequency spectrogram from 20 Hz
+to nyquist across a 78 dB range, the numbers under it, a table on stdout and `_sheet.png` with every panel stacked. The numbers
+are peak, rms, crest, spectral centroid, 85% rolloff, the five band shares (sub/low/mid/hi/air), attack, decay to −40 dB,
+steadiness, clipping and DC. **`test/png.js` (new)** is the PNG writer test/preview.js has had inline since v11.10, plus a 5×7
+font, so the next tool that draws a picture does not write it a third time; preview.js keeps its own copy and is left alone.
+
+**Two one-line changes elsewhere.** `updateAudio` bails on `AU.bench` — the 20 Hz tick would fight the bench for every gain.
+serve.js takes `POST /_bench/<name>` and writes it to `test/render/` (the name is validated as a plain file name; 64 MB fuse).
+test/lint.js learns `DataView`, `Blob`, `fetch` and `alert`.
+
+**Seen: all forty sounds, rendered and looked at.** The bench and the pictures are what this version is, and both were run end to
+end — 13 one-shots, 21 beds, 4 noise buffers, 2 impulse responses. What the first look found, none of it fixed here:
+
+- **Eleven of the thirteen one-shots are the same sound.** Centroids 62–378 Hz, decay to −40 dB between 260 and 385 ms, crest
+  17–20 dB. A knock on rock, a landing on sediment, a bite, a hold torn free and the finback's pulse are one low thud at five
+  volumes. `shot_into_weed` (4.3 kHz, noise only) is the only one that is its own thing.
+- **`thump`'s noise transient is nearly absent.** `shot_knock_rock` asks for a burst at 1.4 kHz and measures 28/72/0/0/0 — nothing
+  at all above 500 Hz in the mean. It is there in the spectrogram, a sliver at t=0, but a Q-1.2 bandpass on white noise passes so
+  little energy beside a 400 ms chirp that the "knock" has no knock in it.
+- **The chirp ends on a visible edge.** `exponentialRampToValueAtTime(0.001)` then `stop()` 50 ms later leaves a step at −60 dB;
+  it draws as a vertical streak at 0.4 s in every one-shot panel.
+- **`bed_crackle` is the best thing in the game's sound** — a dense broadband tick field, crest 37 dB, the shape snapping shrimp
+  actually make — and it is gated to near-inaudibility in play (`0.025 * nut`, rms −56 dB at the bench's fixed 0.5).
+- `noise_white` clips in the render because `auNoise` makes it at ±1 and the bench renders buffers at unity; in the game it only
+  ever passes through a gain. Expected, not a defect.
+
+**Unseen, ask in this order:** (1) whether the forty wavs, played back, agree with what the pictures say — the whole point of the
+bench is that the person's ear and these numbers should be describing the same object, and if they are not it is the bench that is
+wrong; (2) whether `bed_crackle` should be let up in play; (3) the live capture (`4` in the panel) has been built but not taken —
+it wants a real place and a real swim; (4) whether the one-shots get fixed before the creature voices are built or after, since
+the voice synthesiser will want the same transient that `thump` is currently losing.

@@ -14,6 +14,16 @@ every top-level name with its line is `src/INDEX.md` (generated). Read a DESIGN 
 
 ## Where things stand
 
+**v11.34 (13 Sep): the sound bench.** CHANGELOG v11.34. Nothing the player hears changed. `#bench` (or `b`) renders every
+sound the game makes to a wav — one-shots through the real `thump()` offline, the twenty-one live chains soloed off `master`, and
+the master bus itself in situ — and posts them to serve.js, which writes them under `test/render/`. `node test/spectro.js` turns
+those into spectrograms and a table of numbers (peak, rms, crest, centroid, rolloff, band shares, attack, decay, steadiness,
+clipping). The point is that from here nobody can hear the game; the bench cannot say whether a sound is good, but it says
+plainly whether it is what it was meant to be. **The first run found that eleven of the thirteen one-shots are the same low thud
+(centroid 62–378 Hz, decay 260–385 ms) and that `thump`'s noise transient barely survives its bandpass — the "knock on rock"
+has no knock in it.** Nothing was fixed; the findings are the CHANGELOG's Unseen list. **Ask the person to play the forty wavs
+and say whether their ear and the pictures agree** — if they do not, the bench is what is wrong.
+
 **v11.33.1 (13 Sep): a rainy night keeps three quarters; the daylight tuner is o-n.** CHANGELOG v11.33.1. The dark night
 shots were the **rain**, not the night — rain reached the night twice (it inflates `cover`, and the night branch took 0.7 of that off
 the moon), so a full shower left half of a clear night. `coverN` in atmosphere.js `updateSky` is the cover rain did not put there,
