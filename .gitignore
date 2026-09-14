@@ -9,6 +9,8 @@
 
 # --- test output (`node test/preview.js` renders creature PNGs here) ---
 /test/preview/
+# the sound bench (src/bench.js) writes wavs and spectrograms here
+/test/render/
 
 # --- dependencies (none today: three.js loads from cdnjs; acorn is vendored in test/ on purpose and stays tracked) ---
 node_modules/

@@ -29,6 +29,7 @@ const GLOBALS=new Set(('THREE window document navigator location screen innerWid
   'requestAnimationFrame setTimeout clearTimeout setInterval clearInterval addEventListener removeEventListener console '+
   'Math Object Array Number String Boolean JSON Date Error RegExp Symbol Promise Set Map WeakMap Function '+
   'Float32Array Float64Array Uint8Array Uint16Array Uint32Array Int8Array Int16Array Int32Array ArrayBuffer '+
+  'DataView Blob fetch alert '+ // the sound bench (bench.js) writes a wav and posts it
   'isFinite isNaN parseInt parseFloat undefined NaN Infinity AudioContext webkitAudioContext arguments '+
   'atob btoa escape unescape encodeURIComponent decodeURIComponent history prompt').split(' '));
 

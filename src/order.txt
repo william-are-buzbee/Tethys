@@ -23,5 +23,6 @@ effects
 menu
 zoo
 lab
+bench
 input
 main

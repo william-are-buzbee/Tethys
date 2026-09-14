@@ -198,7 +198,8 @@ function auTick(dt,P,play){
 }
 // The frame: the events (a squeeze, a landing, a knock on rock, a brush into weed), then the tick when it is due
 function updateAudio(dt){
-  if(!AU.on)return;const P=player,play=mode==='play'&&!P.dead; // ticks while muted too, so unmuting has nothing to catch up
+  if(!AU.on||AU.bench)return; // AU.bench: the sound bench (bench.js) has the graph — the tick would fight it for every gain
+  const P=player,play=mode==='play'&&!P.dead; // ticks while muted too, so unmuting has nothing to catch up
   if(actx.state==='suspended'&&actx.resume)actx.resume();
   if(play&&P.clade){
     if(P.jetT>AU.jetT+0.2&&P.sub>0.3)thump(0.12*P.sub,320,120,null,0.7);AU.jetT=P.jetT; // the jet's squeeze: a burst of water (jetT wraps to 0.5)
