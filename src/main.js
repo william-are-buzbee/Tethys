@@ -24,7 +24,7 @@ const FOG_TUNE=[
   {k:'reach',lo:'Comma',hi:'Period',step:20,min:20,max:1600,d:0},
   {k:'placeMix',lo:'Semicolon',hi:'Slash',step:0.05,min:0,max:1,d:2},
   {k:'dlAt',lo:'KeyO',hi:'KeyN',step:0.1,min:0,max:1,d:1}, // 1: daylight at the sample point; 0: at the camera (with placeMix 0, the pre-v8 uniform veil). v11.34: was o-p, and p places the lab's creature, so with the readout open in the lab it did both. KeyO has no other use and KeyN none at all — every other letter is taken (the game's, or AU_TUNE's g-h j-k v-b)
-  {k:'cau',lo:'KeyT',hi:'KeyY',step:0.1,min:0,max:4,d:1}, // the caustics' strength (v11.13; 0 is none)
+  {k:'cau',lo:'KeyT',hi:'KeyY',step:0.1,min:0,max:4,d:1}, // the caustics' contrast (v11.35: 1 is the physical focusing, 0 none)
   {k:'shd',lo:'KeyU',hi:'KeyI',step:0.05,min:0,max:1,d:2}]; // the bodies' shadows' strength (v11.13; 0 is none)
 function fogTune(code){
   if(code==='Backspace'){Object.assign(SEA_FOG,FOG_DEF);audioTune(code);}

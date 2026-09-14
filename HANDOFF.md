@@ -1,5 +1,7 @@
 # HANDOFF — tethys
 
+**v11.35 (13 Sep 2026): the caustic is derived.** The 13 Sep effects audit (the person's ask: every switch on `e`, bugs and fit with the low-poly style) found v11.13's caustic was a gain that clipped the sand white, at the facets' own scale, on its own clock. It is now `1/|det(I − d·c·H)|` of a ripple layer that lives only in the light (`CAU_R`, scene.js; the swell can't focus in the top 30 m), riding the swell's orbital carry, quantised to quarter steps, mean 1, contrast `SEA_FOG.cau` 1.0. Seen on the menu's sand only; the person should look at a darker floor at 5–15 m in play first (CHANGELOG v11.35, Unseen). The audit's other findings are not built and stand as a list in the conversation of 13 Sep: the shadow map is never freed when `shadows` is off; `clouds` off leaves rain from a clear sky; the shimmer is a canvas radial gradient (the most foreign thing in the effects list); the soft shadow edge is the more foreign half of an otherwise in-style shadow; `CLAUDE.md` still names `updateCasters`.
+
 Where things stand, newest first. `CLAUDE.md` is the entry point — what this is, how to build, test, look and deliver, the
 architecture, the conventions, what bites, the person — and is read before this. You (Claude) have no memory of the previous
 conversations; the files in this folder are the state. This file is short on purpose. The upstream design is `PLANET.md` (the planet and the rules its life obeys; when the game

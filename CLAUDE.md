@@ -211,7 +211,7 @@ Docs, most upstream first. When a doc's Open list says a choice is the person's,
   its first element is a number, so never write NaN into them. Chain buffers hold ≤39 points and ≤160 segments per rig.
 - Every tinted material's fragment carries the light block (scene.js `LIGHT_GLSL` in `addTint`): caustics and the bodies' shadows,
   reading `vFogPos`, `uSunW`, `uCastA/B` (typed arrays, never NaN). `LIGHT_FX` false strips it if the GLSL fails (a black or
-  magenta world at boot). `thinLight` regexes r128's Lambert chunk and warns rather than fails. `updateCasters` runs after `assignLights`.
+  magenta world at boot). `thinLight` regexes r128's Lambert chunk and warns rather than fails. `updateShadow` and `updateShadowS` run after `assignLights`.
 - The fog is not three's: scene.js rewrites the fog chunks and shares uniforms through `THREE.ShaderLib`, pinned to r128's
   `cloneUniforms`. The camera goes in by hand (`uFogC`/`uFogR`); three's `cameraPosition` is (0,0,0) on Lambert/Basic/Points in
   r128 — never read it in a shared chunk. Fog is per material: `MAT`/sway/`MATFAR` are "small" (fade sooner), `MATBIG`/

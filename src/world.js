@@ -305,7 +305,7 @@ function waterColor(s,out){const c=wcolAt(-s.h);
 // undersides and down-tilted faces are lit water-dark rather than black — 1.2 makes the light field top:side:bottom
 // 1.8:1.5:1.2, a diffuse underwater light with the sun as a 2-3:1 key on top; at 0.8 the flanks of the big rocks read as
 // black polygons the fog could not soften (v8.3 screenshots). Every number is live-tunable from the readout (main.js, `FOG_TUNE`).
-const SEA_FOG={dens:0.0068,share:0.88,shareS:0.88,far:0.0015,dlAt:1.0,placeMix:0.4,reach:260,bright:1.0,sun:0.8,ground:1.2,cau:1.3,shd:0.55}; // cau, shd (v11.13): the caustics' and the bodies' shadows' strength (scene.js LIGHT_K; the readout's t-y and u-i)
+const SEA_FOG={dens:0.0068,share:0.88,shareS:0.88,far:0.0015,dlAt:1.0,placeMix:0.4,reach:260,bright:1.0,sun:0.8,ground:1.2,cau:1.0,shd:0.55}; // cau, shd (v11.13): the caustics' and the bodies' shadows' strength (scene.js LIGHT_K; the readout's t-y and u-i)
 // above the surface: one sky, one haze, the same two-population curve (about 47% contrast at 300, 13% at 600, 4% at 1000).
 const AIR={fog:[0.72,0.80,0.86],dens:0.0030,share:0.6,far:0.0022,zenith:[0.34,0.55,0.78],hemiSky:0xc4dcea,hemiGround:0x6e6a58}; // the noon sky (the approved v6 look); v11 reads it as the day keyframe of SKYC
 // The sky by the sun's height (v11, atmosphere.js updateSky): keyframes on sin(altitude) — night, deep twilight, the sun on the

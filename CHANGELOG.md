@@ -2585,3 +2585,46 @@ it has never been looked at, and `FIN_TPROF`'s taper was tuned blind; (2) whethe
 cut at the terminator and the person may want a softer one; (3) whether any *other* creature's self-shadow still looks wrong from
 below (the ringmouths' arms and the coilshell's whorl were never checked); (4) the hand-written normal offset (`SHM_P.w`, 2 texels)
 could probably come down now that `nl` carries the away-facing case, which would sharpen contact shadows — not touched here.
+
+
+
+## v11.35 — the caustic derived: the sun focused by the wind's ripples (13 Sep 2026)
+
+From the 13 Sep audit of the effects list, the person's own finding: caustics "make the game look ridiculously good but also somehow
+detract from what makes everything else work". The diagnosis had three parts. v11.13's caustic was a *gain* — `× (1 + 1.3·k)`, never
+below 1 — so the floor's mean light went up ~1.4× and the sand clipped to white; that clip was most of the "ridiculously good". Its
+period was ~15 m, the terrain's own facet scale, so it competed with the facets rather than sitting on them as texture (and it is
+the wrong size by 10× for what it claims to be). And it ran on its own clock, unrelated to the surface it was supposed to be. The
+person agreed to energy conservation, a smaller and slower net, quantisation, and derivation, and said the old one need not survive.
+
+**Derived, honestly.** The web on a floor is `1/|det J|`, `J = I − d·c·H`: the Jacobian of the map from a surface point to where its
+refracted ray lands (`d` depth, `c` = 1 − 1/1.33, `H` the surface height's Hessian). Mean 1 by construction: light is moved, never
+made. The first thing the derivation showed is that `WAVES` can't do it — the shortest swell (L 6, A 0.06) has a focal length of ~60 m
+and never focuses in the top 30 — so the web must be the wind's ripples, 1–3 m, which the surface mesh cannot hold anyway (it fades
+waves under seven samples a wavelength). `CAU_R` is that ripple layer, living only in the light: `Q.cau` trains round `WIND_A`
+(3 high, 2 low), each at its own deep-water speed on `uTime`, amplitude × `uChop` — a calm goes glassy and the web dies, which is
+true. The Hessian is analytic per train; the surface point read is the one the fragment's beam came through (up `uSunW` by `d`).
+Damped by `exp(−d/CAU_D)` for the beam's spreading (contrast fades, mean stays 1). Clamped [`CAU_LO`, `CAU_HI`] and quantised in
+steps of 1/`CAU_Q` — the facets' vocabulary, as the cloud deck's three-step light already was. Applied by the beam's share, the canopy,
+whether the beam reaches the face (`nl`'s rule from v11.34.1) and a fade from the eye (`CAU_FAR`). `SEA_FOG.cau` is now a contrast,
+1 physical (was a strength, 1.3); `LIGHT_K` reads it instead of carrying its own literal; the tuner's `t-y` still moves it. Seven
+sines a fragment against the old six nested ones. The tinted materials take `uChop` (`LIGHT_PARS`, `addTint`). Knobs: `CAU_R`,
+`CAU_D` 18, `CAU_Q` 4, `CAU_LO` 0.75, `CAU_HI` 2, `CAU_SWELL` 4, `CAU_FAR` 18–45, `Q.cau` 3/2 (scene.js); `SEA_FOG.cau` 1.0 (world.js).
+
+**Seen, three rounds on the menu's sand in the app's browser at 800×450.** Round one (three trains, LO 0.5, steps of ½): the scale
+was right at last, but three fixed sine trains interfere into a *lattice* — a regular grid of dark ovals — and on sand that white
+the ×1.5 lines clip to nothing while the ×0.5 cells show, so the net read as its own negative. Round two: the ripples now ride the
+swell — the surface point is carried by the horizontal orbital displacement of the longest `WAVES` (~2 rad of ripple phase from
+the 46 m swell) — and the cells came down to one quiet step; the lattice loosened but a 46 m carry shifts a 10 m view almost
+uniformly. Round three: the carry takes the four longest waves (the 15 and 8.5 m chop distort within a view), `CAU_Q` 4 with LO
+0.75 (a quarter step down for the cells), and the far sand's speckle — a metre net aliased at 40 m, which the 15 m pattern never had —
+fades by distance. The result: cells that vary in shape and wander, lines where the sand is not clipped, nothing far. No shader
+errors on either tier; `node build.js --test` green on both. The person's real test — a darker floor, 5–15 m, in motion — was
+not possible from here: the pane's capture breaks after pointer lock.
+
+**Unseen, ask in this order:** (1) whether the net reads as a net on a darker floor (mud, rock, the deep sand) in play, and at what
+depth it is best — the ripple amplitudes in `CAU_R` set the focal depth (~13 m for the 1.6 m train) and were chosen from physics,
+not a look; (2) whether the quantised edges crawl objectionably as the trains move (the cloud deck's steps do the same and were
+accepted); (3) the sand's albedo: it has no headroom above 1 with any caustic, and the old gain hid that by clipping everything —
+the person may now find the sand itself too pale; (4) the low tier's two-train web on a phone; (5) whether the shafts' flicker and
+the shimmer should now read the same ripple field, since the audit named four unrelated clocks for one surface and this fixes one.

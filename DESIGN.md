@@ -661,15 +661,27 @@ fragment in the shaders that already exist, from what every fragment already car
 map. Everything below is unseen. Knobs live where the numbers are; the two strengths are on the readout's tuner (`t-y` caustics,
 `u-i` shadows, `SEA_FOG.cau/shd`, world.js).
 
-**Caustics (`scene.js` `LIGHT_GLSL`, in `addTint` for every tinted material but `GLOW`).** Three sine bands in world xz at 0.42 (cells
-of ~3 m), each nested with a second sine so the lines wander, drifting downwind (`WIND_A`) and animated on `uTime`; `k = pow(1 −
-|a+b+c|/3, e)` with `e` 4.5 at the surface and 2 at depth, so the web is sharp under the surface and a soft mottle further down. Scaled
-by depth `exp(−d/14)` (strong to −10, a ghost by −30, gone by −45; `d` from `uTint.x − vFogPos.y`, so the tide is in it), by an onset
-`clamp(0.7d − 0.2)` (nothing at the surface itself — a raft's pad at −0.45 barely; full at 1.7 m), by `max(fn.y, 0)` of the face normal
-(a floor takes it fully, a blade side-on hardly, a belly seen from below never), by the beam's share `uSunW.w` and by `1 − 0.85·canopy`
-(the water map's alpha). Multiplicative on the lit colour (`× (1 + cau·k·…)`, `cau` 1.3), so the albedo stays and the sun's colour is
-already in it. On low, `Q.cau` 1 keeps one band (a ripple, not a web). Cost: fill only, ~30 ops a fragment when the sun is up; the block
-is skipped whole at night and under a shower (`uSunW.w` < 0.002).
+**Caustics (`scene.js` `CAU_GLSL` in `LIGHT_GLSL`, in `addTint` for every tinted material but `GLOW`; v11.35, redone from the 13 Sep
+effects audit).** Derived, not painted. The web on a floor is the sun focused by the surface's curvature: for the surface point the
+fragment's beam came through (up the refracted sun `uSunW` by the depth `d`, `uTint.x − vFogPos.y`, so the tide is in it), the map
+from surface to floor has Jacobian `J = I − d·c·H` (`c` = 1 − 1/1.33, the paraxial refraction factor; `H` the height's Hessian) and the
+irradiance is `1/|det J|` — mean 1 over the floor by construction, so light is redistributed and never added (v11.13's was a gain,
+`1 + 1.3·k`, and blew the sand to white: that was the "looks ridiculously good" of the audit). The swell can't do it — `WAVES`' shortest
+(L 6, A 0.06) focuses at ~60 m, never in the top 30 — the web is the wind's ripples, 1–3 m, which the surface mesh can't hold anyway;
+so `CAU_R` is that ripple layer, living only in the light: `Q.cau` trains (3 high, 2 low: the same web, one train fewer) of [L, A at
+full chop, offset from `WIND_A`] = [1.6, 0.02, 0], [1.05, 0.012, 0.75], [2.5, 0.027, −0.6], each at its deep-water speed √(gk) on `uTime`,
+amplitude × `uChop` (a calm goes glassy and the web dies). The ripples ride the swell: the surface point is carried by the horizontal
+orbital displacement (`A sin`, along the wave) of the `CAU_SWELL` 4 longest `WAVES` — ~2 rad of ripple phase from the 46 m swell alone —
+which is what keeps three fixed trains from interfering into a lattice (seen: without it, a grid of ovals). The Hessian is analytic
+(`−A k² sin · dir⊗dir` per train), damped by `exp(−d/CAU_D)` (18 m; the beam's spreading by scatter — the contrast fades, the mean
+stays 1; at the surface `d·c·H → 0` gives 1 on its own, no onset needed), the result clamped to [`CAU_LO` 0.75, `CAU_HI` 2] and
+quantised in steps of 1/`CAU_Q` (4): the cells one quiet step down, the lines up to four up, drawn in the facets' vocabulary as the
+cloud deck's three-step light is. Applied as `× (1 + cau·(I − 1))` (`cau` = `SEA_FOG.cau` 1.0, physical; the readout's `t-y`), by the
+beam's share `uSunW.w`, `1 − 0.85·canopy`, whether the beam reaches the face (`clamp(dot(fn, sun)·2.5)`, the shadows' `nl` rule) and
+a fade from the eye over `CAU_FAR` 18–45 m (a metre-scale net at 40 m is a pixel speckle, and the eye would not resolve it). `wd`
+gates the block to under water. Cost: 7 sines a fragment (4 carry, 3 trains) — fewer than v11.13's 6 nested; skipped whole at night
+and under a shower (`uSunW.w` < 0.002). Seen on the menu's sand only (13 Sep): the sand's albedo has no headroom above 1, so there the
+net shows mostly as its cells; the lines want a darker floor.
 
 **The sun under water (`atmosphere.js` `updateSky` → `SUN_W`).** The luminary refracted at the surface, `sin θw = sin θa / 1.33`, so a
 setting sun's beam under water is never flatter than 48° from the vertical; `w` = the beam's share of the light,
@@ -1493,7 +1505,7 @@ distance — a designed pass, not a knob. `render` is CPU submission; the GPU ru
 - **Quality tier `Q` (scene.js): numbers only, never code paths.** Auto: touch + screen < 900px → low. Force with
   `#low`/`#high` in the URL — the hash is a flag list since v11.31.4 (scene.js `HASH_FLAGS`/`HASH_TIER`, `&` or `,` between them),
   so `#low&lab=<spec>` and `#low&zoo` work and the lab writes the tier back into the hash it rewrites. Low: draw distance 1000, 45% flora, 60% creatures, 2 pool lights, Lambert terrain, no AA,
-  96² surface, 36-unit far grid, 2 shadow casters, 4 light shafts, a one-band caustic (v11.13: `casters`, `shafts`, `cau`).
+  96² surface, 36-unit far grid, 2 shadow casters, 4 light shafts, a two-train caustic (v11.13: `casters`, `shafts`, `cau`; v11.35: the same web one train fewer).
 - The person tests on desktop and wants it "fantastically smooth"; mobile is secondary and may sacrifice things. The
   cadence agreed: content freely, a performance pass whenever the readout says frame time is creeping. Readings v5
   (thickest kelp, desktop, high): 120 fps, 8.3 ms, 130 draws, 416k tris. **Readings v8.3 (the arch canopy, desktop,
