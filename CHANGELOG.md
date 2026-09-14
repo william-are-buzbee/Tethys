@@ -3242,3 +3242,60 @@ broad and soft — `WAVE_BRK` and the map's blur are the knobs); (2) the lagoon 
 a quarter of the open sea's, the swell three quarters; (3) the weed forest's frame time at (330, 0) — the sway shader's fold now
 fetches the floor map and takes five `pow`s per vertex; the last pass had it at 3.2 ms on the 4060; (4) whether the whitecaps
 (halved, by the chop) are missed in the trades.
+
+## v11.45 — the line from above: the reflection by direction, the air's far colour the sky's, the long swell (14 Sep 2026)
+
+The person's ask: the water line seen from above, good with something in the distance, odd for depth over open water. The audit is
+WATER.md Part 3 (measured down the screen's centre column at 1280×720: the sea's edge was the one constant every air fragment converges
+to, the horizon keyframe, which the dome never shows — a pale rim under a darker sky, fixed at 992–1440 m so it widened with height until
+from 40 m there was no line at all; and between 100 m and the rim nothing varied but the fog, since the reflected sky was one colour for
+every direction and a facet's tilt changed nothing of the topside). Their answers: the line's side my call ("whatever is more believable
+given the planet"), facets visible, the air my call, a long swell for "maximum compatibility and most believable".
+
+**The topside reflection by direction** (atmosphere.js `SURF_MAT`, `REFL_FACET`, `REFL_GRAZE`; WATER.md item J). The reflected sky is
+`skyLite` of the eye reflected off the *facet* (world normal by `uFogR`, clamped to the horizon), not `uSkyR`: the zenith at the feet, the
+horizon far off, and every facet a different elevation of the sky. **Composited as a reflection**: alpha is the fraction of the column the
+surface covers, `uBody + R − uBody·R` (the foam whole), and the colour is divided by it, so the blend gives exactly `R·sky + (1−R)·(body
+over the column)`. To v11.44 the reflection was scaled by the body's alpha too — a third of itself at 25°, the facets' swing lost in the
+column: the first cut of this version (the direction alone) gave ±2 levels between facets at 140 m, measured, and a sea still smooth.
+R is the facet's own Fresnel where the view is steep (`cm` above `REFL_GRAZE[1]` 0.35, 20° down) and the mean surface's at grazing (below
+0.12, 7°), where the per-facet weight was the v11.7 tennis-court wedges. **Seen:** from 15 m looking across the swell the rows converge to
+the horizon; looking along it (north, where the facets tilt sideways and reflect the same elevation) the rows run diagonally; from 3 m
+looking down, faceted bands in the mid-distance and a smooth near sea (the reflection is 2% there — physics, and the same as before).
+At the line the sea now reflects the sky a few degrees up, darker than the horizon's haze: the sea's edge is 166,182,194 under a sky of
+181,196,208 (was 183,201,216 under 180,196,208).
+
+**The air's far colour is the sky's, by direction** (scene.js `skyLite2`/`skyLite`/`skyFar`, `FOG_SKA..F`, `fogAir`). The reduced sky
+moved from the surface's shader into the fog chunk, reading six shared vec4s (`uSkA..uSkF`: zenith+dayK, horizon+cover, glow+moonL, the
+sun's colour, the sun's and the moon's directions; typed arrays, written by `pushSky`), and `fogAir` converges to `skyFar(rd)` — the sky in
+the ray's direction with the haze band integrated to infinity, exactly what the dome draws there — instead of `uFogAC`'s constant. The rule
+the veil has had under water since v11.27, for air. `skyFar` takes the sky *without* the deck's mean shade (`skyLite2(d,0.0)`): the dome's
+gradient between its clouds is unshaded, and with the shade the cone stood as a silhouette 15% darker than the sky beside it from 1500 m
+(seen, fixed). **Seen:** the far sea, the far kelp and the shore end in the sky behind them at 1, 15 and 40 m; toward the sun the sea's edge
+takes the glow and the line softens into it; away from it the sea ends darker than the sky. Cost: `skyLite` per fragment in air (~40 ALU:
+two `pow`s to 300 and 10, an `exp`, the gradient), unmeasured.
+
+**The long swell** (world.js `WAVES[5]`): 150 m, 0.30 m, period 9.8 s, from a far storm upwind in the trade belt (`WIND_A`+0.08), so it
+strikes the flank the exposure field already gives surf, cones and spray to — a swell from another belt would put the surf on a shore the
+geology calls a lee (WATER.md L, answered by compatibility). Last in the table: the caustic's carry (`CAU_SWELL` 4), the spray and the
+audio index the first entries and keep the 46 m as "the swell"; every sum reads the whole table (physics, the surface, the fog chunk's
+level, the sway fold, the rafts). The grid draws it whole to ~460 m and fades it by 1.4 km; `WAVE_AMP` is 1.47 now (the whitecap
+threshold `vH/uAmp` shifts with it). One more sine per vertex in the sway shader.
+
+**The air, a step clearer** (world.js `AIR`): `dens` 0.0030 → 0.0024, `far` 0.0022 → 0.0018. With the fog converging to the sky the
+sea's edge can no longer show, so the density is only the visibility; a trade-wind day over a warm sea is clear, and the world is 3.4 km
+across. Tried at 0.0022/0.0016 first (frames kept): from 40 m the horizon is still a soft band either way — the far cut at 992–1440 m
+is the limit, not the density — so a modest step, the look kept.
+
+**The near slab** (`SURF_MAT`, the back face from air): the crest seen through from a trough is the column's colour now — `fogVeil`
+along the eye refracted into the water to the floor or the veil's reach, darkened downward as the fog chunk paints the seabed — not black
+plus a constant. Rarely reached: from 0.5 m the dark region across the bottom of the view is the camera *under* the wave (the underside,
+the deep's dark veil), which is right.
+
+Also: CLAUDE.md "Look at it" says how the loop was driven with the pane hidden (stub `requestAnimationFrame`, hold the player, call
+`loop(last+16.7)`, post the canvas to serve.js); the frames of this version are `test/render/hz_*.png` (before) and `v45b_*.png` (after).
+`node build.js --test` green on both tiers. **Unseen, ask in this order:** (1) the sea from the shelf at 5–15 m looking across the
+swell, in play — whether the rows read as water or as stripes, and whether `REFL_FACET` (1) wants less; (2) the line from 40 m — still a
+soft band at this density; a clearer day (`AIR.dens` 0.0015) sharpens it but changes the look; (3) the sun's side — the glitter is still
+five grey bars (WATER.md F not built); (4) dusk and night from above (the reflected sky is the reduced one: no clouds, the deck's mean
+shade); (5) the weed forest's frame time (one more sine in the sway fold) and the render ms in air (`skyLite` in every fragment).

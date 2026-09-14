@@ -243,7 +243,7 @@ the terrain at 0.7 (the flats and the passes get the wet mark and less film). Cr
 animals (`MATV`) have no band.
 
 **Waves (`world.js` `WAVES`, `waveH`).** *v11.44: each wave's amplitude at a point is its deep-water amplitude × Green's law as the floor comes up (≤ ×1.6) × the place's wave energy (the floor map's green channel: exposure and the lagoon's shelter; the wind sea whole, the swell by half), capped at 0.39 × the water depth — the breaking limit — with the excess drawn as foam; `waveFac` in world.js and `waveAmpGLSL` in scene.js are the one rule, read by every sum. v11.42: the directions follow `WIND_A`.* Mean sea level is 0; `waveH(x,z)` is the water level at a point *now* (the tide plus the waves). Five
-directional components, wavelengths 46/29/15/8.5/6, amplitudes summing to 1.17 (`WAVE_AMP`), deep-water dispersion
+directional components (v11.45: six — a 150 m, 0.30 m long swell from upwind in the trade belt, `WIND_A`+0.08, last in the table; period 9.8 s, drawn to ~1.4 km), wavelengths 46/29/15/8.5/6/150, amplitudes summing to 1.47 (`WAVE_AMP`), deep-water dispersion
 `ω=√(gk)` so the swell outruns the chop, crests sharpened by `wsh()` (which also puts the mean level at about −0.3).
 The physics, the surface mesh and the rafts' bob all read the same formula: `scene.js` `WAVE_GLSL` is generated from
 `WAVES`, so the GLSL cannot drift from the JS (checked numerically to 1e-3).
@@ -273,7 +273,7 @@ what makes the surface from below read as moving water (v11.7's first cut smooth
 96% alpha, which painted the underwater horizon a pale sky-cyan the fog never reached), **with one face test on top
 (v11.5): a back face with the camera in air is the water body** — opaque, unlit, `TINT_COL·uWin`, no glints. That is what
 a camera in a trough sees through a crest's translucent near face; drawn as the far surface's reflected sky it was a pale
-ceiling with a hard edge along the crest line, visible only at eye level (v11–v11.4's "clipping"). Top look (camera above): dark diffuse `0x123a4c` (water is a poor diffuse reflector), fading out as the Fresnel term
+ceiling with a hard edge along the crest line, visible only at eye level (v11–v11.4's "clipping"). Top look (camera above; *v11.45: the reflected sky is `skyLite` of the eye reflected off the facet — the zenith at the feet, the horizon far off, every facet its own elevation of the sky, `REFL_FACET` 1 — composited as a reflection: alpha = uBody + R − uBody·R (the foam whole) and the colour divided by it, so the blend is R·sky + (1−R)·(the body over the column); R the facet's Fresnel where the view is steep and the mean's at grazing, `REFL_GRAZE` [0.12, 0.35] of cm. The paragraph as written is v11.3–v11.44.*): dark diffuse `0x123a4c` (water is a poor diffuse reflector), fading out as the Fresnel term
 `fr=(1−cosθ)³` takes over; the reflected sky `uSkyR` (0.85·horizon + 0.2·zenith, the sky's own colour by the hour) added as
 **emissive** — a reflection is not lit by the sun; until v11.3 it was diffuse, and at a low sun the far sea went dark and
 glassy and showed the far layer's trench through it — with alpha to 1.0 at grazing (0.96 before); foam (`vH/uAmp > 0.62`) at
@@ -294,7 +294,7 @@ you through the water. **The camera itself is then held `CAM_CLEAR` (0.35, above
 for runs of frames. **`updateAtmosphere` takes the medium from `camAbove`** in play (v11.6; until then it compared the camera's
 height with `waveH` afresh every frame, with no hysteresis — every frame the chop passed the camera the whole set below
 flipped, which was the v11.5 "flicker at the water line"; the raw test remains for the menu and the bestiary). **The crossing (v11.7, `MED_T` 0.25 s, `medK`)**: the *medium* changes in one frame — the camera's side, the surface's look, the fog
-(air: `AIR.fog`, 0.0030 — about 85% haze at the far plane so the sea's edge merges into the sky; the veil model with it) and the
+(air: `AIR.dens` 0.0024 since v11.45 (0.0030 before) — and since v11.45 the far colour is the sky in the ray's direction, `skyFar`, so the sea's edge cannot show whatever the density; the veil model with it) and the
 domes and the tint from above (`uTint.y`) are the medium and switch with it — and the *light* crossfades over `MED_T`: the hemisphere
 (the water's veil pair toward the approved noon pair), the sun (the flickering surface value toward 1.35) and the audio. **The water's own
 things — the shimmer, the snow, the player's glow — fade in by `medK` when the camera goes under and are hidden the frame it comes up**
@@ -302,7 +302,7 @@ things — the shimmer, the snow, the player's glow — fade in by `medK` when t
 camera for a quarter of a second — the sky three times too bright at the flip, dimming: the flash on every breach at night (fifth video). v11.7's first cut also mixed the two fogs and faded the sky over the water's dome: the water's veil
 read into the air (its map sampled along rays that point over the void) wrapped the shore in teal on every breach — seen, struck. Boot and a respawn set the medium instantly (`snapMed`). Within a medium fog still drifts as before.
 
-**Sky.** Since v11 the dome is one shader and the sun moves: [The sky](#the-sky). Air fog 0.0030 is a hazy coast; lowering it
+**Sky.** Since v11 the dome is one shader and the sun moves: [The sky](#the-sky). Air fog 0.0024 (v11.45; 0.0030 to v11.44) is a hazy coast; since v11.45 every fragment in air converges to the sky in its own direction with the haze to infinity (`skyFar`, the rule the veil has had since v11.27), so the sea mesh's far edge is the sky and cannot show; before that lowering it
 for a sharper horizon may expose the sea mesh's far edge; it thickens under rain.
 
 ## The sky
@@ -361,7 +361,7 @@ shadows). The key light under water is the beam, or 0.6 × the diffuse light fro
 raised toward the zenith as the beam dies (scene.js `updateShadow`, which sets the sun's direction: the refracted sun under water). Before
 this a shower under water was darker than a moonlit night, since the sun *is* most of the underwater light and the sky had lost half.
 `uFogT.x` is `skyL` in air and `skyLw` under water (updateAtmosphere). The
-surface's top face reflects the sky's own colour (`uSkyR` = 0.8·horizon + 0.35·zenith; noon ≈ the old constant), Snell's
+surface's top face reflects the sky's own colour (v11.45: `skyLite` in the reflected direction — the reduced sky, the sun's disc and glare in it; `uSkyR`, 0.85·horizon + 0.2·zenith, to v11.44), Snell's
 window and the emissive scale by `uWin` (tint × skyL), the refracted glint takes the luminary's colour (`uGlint`). The player's
 light: the depth term as before plus `0.5·(1−skyL)²` at night — a judgement call, see CHANGELOG v11.
 
@@ -416,7 +416,7 @@ layers along its ray in closed form (`mistRay`: cut at the water level, so the f
 dome to infinity (`mistFar`), mixed toward `MIST_C` — the horizon colour lifted 0.3 toward the light's (`tint·skyL`: white by day,
 amber at dusk, blue-grey by moonlight, dark on a moonless night) — glowing toward the luminary by `HAZE.glow` 0.8 × the beam's share
 of the sky's light (a Mie forward peak: the bright horizon under a low sun, the moon's halo). The old air fog (`AIR.dens`, `AIR.far`:
-the two-population radial haze) stands under it: the mist is the *shape* of the horizon, the radial fog the visibility. A third layer (`uMistW.yz`, v11.17.1) carries whichever of two local things is here: the **vog** — the cone's fumarole
+the two-population radial haze) stands under it: the mist is the *shape* of the horizon, the radial fog the visibility — and its far colour, since v11.45, the dome's own sky in that direction, `skyFar` = `skyLite2(d,0)` (the reduced sky without the deck's mean shade, since the dome's gradient between its clouds is unshaded) mixed toward the haze by `mistFar`; the six shared vec4s `uSkA..uSkF` carry the sky to every material, written by `pushSky`. A third layer (`uMistW.yz`, v11.17.1) carries whichever of two local things is here: the **vog** — the cone's fumarole
 (`FUME`: a steam plume of 96 points off the summit, rising, leaning downwind, fading over 70 s; `updateFume`) has its SO2 gone to
 sulfate downwind, a Gaussian plume (`VOG`: axis 4e-4, half-width 70 m + 0.16/m, scale height 140, to 2.4 km, pooling in a calm) that also
 greys and warms the mist's colour — or the **dawn mist** (`MIST_DAWN`: a clear calm night's evaporation mist on the lagoon, `lag`² at

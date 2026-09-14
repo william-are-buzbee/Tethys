@@ -59,7 +59,7 @@ Env vars: `TIER` (`low`), `PICK` (menu pick for smoke), `T0`, `OLD`, for preview
 2. `node build.js --test` green on both tiers.
 3. **Look at it.** Start `node serve.js` (or the `tethys` launch config), open `dev.html` in the app's browser, play to the changed
    thing, screenshot it. The pane's loop only ticks while it is visible, and a hidden pane reports a 0×0 viewport, which NaNs the menu
-   layout — keep it visible. For a creature also `node test/preview.js <id>` and look at the PNG. "Unseen" in the CHANGELOG is
+   layout — keep it visible, or drive the loop by hand from the console: stub `requestAnimationFrame`, hold `player.pos`, call `loop(last+16.7)` per frame, and post `renderer.domElement.toDataURL()` to `/_bench/<name>.png` (serve.js writes `test/render/<name>.png`); the horizon audit of 14 Sep (WATER.md Part 3) was looked at that way. For a creature also `node test/preview.js <id>` and look at the PNG. "Unseen" in the CHANGELOG is
    reserved for what genuinely could not be looked at (sound has no output here; the GPU cost is the person's 4060 at 1600×900).
 4. `CHANGELOG.md` (oldest first): a `## vX.Y — title (date)` entry — what changed and why, the knobs by name, what was seen, and an
    **"Unseen, ask in this order"** list for the rest. Patch versions (`vX.Y.Z`) for fixes after the person looks. Update the

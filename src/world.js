@@ -156,7 +156,11 @@ const HAZE={dens:1.7e-4,h:70,spray:0.0025,sprayH:4.0,glow:0.8,lift:0.3}; // the 
 // (the wave sum in GLSL, see WAVE_GLSL in scene.js, plus uTide) and the rafts' bob all read it. [wavelength, amplitude, direction].
 // The direction is where the wave *travels toward* (the phase is dot(p,dir)·k − ω·t): the swell runs with the wind (WIND_A) and the wind sea fans
 // ±0.6 rad round it (v11.42, WATER.md item 1: to v11.41 the swell ran toward 0.35 — dead against the wind and the caustic's ripple trains — and the rest to every quarter).
-const WAVES=[[46,0.50,WIND_A],[29,0.32,WIND_A-0.19],[15,0.18,WIND_A+0.36],[8.5,0.11,WIND_A-0.49],[6,0.06,WIND_A+0.56]].map(w=>{const k=TAU/w[0];return {L:w[0],A:w[1],dx:Math.cos(w[2]),dz:Math.sin(w[2]),k:k,w:Math.sqrt(9.8*k),ph:w[2]*7.3};});
+// The long swell (v11.45, WATER.md G, the person's answer 14 Sep: "maximum compatibility and most believable"): 150 m, 0.30 m, period 9.8 s, from a far
+// storm upwind in the trade belt (within 0.08 rad of WIND_A), so it strikes the flank the exposure field already gives surf, cones and spray to — a
+// swell from another belt would put the surf on a shore the geology says is a lee. Last in the table so the caustic's carry (CAU_SWELL), the
+// spray and the audio, which index the first entries, keep the 46 m as "the swell"; every sum reads the whole table. Drawn to ~1.4 km by the grid.
+const WAVES=[[46,0.50,WIND_A],[29,0.32,WIND_A-0.19],[15,0.18,WIND_A+0.36],[8.5,0.11,WIND_A-0.49],[6,0.06,WIND_A+0.56],[150,0.30,WIND_A+0.08]].map(w=>{const k=TAU/w[0];return {L:w[0],A:w[1],dx:Math.cos(w[2]),dz:Math.sin(w[2]),k:k,w:Math.sqrt(9.8*k),ph:w[2]*7.3};});
 const WAVE_AMP=WAVES.reduce((a,w)=>a+w.A,0);
 const GRAV=9.8; // 1 g, 1 unit = 1 m (PLANET.md); what pulls a body back down once it is out of the water. Was 14 to v9.3.
 function wsh(s){return 2*Math.pow((s+1)*0.5,1.7)-1;}
@@ -321,7 +325,7 @@ function waterColor(s,out){const c=wcolAt(-s.h);
 // black polygons the fog could not soften (v8.3 screenshots). Every number is live-tunable from the readout (main.js, `FOG_TUNE`).
 const SEA_FOG={dens:0.0068,share:0.88,shareS:0.88,far:0.0015,dlAt:1.0,placeMix:0.4,reach:260,bright:1.0,sun:0.8,ground:1.2,cau:0.8,shd:0.55}; // cau, shd (v11.13): the caustics' and the bodies' shadows' strength (scene.js LIGHT_K; the readout's t-y and u-i)
 // above the surface: one sky, one haze, the same two-population curve (about 47% contrast at 300, 13% at 600, 4% at 1000).
-const AIR={fog:[0.72,0.80,0.86],dens:0.0030,share:0.6,far:0.0022,zenith:[0.34,0.55,0.78],hemiSky:0xc4dcea,hemiGround:0x6e6a58}; // the noon sky (the approved v6 look); v11 reads it as the day keyframe of SKYC
+const AIR={fog:[0.72,0.80,0.86],dens:0.0024,share:0.6,far:0.0018,zenith:[0.34,0.55,0.78],hemiSky:0xc4dcea,hemiGround:0x6e6a58}; // the noon sky (the approved v6 look); v11 reads it as the day keyframe of SKYC
 // The sky by the sun's height (v11, atmosphere.js updateSky): keyframes on sin(altitude) — night, deep twilight, the sun on the
 // horizon, day — for the zenith, the horizon haze (which is the air fog's colour: the sea's far edge merges into it), the glow
 // round the sun's azimuth near the horizon, and the sunlight itself. The star is a late G / early K at ~5300 K (PLANET): its

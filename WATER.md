@@ -1,6 +1,6 @@
 # WATER.md — the sea surface from both sides: audit and proposals (14 Sep 2026)
 
-Status: an audit, nothing built. The person asked for scrutiny of how the game looks through the water from below and at it from
+Status: Part 1–2 the 14 Sep audit (A, B, C, D and H built as v11.42–v11.44); Part 3 (14 Sep, later) the line from above — built as v11.45 but for P3 and P5. The person asked for scrutiny of how the game looks through the water from below and at it from
 above, then a brainstorm of believable additions. Read with DESIGN *The surface*, *Visibility*, *The medium*, and POLISH's
 "What not to build". Files: atmosphere.js (the surface block, `updateAtmosphere`), scene.js (the fog chunk, `WAVE_GLSL`, `addTint`),
 world.js (`WAVES`, `waveH`, `WCOL`, `SEA_FOG`, `AIR`), player.js (`camAbove`, `CAM_CLEAR`, `splash`), far.js (the water and floor maps).
@@ -177,3 +177,74 @@ island itself is not reflected — screen-space reflections are out by POLISH, a
 3. **B + C** — from 2 m under at noon (the sun's disc through the window), at sunset, under the moon; whether the shimmer sprite is missed.
 4. **D** — the exposed flank at high spring, the lagoon in a wind, the strand at mid-tide.
 5. **E, F, G, I, J, K** as polish, one at a time.
+
+## Part 3 — the line from above (14 Sep 2026, second audit; P1, P2, P4, P6 and G built as v11.45; P3's slope-in-the-light and P5 not)
+
+The person's ask, after v11.44: the water line seen from above — good when something stands in the distance (the kelp's tops, a shore:
+"like Wind Waker"), odd for depth perception over open water. Measured in the app's browser at 1280×720 with the loop stepped by hand
+(CLAUDE.md, Look at it), the player held at (1500, h, 0) over deep water at 11 h (cover 0.44, the sun at 41° in the east), looking north
+(80° off the sun), east (into it) and west; the frames are `test/render/hz_*.png`. Read with DESIGN *The surface*, *The sky*, *Visibility*.
+
+**What the line is made of.** Down the screen's centre column at h = 15, looking north:
+
+| where | rows (of 720) | colour | what draws it |
+|---|---|---|---|
+| sky 4° up | 316 | 165,183,199 | the dome: `mix(hor,zen,k)·(0.92+0.10cs²)`, the haze band 15% |
+| sky at the line | 364 | 180,196,208 | the same, the haze band 62% toward `MIST_C` |
+| the sea's edge | 378 | **183,201,216** | the surface at the far cut: `uFogAC` = `K.hor` exactly |
+| sea 1° under the line | 388 | 159,190,210 | the surface, the air fog 93% |
+| sea 3° under | 412 | 128,166,190 | the surface, Fresnel + the constant `uSkyR` + fog |
+| sea at the bottom | 712 | 28,62,83 | the seen-through column, `UPWELL` |
+
+Three things follow. **(1) The sea's edge is the brightest row of the lower half.** Every fragment in air converges to the one constant
+`uFogAC` (the horizon keyframe) by `FOG_CUT1`; the dome never shows that colour — its horizon is the keyframe darkened by the Rayleigh factor
+and the zenith mix, then lifted part-way by the haze band, and only toward the sun lifted past it by the glow. So away from the sun the sea's
+far edge is a pale rim under a darker sky, and toward the sun the same edge is dark under a glowing sky: the line inverts with the azimuth.
+Under water this was fixed in v11.27 — past the cut every fragment is the veil *in that direction* — and in air it was not: the air's far colour
+is a constant, the dome is a function. In nature the sea at the horizon is always a little darker than the sky touching it (it reflects the sky
+a few degrees up, at R < 1, over dark upwelling water). **(2) The pale rim is the far-cut band, 992–1440 m, and it is fixed in world distance,
+so its angular width grows with height:** a thread from 1 m, a 1° rim from 15 m, a 2–3° band from 40 m — at 40 m (`hz_40n.png`) there is no
+line at all, the sea dissolves into a white haze with the sky. A real horizon from 40 m is 23 km off and still a line. The rim's width is what
+the eye reads as a height and a distance, and both are wrong. **(3) Between ~100 m and the rim nothing varies but the fog.** The reflection
+`uSkyR` is one colour for every direction (Part 1, item 12); the Fresnel weight is judged against the mean normal (v11.7), and the dark
+diffuse is scaled away by it, so a facet's tilt changes nothing of the topside away from the sun — the flat-shaded sea has no facets from
+above; and every wave the grid cannot carry is faded to its mean by 260 m. The two cues a sea gives for distance — the rows of crests
+converging, and the reflection going from the zenith's dark near the feet to the horizon's pale far off — are both absent; only aerial
+perspective is there, and `AIR.dens` 0.003 saturates it by ~500 m, so two thirds of the sea's screen span is one flat colour ending in a rim.
+Toward the sun (`hz_15_yawM.png`) the per-facet specular is five grey bars (item 5). With the kelp's tops or a shore in view
+(`hz_forest_w.png`, the person's second still) the line reads, because the crossing things give the eye the scale the sea does not.
+
+**Also seen.** From a camera at 0.5 m in a trough (`hz_1n_down.png`) the near crest's back face fills the bottom of the view as a flat dark
+opaque slab with a hard straight edge (the v11.5 water-body branch, `!gl_FrontFacing&&uUnder<0.5`). It is the water column seen through the
+crest and should be the column's colour — the veil along the refracted ray, as the two-segment fog paints the seabed — not black plus a constant.
+
+**Proposals, in the order to build.** All physical; none adds vertices.
+
+- **P2 — the reflection by direction (item J).** Replace `uSkyR` with `skyLite(reflect(rd, N_facet))`: the reduced sky is already in
+  `SURF_MAT`'s fragment for the window, and the underside already builds the world-space facet normal. Near the feet the sea reflects the
+  zenith (dark blue), far off the horizon (pale): the reflection gradient. Per facet the reflected ray swings by twice the slope — the swell's
+  4° puts a front and a back slope 8° apart in the sky, which near the horizon (where the gradient is steep) is a visible tone step and near the
+  camera is not: facets that strengthen with distance, rows converging to the horizon out to the wave fade, at zero vertex cost, and the
+  low-poly sea from above at last. Keep the Fresnel *weight* on the mean normal (`vNup`, the v11.7 rule: the wedges were the weight swinging,
+  not the direction); a knob blending the facet normal toward the mean at grazing if the steps are too hard. And the line: at grazing the sea
+  reflects the sky 2–8° up, which is darker than the horizon's haze band — a dark sea line under the pale sky, as it is everywhere on Earth,
+  deeper in a wind sea and vanishing in a flat calm. Cost: one `skyLite` on the topside's fragments (the underside pays it now).
+- **P1 — the air's far colour is the sky's, by direction.** The rule the veil has had since v11.27, for air: `fogAir` mixes toward
+  `skyLite(rd)` plus `mistFar` in that direction instead of `uFogAC`. The far sea, the far kelp cards, the far shore and the apron all end in
+  the sky behind them — the rim goes at every height, the seam's inversion goes, the far sea toward the sun takes the glow. Needs the sky's
+  nine uniforms shared through `ShaderLib` like the mist's and `skyLite` moved to the fog chunk (the surface then takes it from there).
+  Cost: ~25 ALU per fragment in air, no noise. Fixes (1) and (2); P2 gives the line its dark side, P1 makes the rim invisible — build P2
+  first to see the sea, P1 second to see it end.
+- **P3 — rows to the horizon.** The far sea is flat past 260 m. Either G (a long swell, drawn to ~700 m) or the swell's *slope* kept in the
+  light past the mesh's fade: the wave sum's derivative is analytic, so a facet can tilt its reflection by the swell it no longer carries in
+  height (PLANET's "the ripple layer lives only in the light", for distance), faded by the phase's screen-space rate (`fwidth`) so it never
+  aliases — the 46 m swell is half a pixel a wavelength by 1 km from 15 m. Second.
+- **P5 — sub-facet glitter (F)** for the sun's side; and **P4 — the near slab**: the back face from air as the column's veil. Small, later.
+- **P6 — the air.** `AIR.dens` 0.003 (63% at 333 m) is "a hazy coast" chosen so the world's edge merged into the sky. With P1 the sea ends in
+  the sky whatever the density, so the day could be clearer (0.0012–0.0015: visibility ~1 km, the far kelp readable at 800 m) without
+  exposing an edge; the island's far terrain at the far plane would then show its cut against the sky and needs the same P1 convergence,
+  which it gets. The person's call — the haze is part of the look.
+
+**To ask the person.** (a) A darker sea than the sky at the line — the natural look, P2 — or keep the pale edge? (b) Facets from above:
+P2 makes the swell's rows visible away from the sun, tone-stepped, strongest far off; is that the sea they want, or should the topside stay
+smooth? (c) The air: keep the hazy coast or a clearer day once P1 lets the sea end in the sky? (d) A long swell, G, and whose storm (Part 2, L).
