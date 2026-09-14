@@ -3023,3 +3023,24 @@ off. The lab's note and the smoke test follow the new key.
 a boulder with no rings and 0.9 m clumps. `node build.js --test` green on both tiers.
 
 **Unseen:** the boulder's coarse grain up close — 0.7 at 0.9 m may want more weight now that the strata are gone.
+
+
+## v11.41.2 — the light out of the texel (14 Sep 2026)
+
+The person's two screenshots of v11.41.1 (texels with and without the pixel light — "fantastic" with it; without, "more time to decide"; the
+texels "add a lot of visual character"): the ground's light showed as "odd ring effects … colours radiate out in the zone they're colouring
+as you move across it … like light sources glow with rigid contours … reminds me of Morrowind". Diagnosis: the player's own point light
+and the sun's falloff are smooth per-vertex ramps, and the posterise turned the ramp into sixteen level rings that move with the light —
+exactly Morrowind's vertex-lit bands.
+
+**Built** (scene.js `PIX_GLSL`, the note "The light in the texel"): by default the fragment splits the colour it has into albedo
+(`diffuseColor.rgb`, the vertex colour times the material's — in scope at `fog_fragment` in r128's Lambert and Phong) and light (what is
+left after dividing it out). The albedo alone is extrapolated to the cell, posterised and grained; the smooth light multiplies back. Colour
+in cells, light continuous; the countershade still bands, since it is in the vertex colour. **`banded light`**, a row under `texels` on the
+effects list (`FX.texelLight`, `uTexL`), is the v11.41 look, kept to compare; off by default.
+
+**Seen:** the menu and the shelf with texels on, banded light off: the sand in cells with the player's light a smooth pool over them, no
+rings; the same with banded light on: the rings back. `node build.js --test` green on both tiers.
+
+**Unseen, ask:** whether the smooth light is the one — and whether without the bands a body's countershade still reads as pixel art or now as
+a smooth-lit sprite (the tones are in the vertex colour and still band, but the sun's own Lambert gradient across the flank no longer does).

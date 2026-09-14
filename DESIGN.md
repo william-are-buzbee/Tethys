@@ -841,6 +841,11 @@ spawn) — a shared material cannot carry a per-mesh uniform in r128 — and a g
 three controls; `test/preview.js PIX=1` draws the same rules in JS. Seen 14 Sep: the sand as texture, strata on the boulders, stripes, spots,
 plates and scales on the bodies. Left: C and D.
 
+**The light out of the texel (v11.41.2).** The posterise banded the light too — the player's point light and the sun's falloff are smooth
+per-vertex ramps, and sixteen tones made them level rings that travel with the player (the person: Morrowind). By default the fragment now
+splits albedo (`diffuseColor.rgb`) from light (the rest), texelises and posterises the albedo alone and multiplies the smooth light back;
+`banded light` on the effects list (`uTexL`) is the old look, off by default.
+
 ## The far layer
 
 `far.js`. Three things exist for the whole world at once, built once, and never unload. Draw cost on high: expect
@@ -1581,7 +1586,7 @@ distance — a designed pass, not a knob. `render` is CPU submission; the GPU ru
   260 px window; JS only translates the strip (`updateCompass`). North is −z; heading = −yaw. Fades in while moving or
   turning, out after 3.5 s still. The dot under the letters is the bearing of the peak (respawn), shown beyond 150 units
   from it; clamped to the window edge and dimmed when behind you. Remove it by deleting the `dist>150` block.
-- **The effects list (v11.23, `effects.js`, `#fx`):** the cosmetic systems switchable live — caustics (with a `brightness` slider under it, v11.38.1: `FX_SLIDERS`, a number in `FX_DEF` that persists with the switches), pixel light (v11.38: the caustic and the shadows in blocks, or smooth; off by default since v11.38.1), texels (v11.40–41, its own row since v11.41.1: every tinted surface in texels with a pattern per cell, PIXEL.md; off by default), shadows, world shadows, ground shadows (v11.30), sharp shadows, light shafts,
+- **The effects list (v11.23, `effects.js`, `#fx`):** the cosmetic systems switchable live — caustics (with a `brightness` slider under it, v11.38.1: `FX_SLIDERS`, a number in `FX_DEF` that persists with the switches), pixel light (v11.38: the caustic and the shadows in blocks, or smooth; off by default since v11.38.1), texels (v11.40–41, its own row since v11.41.1: every tinted surface in texels with a pattern per cell, PIXEL.md; off by default), banded light (v11.41.2: the light posterised with the texels' colour, or smooth; off), shadows, world shadows, ground shadows (v11.30), sharp shadows, light shafts,
   marine snow, rain, clouds, surface glow, vignette — in the lab panel's look, on the right. The word `effects` at the bottom right of the menu,
   or `e` on the menu and in play (the pointer is released while it is open, taken back on close; escape or a click on the canvas closes it).
   Saved in localStorage (`tethys.fx`). Each system reads `FX.key` where it draws; a switch is a key in `FX_DEF`, a row in `FX_LIST`, a read.
