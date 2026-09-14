@@ -121,6 +121,7 @@ Docs, most upstream first. When a doc's Open list says a choice is the person's,
 | `CLADES.md` | the three clade signatures as built (v11.8–11.9.1) and the raptor family |
 | `DRIFTERS.md` | the fourth clade: bells, buttons, sailers (v11.16) |
 | `CREATOR.md` | the spec-compiled body plans and the lab (v11.10–11.25); the person's decisions at its end |
+| `PIXEL.md` | the de-res (14 Sep 2026, designed, not built): every surface in world/body-fixed texels at the pixel light's grain, one switch on `e`; its Open list is the person's |
 | `POLISH.md` | the low-budget effects survey: pass A built (v11.13, v11.23); passes B and C are next |
 | `AUDIO.md` | the sound's design (v11.14); every number was chosen blind |
 | `DESIGN.md` | **the reference**: one section per system with the owning file, the numbers, the knobs and the reasons |

@@ -2901,3 +2901,17 @@ included in the smoke.
 back by decision; whether it reads as water; (2) the darkened cells on the pale sand — too grey, and `CAU_DARK` comes down (0.2), the
 mean then a little over 1; (3) the shafts — do they now flicker with the net beneath them, and is 0.25 + 0.5·I the right range;
 (4) the gusts' drift at 7 m/s — visible, and not a slide; (5) the boot cost (`CAU_N` 384; 320 loses the 0.5 m ring's shape).
+
+
+## v11.39.1 — PIXEL.md: the de-res, designed (14 Sep 2026)
+
+A document, no code. The person, on the pixel light: "the pixel version is awesome … it would only look proper if the rest of the game
+was like that" — then, with a screenshot of it at 20 m: "de-res the rest of the game: not changing any meshes, just the texture
+being pixelated to a rough or equivalent size, more Minecraft-like; the ground and objects too, so the pixel shadow/caustic look
+matches it." `PIXEL.md`: one rule — in pixel mode a surface's colour is constant over a cell of a texel grid fixed to the thing it is
+on (the world for the ground, the body for an animal, the instance for a plant) — built as a shader path behind the light's own
+`uPix`: the fragment extrapolates its interpolated colour to the cell's centre with screen-space derivatives (exact within a facet,
+~25 ops), posterises it, and adds a hashed tone per cell for grain, with the creature coats gaining a `pattern` for stripes, spots,
+plates and scales in body space. No second world, no conversion script, no textures, no memory; the switch is instant both ways.
+Three passes (the de-res; the texels' pattern with the lab's controls and `test/preview.js PIX=1`; the edges) and six Open questions
+for the person — the bodies' texel size first. Not built.
