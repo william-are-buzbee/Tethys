@@ -2838,3 +2838,29 @@ shadows' steps sit well on a body's shadow (they are world-fixed, so a swimming 
 8 m is big enough or too big — `CAU_RINGS[0]`; (3) whether the smooth version wants a lower `CAU_T` (denser, more like the OG's
 coverage) — the two versions share it today; (4) acne on steep slopes in pixel mode (the snap is skipped past 72°, the band between
 is untested); (5) v11.37's list.
+
+
+## v11.38.1 — the beam diffuses, the edges agree, and a brightness slider (14 Sep 2026)
+
+Five shots of v11.38 from the person: "WOW, looks so so so much better … the pixel look is interesting, not bad at all, but I
+genuinely think the nicer looking effects are better for a game like this. The new caustics are legitimately awesome. My only
+complaint is how they have these arbitrary thin and blurry zones." And: a slider to adjust the brightness.
+
+**Two causes of the blurry zones, one of them physics.** The soft step was ±1.2 round the threshold, so weak focus — a calm gust,
+a fold seen off its line — painted as a broad faint smear beside a crisp line. Softness belongs to depth, not to the local
+strength: `CAU_SOFT` 0.5, and every patch has the same edge. And the first shot was at **73 m** with a clear net on it: the sun-disc
+blur sets the cells' size with depth but the beam's diffusion by scatter is what kills the contrast, and real caustics are gone by
+25–30 m in clear water. `CAU_D` 30 m: a contrast fade `exp(−d/CAU_D)` — 85% at 5 m, 60% at 15, 9% at 73 — on top of the disc blur.
+
+**The slider.** `brightness` under `caustics` on the `e` list (`FX_SLIDERS`, effects.js: a slider is [label, key, min, max, step]
+under a switch; the key is a number in `FX_DEF` and persists with the switches — the loader now takes any value of its default's
+type). `FX.cauK` 0..2, default 1, multiplies `SEA_FOG.cau` where `LIGHT_K` is written (atmosphere.js); the readout's `t-y` still
+moves the base. `pixel light` now defaults off — the person's preference "at least for now"; a saved choice is kept.
+
+**Seen.** `test/caustic.js` smooth at 10 m: the same shapes with one edge everywhere, the smears gone. The menu in the app's browser:
+the slider row under caustics, live, the value read back from `tethys.fx`, the switch rows still toggling round it; no errors.
+`node build.js --test` green on both tiers.
+
+**Unseen, ask in this order:** (1) the deep — does the net now fade away by 25–30 m as it should, and is the shelf at 5–15 m still
+as the person liked it (`CAU_D` up if it lost too much); (2) the edges — one softness everywhere now; if the crisp lines are wanted
+crisper, `CAU_SOFT` 0.3; (3) the slider's range (0–2) — whether 2 is ever wanted; (4) v11.38's list.

@@ -227,7 +227,10 @@ const lightKU={value:LIGHT_K};
 const CAU_RINGS=[[8.0,0.28],[5.0,0.11],[3.0,0.04],[1.8,0.014],[1.0,0.0022]],CAU_DIRS=8,CAU_SPREAD=1.2,CAU_TILE=40,CAU_N=320,CAU_HMAX=1.2; // v11.38: 8 m down to 1, the 1 m ring at half weight (the person: "a little too busy, too many pieces and small things"); v11.37: ×2.5 in wavelength, and the amplitudes ∝ L² — equal curvature a ring — so the 5 m ring is an equal partner and the cells come out at its scale (the person, 14 Sep: cells of a metre are "tiny blobs" in a world whose grain is a 4 m facet and a 3 m animal; constant steepness, the physics of a wind sea, puts the curvature in the shortest waves and gives the fine web of a snorkel, which is what he did not want). The 0.7 m ring is a trace of that fine web in the top few metres
 // the gusts (v11.37): a second tile, value noise at CAU_GUST[0] m, modulates the rings' amplitude by 1 − CAU_GUST[1]·(1 − n) — patches of strong net and patches of calm, as a gusty wind ripples a sea in patches, instead of one texture over the whole floor (the person's five shots of v11.36.1: "the same density everywhere")
 const CAU_GUST=[110,0.75],CAU_GN=64;
-const CAU_SUN=0.02,CAU_T=3.0,CAU_SOFT=1.2,CAU_HI=1.5,CAU_SWELL=4,CAU_FAR=[30,70],CAU_PX=0.3,CAU_STEP=0;
+const CAU_SUN=0.02,CAU_T=3.0,CAU_SOFT=0.5,CAU_HI=1.5,CAU_D=30,CAU_SWELL=4,CAU_FAR=[30,70],CAU_PX=0.3,CAU_STEP=0;
+// CAU_SOFT 0.5 (v11.38.1; was 1.2): a wide step painted weak focus — a calm gust, a fold seen off its line — as broad faint smears beside crisp lines (the
+// person: "arbitrary thin and blurry zones"); softness belongs to depth, not to the local strength. CAU_D: the beam's diffusion by scatter, a contrast fade
+// exp(−d/CAU_D) on top of the sun-disc blur (which sets the cells' size) — the person had a clear net at 73 m; real caustics are gone by 25–30 m in clear water.
 // Two versions of the light, one switch (v11.38, the person's ask: keep the pixel style and the high-resolution one, and compare): uPix (effects.js 'pixel light',
 // pixU). Pixel: the caustic in CAU_PX blocks with a hard step, and the shadows snapped to the same world grid with a hard edge — one grain for both systems.
 // Smooth: no snap, and a wide soft step (CAU_SOFT) for the caustic and the four-tap penumbra for the shadows — the OG's broad sweeping patches over the
@@ -262,7 +265,7 @@ const CAU_GLSL=(function(){let s='vec2 ps=vFogPos.xz+uSunW.xz*(dep/max(uSunW.y,0
     s+='{float ph='+r.w.toFixed(5)+'*ct;float g=exp(-dep*dep*'+(2*Math.pow(Math.PI*CAU_SUN/r.L,2)).toFixed(6)+')*(1.0-smoothstep('+(r.L*CAU_FAR[0]).toFixed(1)+','+(r.L*CAU_FAR[1]).toFixed(1)+',vFogDepth));'+
       'if(g>0.002)H+=((texture2D(uCauS'+i+',cu).rgb*2.0-1.0)*cos(ph)-(texture2D(uCauC'+i+',cu).rgb*2.0-1.0)*sin(ph))*('+CAU_HMAX.toFixed(3)+'*g*gu);}';}
   s+='float jc=dep*0.248*uChop;float dj=(1.0-jc*H.x)*(1.0-jc*H.z)-jc*jc*H.y*H.y;'+
-    'float cf=1.0/max(abs(dj),0.02);float ci=1.0+'+(CAU_HI-1).toFixed(2)+'*(uPix>0.5?step('+CAU_T.toFixed(2)+',cf):smoothstep('+(CAU_T-CAU_SOFT).toFixed(2)+','+(CAU_T+CAU_SOFT).toFixed(2)+',cf));';
+    'float cf=1.0/max(abs(dj),0.02);float ci=1.0+'+(CAU_HI-1).toFixed(2)+'*exp(-dep/'+CAU_D.toFixed(1)+')*(uPix>0.5?step('+CAU_T.toFixed(2)+',cf):smoothstep('+(CAU_T-CAU_SOFT).toFixed(2)+','+(CAU_T+CAU_SOFT).toFixed(2)+',cf));';
   return s;})();
 const SHM_R=Q.tier==='low'?40:64,SHM_D=120,SHM_BIAS=0.3; // the box's half-side, its half-depth along the light, the depth bias in metres
 const SHM_P=new Float32Array([0,0,0,0]),SHM_L=new Float32Array([0,1,0,2*SHM_D]); // uShP: texel size (map units), on, bias (depth units), the receiver's normal offset (m); uShL: the map's light direction, its depth range in metres

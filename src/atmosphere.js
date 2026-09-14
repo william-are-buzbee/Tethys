@@ -462,7 +462,7 @@ function applyFog(above){
   scene.fog.density=above?AIR.dens*(1+1.2*rk):SEA_FOG.dens;
   if(above){FOG_P[0]=FOG_PS[0]=AIR.far*(1+1.0*rk);FOG_P[1]=FOG_PS[1]=AIR.share;FOG_P[2]=FOG_PS[2]=0;FOG_P[3]=FOG_PS[3]=0;}
   else{FOG_P[0]=FOG_PS[0]=SEA_FOG.far;FOG_P[1]=SEA_FOG.share;FOG_PS[1]=SEA_FOG.shareS;FOG_P[2]=FOG_PS[2]=SEA_FOG.placeMix;FOG_P[3]=FOG_PS[3]=1;}
-  FOG_W[1]=SEA_FOG.bright;FOG_W[2]=SEA_FOG.dlAt;FOG_W[3]=SEA_FOG.reach;LIGHT_K[0]=FX.caustics?SEA_FOG.cau:0;LIGHT_K[1]=FX.shadows?SEA_FOG.shd:0; // the effects list (effects.js) can zero either
+  FOG_W[1]=SEA_FOG.bright;FOG_W[2]=SEA_FOG.dlAt;FOG_W[3]=SEA_FOG.reach;LIGHT_K[0]=FX.caustics?SEA_FOG.cau*FX.cauK:0;LIGHT_K[1]=FX.shadows?SEA_FOG.shd:0; // the effects list (effects.js) can zero either
 }
 // The crossing (v11.7). The medium changes in one frame — the camera's side, the surface's look, the fog, the domes and the tint from
 // above are the medium and switch with it — and the *light* crossfades over MED_T: the hemisphere, the sun, the audio. medK is the

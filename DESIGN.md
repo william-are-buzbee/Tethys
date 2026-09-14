@@ -682,16 +682,19 @@ orbital displacement (`A sin`, along the wave) of the `CAU_SWELL` 4 longest `WAV
 which is what keeps three fixed trains from interfering into a lattice (seen: without it, a grid of ovals). The Hessian is the
 tiles' (`−A k² sin · dir⊗dir` per train, summed at the bake), each ring blurred by the sun's disc and the beam's scatter (v11.35.2: `exp(−2(π·d·CAU_SUN/L)²)`,
 `CAU_SUN` 0.02 rad (v11.36.2's 0.03 left every floor past ~18 m dark — the person's "nothing in the kelp forest"; the only intentional
-cut is the floating colonies' canopy mask, 85% under a raft mat) — the short rings go first, so the cells grow with depth; the mean stays 1 at every depth; at
+cut is the floating colonies' canopy mask, 85% under a raft mat) — the short rings go first, so the cells grow with depth; and the contrast fades by
+`exp(−d/CAU_D)`, 30 m (v11.38.1: the beam's diffusion by scatter — the person had a clear net at 73 m; real caustics are gone by 25–30 m
+in clear water); the mean stays 1 at every depth; at
 the surface `d·c·H → 0` gives 1 on its own), then a line where the focus `1/|det J|` reaches `CAU_T` 3 × `CAU_HI` 1.5 — in one of two versions, one switch (v11.38, `pixel light` on
 the effects list, `uPix`): **pixel** — a hard `step`, the surface point snapped to a `CAU_PX` 0.3 m world grid after the swell carry
 (v11.36.2, the person: the shader was too clean for the world), the pattern moving through the blocks like a display, and the shadows
 read at the same grid (the receiver point snapped and moved along its face's plane, one hard tap; [The shadows](#the-light)) — one grain
-for both; **smooth** — no snap, a `smoothstep` `CAU_SOFT` 1.2 either side of `CAU_T`, the four-tap shadows: the OG's broad sweeping
+for both; **smooth** — no snap, a `smoothstep` `CAU_SOFT` 0.5 either side of `CAU_T` (v11.38.1: 1.2 painted weak focus as broad faint smears
+beside crisp lines — softness belongs to depth, not to the local strength), the four-tap shadows: the OG's broad sweeping
 patches over the baked structure. `CAU_STEP` frames a second would step the clock too (0, continuous). Pale lines on the floor and
 nothing else, 3% of it at 5 m, 13% at 10, 18% at 16 (v11.35.1: a clamp of 2 was a clip; v11.35.2: quarter steps were a halftone; v11.35.3: a hard two-tone was a print;
 v11.36: a threshold of 1.5 was fat worms over a third of the floor — a fold line is thin only where |det| is small; v11.36.2: the
-blocks; v11.38: both versions kept, to compare). Applied as `× (1 + cau·(I − 1))` (`cau` = `SEA_FOG.cau` 0.8; 1 is
+blocks; v11.38: both versions kept, to compare). Applied as `× (1 + cau·(I − 1))` (`cau` = `SEA_FOG.cau` 0.8 × `FX.cauK`, the effects list's `brightness` slider, v11.38.1; 1 is
 physical; the readout's `t-y`), by the beam's share `uSunW.w`, `1 − 0.85·canopy`, and whether the beam reaches the face
 (`clamp(dot(fn, sun)·2.5)`, the shadows' `nl` rule). Each ring fades from the eye by its own wavelength (`CAU_FAR` [30, 70]
 wavelengths: the 0.65 m ring is gone by 45 m, the 3 m one by 210). `wd` gates the block to under water. Cost: 4 sines a fragment (the
@@ -1549,7 +1552,7 @@ distance — a designed pass, not a knob. `render` is CPU submission; the GPU ru
   260 px window; JS only translates the strip (`updateCompass`). North is −z; heading = −yaw. Fades in while moving or
   turning, out after 3.5 s still. The dot under the letters is the bearing of the peak (respawn), shown beyond 150 units
   from it; clamped to the window edge and dimmed when behind you. Remove it by deleting the `dist>150` block.
-- **The effects list (v11.23, `effects.js`, `#fx`):** the cosmetic systems switchable live — caustics, pixel light (v11.38: the caustic and the shadows in blocks, or smooth), shadows, world shadows, ground shadows (v11.30), sharp shadows, light shafts,
+- **The effects list (v11.23, `effects.js`, `#fx`):** the cosmetic systems switchable live — caustics (with a `brightness` slider under it, v11.38.1: `FX_SLIDERS`, a number in `FX_DEF` that persists with the switches), pixel light (v11.38: the caustic and the shadows in blocks, or smooth; off by default since v11.38.1), shadows, world shadows, ground shadows (v11.30), sharp shadows, light shafts,
   marine snow, rain, clouds, surface glow, vignette — in the lab panel's look, on the right. The word `effects` at the bottom right of the menu,
   or `e` on the menu and in play (the pointer is released while it is open, taken back on close; escape or a click on the canvas closes it).
   Saved in localStorage (`tethys.fx`). Each system reads `FX.key` where it draws; a switch is a key in `FX_DEF`, a row in `FX_LIST`, a read.
