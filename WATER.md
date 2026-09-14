@@ -112,7 +112,7 @@ Result: the shallows clear over sand, the shelf blue, the lagoon glassy, the far
 open shelf differing from above as they do from below. Fixes 2 and 3 together. Cost: ~12 ALU per tinted fragment, above water only. The
 biggest change to the sea's look from above; needs the person's eye at the shore, over the forest, from the cone.
 
-**B. The real Snell's window: refract the eye and read the sky.** In `SURF_MAT`'s underside branch: `T = refract(−V, N_down, 1/1.33)` in view
+**B. The real Snell's window: refract the eye and read the sky.** *Built v11.43.* In `SURF_MAT`'s underside branch: `T = refract(−V, N_down, 1/1.33)` in view
 space, to world by the fog's `uFogR` (already a uniform), then a *reduced* sky function of `T`: the zenith–horizon gradient (`uZen`, `uHor` by
 `T.y`), the sun's glow (`uGlow` toward `uSun`), the luminary's disc, the cover darkening it (`uCover`) — no cloud noise. Past the critical angle
 `refract` returns zero: that is the mirror (item C). This gives the rim's bright compressed horizon, the sun's disc wobbling per facet (retire the

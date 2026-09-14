@@ -278,7 +278,7 @@ ceiling with a hard edge along the crest line, visible only at eye level (v11–
 **emissive** — a reflection is not lit by the sun; until v11.3 it was diffuse, and at a low sun the far sea went dark and
 glassy and showed the far layer's trench through it — with alpha to 1.0 at grazing (0.96 before); foam (`vH/uAmp > 0.62`) at
 crests, Blinn-Phong glints toward the luminary. Underside look (camera
-below): the normal is flipped so sunlight reads as coming *through*; **Snell's window** `snell = smoothstep(0.25, 0.65,
+below; *v11.43: inside the window the eye is refracted through the facet and the sky read in that direction by `skyLite`, a reduced copy of the sky shader — the sun's disc through the facets is the glint, the shimmer sprite is gone; outside it the mirror is the veil in the reflected direction (v11.42.3); the numbers below are the v11.7–v11.42 window*): the normal is flipped so sunlight reads as coming *through*; **Snell's window** `snell = smoothstep(0.25, 0.65,
 |cos|)` between the view ray and the facet normal — inside it (overhead, out to ~15–50° elevation, softened past the
 physical 48°) the fixed colour `(0.22,0.46,0.56)`, emissive `(0.16,0.34,0.42)·(0.35+0.65·uDf)` and the refracted glint
 `T = refract(-V, -N, 1.33)`, `pow(dot(T,L),40)`, alpha 0.62; outside it the surface is a total-internal-reflection

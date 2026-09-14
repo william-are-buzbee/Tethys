@@ -3185,3 +3185,25 @@ so the far forest was a faint pale band with a bright row of card pads along the
 **Built** (far.js `FAR_IMP`): a `dim` per card kind on the instance tint — the stipe 0.55, the bladder 0.7; the raft and the tidal tree
 unchanged (`impostorsGen`). **Seen:** the far horizon from 10 m under, the cards' band gone into the veil; tests green.
 **Ask:** the swap at 450 m from the real kelp to the cards in daylight — whether it now reads darker than the kelp instead of paler.
+
+## v11.43 — the real Snell's window (14 Sep 2026)
+
+WATER.md B, on the person's "go ahead and do it". The underside's window was a constant colour (`(0.22,0.46,0.56)` diffuse plus a fixed
+emissive × `uWin`) with the sun stood in for by a 90 m additive sprite over the surface and a `pow(…,40)` glint.
+
+**Built** (atmosphere.js `SURF_MAT`, `SKYLITE_GLSL`): inside the window the eye is refracted through each facet into the air
+(`refract(-V,-normal,1.33)`, view space, to world by `uFogR`) and the sky is read in that direction by `skyLite` — a reduced copy of the
+sky shader (the gradient, the sun's aureole and horizon glow, its disc and glare, the moon's disc and halo, the deck's shade as a flat
+factor of `uCover`, no cloud noise, no stars) sharing the sky's own uniforms (`skyU`, pushed every frame now, since the sphere is hidden
+under water). Past the critical angle `refract` returns zero and the horizon's colour stands in, which the soft 15–50° band the person
+chose in v11.7 (`snell`) blends into the mirror of v11.42.3. So the sun wobbles facet by facet, a sunset lies warm along the rim, the
+moon comes through at night, and the flip between window and mirror per facet — the thing that reads as moving water — is kept. The
+diffuse inside the window is 0.3 of what it was (the sky carries it). **Gone:** the shimmer sprite (`sunMesh`, `sunTex`, `SHIM_H/A`)
+and its effects-list row `surface glow`; the refracted glint in `lights_fragment_end` (the disc and glare in `skyLite` are the glint);
+`uDf`. `SKY_FS` is the reference for `skyLite`: when its gradient or glare changes, change both.
+
+**Seen:** from 10 m under at noon facing the sun — the disc through the facets overhead, the sky's blue through the window, banded
+by the facets; from 2 m under — a pale sky through every facet, the far surface the mirror's teal; at sunset from 4 m — warm bands
+along the rim. `node build.js --test` green on both tiers. **Ask:** the window at night under the full moon; whether the sun through
+the facets reads brighter or duller than the sprite did (`skyLite`'s `uSunC*1.4` disc and the 0.92 on the window); the rim's
+horizon colour in the soft band (`snell`'s 0.25–0.65) — it is the sky's horizon now, not teal.
