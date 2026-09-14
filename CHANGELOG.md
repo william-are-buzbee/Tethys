@@ -2656,3 +2656,25 @@ green on both tiers; no shader errors either tier.
 reads as too much, `SEA_FOG.cau` (the readout's `t-y`) is the knob and 0.5 is a reasonable floor before anything structural; (2)
 a darker floor at 8–15 m, where the 0.7–1 m trains focus and the net should be at its most legible; (3) the low tier's three-train
 web; (4) the rest of v11.35's list.
+
+
+## v11.35.2 — the sun has a size, and the net has two tones (13 Sep 2026)
+
+The person looked at v11.35.1 in play at 12 m over the shelf's sand: "still kinda looks weird". The screenshot was a uniform
+halftone — every train contributing equally everywhere, and quarter-step quantisation on 30 cm cells reading as a dot screen, not
+as facets. Two fixes, both with a reason.
+
+**The sun's disc.** A half-degree sun, widened by forward scatter in the water, blurs the floor's pattern by `d·θ`; at 12 m that is
+~14 cm, which erases a 35 cm train's contrast (×0.04) and leaves the metre trains (×0.7–0.9). Deep caustics are large and soft for
+exactly this reason. Now per train: each Hessian term is scaled by `exp(−2(π·d·CAU_SUN/L)²)` (`CAU_SUN` 0.012 rad), replacing the
+crude `exp(−d/CAU_D)` on the whole — the short trains own the shallows, the long ones the deep, and the mean stays 1 at every depth.
+
+**Two tones.** `CAU_Q` 2: with `CAU_LO` 0.75 the only level that survives rounding is ×1.5, where the focus is 1.25 or more. Pale
+lines on the floor and nothing else — Wind Waker's caustic, which is the low-poly reference for this — no dark cells, no dither. The
+mean is now a little over 1 (the lines' share, ~1.1 at their densest) rather than exactly 1; `SEA_FOG.cau` 0.8 stands.
+
+**Seen** on the menu's sand at 800×600, two frames: a two-tone net of pale lines, cells 30–60 cm, wandering; the sand between them
+its own colour. `node build.js --test` green on both tiers.
+
+**Unseen, ask in this order:** (1) the person's 12 m view: the metre trains alone should give a soft, sparse net there, cells ~1 m;
+(2) whether the lines' coverage in the shallows is too dense — `CAU_LO` up (0.8: only focus ≥1.3 shows) thins them; (3) v11.35.1's list.

@@ -674,16 +674,16 @@ the wind (v11.35.1: 1.6–2.5 m at 2 cm was a lattice of white ovals in play, th
 amplitude × `uChop` (a calm goes glassy and the web dies). The ripples ride the swell: the surface point is carried by the horizontal
 orbital displacement (`A sin`, along the wave) of the `CAU_SWELL` 4 longest `WAVES` — ~2 rad of ripple phase from the 46 m swell alone —
 which is what keeps three fixed trains from interfering into a lattice (seen: without it, a grid of ovals). The Hessian is analytic
-(`−A k² sin · dir⊗dir` per train), damped by `exp(−d/CAU_D)` (18 m; the beam's spreading by scatter — the contrast fades, the mean
-stays 1; at the surface `d·c·H → 0` gives 1 on its own, no onset needed), the result clamped to [`CAU_LO` 0.75, `CAU_HI` 1.5] and
-quantised in steps of 1/`CAU_Q` (4): the cells one quiet step down, the lines two up, drawn in the facets' vocabulary as the cloud
-deck's three-step light is (v11.35.1: HI 2 was a clip on sand). Applied as `× (1 + cau·(I − 1))` (`cau` = `SEA_FOG.cau` 0.8; 1 is
+(`−A k² sin · dir⊗dir` per train), each train blurred by the sun's disc and the beam's scatter (v11.35.2: `exp(−2(π·d·CAU_SUN/L)²)`,
+`CAU_SUN` 0.012 rad — a 35 cm train is gone by 12 m, the metre trains carry the deep; the mean stays 1 at every depth; at the surface
+`d·c·H → 0` gives 1 on its own), the result clamped to [`CAU_LO` 0.75, `CAU_HI` 1.5] and quantised in steps of 1/`CAU_Q` (2): one
+visible level, ×1.5 where the focus is 1.25 or more — pale lines on the floor and nothing else, Wind Waker's caustic (v11.35.1: HI 2
+was a clip; v11.35.2: quarter steps were a halftone on 30 cm cells). Applied as `× (1 + cau·(I − 1))` (`cau` = `SEA_FOG.cau` 0.8; 1 is
 physical; the readout's `t-y`), by the beam's share `uSunW.w`, `1 − 0.85·canopy`, and whether the beam reaches the face
 (`clamp(dot(fn, sun)·2.5)`, the shadows' `nl` rule). Each train fades from the eye by its own wavelength (`CAU_FAR` [30, 70]
 wavelengths: the 0.35 m train is gone by 25 m, the 2.2 m one by 150 — one distance for all had the short train speckling while the
 long one was still legible). `wd` gates the block to under water. Cost: 10 sines a fragment (4 carry, 6 trains); skipped whole at night
-and under a shower (`uSunW.w` < 0.002). Seen on the menu's sand (13 Sep, v11.35.1): an irregular dapple of 20–40 cm cells that wanders;
-the sand's albedo has no headroom above 1, so there the net shows mostly as its cells; the lines want a darker floor.
+and under a shower (`uSunW.w` < 0.002). Seen on the menu's sand (13 Sep, v11.35.2): a two-tone net of pale lines, cells 30–60 cm, wandering.
 
 **The sun under water (`atmosphere.js` `updateSky` → `SUN_W`).** The luminary refracted at the surface, `sin θw = sin θa / 1.33`, so a
 setting sun's beam under water is never flatter than 48° from the vertical; `w` = the beam's share of the light,
