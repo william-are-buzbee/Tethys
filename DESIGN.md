@@ -668,9 +668,9 @@ from surface to floor has Jacobian `J = I − d·c·H` (`c` = 1 − 1/1.33, the 
 irradiance is `1/|det J|` — mean 1 over the floor by construction, so light is redistributed and never added (v11.13's was a gain,
 `1 + 1.3·k`, and blew the sand to white: that was the "looks ridiculously good" of the audit). The swell can't do it — `WAVES`' shortest
 (L 6, A 0.06) focuses at ~60 m, never in the top 30 — the web is the wind's ripples, 1–3 m, which the surface mesh can't hold anyway;
-so `CAU_RINGS` is that ripple layer, living only in the light — and baked (v11.36): four rings of eight trains (2, 1.2, 0.75, 0.45 m;
+so `CAU_RINGS` is that ripple layer, living only in the light — and baked (v11.36): four rings of eight trains (3, 1.8, 1.1, 0.65 m — v11.36.1, ×1.5: the person found 2–0.45 "small dots";
 `Q.cau` 4 high, 2 low) on the `CAU_TILE` 16 m lattice, spread ±`CAU_SPREAD` 1.2 rad round the wind, random phases (`mulberry(1717)`),
-amplitudes at RMS slope ~0.15; per ring two 192² byte tiles hold the sin and cos parts of (Hxx, Hxy, Hzz), and the fragment
+amplitudes at RMS slope ~0.2; per ring two 192² byte tiles hold the sin and cos parts of (Hxx, Hxy, Hzz), and the fragment
 recovers the exact broadband field at any time from two taps and one sincos a ring, since sin(k·x − ωt + φ) = sin(k·x+φ)cos ωt −
 cos(k·x+φ)sin ωt (v11.35–v11.35.3: three then six per-fragment sines were a lattice, a stripe band, a print, then dots — a net
 needs a random field), each ring at its deep-water speed √(gk) on `uTime`,
@@ -680,15 +680,14 @@ which is what keeps three fixed trains from interfering into a lattice (seen: wi
 tiles' (`−A k² sin · dir⊗dir` per train, summed at the bake), each ring blurred by the sun's disc and the beam's scatter (v11.35.2: `exp(−2(π·d·CAU_SUN/L)²)`,
 `CAU_SUN` 0.02 rad — at 14 m only the 1.4–2.2 m trains survive, cells ~1 m; by 25 m it is quiet; the mean stays 1 at every depth; at
 the surface `d·c·H → 0` gives 1 on its own), then a line where the focus `1/|det J|` reaches `CAU_T` 3 — `smoothstep(CAU_T ±
-`CAU_SOFT` 0.8)` × `CAU_HI` 1.5 — pale lines on the floor and nothing else, 18% of it at 5 m and 10% at 16, Wind Waker's caustic
+`CAU_SOFT` 0.8)` × `CAU_HI` 1.5 — pale lines on the floor and nothing else, ~22% of it from 5 to 16 m, Wind Waker's caustic
 with a soft edge (v11.35.1: a clamp of 2 was a clip; v11.35.2: quarter steps were a halftone; v11.35.3: a hard two-tone was a print;
 v11.36: a threshold of 1.5 was fat worms over a third of the floor — a fold line is thin only where |det| is small). Applied as `× (1 + cau·(I − 1))` (`cau` = `SEA_FOG.cau` 0.8; 1 is
 physical; the readout's `t-y`), by the beam's share `uSunW.w`, `1 − 0.85·canopy`, and whether the beam reaches the face
 (`clamp(dot(fn, sun)·2.5)`, the shadows' `nl` rule). Each ring fades from the eye by its own wavelength (`CAU_FAR` [30, 70]
-wavelengths: the 0.45 m ring is gone by 32 m, the 2 m one by 140). `wd` gates the block to under water. Cost: 4 sines a fragment (the
+wavelengths: the 0.65 m ring is gone by 45 m, the 3 m one by 210). `wd` gates the block to under water. Cost: 4 sines a fragment (the
 carry), 2 taps and a sincos a ring; ~2.4 M sines once at boot; skipped whole at night
-and under a shower (`uSunW.w` < 0.002). Seen (13 Sep, v11.36) in `test/caustic.js`'s pictures: a net of thin wandering lines round 0.5–1 m cells at 5 m, soft sparse dashes
-at 16 m; on the menu's sand thin pale lines — white sand gives it little to show against. Tune in `test/caustic.js` first.
+and under a shower (`uSunW.w` < 0.002). Seen (13 Sep, v11.36) in `test/caustic.js`'s pictures: a net of connected lines round 1–1.5 m cells at 10 m (v11.36.1); on the menu's sand thin pale lines — white sand gives it little to show against. Tune in `test/caustic.js` first.
 
 **The sun under water (`atmosphere.js` `updateSky` → `SUN_W`).** The luminary refracted at the surface, `sin θw = sin θa / 1.33`, so a
 setting sun's beam under water is never flatter than 48° from the vertical; `w` = the beam's share of the light,

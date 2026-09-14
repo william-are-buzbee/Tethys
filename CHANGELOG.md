@@ -2735,3 +2735,18 @@ long rings alone, which is what deep caustics do. The menu's sand in the app's b
 its softness `CAU_SOFT`, its strength `t-y`; (2) whether the 16 m tile's repeat shows on a long flat (the swell carry warps it; a
 32 m tile at 384² would cost ~10 M sines at boot); (3) the low tier's two long rings; (4) the boot cost on the person's PC — the bake
 is synchronous in scene.js's load, behind the fade.
+
+
+## v11.36.1 — the rings half again as long (13 Sep 2026)
+
+The person looked at v11.36 at 10 and 12 m over the shelf: "much better … still kinda small dots, but they come on naturally". The
+shape is right now, so the rest is scale: `CAU_RINGS` ×1.5 in wavelength — 3, 1.8, 1.1, 0.65 m — with the amplitudes ×2 so the
+steepness holds (`A k²` scales as 1/L; RMS slope ~0.2, still a breezy sea) and the folds keep forming at 5 m. Nothing else moved.
+
+**Seen** in `test/caustic.js`: at 10 m a net of connected lines round 1–1.5 m cells (was 0.5–1), the lines over 22–23% of the floor at
+5, 10 and 16 m alike. `node build.js --test` green on both tiers. Not looked at in the browser this round: the menu's white sand shows
+nothing the picture doesn't, and the person is the one swimming.
+
+**Unseen, ask in this order:** (1) the same 10–12 m views — if the cells are still small, the rings can go ×1.5 again (the tile holds
+it: a 1 m ring at 12 texels a wavelength) though 4.5 m ripples are a stretch to call wind ripples; if the net is now too dense,
+`CAU_T` 3.5; (2) v11.36's list.

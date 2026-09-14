@@ -224,7 +224,7 @@ const lightKU={value:LIGHT_K};
 // cos(k·x+φ)sin ωt — and the fragment recovers the exact field at any time from two taps and one sincos a ring. The wave vectors sit
 // on the CAU_TILE lattice (k = 2π n / T) so the tile wraps; a ring is the lattice vectors whose wavelength lies within ±18% of its own.
 // CAU_RINGS: [wavelength m, amplitude m per train at full chop]; Q.cau rings are used, longest first (4 high, 2 low). Bytes, ±CAU_HMAX.
-const CAU_RINGS=[[2.0,0.011],[1.2,0.007],[0.75,0.004],[0.45,0.0022]],CAU_DIRS=8,CAU_SPREAD=1.2,CAU_TILE=16,CAU_N=192,CAU_HMAX=1.2;
+const CAU_RINGS=[[3.0,0.022],[1.8,0.014],[1.1,0.008],[0.65,0.0044]],CAU_DIRS=8,CAU_SPREAD=1.2,CAU_TILE=16,CAU_N=192,CAU_HMAX=1.2;
 const CAU_SUN=0.02,CAU_T=3.0,CAU_SOFT=0.8,CAU_HI=1.5,CAU_SWELL=4,CAU_FAR=[30,70]; // the beam's angular spread rad (v11.35.2: the sun's half-degree disc plus forward scatter; a ring's contrast at depth d falls by exp(-2(pi d CAU_SUN/L)^2), so the deep is the long rings' alone); the focus a line needs (1/|det J| at or over CAU_T; v11.36: 3 — a fold line is thin only where |det| is small, 1.5 was fat worms over a third of the floor) and the half-width of the step to it (v11.35.3: a hard two-tone at 40 cm read as a print); the line's brightness; how many of WAVES, longest first, the ripples ride; the fade from the eye per ring, in wavelengths
 const CAU_TEX=[];
 (function(){ // the bake: for each ring, the lattice vectors in its band, one train per direction bin within the spread, then the tiles
