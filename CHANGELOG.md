@@ -3008,3 +3008,18 @@ previews of fin (stripes), soft (spots) and crusher. `node build.js --test` gree
 (2) spots at 30% of scale² clusters — a ringmouth up close; (3) the vein on a real blade at a metre (the floor shot had only tufts);
 (4) the strata on a wall — the cell there is a column along x or z, so the stripe is by `vWy` and stays level, as it should; (5) the
 far cards' vein against the near plant's at the `FLORA_FAR` hand-off; (6) the bestiary run-through, every species' clade default.
+
+
+## v11.41.1 — the strata binned, the rock grain coarse, texels on their own switch (14 Sep 2026)
+
+The person on v11.41: "those textures look AWESOME", the sand's grain good; two comments. **The rings round the rocks go**: they were
+`PIX_STRATA`, the darker stratum every 1.2 m of world height, which on a boulder is a set of level rings — gone, knob and all. The rock's
+grain is coarse instead: hashed on clumps of `PIX_ROCK_CLUMP` 3 cells (0.9 m), weight 0.7. **The switch is two**: `pixel light` (the
+caustic and the shadows in blocks, `uPix`, as v11.38 had it) and `texels` (the de-res and the pattern, a new uniform `uTex`; the shimmer
+hides with it), so the textures can be tried under the smooth light. Both off by default; a saved `pixel` choice is kept, `texels` starts
+off. The lab's note and the smoke test follow the new key.
+
+**Seen:** the effects list with both rows; texels on and pixel light off — the sand grained under the smooth caustic and the soft shadow;
+a boulder with no rings and 0.9 m clumps. `node build.js --test` green on both tiers.
+
+**Unseen:** the boulder's coarse grain up close — 0.7 at 0.9 m may want more weight now that the strata are gone.

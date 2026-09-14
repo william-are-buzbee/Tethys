@@ -687,8 +687,7 @@ tiles' (`−A k² sin · dir⊗dir` per train, summed at the bake), each ring bl
 cut is the floating colonies' canopy mask, 85% under a raft mat) — the short rings go first, so the cells grow with depth; and the contrast fades by
 `exp(−d/CAU_D)`, 30 m (v11.38.1: the beam's diffusion by scatter — the person had a clear net at 73 m; real caustics are gone by 25–30 m
 in clear water); the mean stays 1 at every depth; at
-the surface `d·c·H → 0` gives 1 on its own), then a line where the focus `1/|det J|` reaches `CAU_T` 3 × `CAU_HI` 1.5 — in one of two versions, one switch (v11.38 as `pixel light`; `pixel` since v11.40, when the de-res joined it — "The de-res", below; on
-the effects list, `uPix`): **pixel** — a hard `step`, the surface point snapped to a `CAU_PX` 0.3 m world grid after the swell carry
+the surface `d·c·H → 0` gives 1 on its own), then a line where the focus `1/|det J|` reaches `CAU_T` 3 × `CAU_HI` 1.5 — in one of two versions, one switch (v11.38, `pixel light` on the effects list, `uPix`; the de-res — "The de-res", below — is its own row, `texels`, since v11.41.1): **pixel** — a hard `step`, the surface point snapped to a `CAU_PX` 0.3 m world grid after the swell carry
 (v11.36.2, the person: the shader was too clean for the world), the pattern moving through the blocks like a display, and the shadows
 read at the same grid (the receiver point snapped and moved along its face's plane, one hard tap; [The shadows](#the-light)) — one grain
 for both; **smooth** — no snap, a `smoothstep` `CAU_SOFT` 0.5 either side of `CAU_T` (v11.38.1: 1.2 painted weak focus as broad faint smears
@@ -833,7 +832,7 @@ hash, the coats' patterns, `test/preview.js PIX=1`), C (the sea surface, the pix
 **The pattern in the texel (v11.41, PIXEL.md pass B; scene.js `PIX_CLS_GLSL`, creatures_spec.js "the texel pattern").** After the posterise,
 one multiplier per cell: a hash of the cell's index gives {−1, 0, +1} × `PIX_GRAIN` 0.06, weighted by the material's class (`PIX_CLASS` — `cls`,
 `addTint`'s sixth argument: terr [rock 0.6, sand 1.0] by the vertex colour's luminance, rock 0.6, plant/blade/card 0.4, body 0.5), plus the
-class's mark: rock a darker stratum every `PIX_STRATA` 4 cells of world height by 0.08; a blade or card a vein every `PIX_VEIN` 3 cells across
+class's mark: rock its grain on clumps of `PIX_ROCK_CLUMP` 3 cells (v11.41.1; the strata by world height were rings round every boulder, binned); a blade or card a vein every `PIX_VEIN` 3 cells across
 the growth axis by 0.08; a body its coat's pattern in body space — `spec.pattern {kind, scale, tone}` from `PATTERNS` (none, stripes: bands
 along z; spots: hashed clusters of scale² cells at 30%; plates: a grid of scale cells with a darker seam; scales: the same with every other row
 offset), by clade unless the spec says (`PATTERN_BY_CLADE`: ringmouths spots, slowbloods stripes, hingeshells plates, drifters none; `PATTERN_DEF`
@@ -1582,7 +1581,7 @@ distance — a designed pass, not a knob. `render` is CPU submission; the GPU ru
   260 px window; JS only translates the strip (`updateCompass`). North is −z; heading = −yaw. Fades in while moving or
   turning, out after 3.5 s still. The dot under the letters is the bearing of the peak (respawn), shown beyond 150 units
   from it; clamped to the window edge and dimmed when behind you. Remove it by deleting the `dist>150` block.
-- **The effects list (v11.23, `effects.js`, `#fx`):** the cosmetic systems switchable live — caustics (with a `brightness` slider under it, v11.38.1: `FX_SLIDERS`, a number in `FX_DEF` that persists with the switches), pixel (v11.38 as `pixel light`: the caustic and the shadows in blocks, or smooth; v11.40: the de-res with them — every tinted surface in texels, PIXEL.md pass A; off by default since v11.38.1), shadows, world shadows, ground shadows (v11.30), sharp shadows, light shafts,
+- **The effects list (v11.23, `effects.js`, `#fx`):** the cosmetic systems switchable live — caustics (with a `brightness` slider under it, v11.38.1: `FX_SLIDERS`, a number in `FX_DEF` that persists with the switches), pixel light (v11.38: the caustic and the shadows in blocks, or smooth; off by default since v11.38.1), texels (v11.40–41, its own row since v11.41.1: every tinted surface in texels with a pattern per cell, PIXEL.md; off by default), shadows, world shadows, ground shadows (v11.30), sharp shadows, light shafts,
   marine snow, rain, clouds, surface glow, vignette — in the lab panel's look, on the right. The word `effects` at the bottom right of the menu,
   or `e` on the menu and in play (the pointer is released while it is open, taken back on close; escape or a click on the canvas closes it).
   Saved in localStorage (`tethys.fx`). Each system reads `FX.key` where it draws; a switch is a key in `FX_DEF`, a row in `FX_LIST`, a read.

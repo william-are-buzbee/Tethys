@@ -239,6 +239,7 @@ const CAU_GUST=[110,0.75],CAU_GN=64;
 // interpolant; the flat-shaded terrain's light is constant over a facet anyway). The cell is a column along the face's dominant axis — the xz grid on a floor,
 // yz or xy on a wall — the three-way pick a Minecraft block makes; the centre is moved along the face's plane so it stays on the surface. The fog stays
 // continuous (decided: water is not a surface); the caustic and the shadows snap themselves (v11.38). Off, the whole thing is one uniform test.
+// v11.41.1: its own switch, `texels` (uTex, texU) — the person wants the textures with the smooth light too, so the light's blocks (uPix) and the texels are separate rows on the effects list.
 const PIX_T=0.3,PIX_TB=0.15,PIX_TONES=16; // the world's texel m (= CAU_PX), the bodies' texel m, tone levels per channel
 const CAU_SUN=0.02,CAU_T=3.0,CAU_SOFT=0.5,CAU_HI=1.5,CAU_D=30,CAU_DARK=0.35,CAU_SWELL=4,CAU_FAR=[30,70],CAU_PX=PIX_T,CAU_STEP=0;
 // CAU_DARK (v11.39, PLANET decided 14 Sep: light is moved, not made): the cells of the net — where the surface defocuses, 1/|det J| < 1 — are darkened by
@@ -251,31 +252,31 @@ const CAU_SUN=0.02,CAU_T=3.0,CAU_SOFT=0.5,CAU_HI=1.5,CAU_D=30,CAU_DARK=0.35,CAU_
 // Smooth: no snap, and a wide soft step (CAU_SOFT) for the caustic and the four-tap penumbra for the shadows — the OG's broad sweeping patches over the
 // baked structure. The snapped point is moved along the face's plane (dy = −(fn.x·dx + fn.z·dz)/fn.y), so it stays on the surface and a slope takes no acne;
 // a face steeper than ~72° (|fn.y| < 0.3) is not snapped.
-const pixU={value:1},windOffU={value:new THREE.Vector2(0,0)}; // uWindOff: the wind's integral (K.windOff, atmosphere.js) modulo the gust tile, for the gusts' drift (v11.39) // v11.37: CAU_SUN back to 0.02 — 0.03 left every floor past ~18 m dark (the person: "nothing in the kelp forest"); CAU_PX 0.3, lines two or three blocks wide at these scales // the beam's angular spread rad (v11.35.2: the sun's half-degree disc plus forward scatter; a ring's contrast at depth d falls by exp(-2(pi d CAU_SUN/L)^2), so the deep is the long rings' alone); the focus a line needs (1/|det J| at or over CAU_T; v11.36: 3 — a fold line is thin only where |det| is small, 1.5 was fat worms over a third of the floor) and the half-width of the step to it (v11.35.3: a hard two-tone at 40 cm read as a print); the line's brightness; how many of WAVES, longest first, the ripples ride; the fade from the eye per ring, in wavelengths
+const pixU={value:1},texU={value:0},windOffU={value:new THREE.Vector2(0,0)}; // uWindOff: the wind's integral (K.windOff, atmosphere.js) modulo the gust tile, for the gusts' drift (v11.39) // v11.37: CAU_SUN back to 0.02 — 0.03 left every floor past ~18 m dark (the person: "nothing in the kelp forest"); CAU_PX 0.3, lines two or three blocks wide at these scales // the beam's angular spread rad (v11.35.2: the sun's half-degree disc plus forward scatter; a ring's contrast at depth d falls by exp(-2(pi d CAU_SUN/L)^2), so the deep is the long rings' alone); the focus a line needs (1/|det J| at or over CAU_T; v11.36: 3 — a fold line is thin only where |det| is small, 1.5 was fat worms over a third of the floor) and the half-width of the step to it (v11.35.3: a hard two-tone at 40 cm read as a print); the line's brightness; how many of WAVES, longest first, the ripples ride; the fade from the eye per ring, in wavelengths
 const CAU_TEX=[];let CAU_GTEX=null;
 // the de-res fragment (v11.40; the reasoning at PIX_T): the grid-space tangent basis gx, gy from the varying, the cell centre's offset d put on the face's
 // plane along its dominant axis, the 2×2 solve for the screen offset (a, b) that moves by d, the colour extrapolated there and posterised. det guards a
 // face seen edge-on (nothing to extrapolate along). `grid` 'world' sizes the cell PIX_T; otherwise PIX_T for an instance and PIX_TB for a body.
 // The pattern in the texel (v11.41, PIXEL.md pass B): a tone step per cell from a hash of the cell's index, ±PIX_GRAIN weighted by the material's
-// class (PIX_CLASS: sand heavy, rock and the plants lighter, a body by half), and the class's own mark — rock: a darker stratum every PIX_STRATA[0]
-// cells of world height; a blade or a card: a vein, a darker line every PIX_VEIN[0] cells across the growth axis; the terrain: sand grain heavy,
+// class (PIX_CLASS: sand heavy, rock and the plants lighter, a body by half), and the class's own mark — rock: the grain on clumps of PIX_ROCK_CLUMP
+// cells (v11.41.1; a stratum every 1.2 m of world height was rings round every boulder — binned by the person); a blade or a card: a vein, a darker line every PIX_VEIN[0] cells across the growth axis; the terrain: sand grain heavy,
 // rock grain light, told apart by the vertex colour's luminance (the terrain colours by substrate); a body: its coat's pattern (creatures_spec.js
 // PATTERNS, by clade unless the spec says — the person's rule, PIXEL.md Decided 5), carried per vertex as aPat (kind, cells per period, tone) on
 // the body's own geometry, drawn in body space: stripes are bands along z (every creature faces +z), spots hashed clusters of scale² cells at a
 // threshold, plates a coarser grid with a darker seam, scales the same grid with every other row offset by half. Applied after the posterise as
 // one multiplier, so the grain is a step of tone and not quantised away. The chosen cell is the column along the face's dominant axis (pass A),
 // so the pattern is read on the two axes across it (cid) and the across-growth index (ca) is the one not the growth axis.
-const PIX_GRAIN=0.06,PIX_CLASS={terr:[0.6,1.0],rock:0.6,plant:0.4,blade:0.4,card:0.4,body:0.5},PIX_STRATA=[4,0.08],PIX_VEIN=[3,0.08]; // the tone step; the grain weight per class (terr: [rock, sand] by luminance); a stratum every n cells by this much; a vein every n cells across by this much
+const PIX_GRAIN=0.06,PIX_CLASS={terr:[0.6,1.0],rock:0.7,plant:0.4,blade:0.4,card:0.4,body:0.5},PIX_ROCK_CLUMP=3,PIX_VEIN=[3,0.08]; // the tone step; the grain weight per class (terr: [rock, sand] by luminance); rock's grain hashed on clumps of n cells (v11.41.1: the person wanted it "much more coarse"); a vein every n cells across by this much
 const PIX_CLS_GLSL=cls=>(cls==='terr'?'\n#ifdef USE_COLOR\nfloat pw=mix('+PIX_CLASS.terr[0].toFixed(2)+','+PIX_CLASS.terr[1].toFixed(2)+',smoothstep(0.3,0.6,dot(vColor,vec3(0.3,0.5,0.2))));\n#else\nfloat pw='+PIX_CLASS.terr[1].toFixed(2)+';\n#endif\n':'float pw='+(PIX_CLASS[cls]||0).toFixed(2)+';')+
   'float tn=(floor(ph*3.0)-1.0)*'+PIX_GRAIN.toFixed(3)+'*pw;'+
-  (cls==='rock'?'if(mod(floor(vWy/pt),'+PIX_STRATA[0].toFixed(1)+')<0.5)tn-='+PIX_STRATA[1].toFixed(3)+';':'')+
+  (cls==='rock'?'ph=fract(sin(dot(floor(cid/'+PIX_ROCK_CLUMP.toFixed(1)+'),vec2(12.9898,78.233)))*43758.5453);tn=(floor(ph*3.0)-1.0)*'+PIX_GRAIN.toFixed(3)+'*pw;':'')+
   (cls==='blade'||cls==='card'?'if(mod(ca,'+PIX_VEIN[0].toFixed(1)+')<0.5)tn-='+PIX_VEIN[1].toFixed(3)+';':'')+
   (cls==='body'?'float pk=vPat.x,psc=max(vPat.y,1.0),pto=vPat.z;'+
     'if(pk>0.5&&pk<1.5){if(mod(floor(ci.z/psc),2.0)<0.5)tn-=pto;}'+
     'else if(pk<2.5){if(fract(sin(dot(floor(cid/psc),vec2(41.17,7.31)))*23758.545)<0.3)tn-=pto;}'+
     'else if(pk<3.5){vec2 pm=mod(cid,psc);if(pm.x<0.5||pm.y<0.5)tn-=pto;}'+
     'else if(pk<4.5){float prow=floor(cid.y/psc);float pcx=cid.x+(mod(prow,2.0)<0.5?0.0:floor(psc*0.5));if(mod(cid.y,psc)<0.5||mod(pcx,psc)<0.5)tn-=pto;}':'');
-const PIX_GLSL=(grid,cls)=>'if(uPix>0.5){vec3 gx=dFdx(vGrid),gy=dFdy(vGrid);float xx=dot(gx,gx),xy=dot(gx,gy),yy=dot(gy,gy),det=xx*yy-xy*xy;if(det>1e-4*xx*yy){'+(grid==='world'?'float pt='+PIX_T.toFixed(3)+';':'\n#ifdef USE_INSTANCING\nfloat pt='+PIX_T.toFixed(3)+';\n#else\nfloat pt='+PIX_TB.toFixed(3)+';\n#endif\n')+
+const PIX_GLSL=(grid,cls)=>'if(uTex>0.5){vec3 gx=dFdx(vGrid),gy=dFdy(vGrid);float xx=dot(gx,gx),xy=dot(gx,gy),yy=dot(gy,gy),det=xx*yy-xy*xy;if(det>1e-4*xx*yy){'+(grid==='world'?'float pt='+PIX_T.toFixed(3)+';':'\n#ifdef USE_INSTANCING\nfloat pt='+PIX_T.toFixed(3)+';\n#else\nfloat pt='+PIX_TB.toFixed(3)+';\n#endif\n')+
   'vec3 nn=cross(gx,gy),an=abs(nn);vec3 ci=floor(vGrid/pt);vec3 d=(ci+0.5)*pt-vGrid;vec2 cid;float ca;if(an.y>=an.x&&an.y>=an.z){d.y=-(nn.x*d.x+nn.z*d.z)/nn.y;cid=ci.xz;ca=ci.x;}else if(an.x>=an.z){d.x=-(nn.y*d.y+nn.z*d.z)/nn.x;cid=ci.yz;ca=ci.z;}else{d.z=-(nn.x*d.x+nn.y*d.y)/nn.z;cid=ci.xy;ca=ci.x;}'+
   'float bx=dot(gx,d),by=dot(gy,d),a=(yy*bx-xy*by)/det,b=(xx*by-xy*bx)/det;vec3 c0=gl_FragColor.rgb;c0+=a*dFdx(c0)+b*dFdy(c0);c0=floor(clamp(c0,0.0,1.0)*'+(PIX_TONES-1).toFixed(1)+'+0.5)/'+(PIX_TONES-1).toFixed(1)+';'+
   'float ph=fract(sin(dot(cid,vec2(12.9898,78.233)))*43758.5453);'+PIX_CLS_GLSL(cls)+'gl_FragColor.rgb=c0*(1.0+tn);}}';
@@ -310,7 +311,7 @@ function cauFocus(x,z,dep,t){
     hxx+=(S[o]-127.5)*cp-(C[o]-127.5)*sp;hxy+=(S[o+1]-127.5)*cp-(C[o+1]-127.5)*sp;hzz+=(S[o+2]-127.5)*cp-(C[o+2]-127.5)*sp;}
   const jc=dep*0.248*SEA_CHOP,dj=(1-jc*hxx)*(1-jc*hzz)-jc*jc*hxy*hxy;return 1/Math.max(Math.abs(dj),0.02);
 }
-const CAU_PARS=CAU_TEX.map((r,i)=>'uniform sampler2D uCauS'+i+';uniform sampler2D uCauC'+i+';').join('')+'uniform sampler2D uCauG;uniform float uPix;uniform vec2 uWindOff;';
+const CAU_PARS=CAU_TEX.map((r,i)=>'uniform sampler2D uCauS'+i+';uniform sampler2D uCauC'+i+';').join('')+'uniform sampler2D uCauG;uniform float uPix;uniform float uTex;uniform vec2 uWindOff;';
 const CAU_GLSL=(function(){let s='vec2 ps=vFogPos.xz+uSunW.xz*(dep/max(uSunW.y,0.3));vec3 H=vec3(0.0);float ct='+(CAU_STEP>0?'floor(uTime*'+CAU_STEP.toFixed(1)+')/'+CAU_STEP.toFixed(1):'uTime')+';';
   // the ripples ride the swell: the surface's horizontal orbital displacement (A sin, along the wave) carries the ripple field with it — for a 1.6 m ripple on a 46 m swell of 0.5 m that is ~2 rad of phase, and it is what keeps three fixed trains from interfering into a lattice (seen, 13 Sep)
   for(let i=0;i<CAU_SWELL;i++){const w=WAVES[i];s+='ps+=vec2('+w.dx.toFixed(5)+','+w.dz.toFixed(5)+')*('+w.A.toFixed(3)+(w.L<20?'*uChop':'')+'*sin(dot(ps,vec2('+w.dx.toFixed(5)+','+w.dz.toFixed(5)+'))*'+w.k.toFixed(5)+'-'+w.w.toFixed(5)+'*ct+'+w.ph.toFixed(4)+'));';}
@@ -473,7 +474,7 @@ function addTint(m,key,small,band,grid,cls){ // grid (v11.40): 'world' puts the 
   m.onBeforeCompile=function(sh){
     if(prev)prev.call(m,sh);
     sh.uniforms.uTint=tintU;if(small)sh.uniforms.uFogP={value:FOG_PS};
-    const lit=LIGHT_FX&&key!=='glow';if(lit){sh.uniforms.uTime=timeU;sh.uniforms.uChop=chopU;sh.uniforms.uSunW={value:SUN_W};for(let i=0;i<CAU_TEX.length;i++){sh.uniforms['uCauS'+i]={value:CAU_TEX[i].s};sh.uniforms['uCauC'+i]={value:CAU_TEX[i].c};}sh.uniforms.uCauG={value:CAU_GTEX};sh.uniforms.uPix=pixU;sh.uniforms.uWindOff=windOffU;sh.uniforms.uLightK=lightKU;sh.uniforms.uShMap=shMapU;sh.uniforms.uShMat=shMatU;sh.uniforms.uShP=shPU;sh.uniforms.uShL=shLU;sh.uniforms.uShMapS=shMapSU;sh.uniforms.uShMatS=shMatSU;sh.uniforms.uShPS=shPSU;sh.uniforms.uShLS=shLSU;}
+    const lit=LIGHT_FX&&key!=='glow';if(lit){sh.uniforms.uTime=timeU;sh.uniforms.uChop=chopU;sh.uniforms.uSunW={value:SUN_W};for(let i=0;i<CAU_TEX.length;i++){sh.uniforms['uCauS'+i]={value:CAU_TEX[i].s};sh.uniforms['uCauC'+i]={value:CAU_TEX[i].c};}sh.uniforms.uCauG={value:CAU_GTEX};sh.uniforms.uPix=pixU;sh.uniforms.uTex=texU;sh.uniforms.uWindOff=windOffU;sh.uniforms.uLightK=lightKU;sh.uniforms.uShMap=shMapU;sh.uniforms.uShMat=shMatU;sh.uniforms.uShP=shPU;sh.uniforms.uShL=shLU;sh.uniforms.uShMapS=shMapSU;sh.uniforms.uShMatS=shMatSU;sh.uniforms.uShPS=shPSU;sh.uniforms.uShLS=shLSU;}
     sh.vertexShader='varying float vWy;'+(lit?'varying vec3 vGrid;':'')+(lit&&cls==='body'?'varying vec3 vPat;\n#ifndef USE_INSTANCING\nattribute vec3 aPat;\n#endif\n':'')+'\n'+(lit?sh.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvec3 pGrid=transformed;'):sh.vertexShader).replace('#include <worldpos_vertex>','#include <worldpos_vertex>\n{vec4 wpp=vec4(transformed,1.0);\n#ifdef USE_INSTANCING\nwpp=instanceMatrix*wpp;\n#endif\nvWy=(modelMatrix*wpp).y;'+(lit?PIX_GRID_V(grid):'')+(lit&&cls==='body'?'\n#ifdef USE_INSTANCING\nvPat=vec3(0.0);\n#else\nvPat=aPat;\n#endif\n':'')+'}');
     sh.fragmentShader='uniform vec4 uTint;varying float vWy;'+(lit?'varying vec3 vGrid;':'')+(lit&&cls==='body'?'varying vec3 vPat;':'')+'\n'+(lit?LIGHT_PARS:'')+sh.fragmentShader.replace('#include <fog_fragment>',(lit?PIX_GLSL(grid,cls)+LIGHT_GLSL:'')+(band?BAND_GLSL(band):'')+'{float dd=max(0.0,uTint.x-vWy);float f=uTint.y*(1.0-exp(-dd*0.05));vec3 tc=vec3('+TINT_COL.map(v=>v.toFixed(2)).join(',')+')*uTint.z;\n#ifdef USE_FOG\ntc*=uFogT.yzw;\n#endif\ngl_FragColor.rgb=mix(gl_FragColor.rgb,tc,f);}\n#include <fog_fragment>');
   };

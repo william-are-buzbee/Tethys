@@ -237,7 +237,7 @@ Docs, most upstream first. When a doc's Open list says a choice is the person's,
 ## Dev tools in the game
 
 - URL: `#low` `#high` (tier), `#zoo` (bestiary), `#lab` or `#lab=<base64 spec>` (the lab), `#bench` (the sound bench; it arms the first click, since an audio context needs a gesture).
-- The effects list (`e`): `pixel` (v11.38 as `pixel light`; v11.40–41, PIXEL.md) is the caustic and the shadows in 30 cm blocks with hard edges and every surface in texels with a pattern per cell, or smooth (the default) — two looks kept to compare; `test/caustic.js` draws either light (`PIX=0`). A slider under a switch is a row in `FX_SLIDERS` and a number in `FX_DEF` (v11.38.1: caustics' `brightness`).
+- The effects list (`e`): `pixel light` (v11.38) is the caustic and the shadows in 30 cm blocks with hard edges, or smooth (the default); `texels` (v11.40–41, PIXEL.md) is every surface in texels with a pattern per cell — separate rows since v11.41.1 so either can be tried alone; `test/caustic.js` draws either light (`PIX=0`). A slider under a switch is a row in `FX_SLIDERS` and a number in `FX_DEF` (v11.38.1: caustics' `brightness`).
 - Keys: `z` bestiary (left/right step, space strike, s cruise, drag turn, wheel zoom); `l` lab, `p` place the spec; `e` the effects
   list; `b` the sound bench (1 one-shots, 2 noise and irs, 3 the beds, 4 a live capture; `node serve.js` must be running); `f` first person; `r` or right mouse grab, click bite; `Q` the clade ability; `M` mute.
 - Readout: backquote (also `'` or F3): fps, frame ms, draws, tris, cells, far regions, creatures, physics ms, render ms (when it

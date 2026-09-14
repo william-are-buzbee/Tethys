@@ -531,7 +531,7 @@ function labPanelHTML() {
   { // the texel pattern (v11.41, PIXEL.md pass B): by clade unless the spec says; drawn in pixel mode only; custom (painted cell by cell) is pass D
     const pt=Object.assign({kind:PATTERN_BY_CLADE[s.clade]||'none'},PATTERN_DEF,s.pattern||{});
     h+='<label class="row"><span>pattern</span>'+labSel('pattern.kind',PATTERNS,pt.kind)+'</label><label class="row"><span>period</span>'+labNum('pattern.scale',pt.scale,1,1,12)+'<b>cells</b></label><label class="row"><span>tone</span>'+labNum('pattern.tone',pt.tone,0.02,0,0.5)+'</label>';
-    if(!FX.pixel)h+='<div class="note">the pattern draws in pixel mode (e)</div>';
+    if(!FX.texels)h+='<div class="note">the pattern draws with texels on (e)</div>';
   }
   if (pal && pal.note) h += '<div class="note">' + pal.note + '</div>';
   if (pal) {

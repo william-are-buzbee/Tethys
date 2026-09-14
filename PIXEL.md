@@ -1,6 +1,6 @@
 # PIXEL.md — the de-res: the world in texels
 
-**Status: designed 14 Sep 2026, the six open questions answered the same day (Decided, at the end). Pass A built as v11.40 the same day (CHANGELOG v11.40; DESIGN The light, "The de-res"), seen by the person ("literally zero complaints"); pass B built as v11.41 the same day (CHANGELOG v11.41), looked at, not yet by the person; C and D not built.** The ask (the person, 14 Sep, with a screenshot of the pixel light at 20 m): "de-res the
+**Status: designed 14 Sep 2026, the six open questions answered the same day (Decided, at the end). Pass A built as v11.40 the same day (CHANGELOG v11.40; DESIGN The light, "The de-res"), seen by the person ("literally zero complaints"); pass B built as v11.41 the same day (CHANGELOG v11.41), seen by the person ("AWESOME"; the rock strata binned and the switch split in v11.41.1: `pixel light` and `texels` are two rows); C and D not built.** The ask (the person, 14 Sep, with a screenshot of the pixel light at 20 m): "de-res the
 rest of the game … not changing any meshes, just the texture being pixelated to a rough or equivalent size … more Minecraft-like,
 pixelated in texture, simple shapes … the ground and objects too, so that the pixel shadow/caustic look matches it." One switch
 (`e`), flipping between the world as it is and the world in texels. When a pass builds a section, note it at its head.
@@ -93,8 +93,9 @@ small table:
 ## Knobs
 
 `PIX_T` 0.3 (the world's texel, m; = `CAU_PX`), `PIX_TB` 0.15 (bodies), `PIX_TONES` 16 (levels per channel after the snap),
-`PIX_GRAIN` 0.06 (the tone step), per-class grain weights in a table `PIX_CLASS`, the coats' `pattern/scale/tone`. One switch on the
-effects list: `pixel light` becomes `pixel` — the light and the world together; the two never make sense apart once this exists.
+`PIX_GRAIN` 0.06 (the tone step), per-class grain weights in a table `PIX_CLASS`, the coats' `pattern/scale/tone`. Two switches on the
+effects list (the person, 14 Sep, v11.41.1): `pixel light` for the light's blocks and `texels` for the de-res, so the textures can be tried
+under the smooth light.
 
 ## Cost
 

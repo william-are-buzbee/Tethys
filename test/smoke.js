@@ -27,7 +27,7 @@ for(const pick of [0,1,2]){
     const boot=Date.now()-t0;
     const h=global.__h;
     console.log('clade',pick,'boot',boot+'ms',JSON.stringify(__dbg()));
-    if(pick===1){if(__fx('pixel')!==true)throw new Error('the pixel switch did not turn on');console.log('  pixel: on');} // v11.40: the de-res through the switch (the stub compiles no shader; this is the JS path)
+    if(pick===1){if(__fx('pixel')!==true||__fx('texels')!==true)throw new Error('the pixel light or the texels switch did not turn on');console.log('  pixel light and texels: on');} // v11.40: the de-res through the switch (the stub compiles no shader; this is the JS path)
     if(pick===0){ // the bestiary: every species of the roster shown, its strike fired, then back to the menu
       const key=(code)=>h['win:keydown'].forEach(f=>f({code,preventDefault(){}}));
       __step(5);key('KeyZ');const n=__zoo.n();for(let i=0;i<n;i++){__step(6);key('Space');__step(40);key('KeyS');__step(10);key('KeyS');key('ArrowUp');__step(4);key('ArrowDown');key('ArrowRight');}
