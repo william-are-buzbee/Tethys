@@ -15,13 +15,13 @@ const Q=(function(){
   const small=Math.min(screen.width||9999,screen.height||9999)<900;
   const tier=HASH_TIER||((isTouch&&small)?'low':'high');
   return tier==='low'
-    ?{tier:tier,pr:1.0,far:1000,flora:0.45,creatures:0.6,lights:2,phong:false,aa:false,budgetMs:8,farMs:2,farQ:6,surf:96,lodNear:0.7,rockLvl:1,target:14,casters:6,shafts:2,cau:2,hrtf:0,vol:1,cloud:2,snow:1000}
-    :{tier:tier,pr:1.5,far:1600,flora:1.0,creatures:1.0,lights:4,phong:true,aa:true,budgetMs:6,farMs:3,farQ:12,surf:192,lodNear:1.0,rockLvl:2,target:7.5,casters:16,shafts:4,cau:3,hrtf:1,vol:1,cloud:5,snow:1800};
+    ?{tier:tier,pr:1.0,far:1000,flora:0.45,creatures:0.6,lights:2,phong:false,aa:false,budgetMs:8,farMs:2,farQ:6,surf:96,lodNear:0.7,rockLvl:1,target:14,casters:6,shafts:2,cau:3,hrtf:0,vol:1,cloud:2,snow:1000}
+    :{tier:tier,pr:1.5,far:1600,flora:1.0,creatures:1.0,lights:4,phong:true,aa:true,budgetMs:6,farMs:3,farQ:12,surf:192,lodNear:1.0,rockLvl:2,target:7.5,casters:16,shafts:4,cau:6,hrtf:1,vol:1,cloud:5,snow:1800};
   // snow (v11.24): the marine snow's points (atmosphere.js); the deep is sparse, so many of them are dormant at a time
   // cloud (v11.17): the slices the sky shader marches up through the cumulus deck (atmosphere.js SKY_FS), two 4-octave noises per slice per sky pixel
   // hrtf, vol (v11.14, the sound): HRTF panning on the placed voices (front/back and up/down; the audio thread's one real cost) or equal-power; the master volume
   // casters (v11.23): the creatures that cast into the shadow map each frame (the nearest by size; the player always); shafts, cau (v11.13, the light pass): the
-  // light-shaft grid's side (4 = sixteen shafts round the camera); the caustic's ripple trains (CAU_R; 3 the web, 2 the same web one train fewer — v11.35)
+  // light-shaft grid's side (4 = sixteen shafts round the camera); the caustic's ripple trains (CAU_R; 6 the web, 3 the same web coarser — v11.35)
   // target (v11.12): the frame the streaming must fit in, ms — the cell generator gets what the rest of the frame leaves of it, at most
   // budgetMs (main.js). 7.5 is a 120 Hz frame with a little to spare; 14 a 60 Hz phone's. Before, 6 ms of generation on a 4 ms frame
   // made 10 ms frames all through a cell's load: fine at 60 Hz, a hitch at 120.
@@ -218,15 +218,16 @@ const SUN_W=new Float32Array([0,1,0,0]); // the sun under water: xyz the refract
 const LIGHT_K=new Float32Array([SEA_FOG.cau,SEA_FOG.shd]); // caustic contrast (1 physical, v11.35), shadow strength: the readout's tuner moves them (main.js); the effects list zeroes them (effects.js)
 const lightKU={value:LIGHT_K};
 // the ripple layer the caustics are focused by (v11.35): [wavelength m, amplitude m at full chop, direction offset from WIND_A rad];
-// Q.cau trains are used (3 high, 2 low — the same web, one train fewer). A k² is the train's curvature: 1.6 m at 2 cm focuses at
-// c·A·k² ≈ 13 m, the depth the web is sharpest; shallower it's a mild dapple, deeper the sheets fold over and the damping takes it
-const CAU_R=[[1.6,0.020,0.0],[1.05,0.012,0.75],[2.5,0.027,-0.6]];
-const CAU_D=18,CAU_Q=4,CAU_LO=0.75,CAU_HI=2.0,CAU_SWELL=4,CAU_FAR=[18,45]; // the beam's spreading depth m (the Hessian damped by exp(-d/CAU_D)); the quantisation steps per unit; the clamp on 1/|det J| (the cells one quiet step down, the lines up to four up); how many of WAVES, longest first, the ripples ride
+// Q.cau trains are used (6 high, 3 low — the same web, coarser). A k² is the train's curvature; a train focuses at 1/(c·A·k²),
+// the depth its web is sharpest; shallower it's a mild dapple, deeper the sheets fold over and the damping takes it
+const CAU_R=[[0.35,0.0018,0.3],[0.5,0.0022,-0.9],[0.7,0.004,0.0],[1.0,0.005,1.2],[1.4,0.008,-0.5],[2.2,0.012,0.7]]; // six trains (v11.35.1): three read as stripes whenever one dominated; the spread is ±70° round the wind, as wind ripples are // v11.35.1: the person saw 1.6–2.5 m at 2 cm as a lattice of white ovals in play — too long (the cells at the facets' scale) and too steep (|det J| under the clamp over broad regions: a plateau, not fold lines). Capillary ripples at millimetres: 0.4 m at 2 mm focuses at ~8 m, 0.9 at ~14, the 2 m train never (a gentle large-scale variation); the swell carry is now 10–20 rad of phase for the short trains and shreds the lattice
+const CAU_D=18,CAU_Q=4,CAU_LO=0.75,CAU_HI=1.5,CAU_SWELL=4,CAU_FAR=[30,70]; // the beam's spreading depth m (the Hessian damped by exp(-d/CAU_D)); the quantisation steps per unit; the clamp on 1/|det J| (the cells one quiet step down, the lines two up — v11.35.1: HI was 2, a clip on sand); how many of WAVES, longest first, the ripples ride
+// each train fades from the eye by its own wavelength (v11.35.1, CAU_FAR in wavelengths): the 0.4 m train was a moiré band at 15 m while the 2 m one was still legible
 const CAU_GLSL=(function(){let s='vec2 ps=vFogPos.xz+uSunW.xz*(dep/max(uSunW.y,0.3));float Hxx=0.0,Hxy=0.0,Hzz=0.0;';
   // the ripples ride the swell: the surface's horizontal orbital displacement (A sin, along the wave) carries the ripple field with it — for a 1.6 m ripple on a 46 m swell of 0.5 m that is ~2 rad of phase, and it is what keeps three fixed trains from interfering into a lattice (seen, 13 Sep)
   for(let i=0;i<CAU_SWELL;i++){const w=WAVES[i];s+='ps+=vec2('+w.dx.toFixed(5)+','+w.dz.toFixed(5)+')*('+w.A.toFixed(3)+(w.L<20?'*uChop':'')+'*sin(dot(ps,vec2('+w.dx.toFixed(5)+','+w.dz.toFixed(5)+'))*'+w.k.toFixed(5)+'-'+w.w.toFixed(5)+'*uTime+'+w.ph.toFixed(4)+'));';}
   for(let i=0;i<Math.min(Q.cau,CAU_R.length);i++){const r=CAU_R[i],k=TAU/r[0],w=Math.sqrt(9.8*k),a=WIND_A+r[2],dx=Math.cos(a),dz=Math.sin(a);
-    s+='{float s=sin(dot(ps,vec2('+dx.toFixed(5)+','+dz.toFixed(5)+'))*'+k.toFixed(5)+'-'+w.toFixed(5)+'*uTime+'+(i*2.1).toFixed(2)+')*'+(-r[1]*k*k).toFixed(5)+';Hxx+=s*'+(dx*dx).toFixed(5)+';Hxy+=s*'+(dx*dz).toFixed(5)+';Hzz+=s*'+(dz*dz).toFixed(5)+';}';}
+    s+='{float s=sin(dot(ps,vec2('+dx.toFixed(5)+','+dz.toFixed(5)+'))*'+k.toFixed(5)+'-'+w.toFixed(5)+'*uTime+'+(i*2.1).toFixed(2)+')*'+(-r[1]*k*k).toFixed(5)+'*(1.0-smoothstep('+(r[0]*CAU_FAR[0]).toFixed(1)+','+(r[0]*CAU_FAR[1]).toFixed(1)+',vFogDepth));Hxx+=s*'+(dx*dx).toFixed(5)+';Hxy+=s*'+(dx*dz).toFixed(5)+';Hzz+=s*'+(dz*dz).toFixed(5)+';}';}
   s+='float jc=dep*0.248*uChop*exp(-dep/'+CAU_D.toFixed(1)+');float dj=(1.0-jc*Hxx)*(1.0-jc*Hzz)-jc*jc*Hxy*Hxy;'+
     'float ci=clamp(1.0/max(abs(dj),0.02),'+CAU_LO.toFixed(2)+','+CAU_HI.toFixed(2)+');ci=floor(ci*'+CAU_Q.toFixed(1)+'+0.5)/'+CAU_Q.toFixed(1)+';';
   return s;})();
@@ -365,7 +366,7 @@ const SH_GLSL=s=>'if(uShP'+s+'.y>0.5){vec3 sp=vFogPos+fn*(uShP'+s+'.w*sign(dot(f
   'float u=shTap(uShMap'+s+',sc.xy+o1,z,fd)+shTap(uShMap'+s+',sc.xy-o1,z,fd)+shTap(uShMap'+s+',sc.xy+o2,z,fd)+shTap(uShMap'+s+',sc.xy-o2,z,fd);sh=min(sh,1.0-0.25*u*ef);}}';
 const LIGHT_GLSL=LIGHT_FX?'\n#ifdef USE_FOG\n{float dep=uTint.x-vFogPos.y;if(uSunW.w>0.002){vec3 fn=normalize(cross(dFdx(vFogPos),dFdy(vFogPos)));float wd=clamp(dep*0.7-0.2,0.0,1.0);'+ // 0 in air and at the surface itself (a raft's pad at -0.45 barely), full 1.7 m under
   'if(wd>0.0&&uLightK.x>0.0){'+CAU_GLSL+'float cw=texture2D(uWaterMap,vFogPos.xz*'+WM_SCALE+'+0.5).a*'+CAN_GLSL('vFogPos.y')+';float nc=clamp(dot(fn,uSunW.xyz)*2.5,0.0,1.0);'+
-  'gl_FragColor.rgb*=1.0+uLightK.x*(ci-1.0)*wd*nc*uSunW.w*(1.0-0.85*cw)*(1.0-smoothstep('+CAU_FAR[0].toFixed(1)+','+CAU_FAR[1].toFixed(1)+',vFogDepth));}'+ // faded by distance from the eye (CAU_FAR): a metre-scale net at 40 m is a pixel-scale speckle, and the eye would not resolve it either
+  'gl_FragColor.rgb*=1.0+uLightK.x*(ci-1.0)*wd*nc*uSunW.w*(1.0-0.85*cw);}'+ // the fade from the eye is per train (CAU_FAR, in wavelengths: a 0.4 m train is gone by 28 m, the 2 m one by 140)
   'float sh=1.0;'+SH_GLSL('')+SH_GLSL('S')+ // the creatures' map, then the world's (v11.30): the darker of the two
   'float nl=clamp(dot(fn,uShL.xyz)*2.5,0.0,1.0);'+ // the shadow takes away the beam, so a face the beam never reached loses nothing (v11.34.1)
   'float dl='+DL_GLSL('vFogPos.y')+';gl_FragColor.rgb*=1.0-uLightK.y*(1.0-sh)*uSunW.w*dl*nl;}}\n#endif\n':'';

@@ -2628,3 +2628,31 @@ not a look; (2) whether the quantised edges crawl objectionably as the trains mo
 accepted); (3) the sand's albedo: it has no headroom above 1 with any caustic, and the old gain hid that by clipping everything —
 the person may now find the sand itself too pale; (4) the low tier's two-train web on a phone; (5) whether the shafts' flicker and
 the shimmer should now read the same ripple field, since the audit named four unrelated clocks for one surface and this fixes one.
+
+
+## v11.35.1 — the net, not the lattice: capillary ripples, six trains, a clamp that isn't a clip (13 Sep 2026)
+
+The person looked at v11.35 in play, over the home shelf's sand at a few metres, and sent a screenshot: a regular lattice of white
+ovals across the whole floor, at the facets' own scale, clipping. "I think this might be a bug." Not in the code — the shader did
+what it was told — but the parameters had reproduced the audit's own complaint. Three causes, all numbers.
+
+**The ripples were ten times too long and steep.** `CAU_R` had 1.6–2.5 m trains at 2 cm: `jc·H` ≈ 0.3 per train at 5 m, so
+`|det J|` sat under the clamp over broad regions — a plateau of level-2 ovals, not thin fold lines — and a metre of swell carry
+barely warps a 2 m lattice. The webs a snorkeller sees come from capillary-gravity ripples of 0.3–1 m at millimetres: cells of
+10–50 cm, folds thin, and for those the same carry is 10–20 rad of phase, which shreds any lattice for free. **Three trains are too
+poor a spectrum.** Rebuilt with three short trains the lattice was gone, but whenever one train dominated its fold lines showed as
+a band of straight stripes across the mid-distance sand — a plane wave's caustic is parallel lines. Six trains now, 0.35–2.2 m,
+spread ±70° round the wind as wind ripples are (`Q.cau` 6 high, 3 low). **The clamp was a clip.** `CAU_HI` 2 on white sand has
+nowhere to go; 1.5 now (two quarter-steps up, one down), and `SEA_FOG.cau` 0.8. And the fade from the eye is per train, in
+wavelengths (`CAU_FAR` [30, 70]: a 0.35 m train is gone by 25 m, the 2.2 m one by 150) — one distance for all had the short train
+speckling while the long one was still legible. Ten sines a fragment (four carry, six trains).
+
+**Seen, three rounds on the menu's sand at 800×450, three frames each.** Short trains: lattice gone, a stripe band at moments.
+Per-train fade: the band stayed (it was not aliasing — 0.35 m is ~27 px at 10 m there). Six trains: an irregular dapple of 20–40 cm
+cells that wanders frame to frame, no lattice, no band, the cells one quiet step down and the lines pale. `node build.js --test`
+green on both tiers; no shader errors either tier.
+
+**Unseen, ask in this order:** (1) the same view the person sent — the shelf's sand at a few metres in play, moving; if it still
+reads as too much, `SEA_FOG.cau` (the readout's `t-y`) is the knob and 0.5 is a reasonable floor before anything structural; (2)
+a darker floor at 8–15 m, where the 0.7–1 m trains focus and the net should be at its most legible; (3) the low tier's three-train
+web; (4) the rest of v11.35's list.

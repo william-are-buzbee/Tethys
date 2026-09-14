@@ -668,20 +668,22 @@ from surface to floor has Jacobian `J = I − d·c·H` (`c` = 1 − 1/1.33, the 
 irradiance is `1/|det J|` — mean 1 over the floor by construction, so light is redistributed and never added (v11.13's was a gain,
 `1 + 1.3·k`, and blew the sand to white: that was the "looks ridiculously good" of the audit). The swell can't do it — `WAVES`' shortest
 (L 6, A 0.06) focuses at ~60 m, never in the top 30 — the web is the wind's ripples, 1–3 m, which the surface mesh can't hold anyway;
-so `CAU_R` is that ripple layer, living only in the light: `Q.cau` trains (3 high, 2 low: the same web, one train fewer) of [L, A at
-full chop, offset from `WIND_A`] = [1.6, 0.02, 0], [1.05, 0.012, 0.75], [2.5, 0.027, −0.6], each at its deep-water speed √(gk) on `uTime`,
+so `CAU_R` is that ripple layer, living only in the light: `Q.cau` trains (6 high, 3 low: the same web, coarser) of [L, A at full
+chop, offset from `WIND_A`] from [0.35, 0.0018, 0.3] to [2.2, 0.012, 0.7] — capillary-gravity ripples at millimetres, spread ±70° round
+the wind (v11.35.1: 1.6–2.5 m at 2 cm was a lattice of white ovals in play, three trains a stripe band whenever one dominated), each at its deep-water speed √(gk) on `uTime`,
 amplitude × `uChop` (a calm goes glassy and the web dies). The ripples ride the swell: the surface point is carried by the horizontal
 orbital displacement (`A sin`, along the wave) of the `CAU_SWELL` 4 longest `WAVES` — ~2 rad of ripple phase from the 46 m swell alone —
 which is what keeps three fixed trains from interfering into a lattice (seen: without it, a grid of ovals). The Hessian is analytic
 (`−A k² sin · dir⊗dir` per train), damped by `exp(−d/CAU_D)` (18 m; the beam's spreading by scatter — the contrast fades, the mean
-stays 1; at the surface `d·c·H → 0` gives 1 on its own, no onset needed), the result clamped to [`CAU_LO` 0.75, `CAU_HI` 2] and
-quantised in steps of 1/`CAU_Q` (4): the cells one quiet step down, the lines up to four up, drawn in the facets' vocabulary as the
-cloud deck's three-step light is. Applied as `× (1 + cau·(I − 1))` (`cau` = `SEA_FOG.cau` 1.0, physical; the readout's `t-y`), by the
-beam's share `uSunW.w`, `1 − 0.85·canopy`, whether the beam reaches the face (`clamp(dot(fn, sun)·2.5)`, the shadows' `nl` rule) and
-a fade from the eye over `CAU_FAR` 18–45 m (a metre-scale net at 40 m is a pixel speckle, and the eye would not resolve it). `wd`
-gates the block to under water. Cost: 7 sines a fragment (4 carry, 3 trains) — fewer than v11.13's 6 nested; skipped whole at night
-and under a shower (`uSunW.w` < 0.002). Seen on the menu's sand only (13 Sep): the sand's albedo has no headroom above 1, so there the
-net shows mostly as its cells; the lines want a darker floor.
+stays 1; at the surface `d·c·H → 0` gives 1 on its own, no onset needed), the result clamped to [`CAU_LO` 0.75, `CAU_HI` 1.5] and
+quantised in steps of 1/`CAU_Q` (4): the cells one quiet step down, the lines two up, drawn in the facets' vocabulary as the cloud
+deck's three-step light is (v11.35.1: HI 2 was a clip on sand). Applied as `× (1 + cau·(I − 1))` (`cau` = `SEA_FOG.cau` 0.8; 1 is
+physical; the readout's `t-y`), by the beam's share `uSunW.w`, `1 − 0.85·canopy`, and whether the beam reaches the face
+(`clamp(dot(fn, sun)·2.5)`, the shadows' `nl` rule). Each train fades from the eye by its own wavelength (`CAU_FAR` [30, 70]
+wavelengths: the 0.35 m train is gone by 25 m, the 2.2 m one by 150 — one distance for all had the short train speckling while the
+long one was still legible). `wd` gates the block to under water. Cost: 10 sines a fragment (4 carry, 6 trains); skipped whole at night
+and under a shower (`uSunW.w` < 0.002). Seen on the menu's sand (13 Sep, v11.35.1): an irregular dapple of 20–40 cm cells that wanders;
+the sand's albedo has no headroom above 1, so there the net shows mostly as its cells; the lines want a darker floor.
 
 **The sun under water (`atmosphere.js` `updateSky` → `SUN_W`).** The luminary refracted at the surface, `sin θw = sin θa / 1.33`, so a
 setting sun's beam under water is never flatter than 48° from the vertical; `w` = the beam's share of the light,
@@ -1505,7 +1507,7 @@ distance — a designed pass, not a knob. `render` is CPU submission; the GPU ru
 - **Quality tier `Q` (scene.js): numbers only, never code paths.** Auto: touch + screen < 900px → low. Force with
   `#low`/`#high` in the URL — the hash is a flag list since v11.31.4 (scene.js `HASH_FLAGS`/`HASH_TIER`, `&` or `,` between them),
   so `#low&lab=<spec>` and `#low&zoo` work and the lab writes the tier back into the hash it rewrites. Low: draw distance 1000, 45% flora, 60% creatures, 2 pool lights, Lambert terrain, no AA,
-  96² surface, 36-unit far grid, 2 shadow casters, 4 light shafts, a two-train caustic (v11.13: `casters`, `shafts`, `cau`; v11.35: the same web one train fewer).
+  96² surface, 36-unit far grid, 2 shadow casters, 4 light shafts, a three-train caustic (v11.13: `casters`, `shafts`, `cau`; v11.35.1: the same web coarser).
 - The person tests on desktop and wants it "fantastically smooth"; mobile is secondary and may sacrifice things. The
   cadence agreed: content freely, a performance pass whenever the readout says frame time is creeping. Readings v5
   (thickest kelp, desktop, high): 120 fps, 8.3 ms, 130 draws, 416k tris. **Readings v8.3 (the arch canopy, desktop,
