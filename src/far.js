@@ -147,8 +147,8 @@ function farRaftGeo(col){const T=[];for(let k=0;k<8;k++){const a0=k/8*TAU+0.2,a1
 function farTreeGeo(){const T=[];crossCards(1.2,0,9,[0.44,0.46,0.28],T);const r=3.0,c=[0.38,0.5,0.20];for(let k=0;k<6;k++){const a0=k/6*TAU,a1=(k+1)/6*TAU;T.push([[0,9.4,0],[Math.cos(a0)*r,8.8,Math.sin(a0)*r],[Math.cos(a1)*r,8.8,Math.sin(a1)*r],c]);}return impGeo(T);} // the tidal forest: a trunk and a crown, the middle size
 // stride: one impostor per that many of the real thing. w: card width factor on the kelp's scale. r: pad extent (local units of the real geometry) for rafts.
 const FAR_IMP=[
-  {f:FLORA_BY_ID.stipe,geo:farStipeGeo(),stride:5},
-  {f:FLORA_BY_ID.bladder,geo:farBladderGeo(),stride:3},
+  {f:FLORA_BY_ID.stipe,geo:farStipeGeo(),stride:5,dim:0.55}, // dim (v11.42.4): the card's tint against the real plant's — the stipe's pigment darkens with depth and its pads are silhouettes from below, and past the swap at FLORA_FAR the cards' residual through the fog read paler than the veil where the real kelp's read darker: a pale band with a bright line of pads along the far water level (the person's last 5%, 14 Sep)
+  {f:FLORA_BY_ID.bladder,geo:farBladderGeo(),stride:3,dim:0.7},
   {f:FLORA_BY_ID.button,geo:farRaftGeo([0.56,0.82,0.78]),stride:2,r:1.1}, // the buttons' fleets, green-blue
   {f:FLORA_BY_ID.tidetree,geo:farTreeGeo(),stride:2}
 ];
@@ -182,7 +182,7 @@ function* impostorsGen(i,j){
       else sxz=sc*(sp.w||1);
       d.position.set(x,y,z);d.rotation.set(0,rng()*TAU,0);d.scale.set(sxz,sy,sxz);d.updateMatrix();
       const tc=f.tints[Math.floor(rng()*f.tints.length)];
-      L.push({si:si,m:d.matrix.clone(),col:[tc[0]*(0.85+rng()*0.25),tc[1]*(0.85+rng()*0.25),tc[2]*(0.85+rng()*0.25)]});
+      const dm=sp.dim||1;L.push({si:si,m:d.matrix.clone(),col:[tc[0]*(0.85+rng()*0.25)*dm,tc[1]*(0.85+rng()*0.25)*dm,tc[2]*(0.85+rng()*0.25)*dm]});
     }
   }
   impCache[i*NCELL+j]=L;return L;

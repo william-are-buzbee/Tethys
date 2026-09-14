@@ -3172,3 +3172,16 @@ reflection, the near forest through it, the far forest dissolving, no white; fro
 underside a continuous luminous ceiling; from 10 m under looking up — the window with the sun. `node build.js --test` green on both
 tiers. **Unseen, ask:** the line itself while swimming at the surface (the waterline's facets; the eye riding the chop); dusk and night
 from both sides (the reflected veil takes the daylight, the window `uWin`); the shore.
+
+## v11.42.4 — the far kelp cards dimmed (14 Sep 2026)
+
+The person on v11.42.3: "You 95% fixed it. Holy smokes it makes a massive difference in the believability of the world" — and a thin
+pale line left along the far water level, which they read as the light shafts' tops. It was not the shafts (they hang within ~30 m of
+the camera, from 3 m under, so from 10 m down they sit 14° above the horizon, and switching them off changed nothing): hiding the far
+impostor cards (`MATFAR`) removed it. Past the swap at `FLORA_FAR` the cards' residual through the fog read *paler* than the veil where
+the real kelp's read darker — the stipe's pigment darkens with depth and its pads are silhouettes from below, the card's tint did not —
+so the far forest was a faint pale band with a bright row of card pads along the water level.
+
+**Built** (far.js `FAR_IMP`): a `dim` per card kind on the instance tint — the stipe 0.55, the bladder 0.7; the raft and the tidal tree
+unchanged (`impostorsGen`). **Seen:** the far horizon from 10 m under, the cards' band gone into the veil; tests green.
+**Ask:** the swap at 450 m from the real kelp to the cards in daylight — whether it now reads darker than the kelp instead of paler.
