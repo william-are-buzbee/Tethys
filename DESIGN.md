@@ -1118,6 +1118,10 @@ them or *parked* (at the camera, clipped) where the water is sparse — so `Q.sn
 | bubble | breakers and whitecaps, rain on the surface; white | `max(expo·(0.3+0.7·chop), 0.25·smooth(0.45,1,chop))·e^{−d/2.2} + 0.35·rain·e^{−d/1.2}` | 0.55 | rises 28 cm/s |
 | black | iron sulfide flakes under the chemocline (the water is ferrous and sulfidic); the plume's sulfide grains at a vent, 30% white | `0.45·smooth(−448,−464,y) + 1.3·heat·e^{−hf/70}` | 1.35 | 0.6 cm/s |
 
+**The particles are square, on purpose** (the person, 13 Sep 2026): an untextured `PointsMaterial` writes the whole quad, and
+rounding them would cost *more* — a texture fetch per fragment for a sprite, or a distance test and a `discard`. They read as blocky
+at 0.07–0.19 m (`pm.size` 0.14 × `SN_K[i].sz`) and that suits the flat-shaded art. Not a performance question either way.
+
 `d` is depth under the tide, `hf` height over the floor, the fields the point's own (cached: `pf`, `ph`). A point re-rolls when it wraps
 the 60 m box and at its refresh (one in 64 a frame, `SN_REF`): the fields, the floor and the canopy re-read where it is, the kind
 re-drawn from the weights there — kept (velocity, look, no pop) if it draws the same kind — or parked with probability `1 − W/SN_W0`

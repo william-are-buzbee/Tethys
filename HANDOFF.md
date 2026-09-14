@@ -21,10 +21,14 @@ re-render is 2.9 ms, 105 draws, 2.23M triangles, firing 0.33/s still and ~0.8-1.
 65% to 95% of budget and never over. The creep since v11.12 is the main render's draw calls, and those are **cell flora at roughly
 one InstancedMesh per species per cell** — they scale as species x visible cells, so the archipelago multiplies them. The lever,
 when work's max reaches 8.3, is batching a species across cells: a designed pass, not a knob. Numbers are in DESIGN, Performance.
-The four look questions (item 15) are diagnosed in analysis_review.md and **each call is the person's**: night brightness waits on
-DIRECTION's closer moon; the bright blades are the shallow-water pigment boost plus vertical planes under a low light, not an
-emissive; the square snow is an untextured PointsMaterial (POLISH pass B); the pink tables among the stipes are the deliberate
-nut 0.45-0.55 overlap where two lines meet. **The review file is now closed except for those four.**
+The four look questions (item 15) are **answered and closed** (13 Sep). **Night brightness is fine as it is** — the dark screenshot
+was caught at an odd moment, and nothing is wanted. The bright blades are **the player's own light** (`plight`, a 40 m point light
+riding above the player, brighter with depth and at night), not an emissive and not the pigment; the person notes it carries the mood
+and the starting landscape's brightness and is unsure whether it is a good mechanic, so **whether it belongs in the effects list is
+parked in POLISH.md** — raised, not asked for. The **square marine snow is kept on purpose**: the person likes the blocky read, and
+squares are also the cheaper option, since rounding a point costs a texture fetch or a `discard` (noted in DESIGN and at `pm` in
+atmosphere.js so nobody 'fixes' it). The pink tables among the stipes are the deliberate nut 0.45-0.55 overlap where two lines meet.
+**analysis_review.md is now closed — the live list is DIRECTION.md.**
 
 **v11.33 (13 Sep): the dead and the stale — the rest of the drift list, built.** CHANGELOG v11.33. Real fixes: `chunkAt`
 reads `chunkGrid` instead of building a string key and hitting a Map on the per-frame ground path (verified equivalent over 4000

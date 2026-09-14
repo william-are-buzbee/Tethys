@@ -304,3 +304,15 @@ night yes, for now. 6. A, then B, then C. 7. The flush (24) and the vignette (28
 6. **Which pass first — A, B or C?** A changes the look of every screenshot; B changes the feel of every fight; C is the
    cheapest and needs the dark. The default is A, then B, then C, with the forest measured after A.
 7. **The vignette and the flush (24, 28)** — faint by default, easy to strike; say if either is unwanted on principle.
+
+## Raised 13 Sep 2026, not built
+
+**The player's own light (`plight`) in the effects list.** It is a 40 m point light in pale blue-cyan riding a metre above the
+player (scene.js), its intensity a depth term plus a night term (atmosphere.js `updateAtmosphere`: `1.3·(1−dfD)² + 0.5·(1−skyL)²`,
+times the medium). It is why weed near the player reads lit at night while the floor behind it is black — that was mistaken for a
+glow in the 13 Sep look pass and is nothing of the kind. The person: it gives "a kind of atmospheric mood lighting horror vibe" and
+it carries the brightness of the starting landscape, and they are unsure whether it is a good mechanic. **The ask, for later:** put
+it in the effects list (`FX_LIST`/`FX_DEF` in effects.js, twelve entries today, none of them this) so it can be switched off in
+place and the world seen without it — the deep and the night are where it matters. One entry, one default, one gate on the
+intensity. Night brightness itself is **not** in question — the person settled that on 13 Sep ("perfectly fine"); this is about
+seeing what the light is doing, not about making the dark lighter.

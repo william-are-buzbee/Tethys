@@ -29,7 +29,8 @@ citing (that is its cold figure). See the CHANGELOG entry.
 starvation tally, landBite's guard, blur clearing keys, serve.js's 400; five dead names and MATR2 removed (lint now reports none
 unused); ROSTER.new cleared on the fifteen species that spawn; the acorn, test/spec.js and "canopy mats" lines corrected. GLOW, the
 pads path, y:'mid' and glim are kept on purpose and say so where they live. The fog tuner's o/p collision is NOT fixed: every free
-key pair is already the audio tuner's or the game's. **What is left of this file: items 14 and 15.** See the CHANGELOG entry.
+key pair is already the audio tuner's or the game's. **What is left of this file: nothing.** Items 14 and 15 were measured and answered on 13 Sep (see each). The live list of what to
+do next is `DIRECTION.md`, not this file.
 
 ## Real bugs, worth a patch each
 1. ~~**Light shafts never take the sun's colour**~~ — **fixed v11.31.4** (`shU.uCol` on its own line; the shafts read `K.lumC`, warm at a
@@ -94,22 +95,25 @@ key pair is already the audio tuner's or the game's. **What is left of this file
     36 cm, about 4 texels) to cut the sun-driven refreshes by half. Both are real; neither is worth the risk at 95%-of-budget
     spikes that drop no frames.
 
-15. **To look at — four diagnoses, and each call is the person's.**
-    - **Night readability at 8 m under a full moon.** Pure taste, and the decision is upstream: DIRECTION's closer moon (about half
-      Earth's distance) argues for brighter nights than the current `light 0.25` against a day's 0.88. Nothing to fix until that
-      lands; when it does, the knob is the moon's contribution in `updateSky`.
-    - **The floaters' blades reading as lit at night.** Not emissive — no creature or plant material has an emissive term, and the
-      blades take the same daylight scale as everything else. Two real causes: `pigment`'s shallow-water brightening (`×1.22`
-      above 8 m, grow.js) and the geometry — the blades are near-vertical planes and the floor is horizontal, so a low sun or moon
-      lights them and not it. In the dusk shot (sun 8°) that is simply correct. The knob if it reads wrong anyway is the boost's
-      `k` 0.22 in grow.js `pigment`.
-    - **The marine snow as squares.** `PointsMaterial` with no map draws a hard quad, and the particles are 0.07–0.19 m
-      (`pm.size` 0.14 × `SN_K[i].sz` 0.5–1.35, atmosphere.js). Close ones subtend enough angle to read as squares. A round sprite
-      (a discard in the fragment, or a tiny generated texture) is the cheap fix; it belongs with POLISH pass B rather than here.
-    - **Pink and purple polyp tables among the stipes at 8 m.** Working as designed, and the overlap is narrow and deliberate:
-      `table` wants `nut ≤ 0.55` and `stipe` wants `nut ≥ 0.45`, with depths overlapping over −24..−16, so the two only meet in
-      that band — TAXA's "where two lines meet is where the world is most legible". The question is only whether `VIVID` is too
-      saturated at night, which is the person's eye and the tints table in flora.js.
+15. ~~**To look at — four diagnoses.**~~ — **answered by the person, 13 Sep 2026. Nothing outstanding here.**
+    - **Night readability at 8 m: nothing wanted.** The person, 13 Sep: "night time brightness is perfectly fine. I think you might
+      have caught it at a strange moment." The shot that raised it was a full moon at 42° over 8 m of water at `light 0.25`. Closed.
+      Worth knowing only that DIRECTION's closer moon would brighten nights as a side effect, so watch it when that lands.
+    - **The floaters' blades reading as lit at night: the player's own light, and my first two guesses were both wrong.** Not the
+      pigment boost and not the angle of the blades — it is `plight` (scene.js), a 40 m point light in pale blue-cyan riding a metre
+      above the player, its intensity a depth term plus a night term (atmosphere.js `updateAtmosphere`). It lights what is near you
+      and nothing past 40 m, which is exactly the lit-blades-black-floor read. Nothing is emissive and no rule is bent. The person
+      (13 Sep): it gives "a kind of atmospheric mood lighting horror vibe" and carries the brightness of the starting landscape,
+      and they are unsure whether it is a good mechanic. **Parked in POLISH.md:** put it in the effects list so it can be switched
+      off in place and the deep and the night seen without it. Not asked for yet.
+    - **The square marine snow: kept, and it is the cheap option.** The person likes the blocky read ("stylistically good for the
+      game... like how Minecraft particle effects can be"). It is also not a performance question in the direction the review
+      implied: an untextured `PointsMaterial` writes the whole quad, and rounding them would cost *more* — a texture fetch per
+      fragment for a sprite, or a distance test and a `discard`. Recorded in DESIGN (the snow) and at `pm` in atmosphere.js so
+      nobody "fixes" it later.
+    - **Pink and purple polyp tables among the stipes.** Working as designed and the overlap is deliberate: `table` wants
+      `nut ≤ 0.55`, `stipe` wants `nut ≥ 0.45`, depths overlapping over −24..−16, so the two only meet in that narrow band —
+      TAXA's "where two lines meet is where the world is most legible". Not raised again; no change.
 
 ## Drift and cost, fold in when touched
 - ~~**Duplicated formulas already disagreeing.**~~ — **fixed v11.32** (`daylightAt`/`DL_GLSL`, `canopyFade`/`CAN_GLSL`, `CHEMO`,
