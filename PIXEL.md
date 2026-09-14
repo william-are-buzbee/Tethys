@@ -1,6 +1,6 @@
 # PIXEL.md — the de-res: the world in texels
 
-**Status: designed 14 Sep 2026, not built.** The ask (the person, 14 Sep, with a screenshot of the pixel light at 20 m): "de-res the
+**Status: designed 14 Sep 2026, the six open questions answered the same day (Decided, at the end), not built.** The ask (the person, 14 Sep, with a screenshot of the pixel light at 20 m): "de-res the
 rest of the game … not changing any meshes, just the texture being pixelated to a rough or equivalent size … more Minecraft-like,
 pixelated in texture, simple shapes … the ground and objects too, so that the pixel shadow/caustic look matches it." One switch
 (`e`), flipping between the world as it is and the world in texels. When a pass builds a section, note it at its head.
@@ -28,7 +28,7 @@ There is no second world, no script that converts anything, no extra memory: it 
 already reads (`uPix`), so the switch is instant both ways, as the light's is.
 
 The reference the person named is Minecraft: texels visible on simple shapes. The grain: "roughly around" the light's 30 cm, "not a
-specific measurement". So one size for the world, `PIX_T` 0.3 m, and a knob for bodies (below, Open 1).
+specific measurement". So one size for the world, `PIX_T` 0.3 m, and 0.15 for bodies (`PIX_TB`, decided).
 
 ## How — the fragment moves itself to the texel's centre
 
@@ -83,16 +83,16 @@ small table:
 | far cards (`MATFAR`) | as the plant they stand for, so the hand-off at `FLORA_FAR` stays quiet |
 | the caustic, the shadows | as v11.38 already: world blocks `CAU_PX`, hard edges — `PIX_T` and `CAU_PX` become one knob |
 | the fog, the veil, the mist, the dome | continuous — water is not a surface |
-| the sea surface | its own shader; Open 2 — texelise its colour on the world's xz (the wave shape stays), or leave smooth |
+| the sea surface | texelised: its colour on the world's xz grid at `PIX_T`, the wave shape untouched (decided 14 Sep; pass C) |
 | the sky, sun, moon, stars, clouds | untouched (the cloud deck's three-step light already is the posterisation) |
 | marine snow, rain, blood, ink, splashes | points and lines: already pixels; untouched |
 | the shimmer (`sunMesh`) | hidden in pixel mode — a canvas radial gradient has no cells; the surface's glint carries the sun |
-| the HUD, the menu, the lists | DOM, crisp; Open 4 — a pixel font |
-| the framebuffer | native resolution (the meshes' edges stay crisp); Open 3 — a low-res layer |
+| the HUD, the menu, the lists | DOM; a pixel font in pixel mode (decided 14 Sep; pass C) |
+| the framebuffer | native by default; `pixel screen`, its own effects row, renders at a quarter with hard pixels (decided 14 Sep; pass C) |
 
 ## Knobs
 
-`PIX_T` 0.3 (the world's texel, m; = `CAU_PX`), `PIX_TB` (bodies; Open 1), `PIX_TONES` 16 (levels per channel after the snap),
+`PIX_T` 0.3 (the world's texel, m; = `CAU_PX`), `PIX_TB` 0.15 (bodies), `PIX_TONES` 16 (levels per channel after the snap),
 `PIX_GRAIN` 0.06 (the tone step), per-class grain weights in a table `PIX_CLASS`, the coats' `pattern/scale/tone`. One switch on the
 effects list: `pixel light` becomes `pixel` — the light and the world together; the two never make sense apart once this exists.
 
@@ -109,17 +109,25 @@ gains one varying (`vGrid`). Off, the branch is a uniform test. A phone loses no
   a slope, a blade — does anything swim, does anything band wrongly. `test/smoke.js` with the switch on; `test/lint.js`.
 - **B — the texels' pattern.** The grain hash and the class table; rock strata, sand grain, the vein; the coats' `pattern` in the
   spec, the lab's controls, `test/preview.js PIX=1`. Look at every species in the bestiary.
-- **C — the edges.** The sea surface's colour (Open 2), a pixel font (Open 4), an optional low-res framebuffer layer (Open 3), the
+- **C — the edges.** the sea surface's colour, the pixel font, the `pixel screen` row (all decided 14 Sep), the
   far terrain's coarse mesh (`far.js`) getting the same grid so the near/far seam doesn't show two grains.
 
-## Open — the person's, ask before deciding
+## Decided 14 Sep 2026 — the person's answers
 
-1. **The bodies' texel.** 30 cm on a 3 m animal is 10 texels along it — very chunky; Minecraft's own creatures are ~9 cm a texel.
-   Start at 0.3 to match the light, and look; 0.15 is the likely answer.
-2. **The sea surface**: texelised (a Minecraft sea) or left as the smooth wave it is? It is the one surface seen from both sides.
-3. **A low-res framebuffer layer** (render at a quarter and scale with hard pixels — the PS1 look) on top, as a second switch?
-   Not needed for the ask; it also pixelates the silhouettes, which the ask kept crisp.
-4. **A pixel font** for the HUD and the lists in pixel mode, or the serif stays.
-5. **Patterns per clade**: whether the roster gets its patterns from the spec by hand (the lab) or from `coatFor` by rule
-   (ringmouths spots, slowbloods stripes, hingeshells plates) — the rule is the quicker start; the hand is the creator's future.
-6. **The fog**: continuous (recommended) or stepped in bands.
+1. **The bodies' texel: 0.15 m** (`PIX_TB`). The world's stays 0.3 (= `CAU_PX`).
+2. **The sea surface: texelised** — its colour on the world's xz grid at `PIX_T`; the wave shape stays. Pass C.
+3. **A low-res framebuffer layer: yes, as its own row on the effects list** (`pixel screen`: render at a quarter, scale with hard
+   pixels). Off by default; it pixelates the silhouettes, which `pixel` alone keeps crisp. Pass C.
+4. **A pixel font: yes** — the HUD, the menu and the lists in pixel mode. Pass C.
+5. **Patterns: by rule by default, and the player can paint their own.** `coatFor` gives every species a pattern by clade
+   (ringmouths spots, slowbloods stripes, hingeshells plates, drifters none); the lab's coat tab gets the three controls and a
+   **custom** option that opens a texel painter — the body's texel grid unwrapped part by part, painted cell by cell, saved in the
+   spec (`coat.pixels`, run-length, in the export/hash/share path like everything else in the spec). Pass B for the rule and the
+   controls; the painter is pass D.
+6. **The fog: continuous.**
+
+## Passes, as decided
+
+- **A — the de-res** (above). **B — the pattern by rule**, the lab's controls, `test/preview.js PIX=1`. **C — the edges**: the sea
+  surface, the pixel font, the `pixel screen` row, the far terrain's grid. **D — the painter**: custom coats cell by cell in the lab,
+  in the spec, shared like a spec.
