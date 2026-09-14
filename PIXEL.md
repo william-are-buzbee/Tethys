@@ -1,6 +1,6 @@
 # PIXEL.md — the de-res: the world in texels
 
-**Status: designed 14 Sep 2026, the six open questions answered the same day (Decided, at the end), not built.** The ask (the person, 14 Sep, with a screenshot of the pixel light at 20 m): "de-res the
+**Status: designed 14 Sep 2026, the six open questions answered the same day (Decided, at the end). Pass A built as v11.40 the same day (CHANGELOG v11.40; DESIGN The light, "The de-res") and looked at, not yet by the person; B, C, D not built.** The ask (the person, 14 Sep, with a screenshot of the pixel light at 20 m): "de-res the
 rest of the game … not changing any meshes, just the texture being pixelated to a rough or equivalent size … more Minecraft-like,
 pixelated in texture, simple shapes … the ground and objects too, so that the pixel shadow/caustic look matches it." One switch
 (`e`), flipping between the world as it is and the world in texels. When a pass builds a section, note it at its head.
@@ -104,7 +104,7 @@ gains one varying (`vGrid`). Off, the branch is a uniform test. A phone loses no
 
 ## Passes
 
-- **A — the de-res.** `vGrid` and the snap-to-centre in `addTint`, the triplanar axis pick, the posterise; `PIX_T` = `CAU_PX`; the
+- **A — the de-res** (built v11.40). `vGrid` and the snap-to-centre in `addTint`, the triplanar axis pick, the posterise; `PIX_T` = `CAU_PX`; the
   switch renamed; the shimmer hidden. Everything becomes cells of flat colour at the light's grain. Look: the shelf, a body up close,
   a slope, a blade — does anything swim, does anything band wrongly. `test/smoke.js` with the switch on; `test/lint.js`.
 - **B — the texels' pattern.** The grain hash and the class table; rock strata, sand grain, the vein; the coats' `pattern` in the
@@ -128,6 +128,6 @@ gains one varying (`vGrid`). Off, the branch is a uniform test. A phone loses no
 
 ## Passes, as decided
 
-- **A — the de-res** (above). **B — the pattern by rule**, the lab's controls, `test/preview.js PIX=1`. **C — the edges**: the sea
+- **A — the de-res** (above; built v11.40). **B — the pattern by rule**, the lab's controls, `test/preview.js PIX=1`. **C — the edges**: the sea
   surface, the pixel font, the `pixel screen` row, the far terrain's grid. **D — the painter**: custom coats cell by cell in the lab,
   in the spec, shared like a spec.

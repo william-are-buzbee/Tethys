@@ -12,6 +12,7 @@ let js=ORDER.map(n=>fs.readFileSync(path.join(ROOT,'src',n+'.js'),'utf8')).join(
 js+='\nglobal.__dbg=()=>({cells:chunks.size,creatures:creatures.length,visible:visibleCreatures,pos:[player.pos.x|0,player.pos.y|0,player.pos.z|0],ground:groundAt(player.pos.x,player.pos.z)|0,sub:+(function(){const ch=chunkAt(player.pos.x,player.pos.z);return ch?ch.f(player.pos.x,player.pos.z)[0]:sample(player.pos.x,player.pos.z).f[0];})().toFixed(2),lights:lightSources.length,hp:player.hp|0});';
 js+='\nglobal.__hurt=(d)=>hurtPlayer(d,creatures[0]&&creatures[0].pos);';
 js+='\nglobal.__eco=()=>{let s=0,nan=0;for(const N of POP.n)for(let c=0;c<N.length;c++){if(N[c]!==N[c])nan++;s+=N[c];}return {ledger:s|0,nan,kills:POP.kills,starved:POP.starved|0,laid:POP.laid,hatched:POP.hatched,eggs:eggs.length,carcasses:carcasses.length,juv:creatures.filter(c=>c.alive&&c.def.juv).length};};'
+js+='\nglobal.__fx=(k)=>{fxToggle(k);return FX[k];};'; // v11.40: the effects list's switch (the de-res on: fxApply, the shimmer hidden)
 js+='\nglobal.__mouse=()=>({yaw:player.yaw,pitch:player.pitch,biteCD:player.biteCD,grab:mouseGrab,locked:locked});'; // v11.31.4: the mouse reaches input.js at all
 js+='\nglobal.__zoo={n:()=>ROSTER.length,mode:()=>mode,specs:()=>Object.keys(SPECS),labLoad:(id)=>labLoad(SPECS[id]),labBlank:(c)=>labLoad(SPEC_BLANK[c]),labAdd:(k)=>{lab.spec.parts.push({kind:k,style:stylesFor(k,lab.spec.clade)[0]});labBuild();labRender();}};';
 const tmp=path.join(require('os').tmpdir(),'tethys_bundle.js');
@@ -26,6 +27,7 @@ for(const pick of [0,1,2]){
     const boot=Date.now()-t0;
     const h=global.__h;
     console.log('clade',pick,'boot',boot+'ms',JSON.stringify(__dbg()));
+    if(pick===1){if(__fx('pixel')!==true)throw new Error('the pixel switch did not turn on');console.log('  pixel: on');} // v11.40: the de-res through the switch (the stub compiles no shader; this is the JS path)
     if(pick===0){ // the bestiary: every species of the roster shown, its strike fired, then back to the menu
       const key=(code)=>h['win:keydown'].forEach(f=>f({code,preventDefault(){}}));
       __step(5);key('KeyZ');const n=__zoo.n();for(let i=0;i<n;i++){__step(6);key('Space');__step(40);key('KeyS');__step(10);key('KeyS');key('ArrowUp');__step(4);key('ArrowDown');key('ArrowRight');}

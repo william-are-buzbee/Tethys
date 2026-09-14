@@ -2915,3 +2915,51 @@ on (the world for the ground, the body for an animal, the instance for a plant) 
 plates and scales in body space. No second world, no conversion script, no textures, no memory; the switch is instant both ways.
 Three passes (the de-res; the texels' pattern with the lab's controls and `test/preview.js PIX=1`; the edges) and six Open questions
 for the person — the bodies' texel size first. Not built.
+
+
+## v11.40 — the de-res, pass A: the world in texels (14 Sep 2026)
+
+PIXEL.md pass A, the person's six answers taken as given (bodies 0.15 m, the world 0.3, the fog continuous). Meshes untouched. One
+switch: `pixel light` on the effects list is `pixel` now — the light's blocks and the world's texels together, off by default as it
+was. "Look at it before you tell me it's done": looked at, below.
+
+**The rule, built** (scene.js, "The de-res" at `PIX_T`). In pixel mode every tinted surface's colour is constant over a cell of a texel
+grid fixed to the thing it is on. `addTint` adds a varying `vGrid`: the position before the model and instance matrices, read at
+`begin_vertex` (before the sway, the collapse, the wave — the texels ride the blade) and scaled to metres by the object's and the
+instance's scale; a material with `grid 'world'` takes the world position instead. The fragment (`PIX_GLSL`) extrapolates its own
+colour to the cell's centre with screen-space derivatives — the tangent basis `dFdx/dFdy(vGrid)`, the centre's offset put on the face's
+plane along its dominant axis (the xz grid on a floor, yz or xy on a wall — the three-way pick a Minecraft block makes), a 2×2 solve for
+the screen offset, `col + a·dFdx(col) + b·dFdy(col)` — exact for a linear interpolant, then posterises to `PIX_TONES` 16 levels a
+channel. It sits before the light block (whose caustic and shadows snap themselves, v11.38) and before the tint and the fog (continuous,
+decided). Which grid: the terrain (`TERRAIN_MAT`, cells and the far mesh alike) and the landmarks on the world's; bodies on their own
+(`PIX_TB` 0.15: every non-instanced lit material — `MAT`, `MATBIG`, `MATT`, the lab's); every instanced thing — plants, the cells'
+boulders, the structures, the far cards — on its instance's at `PIX_T` 0.3. `CAU_PX` is `PIX_T` now: one knob. The landmarks
+(far.js `keep`) moved off `MATBIG` onto a new `MATLM` — the same material with `grid 'world'` — because `MATBIG` is also a big
+animal's far LOD and a shared material can't be both. The shimmer (`sunMesh`) is hidden in pixel mode (a canvas radial gradient has no
+cells). Off, the whole thing is one uniform test per fragment; nothing new is allocated, no texture, no target.
+
+Also: serve.js's sink takes a `.png` (a screenshot of the canvas posted from the app's browser — how the shots below got off the page:
+`renderer.render` then `canvas.toBlob` then POST `/_bench/<name>`); test/smoke.js flips the switch on for one clade (the JS path:
+`fxToggle`, `fxApply`, the shimmer's rule; the stub compiles no shader).
+
+**Seen** (dev.html in the app's browser, the switch on, finback, 14–17 m, the sun behind cloud): every lit program compiled with the code
+(read back from the page: `vGrid` in the fragment of all twenty-one tinted programs, the world grid on the terrain's and the landmarks'
+only), no console error. The menu: the sand in 0.3 m blocks, the three bodies banded. The shelf forest at (330, 0): the floor in
+world-fixed blocks with the finback's shadow on the same grain. The finback at 3 m: the countershade in bands, the band edges
+stair-stepped at 0.15 m. A boulder at 2 m behind it: flat facets, one stepped tone boundary. The lab's soft-arm at 2 m: the ridge's
+pale patch with a stepped edge. The talus slope from 16 m. A blade at 1.5 m: one flat green — a blade's vertex colour is flat, so
+there is nothing to band (pass B's vein is what would show on it). `node build.js --test` green on both tiers.
+
+**What it looks like, plainly:** posterised more than texelised. The gradients across a body or a facet are gentle, so sixteen levels
+give two or three bands and the grid shows only where a band's edge falls; a flat-coloured face shows no grid at all. That is what
+pass A is — pass B's per-cell grain is what makes every cell visible. If the person wants the grid to read before B, `PIX_TONES` 8.
+
+**Unseen, ask in this order:** (1) motion — does anything swim as the camera moves (a still frame cannot show it; the grid is fixed
+to the thing by construction, the extrapolation is the new part); (2) the tone count — 16 leaves a body in two or three bands; (3) the
+rigs — arms and tails are skinned by `rigSkin` into their own geometry, so their grid is the rig's frame: do an arm's texels crawl
+along it as it bends; (4) the near/far seam — both terrains are on the world grid, but the far mesh's facets are coarser, so the
+extrapolation is from a different plane: does the cell's edge show; (5) walls — the caustic snaps on xz where |n.y| > 0.3 while the
+colour picks the dominant axis, so on a face between 17° and 35° off vertical the two grids differ; (6) the rocks' tide band
+(`BAND_GLSL`) runs after the snap and is still a smooth gradient across the texels (pass C, the edges; the boulder's foot runs
+before it and is snapped); (7) cost — ~40 ops a fragment in every lit program, behind a uniform branch: `render` ms on the 4060
+with the switch on and off, in the forest.

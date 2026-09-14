@@ -687,7 +687,7 @@ tiles' (`−A k² sin · dir⊗dir` per train, summed at the bake), each ring bl
 cut is the floating colonies' canopy mask, 85% under a raft mat) — the short rings go first, so the cells grow with depth; and the contrast fades by
 `exp(−d/CAU_D)`, 30 m (v11.38.1: the beam's diffusion by scatter — the person had a clear net at 73 m; real caustics are gone by 25–30 m
 in clear water); the mean stays 1 at every depth; at
-the surface `d·c·H → 0` gives 1 on its own), then a line where the focus `1/|det J|` reaches `CAU_T` 3 × `CAU_HI` 1.5 — in one of two versions, one switch (v11.38, `pixel light` on
+the surface `d·c·H → 0` gives 1 on its own), then a line where the focus `1/|det J|` reaches `CAU_T` 3 × `CAU_HI` 1.5 — in one of two versions, one switch (v11.38 as `pixel light`; `pixel` since v11.40, when the de-res joined it — "The de-res", below; on
 the effects list, `uPix`): **pixel** — a hard `step`, the surface point snapped to a `CAU_PX` 0.3 m world grid after the swell carry
 (v11.36.2, the person: the shader was too clean for the world), the pattern moving through the blocks like a display, and the shadows
 read at the same grid (the receiver point snapped and moved along its face's plane, one hard tap; [The shadows](#the-light)) — one grain
@@ -815,6 +815,20 @@ inside the plate the whole horizon is milk. The drain itself is not built.
 **Fallbacks.** `LIGHT_FX` false (scene.js) strips caustics and shadows from every material; `SH_A` 0 kills the shafts; `SEA_FOG.cau/shd`
 0 at the tuner; the effects list (`effects.js`) switches each system off at run time; `thinLight` and the sun patch warn rather than fail. If every tinted material comes up black or magenta at boot, the
 GLSL is the first suspect: `warmShaders` compiles all of it in the first frame.
+**The de-res (v11.40, PIXEL.md pass A; scene.js "The de-res", `PIX_T`).** The rule: in pixel mode a tinted surface's colour is constant over
+a cell of a texel grid fixed to the thing it is on — the world for the ground and the landmarks (`grid 'world'` on `TERRAIN_MAT` and `MATLM`), the
+body for an animal (object space × the object's scale, `PIX_TB` 0.15 m), the instance for a plant, a boulder, a structure, a far card (instance
+space × its scale, read before the sway so the texels ride the blade, `PIX_T` 0.3 m = `CAU_PX`, one knob). `addTint` adds the varying `vGrid`
+and, at the head of the tint chunk before the light block, `PIX_GLSL`: the fragment cannot re-run the vertex stage, but within a facet every
+interpolated quantity is linear, so it extrapolates its own colour to the cell's centre with screen-space derivatives — the tangent basis
+`dFdx/dFdy(vGrid)`, the centre's offset put on the face's plane along its dominant axis (a column: the xz grid on a floor, yz or xy on a wall,
+the three-way pick a Minecraft block makes; the light's own snap is xz where |n.y| > 0.3), a 2×2 solve for the screen offset (a, b), then
+`col + a·dFdx(col) + b·dFdy(col)`, posterised to `PIX_TONES` 16 levels a channel so a gradient reads as bands of tone. A face seen edge-on
+(det of the basis ~0) is left alone. The fog, the veil, the sky, the points are untouched (decided: water is not a surface); the shimmer is
+hidden. The tide band on the rocks (`BAND_GLSL`) runs after the snap and is still smooth across the texels (pass C). Cost: ~40 ops a fragment
+behind a uniform branch, one varying; nothing allocated. Seen (14 Sep, the app's browser): floors in world blocks, bodies and boulders in two or
+three bands with stepped edges — posterised more than texelised until pass B's grain; a flat-coloured blade shows nothing. Next: B (the grain
+hash, the coats' patterns, `test/preview.js PIX=1`), C (the sea surface, the pixel font, the `pixel screen` row), D (the painter).
 
 ## The far layer
 
@@ -1556,7 +1570,7 @@ distance — a designed pass, not a knob. `render` is CPU submission; the GPU ru
   260 px window; JS only translates the strip (`updateCompass`). North is −z; heading = −yaw. Fades in while moving or
   turning, out after 3.5 s still. The dot under the letters is the bearing of the peak (respawn), shown beyond 150 units
   from it; clamped to the window edge and dimmed when behind you. Remove it by deleting the `dist>150` block.
-- **The effects list (v11.23, `effects.js`, `#fx`):** the cosmetic systems switchable live — caustics (with a `brightness` slider under it, v11.38.1: `FX_SLIDERS`, a number in `FX_DEF` that persists with the switches), pixel light (v11.38: the caustic and the shadows in blocks, or smooth; off by default since v11.38.1), shadows, world shadows, ground shadows (v11.30), sharp shadows, light shafts,
+- **The effects list (v11.23, `effects.js`, `#fx`):** the cosmetic systems switchable live — caustics (with a `brightness` slider under it, v11.38.1: `FX_SLIDERS`, a number in `FX_DEF` that persists with the switches), pixel (v11.38 as `pixel light`: the caustic and the shadows in blocks, or smooth; v11.40: the de-res with them — every tinted surface in texels, PIXEL.md pass A; off by default since v11.38.1), shadows, world shadows, ground shadows (v11.30), sharp shadows, light shafts,
   marine snow, rain, clouds, surface glow, vignette — in the lab panel's look, on the right. The word `effects` at the bottom right of the menu,
   or `e` on the menu and in play (the pointer is released while it is open, taken back on close; escape or a click on the canvas closes it).
   Saved in localStorage (`tethys.fx`). Each system reads `FX.key` where it draws; a switch is a key in `FX_DEF`, a row in `FX_LIST`, a read.

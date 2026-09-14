@@ -4,10 +4,11 @@
 // off — only what is drawn. The choices persist in localStorage ('tethys.fx'); FX_DEF is what a fresh browser gets. FX is read where
 // each system is drawn: the caustics and the shadows through applyFog → LIGHT_K (atmosphere.js) and updateShadow (scene.js), the
 // shafts, the snow, the rain, the shimmer and the cumulus in atmosphere.js, the vignette here (the #vig layer in the shell).
-// pixel (v11.38): the caustic and the shadows in world-fixed blocks with hard edges, or smooth (scene.js uPix); off since v11.38.1 (the person prefers the smooth one, "at least for now").
+// pixel (v11.38 'pixel light'; v11.40 'pixel', PIXEL.md pass A): the caustic and the shadows in world-fixed blocks with hard edges and every tinted surface in texels
+// fixed to the thing it is on (scene.js uPix, PIX_T/PIX_TB), or smooth; off since v11.38.1 (the person prefers the smooth light "at least for now"; the de-res is theirs to look at).
 // cauK (v11.38.1): the caustics' brightness, a slider under the switch, a multiplier on SEA_FOG.cau (atmosphere.js).
 // A switch is one line to add: a key in FX_DEF, a row in FX_LIST, and the system reading FX.key where it draws.
-const FX_LIST=[['caustics','caustics'],['pixel','pixel light'],['shadows','shadows'],['statics','world shadows'],['ground','ground shadows'],['sharp','sharp shadows'],['shafts','light shafts'],['snow','marine snow'],['rain','rain'],['clouds','clouds'],['shimmer','surface glow'],['blood','blood'],['vignette','vignette']];
+const FX_LIST=[['caustics','caustics'],['pixel','pixel'],['shadows','shadows'],['statics','world shadows'],['ground','ground shadows'],['sharp','sharp shadows'],['shafts','light shafts'],['snow','marine snow'],['rain','rain'],['clouds','clouds'],['shimmer','surface glow'],['blood','blood'],['vignette','vignette']];
 const FX_DEF={caustics:true,cauK:1,pixel:false,shadows:Q.tier!=='low',statics:false,ground:false,sharp:false,shafts:true,snow:true,rain:true,clouds:true,shimmer:true,blood:true,vignette:true}; // shadows: off on the low tier (a phone) until measured there; statics, ground (v11.30): the world's own shadows — the flora, rock and structures, and the terrain — off until measured (scene.js updateShadowS); sharp: both shadow maps at twice the size (scene.js shadowSize)
 const FX=Object.assign({},FX_DEF);
 (function(){try{const s=window.localStorage&&window.localStorage.getItem('tethys.fx');if(s){const o=JSON.parse(s);for(const k in FX_DEF)if(typeof o[k]===typeof FX_DEF[k])FX[k]=o[k];}}catch(e){}})();

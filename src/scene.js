@@ -230,7 +230,17 @@ const CAU_RINGS=[[8.0,0.076],[4.0,0.038],[2.0,0.019],[1.0,0.0095],[0.5,0.0048]],
 // there is no film on this sea and no stated stylisation. v11.38 had 8 m down to 1 at equal curvature (a filmed sea, in effect); v11.37: ×2.5 in wavelength, and the amplitudes ∝ L² — equal curvature a ring — so the 5 m ring is an equal partner and the cells come out at its scale (the person, 14 Sep: cells of a metre are "tiny blobs" in a world whose grain is a 4 m facet and a 3 m animal; constant steepness, the physics of a wind sea, puts the curvature in the shortest waves and gives the fine web of a snorkel, which is what he did not want). The 0.7 m ring is a trace of that fine web in the top few metres
 // the gusts (v11.37): a second tile, value noise at CAU_GUST[0] m, modulates the rings' amplitude by 1 − CAU_GUST[1]·(1 − n) — patches of strong net and patches of calm, as a gusty wind ripples a sea in patches, instead of one texture over the whole floor (the person's five shots of v11.36.1: "the same density everywhere")
 const CAU_GUST=[110,0.75],CAU_GN=64;
-const CAU_SUN=0.02,CAU_T=3.0,CAU_SOFT=0.5,CAU_HI=1.5,CAU_D=30,CAU_DARK=0.35,CAU_SWELL=4,CAU_FAR=[30,70],CAU_PX=0.3,CAU_STEP=0;
+// The de-res (v11.40, PIXEL.md pass A): in pixel mode every tinted surface's colour is constant over a cell of a texel grid fixed to the thing it is on —
+// the world for the ground (TERRAIN_MAT, the landmarks' MATLM: grid 'world'), the body for an animal (object space × the object's scale), the instance for a
+// plant or a placed rock or structure (instance space × its scale, read before the sway so the texels ride the blade). The light's blocks (CAU_PX) are the
+// same size as the world's texel, so PIX_T is the one knob. PIX_TB: the bodies' texel (decided 14 Sep: 0.15). PIX_TONES: levels a channel is posterised to
+// after the snap, so a gradient over a body reads as bands of tone, as pixel art does. The fragment cannot re-run the vertex stage, but within a facet every
+// interpolated quantity is linear, so it extrapolates its own colour to the cell's centre with screen-space derivatives (PIX_GLSL, exact for a linear
+// interpolant; the flat-shaded terrain's light is constant over a facet anyway). The cell is a column along the face's dominant axis — the xz grid on a floor,
+// yz or xy on a wall — the three-way pick a Minecraft block makes; the centre is moved along the face's plane so it stays on the surface. The fog stays
+// continuous (decided: water is not a surface); the caustic and the shadows snap themselves (v11.38). Off, the whole thing is one uniform test.
+const PIX_T=0.3,PIX_TB=0.15,PIX_TONES=16; // the world's texel m (= CAU_PX), the bodies' texel m, tone levels per channel
+const CAU_SUN=0.02,CAU_T=3.0,CAU_SOFT=0.5,CAU_HI=1.5,CAU_D=30,CAU_DARK=0.35,CAU_SWELL=4,CAU_FAR=[30,70],CAU_PX=PIX_T,CAU_STEP=0;
 // CAU_DARK (v11.39, PLANET decided 14 Sep: light is moved, not made): the cells of the net — where the surface defocuses, 1/|det J| < 1 — are darkened by
 // CAU_DARK·(1 − I), so what the lines add the cells give back; test/caustic.js prints the mean of the drawn factor, ~1 at the depths the net is drawn
 // CAU_SOFT 0.5 (v11.38.1; was 1.2): a wide step painted weak focus — a calm gust, a fold seen off its line — as broad faint smears beside crisp lines (the
@@ -243,6 +253,15 @@ const CAU_SUN=0.02,CAU_T=3.0,CAU_SOFT=0.5,CAU_HI=1.5,CAU_D=30,CAU_DARK=0.35,CAU_
 // a face steeper than ~72° (|fn.y| < 0.3) is not snapped.
 const pixU={value:1},windOffU={value:new THREE.Vector2(0,0)}; // uWindOff: the wind's integral (K.windOff, atmosphere.js) modulo the gust tile, for the gusts' drift (v11.39) // v11.37: CAU_SUN back to 0.02 — 0.03 left every floor past ~18 m dark (the person: "nothing in the kelp forest"); CAU_PX 0.3, lines two or three blocks wide at these scales // the beam's angular spread rad (v11.35.2: the sun's half-degree disc plus forward scatter; a ring's contrast at depth d falls by exp(-2(pi d CAU_SUN/L)^2), so the deep is the long rings' alone); the focus a line needs (1/|det J| at or over CAU_T; v11.36: 3 — a fold line is thin only where |det| is small, 1.5 was fat worms over a third of the floor) and the half-width of the step to it (v11.35.3: a hard two-tone at 40 cm read as a print); the line's brightness; how many of WAVES, longest first, the ripples ride; the fade from the eye per ring, in wavelengths
 const CAU_TEX=[];let CAU_GTEX=null;
+// the de-res fragment (v11.40; the reasoning at PIX_T): the grid-space tangent basis gx, gy from the varying, the cell centre's offset d put on the face's
+// plane along its dominant axis, the 2×2 solve for the screen offset (a, b) that moves by d, the colour extrapolated there and posterised. det guards a
+// face seen edge-on (nothing to extrapolate along). `grid` 'world' sizes the cell PIX_T; otherwise PIX_T for an instance and PIX_TB for a body.
+const PIX_GLSL=grid=>'if(uPix>0.5){vec3 gx=dFdx(vGrid),gy=dFdy(vGrid);float xx=dot(gx,gx),xy=dot(gx,gy),yy=dot(gy,gy),det=xx*yy-xy*xy;if(det>1e-4*xx*yy){'+(grid==='world'?'float pt='+PIX_T.toFixed(3)+';':'\n#ifdef USE_INSTANCING\nfloat pt='+PIX_T.toFixed(3)+';\n#else\nfloat pt='+PIX_TB.toFixed(3)+';\n#endif\n')+
+  'vec3 nn=cross(gx,gy),an=abs(nn);vec3 d=(floor(vGrid/pt)+0.5)*pt-vGrid;if(an.y>=an.x&&an.y>=an.z)d.y=-(nn.x*d.x+nn.z*d.z)/nn.y;else if(an.x>=an.z)d.x=-(nn.y*d.y+nn.z*d.z)/nn.x;else d.z=-(nn.x*d.x+nn.y*d.y)/nn.z;'+
+  'float bx=dot(gx,d),by=dot(gy,d),a=(yy*bx-xy*by)/det,b=(xx*by-xy*bx)/det;vec3 c0=gl_FragColor.rgb;c0+=a*dFdx(c0)+b*dFdy(c0);gl_FragColor.rgb=floor(clamp(c0,0.0,1.0)*'+(PIX_TONES-1).toFixed(1)+'+0.5)/'+(PIX_TONES-1).toFixed(1)+';}}';
+// the grid varying (vertex): the position before the model and instance matrices, read at begin_vertex (before the sway, the collapse, the wave), scaled
+// to metres by the object's and the instance's scale; 'world' takes the world position instead so the cells' terrain and the far terrain share one grid
+const PIX_GRID_V=grid=>grid==='world'?'vGrid=(modelMatrix*wpp).xyz;':'vGrid=pGrid*vec3(length(modelMatrix[0].xyz),length(modelMatrix[1].xyz),length(modelMatrix[2].xyz));\n#ifdef USE_INSTANCING\nvGrid*=vec3(length(instanceMatrix[0].xyz),length(instanceMatrix[1].xyz),length(instanceMatrix[2].xyz));\n#endif\n';
 (function(){ // the bake: for each ring, the lattice vectors in its band, one train per direction bin within the spread, then the tiles
   const rng=mulberry(1717),T=CAU_TILE,N=CAU_N,nmax=Math.ceil(T/CAU_RINGS[CAU_RINGS.length-1][0]*1.25)+1;
   for(let r=0;r<Math.min(Q.cau,CAU_RINGS.length);r++){const L=CAU_RINGS[r][0],A0=CAU_RINGS[r][1],trains=[];
@@ -429,16 +448,16 @@ const LIGHT_GLSL=LIGHT_FX?'\n#ifdef USE_FOG\n{float dep=uTint.x-vFogPos.y;if(uSu
 const LIGHT_PARS=CAU_PARS+'uniform float uTime;uniform float uChop;uniform vec4 uSunW;uniform vec2 uLightK;uniform sampler2D uShMap;uniform mat4 uShMat;uniform vec4 uShP;uniform vec4 uShL;uniform sampler2D uShMapS;uniform mat4 uShMatS;uniform vec4 uShPS;uniform vec4 uShLS;\n'+
   'float shDepth(vec4 v){return dot(v,vec4(0.99609375/16777216.0,0.99609375/65536.0,0.99609375/256.0,0.99609375));}\n'+
   'float shTap(sampler2D m,vec2 uv,float z,float fd){float dz=z-shDepth(texture2D(m,uv));return dz>0.0?exp(-dz*uShL.w/fd):0.0;}\n'; // both maps are 2·SHM_D deep, so uShL.w serves the world's too
-function addTint(m,key,small,band){
+function addTint(m,key,small,band,grid){ // grid (v11.40): 'world' puts the de-res texels on the world grid; default the object's or instance's own
   const prev=m.onBeforeCompile;
   m.onBeforeCompile=function(sh){
     if(prev)prev.call(m,sh);
     sh.uniforms.uTint=tintU;if(small)sh.uniforms.uFogP={value:FOG_PS};
     const lit=LIGHT_FX&&key!=='glow';if(lit){sh.uniforms.uTime=timeU;sh.uniforms.uChop=chopU;sh.uniforms.uSunW={value:SUN_W};for(let i=0;i<CAU_TEX.length;i++){sh.uniforms['uCauS'+i]={value:CAU_TEX[i].s};sh.uniforms['uCauC'+i]={value:CAU_TEX[i].c};}sh.uniforms.uCauG={value:CAU_GTEX};sh.uniforms.uPix=pixU;sh.uniforms.uWindOff=windOffU;sh.uniforms.uLightK=lightKU;sh.uniforms.uShMap=shMapU;sh.uniforms.uShMat=shMatU;sh.uniforms.uShP=shPU;sh.uniforms.uShL=shLU;sh.uniforms.uShMapS=shMapSU;sh.uniforms.uShMatS=shMatSU;sh.uniforms.uShPS=shPSU;sh.uniforms.uShLS=shLSU;}
-    sh.vertexShader='varying float vWy;\n'+sh.vertexShader.replace('#include <worldpos_vertex>','#include <worldpos_vertex>\n{vec4 wpp=vec4(transformed,1.0);\n#ifdef USE_INSTANCING\nwpp=instanceMatrix*wpp;\n#endif\nvWy=(modelMatrix*wpp).y;}');
-    sh.fragmentShader='uniform vec4 uTint;varying float vWy;\n'+(lit?LIGHT_PARS:'')+sh.fragmentShader.replace('#include <fog_fragment>',(lit?LIGHT_GLSL:'')+(band?BAND_GLSL(band):'')+'{float dd=max(0.0,uTint.x-vWy);float f=uTint.y*(1.0-exp(-dd*0.05));vec3 tc=vec3('+TINT_COL.map(v=>v.toFixed(2)).join(',')+')*uTint.z;\n#ifdef USE_FOG\ntc*=uFogT.yzw;\n#endif\ngl_FragColor.rgb=mix(gl_FragColor.rgb,tc,f);}\n#include <fog_fragment>');
+    sh.vertexShader='varying float vWy;'+(lit?'varying vec3 vGrid;':'')+'\n'+(lit?sh.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvec3 pGrid=transformed;'):sh.vertexShader).replace('#include <worldpos_vertex>','#include <worldpos_vertex>\n{vec4 wpp=vec4(transformed,1.0);\n#ifdef USE_INSTANCING\nwpp=instanceMatrix*wpp;\n#endif\nvWy=(modelMatrix*wpp).y;'+(lit?PIX_GRID_V(grid):'')+'}');
+    sh.fragmentShader='uniform vec4 uTint;varying float vWy;'+(lit?'varying vec3 vGrid;':'')+'\n'+(lit?LIGHT_PARS:'')+sh.fragmentShader.replace('#include <fog_fragment>',(lit?PIX_GLSL(grid)+LIGHT_GLSL:'')+(band?BAND_GLSL(band):'')+'{float dd=max(0.0,uTint.x-vWy);float f=uTint.y*(1.0-exp(-dd*0.05));vec3 tc=vec3('+TINT_COL.map(v=>v.toFixed(2)).join(',')+')*uTint.z;\n#ifdef USE_FOG\ntc*=uFogT.yzw;\n#endif\ngl_FragColor.rgb=mix(gl_FragColor.rgb,tc,f);}\n#include <fog_fragment>');
   };
-  m.customProgramCacheKey=function(){return key+'tint'+(band||'');};
+  m.customProgramCacheKey=function(){return key+'tint'+(band||'')+(grid||'');};
   if(LIGHT_FX&&key!=='glow')m.extensions={derivatives:true}; // dFdx/dFdy on WebGL1 (WebGL2 has them)
   return m;
 }
@@ -452,7 +471,8 @@ function thinLight(sh,k){if(sh.defines&&sh.defines.DEPTH_PASS)return;const f=sh.
 const MAT=addTint(new THREE.MeshLambertMaterial({vertexColors:true}),'lam',true); // creatures, small flora
 const MATGHOST=new THREE.MeshBasicMaterial({colorWrite:false,depthWrite:false}); // the first-person body (v11.23, player.js): drawn as nothing, still cast into the shadow map
 function ghostBody(g,on){g.traverse(o=>{if(!o.isMesh)return;if(on){if(o.material!==MATGHOST){o.userData.mat0=o.material;o.material=MATGHOST;}}else if(o.userData.mat0){o.material=o.userData.mat0;o.userData.mat0=null;}});}
-const MATBIG=addTint(new THREE.MeshLambertMaterial({vertexColors:true}),'lam'); // landmarks that are not rock, big creatures' far LOD: the full ghost
+const MATBIG=addTint(new THREE.MeshLambertMaterial({vertexColors:true}),'lam'); // big creatures' far LOD: the full ghost
+const MATLM=addTint(new THREE.MeshLambertMaterial({vertexColors:true}),'lam',false,undefined,'world'); // the landmarks that are not rock (far.js): MATBIG's fog, the de-res on the world grid (v11.40; on MATBIG they took the bodies' texel)
 // The foot of a boulder (v11.13): the cell's rock sinks `sink` (0.35–0.45) of its scale into the ground (chunks.js settleOn), and the
 // band where it meets the sand is darkened in the vertex shader — from the sink line up over 0.8 of the scale, by 35% — the
 // occlusion a shadow map would give the one place it shows. Instanced only (the cell's boulders); structures are merged and keep their light.
@@ -470,7 +490,7 @@ function farMaterial(){const m=new THREE.MeshLambertMaterial({vertexColors:true,
 const MATFAR=addTint(farMaterial(),'lamds',true); // far impostor cards: seen from either side; small-thing fog so the swap with real kelp doesn't pop
 const GLOW=addTint(new THREE.MeshBasicMaterial({vertexColors:true}),'glow'); // no FLORA entry sets `glow` since v10.1 took the bioluminescence out; kept, with its branches in chunks.js, for when it returns as events (PLANET Hooks) — one program at the boot warm-up (v11.33)
 const MATT=addTint(new THREE.MeshLambertMaterial({vertexColors:true,transparent:true,opacity:0.7}),'lamt',true); // translucent small creatures (the flicker); bakeLOD skips transparent parts, so they keep their real mesh at far LOD
-const TERRAIN_MAT=addTint(Q.phong?new THREE.MeshPhongMaterial({vertexColors:true,flatShading:true,shininess:0,specular:0x000000}):new THREE.MeshLambertMaterial({vertexColors:true}),'terr',false,0.7);
+const TERRAIN_MAT=addTint(Q.phong?new THREE.MeshPhongMaterial({vertexColors:true,flatShading:true,shininess:0,specular:0x000000}):new THREE.MeshLambertMaterial({vertexColors:true}),'terr',false,0.7,'world'); // 'world' (v11.40): the cells' terrain and the far terrain de-res on one grid
 // Instanced sway: displacement in world units, scaled per instance so tall and short plants bend alike.
 // bob: the whole instance rides the wave at its origin (surface rafts) and sinks by its aDip attribute (a pad under a body).
 // H: the geometry's height along its growth axis in local units (dir: +1 grows up from the root, -1 hangs down from it).

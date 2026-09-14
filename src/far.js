@@ -114,13 +114,13 @@ function bigsFor(i,j){const g=bigsGen(i,j);let r;do r=g.next();while(!r.done);re
 const LMK={meshes:[]};
 (function(){
   const rock=[0.34,0.36,0.38],bone=[0.85,0.82,0.72],dark=[0.6,0.56,0.5];
-  const keep=m=>{m.frustumCulled=true;scene.add(m);LMK.meshes.push(m);return shadowCaster(m,MATBIG);}; // a caster into the world's shadow map (v11.30)
+  const keep=m=>{m.frustumCulled=true;scene.add(m);LMK.meshes.push(m);return shadowCaster(m,MATLM);}; // a caster into the world's shadow map (v11.30)
   const yawAt=p=>mulberry(((p.x*1000)|0)^((p.z*7919)|0))()*TAU;
   {const p=LM.bones,P=[],n=13;
     for(let i=0;i<n;i++){const px=i*7-42,py=1.2*Math.sin(i*0.5),pz=4*Math.sin(i*0.35);P.push(part(G.sph(2.2-i*0.08,7,5),px,py,pz,bone,{s:[1.3,1,1]}));if(i>1&&i<n-2)P.push(part(new THREE.TorusGeometry(15-Math.abs(i-6)*1.2,0.9,5,14,Math.PI*0.95),px,py+1,pz,bone,{r:[0,HPI,0.08]}));}
     P.push(part(G.box(16,6,7),-56,1.5,0,bone));P.push(part(G.box(12,2.2,5),-58,-1.8,0,dark));P.push(part(G.sph(1.8,6,5),-52,3.5,3.8,[0.1,0.1,0.1]));P.push(part(G.sph(1.8,6,5),-52,3.5,-3.8,[0.1,0.1,0.1]));
-    const geo=merge(P);geo.computeBoundingSphere();const m=new THREE.Mesh(geo,MATBIG);m.position.set(p.x,gridH(p.x,p.z)-1,p.z);m.rotation.y=yawAt(p);keep(m);}
-  {const p=LM.chimney,y=gridH(p.x,p.z)-2,m=new THREE.Mesh(FLORA_BY_ID.chimney.geo,MATBIG);m.geometry.computeBoundingSphere();m.position.set(p.x,y,p.z);m.scale.set(4.6,4.6,4.6);keep(m);LMK.chimney={y:y};}
+    const geo=merge(P);geo.computeBoundingSphere();const m=new THREE.Mesh(geo,MATLM);m.position.set(p.x,gridH(p.x,p.z)-1,p.z);m.rotation.y=yawAt(p);keep(m);}
+  {const p=LM.chimney,y=gridH(p.x,p.z)-2,m=new THREE.Mesh(FLORA_BY_ID.chimney.geo,MATLM);m.geometry.computeBoundingSphere();m.position.set(p.x,y,p.z);m.scale.set(4.6,4.6,4.6);keep(m);LMK.chimney={y:y};}
 })();
 
 // ---------- far impostors: the forest, the bladder meadow and the rafts from a distance ----------
