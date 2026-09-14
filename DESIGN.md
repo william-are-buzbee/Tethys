@@ -830,6 +830,18 @@ behind a uniform branch, one varying; nothing allocated. Seen (14 Sep, the app's
 three bands with stepped edges — posterised more than texelised until pass B's grain; a flat-coloured blade shows nothing. Next: B (the grain
 hash, the coats' patterns, `test/preview.js PIX=1`), C (the sea surface, the pixel font, the `pixel screen` row), D (the painter).
 
+**The pattern in the texel (v11.41, PIXEL.md pass B; scene.js `PIX_CLS_GLSL`, creatures_spec.js "the texel pattern").** After the posterise,
+one multiplier per cell: a hash of the cell's index gives {−1, 0, +1} × `PIX_GRAIN` 0.06, weighted by the material's class (`PIX_CLASS` — `cls`,
+`addTint`'s sixth argument: terr [rock 0.6, sand 1.0] by the vertex colour's luminance, rock 0.6, plant/blade/card 0.4, body 0.5), plus the
+class's mark: rock a darker stratum every `PIX_STRATA` 4 cells of world height by 0.08; a blade or card a vein every `PIX_VEIN` 3 cells across
+the growth axis by 0.08; a body its coat's pattern in body space — `spec.pattern {kind, scale, tone}` from `PATTERNS` (none, stripes: bands
+along z; spots: hashed clusters of scale² cells at 30%; plates: a grid of scale cells with a darker seam; scales: the same with every other row
+offset), by clade unless the spec says (`PATTERN_BY_CLADE`: ringmouths spots, slowbloods stripes, hingeshells plates, drifters none; `PATTERN_DEF`
+scale 3, tone 0.12). It rides the body as a per-vertex attribute `aPat` (`patternOn`, every mesh at the end of `compile` and the far LOD in
+spawn) — a shared material cannot carry a per-mesh uniform in r128 — and a geometry without it draws no pattern. The lab's coat tab has the
+three controls; `test/preview.js PIX=1` draws the same rules in JS. Seen 14 Sep: the sand as texture, strata on the boulders, stripes, spots,
+plates and scales on the bodies. Left: C and D.
+
 ## The far layer
 
 `far.js`. Three things exist for the whole world at once, built once, and never unload. Draw cost on high: expect

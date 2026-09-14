@@ -2641,6 +2641,7 @@ function compile(spec, s, pal, opt) {
   bf.children.splice(bf.children.indexOf(soft || body), 1);
   bf.children.unshift(soft || body);
   g.scale.setScalar(s);
+  const pat=patternOf(spec);g.traverse(o=>{if(o.isMesh&&o.geometry&&o.geometry.attributes.position)patternOn(o.geometry,pat);}); // the texel pattern on every mesh of the body, the rigs' too (v11.41; the far LOD gets it in creatures_ai.js spawn)
   const B = {body: body, soft: soft, frame: bf},
     ca = F.anim;
   const anim = (t, spd, st) => {
@@ -2680,12 +2681,13 @@ function compile(spec, s, pal, opt) {
       grip = {kind: cl === 'slowbloods' ? 'jaw' : cl === 'hingeshells' ? 'claws' : 'arms', at: [0, y, p.z + (p.style === 'plates' && p.where === 'probe' ? p.plen : 0)]};
   });
   if (grip && grip.kind === 'arms' && !rigs.length) grip.kind = 'jaw'; // a beak with no arms to hold with bites like a jaw
-  return {g: g, anim: anim, rigs: rigs, hit: spec.hit || hit, built: built, F: F, grip: grip};
+  return {g: g, anim: anim, rigs: rigs, hit: spec.hit || hit, built: built, F: F, grip: grip, pat: pat};
 }
 // A spec with every part's defaults filled and its styles resolved, without touching the given object.
 function fillSpec(spec) {
   const out = Object.assign({}, spec),
     core = CORES[spec.core.kind];
+  out.pattern=Object.assign({kind:PATTERN_BY_CLADE[spec.clade]||'none'},PATTERN_DEF,spec.pattern||{}); // the texel pattern (v11.41): by clade unless the spec says
   const c = Object.assign({}, spec.core);
   for (const k in core.params) if (c[k] === undefined && typeof core.params[k].d !== 'function') c[k] = core.params[k].d;
   for (const k in core.params) if (c[k] === undefined) c[k] = core.params[k].d(c); // a default read off the others (the trunk's z0 from L)
@@ -2919,6 +2921,15 @@ function statsOf(spec) {
   return o;
 }
 
+// ---------- the texel pattern (v11.41, PIXEL.md pass B) ----------
+// In pixel mode (effects.js) a body's texels carry a pattern in body space (scene.js PIX_CLS_GLSL 'body'): stripes are bands along z, spots hashed
+// clusters, plates a coarser grid with a seam, scales the same with every other row offset. By clade unless the spec's `pattern` says otherwise —
+// the person's rule (PIXEL.md Decided 5): ringmouths spots, slowbloods stripes, hingeshells plates, drifters none. `scale` is cells per period,
+// `tone` how much darker the mark is. It rides the geometry as a per-vertex attribute aPat (kind, scale, tone) so a shared material needs no
+// per-mesh uniform; a geometry without it (an egg, a plant) reads zero and draws no pattern. The painter for a custom coat is pass D.
+const PATTERNS=['none','stripes','spots','plates','scales'],PATTERN_BY_CLADE={ringmouths:'spots',slowbloods:'stripes',hingeshells:'plates',drifters:'none'},PATTERN_DEF={scale:3,tone:0.12};
+function patternOf(spec){const p=spec.pattern||{};const k=PATTERNS.indexOf(p.kind||PATTERN_BY_CLADE[spec.clade]||'none');return [k<0?0:k,+(p.scale||PATTERN_DEF.scale),p.tone!==undefined?+p.tone:PATTERN_DEF.tone];}
+function patternOn(geo,pat){const n=geo.attributes.position.count,old=geo.attributes.aPat;if(old&&old.count===n&&old.array[0]===pat[0]&&old.array[1]===pat[1]&&old.array[2]===pat[2])return;const a=new Float32Array(n*3);for(let i=0;i<n;i++){a[i*3]=pat[0];a[i*3+1]=pat[1];a[i*3+2]=pat[2];}geo.setAttribute('aPat',new THREE.BufferAttribute(a,3));}
 // ---------- the coat: colour by chemistry ----------
 // What an animal here can be coloured with, and why (CREATOR.md, Colour). Three sources: its blood (copper: a grey-green to teal cast
 // in the flesh; iron: rust and red-brown; vanadium: straw and yellow-green — PLANET), the pigments it makes itself (melanins: black,

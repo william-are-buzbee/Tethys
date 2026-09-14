@@ -37,7 +37,7 @@ const lab = {
 };
 const LAB_CLADES = ['ringmouths', 'slowbloods', 'hingeshells', 'drifters'],
   LAB_SECS = ['species', 'core', 'parts', 'coat', 'readout', 'save'];
-const MAT_HI = addTint(new THREE.MeshLambertMaterial({vertexColors: true, emissive: new THREE.Color(0.55, 0.32, 0.08)}), 'lam', true); // the part under the cursor
+const MAT_HI = addTint(new THREE.MeshLambertMaterial({vertexColors: true, emissive: new THREE.Color(0.55, 0.32, 0.08)}), 'lam', true, undefined, undefined, 'body'); // the part under the cursor
 function labClone(o) {
   return JSON.parse(JSON.stringify(o));
 }
@@ -528,6 +528,11 @@ function labPanelHTML() {
       .map(k => '<option value="' + k + '"' + (lab.diet === k ? ' selected' : '') + '>' + k + '</option>')
       .join('') +
     '</select><button data-act="draw">draw a coat</button></label>';
+  { // the texel pattern (v11.41, PIXEL.md pass B): by clade unless the spec says; drawn in pixel mode only; custom (painted cell by cell) is pass D
+    const pt=Object.assign({kind:PATTERN_BY_CLADE[s.clade]||'none'},PATTERN_DEF,s.pattern||{});
+    h+='<label class="row"><span>pattern</span>'+labSel('pattern.kind',PATTERNS,pt.kind)+'</label><label class="row"><span>period</span>'+labNum('pattern.scale',pt.scale,1,1,12)+'<b>cells</b></label><label class="row"><span>tone</span>'+labNum('pattern.tone',pt.tone,0.02,0,0.5)+'</label>';
+    if(!FX.pixel)h+='<div class="note">the pattern draws in pixel mode (e)</div>';
+  }
   if (pal && pal.note) h += '<div class="note">' + pal.note + '</div>';
   if (pal) {
     h += '<div class="swatches">';

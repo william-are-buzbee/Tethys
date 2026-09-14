@@ -518,7 +518,8 @@ function updateAtmosphere(dt){
   // the shimmer: over the surface in the light's direction, no further than 60 m off, fading as the light does. Seen through the
   // surface (drawn before it), so the surface's alpha takes 62–74% of it: SHIM_A is the knob if it reads too faint or too strong
   const L=K.lum,ly=Math.max(L.y,0.08),sl=clamp((TIDE+SHIM_H-player.pos.y)/ly,0,60/Math.max(Math.hypot(L.x,L.z),1e-3));
-  sunMesh.visible=!above&&FX.shimmer&&!FX.pixel; // hidden in pixel mode (v11.40, PIXEL.md): a canvas radial gradient has no cells; the surface's glint carries the sunsunMesh.material.opacity=SHIM_A*dfD*dfD*Math.min(1,K.lumL*1.4)*Math.min(1,ly*4)*wk;sunMesh.position.set(player.pos.x+L.x*sl,TIDE+SHIM_H,player.pos.z+L.z*sl);
+  // hidden in pixel mode (v11.40, PIXEL.md): a canvas radial gradient has no cells; the surface's glint carries the sun (v11.41: the note was a trailing comment that ate the opacity and the position for one version)
+  sunMesh.visible=!above&&FX.shimmer&&!FX.pixel;sunMesh.material.opacity=SHIM_A*dfD*dfD*Math.min(1,K.lumL*1.4)*Math.min(1,ly*4)*wk;sunMesh.position.set(player.pos.x+L.x*sl,TIDE+SHIM_H,player.pos.z+L.z*sl);
   sunMesh.material.color.setRGB(K.lumC[0],K.lumC[1],K.lumC[2]);
   updateShafts(above,wk);
   updateHaze(dt,above);sky.visible=above;sky.position.copy(camera.position);if(above)pushSky();

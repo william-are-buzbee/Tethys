@@ -256,9 +256,29 @@ const CAU_TEX=[];let CAU_GTEX=null;
 // the de-res fragment (v11.40; the reasoning at PIX_T): the grid-space tangent basis gx, gy from the varying, the cell centre's offset d put on the face's
 // plane along its dominant axis, the 2×2 solve for the screen offset (a, b) that moves by d, the colour extrapolated there and posterised. det guards a
 // face seen edge-on (nothing to extrapolate along). `grid` 'world' sizes the cell PIX_T; otherwise PIX_T for an instance and PIX_TB for a body.
-const PIX_GLSL=grid=>'if(uPix>0.5){vec3 gx=dFdx(vGrid),gy=dFdy(vGrid);float xx=dot(gx,gx),xy=dot(gx,gy),yy=dot(gy,gy),det=xx*yy-xy*xy;if(det>1e-4*xx*yy){'+(grid==='world'?'float pt='+PIX_T.toFixed(3)+';':'\n#ifdef USE_INSTANCING\nfloat pt='+PIX_T.toFixed(3)+';\n#else\nfloat pt='+PIX_TB.toFixed(3)+';\n#endif\n')+
-  'vec3 nn=cross(gx,gy),an=abs(nn);vec3 d=(floor(vGrid/pt)+0.5)*pt-vGrid;if(an.y>=an.x&&an.y>=an.z)d.y=-(nn.x*d.x+nn.z*d.z)/nn.y;else if(an.x>=an.z)d.x=-(nn.y*d.y+nn.z*d.z)/nn.x;else d.z=-(nn.x*d.x+nn.y*d.y)/nn.z;'+
-  'float bx=dot(gx,d),by=dot(gy,d),a=(yy*bx-xy*by)/det,b=(xx*by-xy*bx)/det;vec3 c0=gl_FragColor.rgb;c0+=a*dFdx(c0)+b*dFdy(c0);gl_FragColor.rgb=floor(clamp(c0,0.0,1.0)*'+(PIX_TONES-1).toFixed(1)+'+0.5)/'+(PIX_TONES-1).toFixed(1)+';}}';
+// The pattern in the texel (v11.41, PIXEL.md pass B): a tone step per cell from a hash of the cell's index, ±PIX_GRAIN weighted by the material's
+// class (PIX_CLASS: sand heavy, rock and the plants lighter, a body by half), and the class's own mark — rock: a darker stratum every PIX_STRATA[0]
+// cells of world height; a blade or a card: a vein, a darker line every PIX_VEIN[0] cells across the growth axis; the terrain: sand grain heavy,
+// rock grain light, told apart by the vertex colour's luminance (the terrain colours by substrate); a body: its coat's pattern (creatures_spec.js
+// PATTERNS, by clade unless the spec says — the person's rule, PIXEL.md Decided 5), carried per vertex as aPat (kind, cells per period, tone) on
+// the body's own geometry, drawn in body space: stripes are bands along z (every creature faces +z), spots hashed clusters of scale² cells at a
+// threshold, plates a coarser grid with a darker seam, scales the same grid with every other row offset by half. Applied after the posterise as
+// one multiplier, so the grain is a step of tone and not quantised away. The chosen cell is the column along the face's dominant axis (pass A),
+// so the pattern is read on the two axes across it (cid) and the across-growth index (ca) is the one not the growth axis.
+const PIX_GRAIN=0.06,PIX_CLASS={terr:[0.6,1.0],rock:0.6,plant:0.4,blade:0.4,card:0.4,body:0.5},PIX_STRATA=[4,0.08],PIX_VEIN=[3,0.08]; // the tone step; the grain weight per class (terr: [rock, sand] by luminance); a stratum every n cells by this much; a vein every n cells across by this much
+const PIX_CLS_GLSL=cls=>(cls==='terr'?'\n#ifdef USE_COLOR\nfloat pw=mix('+PIX_CLASS.terr[0].toFixed(2)+','+PIX_CLASS.terr[1].toFixed(2)+',smoothstep(0.3,0.6,dot(vColor,vec3(0.3,0.5,0.2))));\n#else\nfloat pw='+PIX_CLASS.terr[1].toFixed(2)+';\n#endif\n':'float pw='+(PIX_CLASS[cls]||0).toFixed(2)+';')+
+  'float tn=(floor(ph*3.0)-1.0)*'+PIX_GRAIN.toFixed(3)+'*pw;'+
+  (cls==='rock'?'if(mod(floor(vWy/pt),'+PIX_STRATA[0].toFixed(1)+')<0.5)tn-='+PIX_STRATA[1].toFixed(3)+';':'')+
+  (cls==='blade'||cls==='card'?'if(mod(ca,'+PIX_VEIN[0].toFixed(1)+')<0.5)tn-='+PIX_VEIN[1].toFixed(3)+';':'')+
+  (cls==='body'?'float pk=vPat.x,psc=max(vPat.y,1.0),pto=vPat.z;'+
+    'if(pk>0.5&&pk<1.5){if(mod(floor(ci.z/psc),2.0)<0.5)tn-=pto;}'+
+    'else if(pk<2.5){if(fract(sin(dot(floor(cid/psc),vec2(41.17,7.31)))*23758.545)<0.3)tn-=pto;}'+
+    'else if(pk<3.5){vec2 pm=mod(cid,psc);if(pm.x<0.5||pm.y<0.5)tn-=pto;}'+
+    'else if(pk<4.5){float prow=floor(cid.y/psc);float pcx=cid.x+(mod(prow,2.0)<0.5?0.0:floor(psc*0.5));if(mod(cid.y,psc)<0.5||mod(pcx,psc)<0.5)tn-=pto;}':'');
+const PIX_GLSL=(grid,cls)=>'if(uPix>0.5){vec3 gx=dFdx(vGrid),gy=dFdy(vGrid);float xx=dot(gx,gx),xy=dot(gx,gy),yy=dot(gy,gy),det=xx*yy-xy*xy;if(det>1e-4*xx*yy){'+(grid==='world'?'float pt='+PIX_T.toFixed(3)+';':'\n#ifdef USE_INSTANCING\nfloat pt='+PIX_T.toFixed(3)+';\n#else\nfloat pt='+PIX_TB.toFixed(3)+';\n#endif\n')+
+  'vec3 nn=cross(gx,gy),an=abs(nn);vec3 ci=floor(vGrid/pt);vec3 d=(ci+0.5)*pt-vGrid;vec2 cid;float ca;if(an.y>=an.x&&an.y>=an.z){d.y=-(nn.x*d.x+nn.z*d.z)/nn.y;cid=ci.xz;ca=ci.x;}else if(an.x>=an.z){d.x=-(nn.y*d.y+nn.z*d.z)/nn.x;cid=ci.yz;ca=ci.z;}else{d.z=-(nn.x*d.x+nn.y*d.y)/nn.z;cid=ci.xy;ca=ci.x;}'+
+  'float bx=dot(gx,d),by=dot(gy,d),a=(yy*bx-xy*by)/det,b=(xx*by-xy*bx)/det;vec3 c0=gl_FragColor.rgb;c0+=a*dFdx(c0)+b*dFdy(c0);c0=floor(clamp(c0,0.0,1.0)*'+(PIX_TONES-1).toFixed(1)+'+0.5)/'+(PIX_TONES-1).toFixed(1)+';'+
+  'float ph=fract(sin(dot(cid,vec2(12.9898,78.233)))*43758.5453);'+PIX_CLS_GLSL(cls)+'gl_FragColor.rgb=c0*(1.0+tn);}}';
 // the grid varying (vertex): the position before the model and instance matrices, read at begin_vertex (before the sway, the collapse, the wave), scaled
 // to metres by the object's and the instance's scale; 'world' takes the world position instead so the cells' terrain and the far terrain share one grid
 const PIX_GRID_V=grid=>grid==='world'?'vGrid=(modelMatrix*wpp).xyz;':'vGrid=pGrid*vec3(length(modelMatrix[0].xyz),length(modelMatrix[1].xyz),length(modelMatrix[2].xyz));\n#ifdef USE_INSTANCING\nvGrid*=vec3(length(instanceMatrix[0].xyz),length(instanceMatrix[1].xyz),length(instanceMatrix[2].xyz));\n#endif\n';
@@ -448,16 +468,16 @@ const LIGHT_GLSL=LIGHT_FX?'\n#ifdef USE_FOG\n{float dep=uTint.x-vFogPos.y;if(uSu
 const LIGHT_PARS=CAU_PARS+'uniform float uTime;uniform float uChop;uniform vec4 uSunW;uniform vec2 uLightK;uniform sampler2D uShMap;uniform mat4 uShMat;uniform vec4 uShP;uniform vec4 uShL;uniform sampler2D uShMapS;uniform mat4 uShMatS;uniform vec4 uShPS;uniform vec4 uShLS;\n'+
   'float shDepth(vec4 v){return dot(v,vec4(0.99609375/16777216.0,0.99609375/65536.0,0.99609375/256.0,0.99609375));}\n'+
   'float shTap(sampler2D m,vec2 uv,float z,float fd){float dz=z-shDepth(texture2D(m,uv));return dz>0.0?exp(-dz*uShL.w/fd):0.0;}\n'; // both maps are 2·SHM_D deep, so uShL.w serves the world's too
-function addTint(m,key,small,band,grid){ // grid (v11.40): 'world' puts the de-res texels on the world grid; default the object's or instance's own
+function addTint(m,key,small,band,grid,cls){ // grid (v11.40): 'world' puts the de-res texels on the world grid; default the object's or instance's own. cls (v11.41): the texel pattern's class — terr, rock, plant, blade, card, body (PIX_CLASS)
   const prev=m.onBeforeCompile;
   m.onBeforeCompile=function(sh){
     if(prev)prev.call(m,sh);
     sh.uniforms.uTint=tintU;if(small)sh.uniforms.uFogP={value:FOG_PS};
     const lit=LIGHT_FX&&key!=='glow';if(lit){sh.uniforms.uTime=timeU;sh.uniforms.uChop=chopU;sh.uniforms.uSunW={value:SUN_W};for(let i=0;i<CAU_TEX.length;i++){sh.uniforms['uCauS'+i]={value:CAU_TEX[i].s};sh.uniforms['uCauC'+i]={value:CAU_TEX[i].c};}sh.uniforms.uCauG={value:CAU_GTEX};sh.uniforms.uPix=pixU;sh.uniforms.uWindOff=windOffU;sh.uniforms.uLightK=lightKU;sh.uniforms.uShMap=shMapU;sh.uniforms.uShMat=shMatU;sh.uniforms.uShP=shPU;sh.uniforms.uShL=shLU;sh.uniforms.uShMapS=shMapSU;sh.uniforms.uShMatS=shMatSU;sh.uniforms.uShPS=shPSU;sh.uniforms.uShLS=shLSU;}
-    sh.vertexShader='varying float vWy;'+(lit?'varying vec3 vGrid;':'')+'\n'+(lit?sh.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvec3 pGrid=transformed;'):sh.vertexShader).replace('#include <worldpos_vertex>','#include <worldpos_vertex>\n{vec4 wpp=vec4(transformed,1.0);\n#ifdef USE_INSTANCING\nwpp=instanceMatrix*wpp;\n#endif\nvWy=(modelMatrix*wpp).y;'+(lit?PIX_GRID_V(grid):'')+'}');
-    sh.fragmentShader='uniform vec4 uTint;varying float vWy;'+(lit?'varying vec3 vGrid;':'')+'\n'+(lit?LIGHT_PARS:'')+sh.fragmentShader.replace('#include <fog_fragment>',(lit?PIX_GLSL(grid)+LIGHT_GLSL:'')+(band?BAND_GLSL(band):'')+'{float dd=max(0.0,uTint.x-vWy);float f=uTint.y*(1.0-exp(-dd*0.05));vec3 tc=vec3('+TINT_COL.map(v=>v.toFixed(2)).join(',')+')*uTint.z;\n#ifdef USE_FOG\ntc*=uFogT.yzw;\n#endif\ngl_FragColor.rgb=mix(gl_FragColor.rgb,tc,f);}\n#include <fog_fragment>');
+    sh.vertexShader='varying float vWy;'+(lit?'varying vec3 vGrid;':'')+(lit&&cls==='body'?'varying vec3 vPat;\n#ifndef USE_INSTANCING\nattribute vec3 aPat;\n#endif\n':'')+'\n'+(lit?sh.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvec3 pGrid=transformed;'):sh.vertexShader).replace('#include <worldpos_vertex>','#include <worldpos_vertex>\n{vec4 wpp=vec4(transformed,1.0);\n#ifdef USE_INSTANCING\nwpp=instanceMatrix*wpp;\n#endif\nvWy=(modelMatrix*wpp).y;'+(lit?PIX_GRID_V(grid):'')+(lit&&cls==='body'?'\n#ifdef USE_INSTANCING\nvPat=vec3(0.0);\n#else\nvPat=aPat;\n#endif\n':'')+'}');
+    sh.fragmentShader='uniform vec4 uTint;varying float vWy;'+(lit?'varying vec3 vGrid;':'')+(lit&&cls==='body'?'varying vec3 vPat;':'')+'\n'+(lit?LIGHT_PARS:'')+sh.fragmentShader.replace('#include <fog_fragment>',(lit?PIX_GLSL(grid,cls)+LIGHT_GLSL:'')+(band?BAND_GLSL(band):'')+'{float dd=max(0.0,uTint.x-vWy);float f=uTint.y*(1.0-exp(-dd*0.05));vec3 tc=vec3('+TINT_COL.map(v=>v.toFixed(2)).join(',')+')*uTint.z;\n#ifdef USE_FOG\ntc*=uFogT.yzw;\n#endif\ngl_FragColor.rgb=mix(gl_FragColor.rgb,tc,f);}\n#include <fog_fragment>');
   };
-  m.customProgramCacheKey=function(){return key+'tint'+(band||'')+(grid||'');};
+  m.customProgramCacheKey=function(){return key+'tint'+(band||'')+(grid||'')+(cls||'');};
   if(LIGHT_FX&&key!=='glow')m.extensions={derivatives:true}; // dFdx/dFdy on WebGL1 (WebGL2 has them)
   return m;
 }
@@ -468,11 +488,11 @@ function addTint(m,key,small,band,grid){ // grid (v11.40): 'world' puts the de-r
 const THIN_RE=/reflectedLight\.directDiffuse\s*=\s*\(\s*gl_FrontFacing\s*\)\s*\?\s*vLightFront\s*:\s*vLightBack\s*;/;let thinWarned=false;
 function thinLight(sh,k){if(sh.defines&&sh.defines.DEPTH_PASS)return;const f=sh.fragmentShader;if(!THIN_RE.test(f)){if(!thinWarned){thinWarned=true;console.warn('thinLight: lambert chunk not as expected; blades are opaque');}return;}
   sh.fragmentShader=f.replace(THIN_RE,'reflectedLight.directDiffuse=mix((gl_FrontFacing)?vLightFront:vLightBack,(gl_FrontFacing)?vLightBack:vLightFront,'+k.toFixed(2)+');');}
-const MAT=addTint(new THREE.MeshLambertMaterial({vertexColors:true}),'lam',true); // creatures, small flora
+const MAT=addTint(new THREE.MeshLambertMaterial({vertexColors:true}),'lam',true,undefined,undefined,'body'); // creatures, small flora (instanced: the plant class in the shader)
 const MATGHOST=new THREE.MeshBasicMaterial({colorWrite:false,depthWrite:false}); // the first-person body (v11.23, player.js): drawn as nothing, still cast into the shadow map
 function ghostBody(g,on){g.traverse(o=>{if(!o.isMesh)return;if(on){if(o.material!==MATGHOST){o.userData.mat0=o.material;o.material=MATGHOST;}}else if(o.userData.mat0){o.material=o.userData.mat0;o.userData.mat0=null;}});}
-const MATBIG=addTint(new THREE.MeshLambertMaterial({vertexColors:true}),'lam'); // big creatures' far LOD: the full ghost
-const MATLM=addTint(new THREE.MeshLambertMaterial({vertexColors:true}),'lam',false,undefined,'world'); // the landmarks that are not rock (far.js): MATBIG's fog, the de-res on the world grid (v11.40; on MATBIG they took the bodies' texel)
+const MATBIG=addTint(new THREE.MeshLambertMaterial({vertexColors:true}),'lam',false,undefined,undefined,'body'); // big creatures' far LOD: the full ghost
+const MATLM=addTint(new THREE.MeshLambertMaterial({vertexColors:true}),'lam',false,undefined,'world','rock'); // the landmarks that are not rock (far.js): MATBIG's fog, the de-res on the world grid (v11.40; on MATBIG they took the bodies' texel)
 // The foot of a boulder (v11.13): the cell's rock sinks `sink` (0.35–0.45) of its scale into the ground (chunks.js settleOn), and the
 // band where it meets the sand is darkened in the vertex shader — from the sink line up over 0.8 of the scale, by 35% — the
 // occlusion a shadow map would give the one place it shows. Instanced only (the cell's boulders); structures are merged and keep their light.
@@ -480,17 +500,17 @@ const ROCK_FOOT='\n#ifdef USE_INSTANCING\n{float sy=length(instanceMatrix[1].xyz
 function rockMaterial(){const m=new THREE.MeshLambertMaterial({vertexColors:true});m.onBeforeCompile=function(sh){
   sh.vertexShader='varying float vFoot;\n'+sh.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvFoot=1.0;'+ROCK_FOOT);
   sh.fragmentShader='varying float vFoot;\n'+sh.fragmentShader.replace('#include <fog_fragment>','gl_FragColor.rgb*=vFoot;\n#include <fog_fragment>');};return m;}
-const MATROCK=addTint(rockMaterial(),'lamrock',true,1); // rock placed by the cell (boulders, ledges): with the tide's band and the foot
-const MATROCKB=addTint(new THREE.MeshLambertMaterial({vertexColors:true}),'lam',false,1); // structures (far.js): the same with the big-thing fog
+const MATROCK=addTint(rockMaterial(),'lamrock',true,1,undefined,'rock'); // rock placed by the cell (boulders, ledges): with the tide's band and the foot
+const MATROCKB=addTint(new THREE.MeshLambertMaterial({vertexColors:true}),'lam',false,1,undefined,'rock'); // structures (far.js): the same with the big-thing fog
 // The far cards (v11.13): a sway on uTime by the card's height above its base, so the hand-off at FLORA_FAR is not a forest going still —
 // 1.2 m at 25 m up, on the sway materials' phase from the instance's x,z; the raft discs (y 0) don't move. Thin like the blades (thinLight).
 function farMaterial(){const m=new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide});m.onBeforeCompile=function(sh){sh.uniforms.uTime=timeU;
   sh.vertexShader='uniform float uTime;\n'+sh.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\n#ifdef USE_INSTANCING\n{float sx=length(instanceMatrix[0].xyz),sy=length(instanceMatrix[1].xyz),sz=length(instanceMatrix[2].xyz);float hw=transformed.y*sy;float k=pow(min(hw/25.0,1.0),1.5)*1.2;float ph=uTime*0.55+instanceMatrix[3][0]*0.31+instanceMatrix[3][2]*0.23;transformed.x+=sin(ph)*k/sx;transformed.z+=sin(ph*0.7+1.3)*k*0.6/sz;}\n#endif\n');
   thinLight(sh,0.35);};return m;}
-const MATFAR=addTint(farMaterial(),'lamds',true); // far impostor cards: seen from either side; small-thing fog so the swap with real kelp doesn't pop
+const MATFAR=addTint(farMaterial(),'lamds',true,undefined,undefined,'card'); // far impostor cards: seen from either side; small-thing fog so the swap with real kelp doesn't pop
 const GLOW=addTint(new THREE.MeshBasicMaterial({vertexColors:true}),'glow'); // no FLORA entry sets `glow` since v10.1 took the bioluminescence out; kept, with its branches in chunks.js, for when it returns as events (PLANET Hooks) — one program at the boot warm-up (v11.33)
-const MATT=addTint(new THREE.MeshLambertMaterial({vertexColors:true,transparent:true,opacity:0.7}),'lamt',true); // translucent small creatures (the flicker); bakeLOD skips transparent parts, so they keep their real mesh at far LOD
-const TERRAIN_MAT=addTint(Q.phong?new THREE.MeshPhongMaterial({vertexColors:true,flatShading:true,shininess:0,specular:0x000000}):new THREE.MeshLambertMaterial({vertexColors:true}),'terr',false,0.7,'world'); // 'world' (v11.40): the cells' terrain and the far terrain de-res on one grid
+const MATT=addTint(new THREE.MeshLambertMaterial({vertexColors:true,transparent:true,opacity:0.7}),'lamt',true,undefined,undefined,'body'); // translucent small creatures (the flicker); bakeLOD skips transparent parts, so they keep their real mesh at far LOD
+const TERRAIN_MAT=addTint(Q.phong?new THREE.MeshPhongMaterial({vertexColors:true,flatShading:true,shininess:0,specular:0x000000}):new THREE.MeshLambertMaterial({vertexColors:true}),'terr',false,0.7,'world','terr'); // 'world' (v11.40): the cells' terrain and the far terrain de-res on one grid
 // Instanced sway: displacement in world units, scaled per instance so tall and short plants bend alike.
 // bob: the whole instance rides the wave at its origin (surface rafts) and sinks by its aDip attribute (a pad under a body).
 // H: the geometry's height along its growth axis in local units (dir: +1 grows up from the root, -1 hangs down from it).
@@ -555,13 +575,13 @@ function swayMaterial(amp,freq,hn,dir,bob,H,strand,cap,cut,thin){
       (bob?'\n#ifdef DEPTH_PASS\ntransformed.y+=(uTide-aDip)/sy;\n#else\ntransformed.y+=(waveH(instanceMatrix[3].xz,uTime,0.0)+uTide-aDip)/sy;\n#endif\n':cap?'float wy=(modelMatrix*instanceMatrix*vec4(transformed,1.0)).y;float wl=uTide-0.45;\n#ifndef DEPTH_PASS\nif(wy>uTide-1.8)wl+=waveH(base.xz,uTime,0.0);\n#endif\ntransformed.y-=max(wy-wl,0.0)*0.96/sy;':'')+'}');
   };
   m.sway=true; // the cell gives its instances aCur (chunks.js makeInstanced)
-  return addTint(m,'sway'+amp+freq+hn+dir+(bob?'b':'')+H+(strand?'s':'')+(cap?'c':'')+(cut?'x':'')+(thin?'t'+thin:''),true);
+  return addTint(m,'sway'+amp+freq+hn+dir+(bob?'b':'')+H+(strand?'s':'')+(cap?'c':'')+(cut?'x':'')+(thin?'t'+thin:''),true,undefined,undefined,thin?'blade':'plant');
 }
 // rigid flora with variants: Lambert, double-sided (the cones' comb legs and the stars are planes), the collapse and nothing else
 // The sessile animals breathe (v11.13): a 2.5% radial pulse of everything above 0.25 m local, 0.4–0.6 Hz, phase from the instance's x,z —
 // the tubes, cups, lilies, tulips, chains, burrs and loops, which were rigid. Crusts and cones under 0.25 m don't move; a collapsed vertex stays at zero.
 const PULSE_GLSL='{float pp=uTime*0.7+instanceMatrix[3][0]*0.37+instanceMatrix[3][2]*0.29;float pk=smoothstep(0.25,1.0,transformed.y)*0.025*(1.0+0.5*sin(pp*1.7));transformed.xz*=1.0+pk*sin(pp);}';
-function varMaterial(dead){const m=new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide});m.onBeforeCompile=function(sh){sh.uniforms.uTime=timeU;sh.vertexShader='uniform float uTime;\n'+VAR_GLSL+sh.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>'+FAR_CUT+VAR_COLLAPSE+(dead?'':'\n#if defined(USE_INSTANCING)&&!defined(DEPTH_PASS)\n'+PULSE_GLSL+'\n#endif\n'));};return addTint(m,dead?'lamvd':'lamv',true);} // no breathing in the world's shadow map (v11.30) // cut beyond FLORA_FAR too (v11.12)
+function varMaterial(dead){const m=new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide});m.onBeforeCompile=function(sh){sh.uniforms.uTime=timeU;sh.vertexShader='uniform float uTime;\n'+VAR_GLSL+sh.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>'+FAR_CUT+VAR_COLLAPSE+(dead?'':'\n#if defined(USE_INSTANCING)&&!defined(DEPTH_PASS)\n'+PULSE_GLSL+'\n#endif\n'));};return addTint(m,dead?'lamvd':'lamv',true,undefined,undefined,'plant');} // no breathing in the world's shadow map (v11.30) // cut beyond FLORA_FAR too (v11.12)
 const MATV=varMaterial(),MATVD=varMaterial(true); // MATVD: the variants without the breath — a stranded float is a corpse (v11.31.4)
 // (v11.33: fogExtinctOnly is gone — nothing has called it since the glow clouds went in v10.1. The rule it carried stands and the
 // light shafts re-implement it by hand: an additive thing must lose its own colour with distance and never take the veil's.)

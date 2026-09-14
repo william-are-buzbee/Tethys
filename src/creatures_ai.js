@@ -56,7 +56,7 @@ function spawn(ch,kind,pos,rng,opt){
     b.g.traverse(o=>{if(!o.isMesh||rigMeshes.has(o))return;const g=K.geos[n++];if(g){if(o.geometry!==g){o.geometry.dispose();o.geometry=g;}}else{K.geos[n-1]=o.geometry;SHARED_GEO.add(o.geometry);}});}
   if(K&&K.lod)c.lodMeshes=K.lod.map(e=>{const m=new THREE.Mesh(e.geo,e.mat);m.visible=false;return m;});
   else{c.lodMeshes=bakeLOD(b.g);if(K)K.lod=c.lodMeshes.map(m=>{SHARED_GEO.add(m.geometry);return {geo:m.geometry,mat:m.material};});}
-  for(const m of c.lodMeshes){if(d.size>=6&&m.material===MAT)m.material=MATBIG;b.g.add(m);} // a big animal's far LOD keeps the far ghost (scene.js, addTint)
+  for(const m of c.lodMeshes){if(d.size>=6&&m.material===MAT)m.material=MATBIG;patternOn(m.geometry,b.pat);b.g.add(m);} // a big animal's far LOD keeps the far ghost (scene.js, addTint)
   c.shM=[];b.g.traverse(o=>{if(o.isMesh)c.shM.push(o);});c.cast=false; // the meshes that cast into the shadow map when this body is among the nearest (scene.js updateShadow)
   c.lodNear=(d.lodNear||45+d.size*4)*Q.lodNear;c.lodFar=Math.min(FAR*0.7,120+d.size*40); // lodNear on the def (v11.18): the long-appendaged are simulated from further off; a veil is drawn to 760, an abyssal to 720
   creatures.push(c);ch.creatures.push(c);return c;

@@ -48,7 +48,23 @@ const VIEWS={
   top:{r:[-1,0,0],u:[0,0,1],f:[0,1,0]}
 };
 const LIGHT=norm([-0.45,0.8,0.7]);
-function renderTile(img,W,ox,oy,S,tris,view,centre,radius,ground){
+// PIX=1 (v11.41): the body in texels as the game draws it in pixel mode — the tri's flat colour posterised to 16 tones, then the grain and the
+// spec's pattern per PIX_TB cell of the body frame (scene.js PIX_GLSL/PIX_CLS_GLSL 'body', the same rules in JS: the column along the face's
+// dominant axis, the hash of the cell, stripes/spots/plates/scales). The snap itself is a no-op here: this rasteriser is one colour a tri already.
+const PIX=+(process.env.PIX||0),PIX_TB=0.15,PIX_TONES=16,PIX_GRAIN=0.06,PIX_BODY=0.5;
+function fracsin(x){const v=Math.sin(x)*43758.5453;return v-Math.floor(v);}
+function gmod(a,b){return a-Math.floor(a/b)*b;}
+function texel(c,X,Y,Z,n,pat){const pt=PIX_TB,ci=[Math.floor(X/pt),Math.floor(Y/pt),Math.floor(Z/pt)],an=[Math.abs(n[0]),Math.abs(n[1]),Math.abs(n[2])];
+  const cid=an[1]>=an[0]&&an[1]>=an[2]?[ci[0],ci[2]]:an[0]>=an[2]?[ci[1],ci[2]]:[ci[0],ci[1]];
+  const q=(PIX_TONES-1),c0=c.map(v=>Math.floor(Math.max(0,Math.min(1,v))*q+0.5)/q);
+  const ph=fracsin(cid[0]*12.9898+cid[1]*78.233);let tn=(Math.floor(ph*3)-1)*PIX_GRAIN*PIX_BODY;
+  if(pat){const pk=pat[0],sc=Math.max(pat[1],1),to=pat[2];
+    if(pk===1){if(gmod(Math.floor(ci[2]/sc),2)<0.5)tn-=to;}
+    else if(pk===2){const v=Math.sin(Math.floor(cid[0]/sc)*41.17+Math.floor(cid[1]/sc)*7.31)*23758.545;if(v-Math.floor(v)<0.3)tn-=to;}
+    else if(pk===3){if(gmod(cid[0],sc)<0.5||gmod(cid[1],sc)<0.5)tn-=to;}
+    else if(pk===4){const row=Math.floor(cid[1]/sc),cx=cid[0]+(gmod(row,2)<0.5?0:Math.floor(sc/2));if(gmod(cid[1],sc)<0.5||gmod(cx,sc)<0.5)tn-=to;}}
+  return [c0[0]*(1+tn),c0[1]*(1+tn),c0[2]*(1+tn)];}
+function renderTile(img,W,ox,oy,S,tris,view,centre,radius,ground,pix){
   const scale=S*0.44/radius,cx=S/2,cy=S/2,zb=new Float32Array(S*S).fill(-1e9);
   const bg=[0.10,0.32,0.42];
   for(let y=0;y<S;y++)for(let x=0;x<S;x++){const i=((oy+y)*W+ox+x)*3;img[i]=bg[0]*255;img[i+1]=bg[1]*255;img[i+2]=bg[2]*255;}
@@ -57,14 +73,15 @@ function renderTile(img,W,ox,oy,S,tris,view,centre,radius,ground){
   for(const t of tris){const p=t.p,v=[];for(let k=0;k<9;k+=3){const d=[p[k]-centre[0],p[k+1]-centre[1],p[k+2]-centre[2]];v.push([cx+dot(d,view.r)*scale,cy-dot(d,view.u)*scale,dot(d,view.f)]);}
     const e1=[p[3]-p[0],p[4]-p[1],p[5]-p[2]],e2=[p[6]-p[0],p[7]-p[1],p[8]-p[2]],n=norm(cross(e1,e2));const nv=[dot(n,view.r),dot(n,view.u),dot(n,view.f)];
     if(nv[2]<=0)continue; // back face (the game's materials are single-sided)
-    const sh=0.32+0.68*Math.max(0,dot(nv,LIGHT));P.push({v,c:[t.c[0]*sh,t.c[1]*sh,t.c[2]*sh],op:t.op});}
+    const sh=0.32+0.68*Math.max(0,dot(nv,LIGHT));P.push({v,c:[t.c[0]*sh,t.c[1]*sh,t.c[2]*sh],op:t.op,p:p,n:n});}
   P.sort((a,b)=>(a.v[0][2]+a.v[1][2]+a.v[2][2])-(b.v[0][2]+b.v[1][2]+b.v[2][2])); // painter's for the translucent parts; the z-buffer does the rest
   for(const t of P){const [a,b,c]=t.v;const minx=Math.max(0,Math.floor(Math.min(a[0],b[0],c[0]))),maxx=Math.min(S-1,Math.ceil(Math.max(a[0],b[0],c[0]))),miny=Math.max(0,Math.floor(Math.min(a[1],b[1],c[1]))),maxy=Math.min(S-1,Math.ceil(Math.max(a[1],b[1],c[1])));
     const area=(b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0]);if(Math.abs(area)<1e-9)continue;
     for(let y=miny;y<=maxy;y++)for(let x=minx;x<=maxx;x++){const px=x+0.5,py=y+0.5;
       const w0=((b[0]-px)*(c[1]-py)-(b[1]-py)*(c[0]-px))/area,w1=((c[0]-px)*(a[1]-py)-(c[1]-py)*(a[0]-px))/area,w2=1-w0-w1;
       if(w0<0||w1<0||w2<0)continue;const z=w0*a[2]+w1*b[2]+w2*c[2];const zi=y*S+x;if(z<=zb[zi])continue;if(t.op>=0.99)zb[zi]=z;
-      const i=((oy+y)*W+ox+x)*3,k=t.op;img[i]=clamp255(img[i]*(1-k)+t.c[0]*255*k);img[i+1]=clamp255(img[i+1]*(1-k)+t.c[1]*255*k);img[i+2]=clamp255(img[i+2]*(1-k)+t.c[2]*255*k);}}
+      let tc=t.c;if(pix){const p=t.p;tc=texel(tc,w0*p[0]+w1*p[3]+w2*p[6],w0*p[1]+w1*p[4]+w2*p[7],w0*p[2]+w1*p[5]+w2*p[8],t.n,pix.pat);}
+      const i=((oy+y)*W+ox+x)*3,k=t.op;img[i]=clamp255(img[i]*(1-k)+tc[0]*255*k);img[i+1]=clamp255(img[i+1]*(1-k)+tc[1]*255*k);img[i+2]=clamp255(img[i+2]*(1-k)+tc[2]*255*k);}}
 }
 function clamp255(v){return v<0?0:v>255?255:v;}
 // ---------- png ----------
@@ -107,7 +124,7 @@ if(COATS){
     for(let k=0;k<nv;k++){const b=buildIn(r,build,k);b.anim(T0,SPD,{});if(b.rigs)for(const rig of b.rigs)Z.rigRest(rig);const tris=gather(b.g);
       let lo=[1e9,1e9,1e9],hi=[-1e9,-1e9,-1e9];for(const t of tris)for(let q=0;q<9;q+=3)for(let a=0;a<3;a++){lo[a]=Math.min(lo[a],t.p[q+a]);hi[a]=Math.max(hi[a],t.p[q+a]);}
       const centre=[(lo[0]+hi[0])/2,(lo[1]+hi[1])/2,(lo[2]+hi[2])/2],radius=Math.max(hi[0]-lo[0],hi[1]-lo[1],hi[2]-lo[2])/2||1;
-      renderTile(img,W,k*S,0,S,tris,VIEWS.quarter,centre,radius,null);}
+      renderTile(img,W,k*S,0,S,tris,VIEWS.quarter,centre,radius,null,PIX&&b.pat?{pat:b.pat}:null);}
     fs.writeFileSync(path.join(outDir,r.id+'_coats.png'),png(img,W,H));
   }
   console.log('wrote',ids.length,'coat strips to test/preview/');process.exit(0);
@@ -126,7 +143,7 @@ for(const r of ids){
     const centre=[(lo[0]+hi[0])/2,(lo[1]+hi[1])/2,(lo[2]+hi[2])/2],radius=Math.max(hi[0]-lo[0],hi[1]-lo[1],hi[2]-lo[2])/2||1;
     const size=r.spec?r.spec.size:r.player?Z.CLADES.find(c=>c.id===r.id).size:Z.DEFS[r.id].size;
     const ground=r.floor?-size*0.35:null;
-    let col=0;for(const v of ['quarter','side','front','top']){renderTile(img,W,col*S,row*S,S,tris,VIEWS[v],centre,radius,ground);col++;}
+    let col=0;for(const v of ['quarter','side','front','top']){renderTile(img,W,col*S,row*S,S,tris,VIEWS[v],centre,radius,ground,PIX&&b.pat?{pat:b.pat}:null);col++;}
     if(pose.name==='idle')console.log(r.id.padEnd(9),'tris '+String(ntri).padStart(5),' extent x %s y %s z %s (m)',(hi[0]-lo[0]).toFixed(2),(hi[1]-lo[1]).toFixed(2),(hi[2]-lo[2]).toFixed(2),' y range '+lo[1].toFixed(2)+'..'+hi[1].toFixed(2),' z '+lo[2].toFixed(2)+'..'+hi[2].toFixed(2),ground!==null?' ground at '+ground.toFixed(2):'');
     row++;
   }

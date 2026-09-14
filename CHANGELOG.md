@@ -2965,3 +2965,46 @@ before it and is snapped); (7) cost — ~40 ops a fragment in every lit program,
 with the switch on and off, in the forest.
 
 **Seen by the person (14 Sep 2026):** "Looks great. Literally zero complaints." The animals and their rigs look right; render cost is a later thing — pixel mode is an optional style, kept so the two looks can be compared. Nothing on the unseen list was raised.
+
+
+## v11.41 — the de-res, pass B: the pattern in the texel (14 Sep 2026)
+
+PIXEL.md pass B, on the person's "let's do it" after pass A ("literally zero complaints"). Constant colour per cell was the de-res; a pattern
+per cell is the Minecraft. Pixel mode only; nothing changes with the switch off.
+
+**The grain** (scene.js `PIX_CLS_GLSL`, after the posterise). A hash of the cell's index gives one of {−1, 0, +1} × `PIX_GRAIN` 0.06 of tone,
+weighted by the material's class (`PIX_CLASS`): sand 1.0 and rock 0.6 on the terrain, told apart by the vertex colour's luminance (the
+terrain colours by substrate, so no new data); placed rock, structures and the landmarks 0.6; plants, blades and the far cards 0.4; bodies
+0.5. Applied as one multiplier so a 6% step survives the sixteen levels. Every `addTint` material names its class (`cls`, the sixth
+argument; the sway materials are blades when thin and plants otherwise; `MAT` instanced is a plant, non-instanced a body).
+
+**The marks.** Rock: a darker stratum every `PIX_STRATA` 4 cells of world height (1.2 m), by 0.08 — the boulders share strata across a
+face. Blades and cards: a vein every `PIX_VEIN` 3 cells across the growth axis, by 0.08 (the across index is the cell axis that is not
+the growth axis). Bodies: the coat's pattern in body space — stripes bands along z, spots hashed clusters of scale² cells at a 30%
+threshold, plates a coarser grid with a darker seam, scales the same grid with every other row offset by half a period.
+
+**The spec** (creatures_spec.js "the texel pattern"): `spec.pattern = {kind, scale, tone}`; `PATTERNS` none | stripes | spots | plates |
+scales; by clade unless the spec says (`PATTERN_BY_CLADE`, the person's rule: ringmouths spots, slowbloods stripes, hingeshells plates,
+drifters none), `PATTERN_DEF` scale 3 cells, tone 0.12; `fillSpec` fills it, so the export, the hash and the share carry it like any key.
+It reaches the shader as a per-vertex attribute `aPat` on every mesh of the body, the rigs' too (`patternOn`, at the end of `compile`), and
+on the far LOD's baked geometry (creatures_ai.js spawn) — no per-mesh uniform on a shared material (r128 re-uploads a Lambert's uniforms only
+when the material changes between draws, so an `onBeforeRender` hook would not have worked). A geometry without it — an egg, a plant on
+`MAT` — reads zero and draws no pattern. The lab's coat tab has the three controls (pattern, period in cells, tone) with a note when the
+switch is off; the **custom** option and the painter are pass D, as decided.
+
+**`test/preview.js PIX=1`** draws a body as pixel mode does — the tri's colour posterised, the grain and the pattern per 0.15 m cell of the
+body frame, the same column and hash rules in JS — so a coat can be looked at without the game: `PIX=1 node test/preview.js fin soft`.
+
+Fixed on the way: the pass A note on the shimmer line (atmosphere.js) was a trailing `//` that ate the rest of its line, so the shimmer's
+opacity and position stopped updating in v11.40 (lint found `SHIM_A` unreferenced). One version; in pixel mode it was hidden anyway.
+
+**Seen** (dev.html in the app's browser, the switch on): the sand grained in 0.3 m cells — the floor reads as texture now, not bands; the
+dome boulder at 20 m in horizontal strata; the finback striped; the crusher (a slowblood) in 0.45 m bands, the sickle (a hingeshell) in
+plates on its hull and in scales at tone 0.3 after the lab's select was changed through the real input path (the spec and its hash carried
+it, no error); the three controls on the coat tab with the clade's default filled in; a dark mud floor at the rock weight. `PIX=1`
+previews of fin (stripes), soft (spots) and crusher. `node build.js --test` green on both tiers; lint clean.
+
+**Unseen, ask in this order:** (1) the tone: is 0.12 by default a mark or a smudge, and is the sand's grain (1.0) too busy at 14 m;
+(2) spots at 30% of scale² clusters — a ringmouth up close; (3) the vein on a real blade at a metre (the floor shot had only tufts);
+(4) the strata on a wall — the cell there is a column along x or z, so the stripe is by `vWy` and stays level, as it should; (5) the
+far cards' vein against the near plant's at the `FLORA_FAR` hand-off; (6) the bestiary run-through, every species' clade default.
