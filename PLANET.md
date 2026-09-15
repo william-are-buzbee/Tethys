@@ -393,6 +393,15 @@ answers, 14 Sep 2026:
 
 Still its own clock, unasked: the shimmer on the surface (atmosphere.js) — a canvas radial gradient, the audit's most foreign thing.
 
+## Decided 15 Sep 2026 — chemistry, one per clade (COMBAT.md §3b)
+
+Venom is a secretion the body already makes given a wound to flow into, and it is tuned to the prey it was evolved on. So each clade's
+chemistry is derived from what it has, and the three are unalike: **ringmouths** carry an offensive venom in the saliva, by the beak
+once the hold is won (paralysis in the hunters, an anticoagulant in the rasp; the deep low-metabolism line never has it, it costs);
+**slowbloods** carry a defensive venom on the fin spines from the skin, never offensive; **hingeshells** carry no venom at all — marine
+arthropods do not — and are poisonous to eat when they have fed at the seep line, so poison follows the animal's feeding, not its
+species; the **drifters'** stinging cells are the one cell-level invention. The roster it lands on is in COMBAT.md.
+
 ## Open
 
 Asked and not yet answered; do not decide these for the person.

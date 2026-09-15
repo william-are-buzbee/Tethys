@@ -25,8 +25,12 @@ stalemate rule: no clade has jaws, bone and metabolism together) and CLADES (eve
 - **Teeth track diet, fast.** Tooth form is not chosen in a life but nearly: cichlid jaws remodel in a few generations, many fish
   swap tooth shape as they grow and change diet. A player picking a mouth is picking a diet; the mouth is its consequence (DIRECTION:
   the body is the tech).
-- **Venom is left out of the rule set** (the person, 15 Sep 2026): each clade may arrive at it or not by its own route; the drifters'
-  stinging cells are the one that has it from the start. Nothing below depends on it.
+- **Venom is a secretion the body already makes, given a wound to flow into.** It evolved independently more than a hundred times on
+  Earth and always that way: saliva into a bite (cephalopods, shrews, many lizards), skin mucus onto a spine (nearly all venomous fish,
+  and nearly all of it defensive), a modified radula tooth (cone snails), a cell (cnidarians, once). Venoms are tuned to the prey
+  they were evolved on and weaker on other lineages. Poison is different: passive, usually taken from the diet (tetrodotoxin is
+  bacterial), and it makes the animal bad to eat rather than good at killing. Marine arthropods evolved almost none of either: water
+  washes chemistry away, and they crush. §3b applies this per clade.
 
 ## 2. The rule set
 
@@ -113,6 +117,33 @@ by most, unable to catch most. No hingeshell player yet.
 
 **Drifters:** sting what touches them, as built; no grip, no gape; the one clade with venom from the start.
 
+### 3b. Chemistry — one per clade, none alike (the person, 15 Sep 2026: "it goes in the docs")
+
+The question for each clade is not which venom but what it already secretes and what wound it already makes. Answered that way the
+three come out different in kind.
+
+| clade | it already has | what selection does with it | the result |
+|---|---|---|---|
+| ringmouths | a beak that opens a wound in held prey; strong digestive secretions, because they eat in pieces | a soft animal loses arms while prey struggles, so anything in the saliva that quiets the prey is selected. The rasp branch has the same gland and the opposite problem: it wants the wound to keep flowing | **venom, offensive, by the beak after the hold**: paralysis in the hunters, an anticoagulant in the rasp. Costs metabolism, so the deep low-metabolism line (pall, veil) never has it. Only once the edge is through |
+| slowbloods | fin spines (`spines:row` in the kit), a mucus skin, no way to outrun a holder | Earth's fish evolved venom some eighteen times, nearly all defensive, on spines, from the skin: a slow animal is selected to be a bad thing to hold | **venom, defensive only, on the spines**: a holder that clamps a spined slowblood lets go and is slowed. Nothing per use, which suits a clade with no metabolism to spend. Never offensive; the hunters kill by gape and thrash |
+| hingeshells | armour, a shredding mouth, a diet of sessile things and carrion, and the seep line where the sulfur symbionts live | marine arthropods do not evolve venom; armoured slow grazers evolve being poisonous to eat, with the toxin from the diet | **poison, passive, sequestered from what it ate**: a hingeshell that has fed on the sulfur line sickens whatever eats it or its carcass. It follows the animal's feeding, not its species: poison by place, the no-biomes rule for free |
+| drifters | stinging cells | a cell-level invention, once | venom by touch, as built |
+
+**Against what it was evolved on.** A ringmouth paralytic works on the nerves it hunts, slowblood and ringmouth, and does little to a
+hingeshell (sealed under plate anyway). A slowblood's spine venom is against what holds slowbloods: arms and mouths. Poison hits
+whatever eats it, being unaimed. So the chemistries are a matrix (`VENOM`: species → kind, against which clades, for how long), not
+three damage types.
+
+**Each is one state over the same machinery.** *Paralysed:* the held body's steering is off for the venom's seconds, so the hold is a
+pin regardless of mass — which is why a coilshell with short arms and a weak grip can kill at all: hold weakly, bite once, wait.
+*Stung:* the hold breaks, the holder is on a cooldown and slowed. *Poisoned:* the meal is lost and the eater is slow for a while.
+*Bleeding that will not stop:* the rasp's anticoagulant holds the open wound open past the clade's clotting; it is the trail (§4).
+A creature carries `fed` (where it last ate, from the ledger's envelope) for the poison; nothing else is new state.
+
+**On the roster:** the lurker and the coilshell venomous; the soft-arm by growth stage (DIRECTION); the basker and the grazer spined;
+the comb and the scuttle poisonous when they have fed at the seeps (which makes the abyssal's taste for combs a question: adapted, or
+sick); the arrow, ortho and great clean — size and speed already do their killing.
+
 **Regrowth, by the clock (game days, `REGROW`):** a ringmouth arm `REGROW_D`; a hingeshell limb at the moult; a slowblood fin never;
 nothing regrows a mantle, a head or a trunk. Regrowth is the part put back into the live spec at a fraction of its scale, growing.
 
@@ -144,7 +175,7 @@ a number: the flank bite you survived is what brings the ridge.
 | `hp`, `maxhp`, `dmg`, `DERIVE_K.hp`, `derive.hp`; `GRIP.first/bite/bleed`; `wound()`'s hp arithmetic; `hurtPlayer`'s hp; `HUNT_REGEN`; the 8-second heal; flee at 35% | the hold as a rope; the struggle by mass; `HOLD_DRAG`, `close`, `slow`, `shake`; `HOLD_BIG`; `WHOLE` as the gape's first form; the blood cloud; `hitFx`, the scraps, the flinch and the flush; the grab and the bite as two controls; the withdraw, the ink, the blow; the strike tell; the carcass and the ledger's `kill()` |
 
 Where the numbers will be: `EDGE` (edge → coverings beaten, and whether a thrash is needed), `COVER` (part kind/style → covering),
-`PIN_T`, `BLEED_T`, `REGROW`, `SMELL_R`, `MISS`. A table each, a comment per key, as the conventions say.
+`PIN_T`, `BLEED_T`, `REGROW`, `SMELL_R`, `MISS`, `VENOM` (§3b). A table each, a comment per key, as the conventions say.
 
 ## 7. Open — the person's
 
@@ -158,4 +189,4 @@ Where the numbers will be: `EDGE` (edge → coverings beaten, and whether a thra
    whether the sucker grip gets a player branch.
 5. **How much the hunters miss:** `MISS` at the escape-reflex rule, or looser for the first hours of a slot?
 
-Answered 15 Sep 2026: venom is per clade and outside the rule set; the drifters have it from the start.
+Answered 15 Sep 2026: the chemistry per clade (§3b) — ringmouth venom by the beak, slowblood venom on the spines, hingeshell poison from the seep diet, the drifters' cells; and the roster it lands on.
