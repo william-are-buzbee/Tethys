@@ -5,7 +5,7 @@ const fs=require('fs'),path=require('path');
 const ROOT=path.join(__dirname,'..');
 const ORDER=fs.readFileSync(path.join(ROOT,'src','order.txt'),'utf8').split('\n').map(s=>s.trim()).filter(s=>s&&s[0]!=='#');
 let js=ORDER.map(n=>fs.readFileSync(path.join(ROOT,'src',n+'.js'),'utf8')).join('\n');
-js+='\nglobal.__phys={peak(){player.pos.set(0,dispY,0);cellsAround();},get lastPad(){return lastPad;},solidPush,addSolid,addCapsule,addPad,addEllipsoid,addRock,bodyPush,loadPad,updatePads,livePads,chunks,chunkGrid,cellOf,creatures,player,DEFS,spawn,stepRigs,worldShapes,resolveBodies,sphereOutOf,flowAt,FLOW,setFlow:(n)=>{flowN=n;},updateDisturbers,DIST_A,DIST_B,groundAt,waveH,choose,V3,CLADES,t:()=>t,setT:(v)=>{t=v;},keys,get mode(){return mode;},FLORA};';
+js+='\nglobal.__phys={NCELL,peak(){player.pos.set(0,dispY,0);cellsAround();},get lastPad(){return lastPad;},solidPush,addSolid,addCapsule,addPad,addEllipsoid,addRock,bodyPush,loadPad,updatePads,livePads,chunks,chunkGrid,cellOf,creatures,player,DEFS,spawn,stepRigs,worldShapes,resolveBodies,sphereOutOf,flowAt,FLOW,setFlow:(n)=>{flowN=n;},updateDisturbers,DIST_A,DIST_B,groundAt,waveH,choose,V3,CLADES,t:()=>t,setT:(v)=>{t=v;},keys,get mode(){return mode;},FLORA};';
 const tmp=path.join(require('os').tmpdir(),'tethys_phys.js');
 fs.writeFileSync(tmp,'(function(){"use strict";\n'+js+'\n})();');
 process.env.PICK='0';
@@ -16,12 +16,12 @@ const dt=1/60;
 
 // ---- 1. the hash: every point pushed out of every solid; far points untouched; capsules honoured ----
 {
-  const ch=X.chunkGrid[X.cellOf(0)*16+X.cellOf(0)];
+  const ch=X.chunkGrid[X.cellOf(0)*X.NCELL+X.cellOf(0)];
   const rng=(()=>{let s=7;return()=>{s=(s*16807)%2147483647;return s/2147483647;};})();
   const added=[];
   for(let i=0;i<150;i++){const x=ch.x0+rng()*215,z=ch.z0+rng()*215,y=-20+rng()*30,r=0.5+rng()*6;X.addSolid(ch,x,y,z,r);added.push({t:0,x,y,z,r});}
   for(let i=0;i<60;i++){const x=ch.x0+rng()*215,z=ch.z0+rng()*215,y=-20+rng()*30,r=0.3+rng()*2,x2=x+(rng()-0.5)*20,y2=y+rng()*15,z2=z+(rng()-0.5)*20;X.addCapsule(ch,x,y,z,x2,y2,z2,r);added.push({t:1,x,y,z,x2,y2,z2,r});}
-  const all=[];for(let di=-1;di<=1;di++)for(let dj=-1;dj<=1;dj++){const c2=X.chunkGrid[(ch.i+di)*16+ch.j+dj];if(c2)for(const s of c2.solids)if(s.t!==2)all.push(s);}
+  const all=[];for(let di=-1;di<=1;di++)for(let dj=-1;dj<=1;dj++){const c2=X.chunkGrid[(ch.i+di)*X.NCELL+ch.j+dj];if(c2)for(const s of c2.solids)if(s.t!==2)all.push(s);}
   const dist=(p,s)=>{if(s.t===0)return Math.hypot(p.x-s.x,p.y-s.y,p.z-s.z)-s.r;
     if(s.t===4){let mx=-1e9;for(let q=0;q<48;q+=4){const d=s.pl[q]*p.x+s.pl[q+1]*p.y+s.pl[q+2]*p.z-s.pl[q+3];if(d>mx)mx=d;}return mx;}
     if(s.t===3){const dx=p.x-s.x,dy=p.y-s.y,dz=p.z-s.z,mi=s.mi,m=s.m,qx=mi[0]*dx+mi[3]*dy+mi[6]*dz,qy=mi[1]*dx+mi[4]*dy+mi[7]*dz,qz=mi[2]*dx+mi[5]*dy+mi[8]*dz,ql=Math.hypot(qx,qy,qz)||1e-9,ux=qx/ql,uy=qy/ql,uz=qz/ql;return (ql-1)*Math.hypot(m[0]*ux+m[3]*uy+m[6]*uz,m[1]*ux+m[4]*uy+m[7]*uz,m[2]*ux+m[5]*uy+m[8]*uz);}const ex=s.x2-s.x,ey=s.y2-s.y,ez=s.z2-s.z,l2=ex*ex+ey*ey+ez*ez,tt=Math.max(0,Math.min(1,((p.x-s.x)*ex+(p.y-s.y)*ey+(p.z-s.z)*ez)/l2));return Math.hypot(p.x-s.x-ex*tt,p.y-s.y-ey*tt,p.z-s.z-ez*tt)-s.r;};
@@ -43,7 +43,7 @@ const dt=1/60;
 
 // ---- 1b. a stretched rock: an ellipsoid three long and one wide, tilted; points along the long axis are pushed out ----
 {
-  const ch=X.chunkGrid[X.cellOf(0)*16+X.cellOf(0)];
+  const ch=X.chunkGrid[X.cellOf(0)*X.NCELL+X.cellOf(0)];
   const c=Math.cos(0.6),sn=Math.sin(0.6);const cx=ch.x0+150,cz=ch.z0+30,cy=-5;
   // columns: x axis 3 long rotated 0.6 about y, y axis 1, z axis 1
   const W=[3*c,0,-3*sn,0, 0,1,0,0, sn,0,c,0, cx,cy,cz,1];
@@ -59,7 +59,7 @@ const dt=1/60;
 
 // ---- 1c. a rock: a dodecahedron stretched 2.5 x 1.2 x 0.8 and tilted; every point inside, corners included, is put out ----
 {
-  const ch=X.chunkGrid[X.cellOf(0)*16+X.cellOf(0)];
+  const ch=X.chunkGrid[X.cellOf(0)*X.NCELL+X.cellOf(0)];
   const t=(1+Math.sqrt(5))/2,r=1/t,V=[-1,-1,-1,-1,-1,1,-1,1,-1,-1,1,1,1,-1,-1,1,-1,1,1,1,-1,1,1,1,0,-r,-t,0,-r,t,0,r,-t,0,r,t,-r,-t,0,-r,t,0,r,-t,0,r,t,0,-t,0,-r,t,0,-r,-t,0,r,t,0,r];
   const verts=[];for(let i=0;i<V.length;i+=3){const l=Math.hypot(V[i],V[i+1],V[i+2]);verts.push([V[i]/l,V[i+1]/l,V[i+2]/l]);}
   const cy=Math.cos(0.7),sy=Math.sin(0.7),cx=Math.cos(0.3),sx=Math.sin(0.3),R=[[cy,0,sy],[sx*sy,cx,-sx*cy],[-cx*sy,sx,cx*cy]],S=[2.5,1.2,0.8];
@@ -77,7 +77,7 @@ const dt=1/60;
 
 // ---- 1d. the body is a capsule: a snout that would enter a rock ahead carries the body back ----
 {
-  const ch=X.chunkGrid[X.cellOf(0)*16+X.cellOf(0)];let rx=0,rz=0;
+  const ch=X.chunkGrid[X.cellOf(0)*X.NCELL+X.cellOf(0)];let rx=0,rz=0;
   for(let tries=0;tries<400&&!rx;tries++){const x=ch.x0+20+Math.random()*175,z=ch.z0+20+Math.random()*175,p={x:x,y:-8,z:z};let clear=true;for(let dz=-6;dz<=6;dz+=1){p.z=z+dz;p.x=x;p.y=-8;if(X.solidPush(p,3,null,null)){clear=false;break;}}if(clear){rx=x;rz=z;}}
   X.addSolid(ch,rx,-8,rz,2);
   const p={x:rx,y:-8,z:rz-2-0.9-0.6},v={x:0,y:0,z:3},q={}; // centre 0.6 clear of a 0.9 ball, but the nose 1.26 ahead with r 0.5 is inside (the stub's quaternion faces +z)
@@ -87,7 +87,7 @@ const dt=1/60;
 
 // ---- 2. pads: land on one from above, stay under it from below, the dip ----
 {
-  const ch=X.chunkGrid[X.cellOf(0)*16+X.cellOf(0)];
+  const ch=X.chunkGrid[X.cellOf(0)*X.NCELL+X.cellOf(0)];
   let px=0,pz=0;for(let tries=0;tries<400;tries++){const x=ch.x0+20+Math.random()*175,z=ch.z0+20+Math.random()*175,p={x:x,y:0.2,z:z};let clear=true;for(let y=-3;y<8;y+=0.5){p.y=y;if(X.solidPush(p,2.5,null,null)){clear=false;break;}}if(clear){px=x;pz=z;break;}}
   check(px!==0,'found a spot with nothing in the water column at ('+px.toFixed(0)+','+pz.toFixed(0)+')');
   const inst={im:{geometry:{attributes:{aDip:{array:new Float32Array(1),needsUpdate:false}}}},idx:0,dip:0,dv:0,load:0,live:false};
@@ -108,7 +108,7 @@ const dt=1/60;
 
 // ---- 3. chains: lengths, ground, bodies, grab ----
 {
-  const P=X.player,ch=X.chunkGrid[X.cellOf(0)*16+X.cellOf(0)];
+  const P=X.player,ch=X.chunkGrid[X.cellOf(0)*X.NCELL+X.cellOf(0)];
   const o=X.spawn(ch,'ortho',X.V3(30,-4,30),Math.random),n=X.spawn(ch,'grazer',X.V3(30,-4,42),Math.random);
   const lens=(c)=>{const out=[];for(let k=0;k<c.n;k++)out.push(Math.hypot(c.pts[k*3+3]-c.pts[k*3],c.pts[k*3+4]-c.pts[k*3+1],c.pts[k*3+5]-c.pts[k*3+2])/c.L[k]);return out;};
   const rig=o.b.rigs[0];
@@ -153,7 +153,7 @@ const dt=1/60;
 
 // ---- 4. body contact ----
 {
-  const ch=X.chunkGrid[X.cellOf(0)*16+X.cellOf(0)];
+  const ch=X.chunkGrid[X.cellOf(0)*X.NCELL+X.cellOf(0)];
   const a=X.spawn(ch,'grazer',X.V3(60,-5,60),Math.random),b=X.spawn(ch,'grazer',X.V3(60.3,-5,60),Math.random);
   a.vel.set(1,0,0);b.vel.set(-1,0,0);
   for(const c of [a,b]){c.g.position.copy(c.pos);c.g.updateMatrix();X.worldShapes(c);}
@@ -189,7 +189,7 @@ const dt=1/60;
 if(X.FLORA.some(f=>f.pads)){
   const P=X.player;let pad=null;
   for(const ch of X.chunks.values()){for(const s of ch.solids)if(s.t===2&&s.r>1.2&&s.r<4){pad=s;break;}if(pad)break;}
-  if(!pad){const ch=X.chunkGrid[X.cellOf(0)*16+X.cellOf(0)];X.addPad(ch,40,-0.45,-40,2.5,0.3,40,-40,{im:{geometry:{attributes:{}}},idx:0,dip:0,dv:0,load:0,live:false});pad=ch.solids[ch.solids.length-1];}
+  if(!pad){const ch=X.chunkGrid[X.cellOf(0)*X.NCELL+X.cellOf(0)];X.addPad(ch,40,-0.45,-40,2.5,0.3,40,-40,{im:{geometry:{attributes:{}}},idx:0,dip:0,dv:0,load:0,live:false});pad=ch.solids[ch.solids.length-1];}
   P.dead=false;P.pos.set(pad.x,4,pad.z);P.vel.set(0,0,0);for(const k in X.keys)X.keys[k]=false;
   let onPad=0,ashore=0;
   for(let i=0;i<180;i++){global.__step(1);if(P.onPad)onPad++;if(P.onPad&&P.grounded&&P.sub<0.5)ashore++;}

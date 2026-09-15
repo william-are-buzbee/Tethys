@@ -56,6 +56,7 @@ function terrainColor(x,z,h,f,sl,tc,n){
     const sv=clamp(sub*3,0,2.999),si=Math.floor(sv),st=sv-si,c0=SUB_COL[si],c1=SUB_COL[si+1];
     let r=lerp(c0[0],c1[0],st)*k,g=lerp(c0[1],c1[1],st)*k,bl=lerp(c0[2],c1[2],st)*k;
     if(sub<0.5&&h<-90){r*=0.9;g*=0.95;} // the deep's mud, bluer
+    if(h<-600){const q=smooth(-600,-900,h);r*=1-0.3*q;g*=1-0.3*q;bl*=1-0.25*q;} // the basin floor (v11.58, PLANET The basin): manganese-black pelagic mud under the anoxic water; starts under the pit's floor (-550) so nothing inside the old square changes
     if(sub>0.6&&light>0.7&&f[FI.nut]<0.5&&m>0.6){const q=(m-0.6)*4*light;r=lerp(r,0.85,q);g=lerp(g,0.42,q);bl=lerp(bl,0.5,q);} // lime on clear bright rock
     const yg=f[FI.young];if(yg>0.3){const q=smooth(0.3,0.8,yg);r=lerp(r,0.26*k,q*0.5);g=lerp(g,0.24*k,q*0.5);bl=lerp(bl,0.22*k,q*0.5);if(m>0.62){const rq=(m-0.62)*3*q;r=lerp(r,0.55,rq);g=lerp(g,0.28,rq);bl=lerp(bl,0.1,rq);}} // young basalt, rust where the mat is
     const ht=f[FI.heat];if(ht>0.2){const v=fbm(x*0.03+50,z*0.03+50,3);if(v>0.55){const q=Math.min(1,(v-0.55)*5)*smooth(0.2,0.7,ht);r=lerp(r,0.62,q);g=lerp(g,0.5,q);bl=lerp(bl,0.16,q);}} // sulfur round the fissure

@@ -1,13 +1,14 @@
 // world.js — the island: its geology as a terrain function, the condition fields, the wave function, landmark placement
 // ---------- world shape ----------
-// A young oceanic shield volcano, almost drowned (PLANET.md, Geology). 16x16 cells. The summit is a caldera whose rim is the
+// A young oceanic shield volcano, almost drowned (PLANET.md, Geology), standing in a silled basin (v11.58, below). 120x120 cells,
+// the island's own square the middle 16. The summit is a caldera whose rim is the
 // last land; the shelf is the shield's upper flank; the slope ring carries drowned shorelines (terraces) as rings; one flank
 // has collapsed (a scarp and a debris fan: the rockfall); the oldest flank has its radial dikes exhumed as ridges;
 // two rift arms run from the summit, one with a pit crater on it and a hydrothermal fissure at its deep end; beyond the apron
 // the floor goes on down the seamount's flank toward the plate (v11.28; to v11.27 a cliff into a void at -810). There are no biomes: sample(x,z) returns the ground height and the physical CONDITIONS
 // at a point (substrate, current, wave exposure, food, turbidity, the age of the rock, heat, shelter, relief), and every
 // species — sessile or swimming — has a tolerance envelope over those (envW). Nothing downstream reads a label.
-const CELL=215,NCELL=16,HALF=CELL*NCELL/2;
+const CELL=215,NCELL=120,HALF=CELL*NCELL/2; // v11.58: 16 cells (3.4 km) to v11.57; 120 (25.8 km) puts the sill's crest 13 km out. Must divide by 4 (far.js regions)
 // the geology's parameters: angles are radians from +x toward +z
 const WIND_A=3.49,CUR_A=2.3; // the directions the wind (so the waves) and the ocean current travel toward: the waves strike the old flank (0.35), the current the north-east flank (5.44), the lee is the collapse's side
 const RIFT_A=[2.6,5.6]; // the two rift arms
@@ -18,6 +19,21 @@ const FLANK_R=1560,FLANK_W=250,FLANK_S0=0.30,FLANK_S1=0.22,FLANK_A=600,FLANK_B=2
 const VENT={a:2.6,r0:1200,r1:1420}; // the hydrothermal fissure: the deep end of rift arm 0
 const ISLE={x:Math.cos(5.5)*500,z:Math.sin(5.5)*500}; // a flank cone on rift arm 1: the island
 const PIT=[Math.cos(2.6)*470,Math.sin(2.6)*470]; // a pit crater on rift arm 0
+// ---------- the basin and the sill (v11.58) ----------
+// DIRECTION.md (12 Sep) and PLANET, The basin: the island stands in a silled basin far larger than the world. The floor is abyssal
+// plain at BASIN.h — pelagic mud over abyssal hills of ±BASIN.hill, ~1.5 km across — and the flank meets it through a sediment apron
+// (smax's knee: the toe filled to a rounded foot, as a seamount's is). The sill's nearest segment crosses the north-east corner: a
+// ridge of drowned older shields of the same province (the Iceland-Faroe Ridge is the Earth case, a hotspot track subsided to a 480 m
+// sill), crest SILL.crest with summits rising SILL.summit toward the light and saddles at SILL.gap — the sill proper, 20 m over the
+// chemocline, so the water under the saddles never leaves the basin (Cariaco, the Black Sea: the chemocline sits below the sill). The
+// ridge runs across the current's axis with its main gap on it (SILL.a is CUR_A reversed): the inflow through the gap is what strikes
+// the north-east flank, so the upwelling (upW) is the gap's. Beyond the crest the outer flank goes on down toward the plate — the
+// ordinary ocean, whose deep is oxic; the game's chemocline is the basin's and is wrong there, and the clamp keeps the player within
+// 5 km of the crest. The seamount effect (the island's share of nut and the current's wake) fades out over BASIN.fade of rw.
+// Nothing inside r 2400 changes: the flank there is above -600, the floor under -1040, and smax is exact past its knee.
+const BASIN={h:-1100,hill:60,knee:200,fade:[3000,6000]}; // the floor; the hills' amplitude; the apron's blend band; where the island's upwelling fades, in rw
+const SILL={a:CUR_A+Math.PI,d:13000,crest:-410,gap:-430,summit:260,slope:0.21,wobble:450,w:150}; // the ridge's normal (from the island toward the crest: the current's source), the crest's distance, its height, the saddles', the summits' rise, the flanks (tan 12°), the crest's wander, its rounding
+const SILL_C=Math.cos(SILL.a),SILL_S=Math.sin(SILL.a);
 // the condition fields, by index in sample().f
 const FI={sub:0,flow:1,expo:2,nut:3,turb:4,young:5,heat:6,shel:7,rel:8},NF=9;
 // ---------- the clock and the tide ----------
@@ -212,7 +228,7 @@ function sample(x,z,out){
   let hb=-14-6*smooth(RIM_R+RIM_W*0.3,330,rw)-40*smooth(330,700,rw)-94*smooth(1000,1200,rw)-40*smooth(1200,1600,rw);
   const hills=8*(fbm(x*0.006+3,z*0.006+7,4)-0.5)*2+2.5*(fbm(x*0.03+9,z*0.03+1,3)-0.5)*2;
   hb+=hills*(0.5+0.5*smooth(0,270,rw));
-  const hSmooth=hb-96*tS;
+  let hSmooth=hb-96*tS;
   // the terraces: the slope between -60 and -156 cut into eight 12 m steps at the stillstands, rings round the whole island,
   // buried where the collapse debris lies over them (cw)
   const tv=tS*8,tf=Math.floor(tv),tfr=tv-tf,tStep=(tf+smooth(0.36,0.64,tfr))*12;
@@ -238,12 +254,22 @@ function sample(x,z,out){
   // bubble wrap"). A seamount whose summit reaches the surface stands 3-4 km off the plate on flanks of 10-20°; the apron of its own
   // debris is a local thickening on that flank, not its foot. So past the apron's toe (FLANK_R, wavy: gullies and slide scars) the
   // slope ramps with no crease from the apron's 5.7° to FLANK_S0 (16.7°) over FLANK_W, eases to FLANK_S1 (12.4°) between FLANK_A and
-  // FLANK_B (the lower flank), and goes on down forever: -320 at the square's edge on an axis, ~-580 at a corner, ~-850 where the far
-  // layer's apron ends 2000 m out, the plate (~-3800 on a young plate) 15 km out — where the world grows. Ribbed ±15% by sector.
+  // FLANK_B (the lower flank), and goes on down: -320 at the old square's edge on an axis, ~-580 at a corner, and (v11.58) into the
+  // basin's floor at -1100 some 5.7 km out. To v11.57 it went on forever toward a plate 15 km out. Ribbed ±15% by sector.
   const rf=rw-(FLANK_R+60*angNoise(aw,2.5,99));
   if(rf>0){const t=Math.min(rf/FLANK_W,1),d0=rf<FLANK_W?FLANK_W*(t*t*t-0.5*t*t*t*t):rf-0.5*FLANK_W; // ∫smoothstep(0,W): the ramp's drop
     const u=clamp((rf-FLANK_A)/(FLANK_B-FLANK_A),0,1),d1=rf<FLANK_A?0:rf<FLANK_B?(FLANK_B-FLANK_A)*(u*u*u-0.5*u*u*u*u):rf-0.5*(FLANK_A+FLANK_B); // ∫smoothstep(A,B): the easing's
     h-=(FLANK_S0*d0-(FLANK_S0-FLANK_S1)*d1)*(1+0.15*angNoise(aw,3.0,131));}
+  // the basin and the sill (v11.58; BASIN, SILL above)
+  let isl=1,gapF=0,summitK=0;
+  if(r>2400){const bx=x*SILL_C+z*SILL_S,bt=z*SILL_C-x*SILL_S; // across the ridge (+ toward the crest) and along it
+    let base=BASIN.h+BASIN.hill*(fbm(x*0.0007+23,z*0.0007+71,3)-0.5)*2,baseS=BASIN.h;
+    if(Math.abs(bx-SILL.d)<7000){const s=bx-SILL.d-SILL.wobble*(fbm(bt*0.00035+9,3.7,3)-0.5)*2,knob=fbm(bt*0.0007+41,7.1,3),gapK=smooth(1100,350,Math.abs(bt));
+      const kn=Math.pow(smooth(0.4,0.75,knob),1.2)*(1-gapK),hc=lerp(SILL.crest+SILL.summit*kn-(SILL.crest-SILL.gap)*smooth(0.45,0.3,knob),SILL.gap,gapK); // the crest along the ridge: summits where the knob noise is high, saddles at the sill where it is low, the gap on the axis
+      const prof=SILL.slope*(Math.sqrt(s*s+SILL.w*SILL.w)-SILL.w),ridge=hc-prof*(1+0.15*(fbm(bt*0.0012+5,s*0.0012+8,2)-0.5)*2),ridgeS=SILL.crest-prof,out=s>0?0.3*s:0; // the flanks either side of a rounded crest; past the crest the floor falls away under the outer flank
+      base=smax(base-out,ridge,BASIN.knee);baseS=smax(baseS-out,ridgeS,BASIN.knee);
+      summitK=kn*smooth(-650,-450,ridge)*smooth(BASIN.knee,0,base-ridge);gapF=smooth(1300+0.3*Math.abs(s),250,Math.abs(bt))*smooth(3500,0,Math.abs(s));} // bare rock on the summits' upper 200 m; the inflow's jet through the gap, spreading either side
+    isl=smooth(BASIN.fade[1],BASIN.fade[0],rw);h=smax(h,base,BASIN.knee);hSmooth=smax(hSmooth,baseS,BASIN.knee);}
   const pd=Math.hypot(x-PIT[0],z-PIT[1]);if(pd<130)h-=520*smooth(100,40,pd);
   // the caldera: a flat sandy floor at -22 inside a rim of land broken by passes (the passes run at -14: the lagoon's flushing)
   const lag=smooth(RIM_R-RIM_W*0.4,RIM_R-RIM_W*1.6,rw);
@@ -256,9 +282,9 @@ function sample(x,z,out){
     if(k>0)h=lerp(h,-0.6+2.6*(fbm(x*0.03+11,z*0.03+2,2)-0.5)*2,k)+40*smooth(88,18,dw)*(1+0.3*(fbm(x*0.02+9,z*0.02+8,2)-0.5)*2);}
   // ---- the conditions ----
   const f=out||new Float32Array(NF),light=smooth(-150,-10,h),shelfEdge=smooth(650,730,rw)*smooth(1150,950,rw),pass=(1-rimA)*rimK;
-  const flow=clamp(((0.2+0.6*upW)*(0.55+0.45*shelfEdge)+0.8*pass)*(1-0.85*lag),0,1);
+  const flow=clamp(Math.max((lerp(0.4,0.2+0.6*upW,isl)*(0.55+0.45*shelfEdge)+0.8*pass)*(1-0.85*lag),0.95*gapF),0,1); // v11.58: the wake fades to the basin's steady 0.4 past the island; the gap's jet is the strongest steady current there is
   const expo=clamp((0.25+0.75*expoW)*smooth(-30,-6,h)*(1-0.9*lag),0,1);
-  const nut=clamp((0.22+0.45*upW+0.3*shelfEdge+0.5*heat)*(1-0.65*lag),0,1);
+  const nut=clamp((0.12+(0.10+0.45*upW)*isl+0.3*shelfEdge+0.5*heat)*(1-0.65*lag)+0.35*gapF,0,1); // v11.58: the seamount effect is the island's; the basin's water is sparse (0.12) but for what the gap brings in
   // sediment cover: mud with depth; sand where the waves don't strip it (the lee), in patches, and on the lagoon floor; nothing
   // stays on the fan's fresh blocks or the dikes' crests
   const shelfS=smooth(-75,-12,h);
@@ -266,6 +292,7 @@ function sample(x,z,out){
   let sub=clamp(1-cover,0,1);sub=lerp(sub,0.66,cw*(1-0.5*smooth(500,1000,rw)));sub=lerp(sub,0.33,lag); // the fan is rubble; the lagoon floor is sand
   sub=Math.max(sub,Math.min(1,dkr*1.6),rimK,Math.min(1,1.6*cw*smooth(350,430,rw)*smooth(470,430,rw))); // bare rock: the dikes' crests, the rim band, the fan's blocks near the scarp (v11.12: a lost newline had left this line inside the comment above, so it never ran)
   if(h>0.5)sub=Math.max(sub,0.3);
+  if(summitK>0)sub=Math.max(sub,0.9*summitK); // the sill's drowned summits are bare rock (v11.58)
   const turb=clamp(expo*(1-sub)*0.7+0.4*nut*light+0.5*heat,0,1);
   const rel=clamp(0.5+(h-hSmooth)/40,0,1);
   f[0]=sub;f[1]=flow;f[2]=expo;f[3]=nut;f[4]=turb;f[5]=Math.min(1,young);f[6]=heat;f[7]=lag;f[8]=rel;

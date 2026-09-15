@@ -48,17 +48,24 @@ function grantCreator(){if(PROFILE.creator)return;PROFILE.creator=true;profileSa
 // ---------- the record ----------
 let curSave=null,saveT=0,playT=0,saveList=[]; // the slot being played {id,name,made,played,playT}; the autosave clock; seconds played in it; the slots known to the menu, newest played first
 function r3(v){return Math.round(v*1000)/1000;}
+// the tables run-length coded (v11.58): a run of k equal values is [v,k], a lone value itself. The basin's world is 14,400 cells and the ledger
+// 3% nonzero (n) or one constant (cd); raw, the five tables were 6.6 MB and 105 ms a save. A raw array (an older record) decodes as itself
+function rle(a){const o=[],n=a.length;let i=0;while(i<n){const v=r3(a[i]);let k=1;while(i+k<n&&r3(a[i+k])===v)k++;o.push(k>1?[v,k]:v);i+=k;}return o;} // straight off the typed array, rounded as it goes
+function unrle(a){if(!Array.isArray(a))return null;const o=[];for(const t of a){if(Array.isArray(t)){for(let k=0;k<t[1];k++)o.push(t[0]);}else o.push(t);}return o;}
 function popRows(){ // the ledger's tables as arrays, the loaded cells counted as ecoTick counts them (creatures alive on the ledger, and the eggs)
   const n=POP.n.map(a=>Array.from(a,r3));
   for(const ch of chunks.values()){const c=ch.i*NCELL+ch.j;if(!POP.done[c])continue;const cnt=new Float32Array(SPAWN.length);for(const o of ch.creatures)if(o.alive&&o.ent>=0)cnt[o.ent]+=1;for(const g of ch.eggs)cnt[g.ent]+=g.n;for(let ei=0;ei<SPAWN.length;ei++)n[ei][c]=r3(cnt[ei]/Q.creatures);}
-  return {ents:SPAWN.map(e=>e.kind),n:n,k:POP.k.map(a=>Array.from(a,r3)),ke:POP.ke.map(a=>Array.from(a,r3)),cd:POP.cd.map(a=>Array.from(a,r3)),ow:POP.ow.map(a=>Array.from(a,r3)),done:Array.from(POP.done),last:POP.last,tally:[POP.births,POP.deaths,POP.kills,POP.starved,POP.eaten,POP.recruits,POP.laid,POP.hatched]};
+  const R=T=>T.map(rle);
+  return {ents:SPAWN.map(e=>e.kind),n:R(n),k:R(POP.k),ke:R(POP.ke),cd:R(POP.cd),ow:R(POP.ow),done:rle(POP.done),last:POP.last,tally:[POP.births,POP.deaths,POP.kills,POP.starved,POP.eaten,POP.recruits,POP.laid,POP.hatched]};
 }
 function popLoad(p){ // the ledger from a record; a save from another roster (SPAWN's kinds differ) gets a fresh census instead, and the player and the clock still load
   ecoReset();
-  const ok=p&&Array.isArray(p.ents)&&p.ents.length===SPAWN.length&&p.ents.every((k,i)=>k===SPAWN[i].kind)&&['n','k','ke','cd','ow'].every(k=>Array.isArray(p[k])&&p[k].length===SPAWN.length&&p[k].every(a=>Array.isArray(a)&&a.length===ECO_CELLS))&&Array.isArray(p.done)&&p.done.length===ECO_CELLS;
-  if(!ok){if(p)console.warn('save: the roster changed since this save; the world starts fresh');return false;}
-  for(let ei=0;ei<SPAWN.length;ei++){POP.n[ei].set(p.n[ei]);POP.k[ei].set(p.k[ei]);POP.ke[ei].set(p.ke[ei]);POP.cd[ei].set(p.cd[ei]);POP.ow[ei].set(p.ow[ei]);}
-  POP.done.set(p.done);POP.last=+p.last||0;const T=Array.isArray(p.tally)?p.tally:[];[POP.births,POP.deaths,POP.kills,POP.starved,POP.eaten,POP.recruits,POP.laid,POP.hatched]=[0,1,2,3,4,5,6,7].map(i=>+T[i]||0);
+  const D={};let ok=p&&Array.isArray(p.ents)&&p.ents.length===SPAWN.length&&p.ents.every((k,i)=>k===SPAWN[i].kind);
+  if(ok)for(const k of ['n','k','ke','cd','ow']){const T=Array.isArray(p[k])&&p[k].length===SPAWN.length?p[k].map(unrle):null;if(!T||!T.every(a=>a&&a.length===ECO_CELLS)){ok=false;break;}D[k]=T;}
+  if(ok){D.done=unrle(p.done);if(!D.done||D.done.length!==ECO_CELLS)ok=false;}
+  if(!ok){if(p)console.warn('save: the roster or the world changed since this save; the world starts fresh');return false;}
+  for(let ei=0;ei<SPAWN.length;ei++){POP.n[ei].set(D.n[ei]);POP.k[ei].set(D.k[ei]);POP.ke[ei].set(D.ke[ei]);POP.cd[ei].set(D.cd[ei]);POP.ow[ei].set(D.ow[ei]);}
+  POP.done.set(D.done);POP.last=+p.last||0;const T=Array.isArray(p.tally)?p.tally:[];[POP.births,POP.deaths,POP.kills,POP.starved,POP.eaten,POP.recruits,POP.laid,POP.hatched]=[0,1,2,3,4,5,6,7].map(i=>+T[i]||0);
   let all=true;for(let c=0;c<ECO_CELLS;c++)if(!POP.done[c]){all=false;break;}if(all)POP.gen=null; // the paper census was done in the saved game; the settle after it is boot's, not a load's
   for(let ei=0;ei<SPAWN.length;ei++){const N=POP.n[ei];for(let c=0;c<ECO_CELLS;c++)if(!(N[c]>=0))N[c]=0;} // a hand-edited file: nothing negative or NaN into the model
   return true;

@@ -6,6 +6,7 @@ const UP=V3(0,1,0);
 const clamp=(v,a,b)=>v<a?a:v>b?b:v;
 const lerp=(a,b,t)=>a+(b-a)*t;
 const smooth=(a,b,x)=>{const t=clamp((x-a)/(b-a),0,1);return t*t*(3-2*t);};
+const smax=(a,b,k)=>{const d=a-b;if(d>=k)return a;if(d<=-k)return b;const m=(k-Math.abs(d))/k;return (d>0?a:b)+m*m*k*0.25;}; // a smooth max with a knee of k: exact past it, the corner filled by k/4 at the meeting (v11.58: the flank meeting the basin floor is a sediment apron)
 const rnd=(a,b)=>a+Math.random()*(b-a);
 const T1=V3(0,0,0),T2=V3(0,0,0),T3=V3(0,0,0),T4=V3(0,0,0);
 const _m=new THREE.Matrix4(),_q=new THREE.Quaternion();

@@ -3864,3 +3864,48 @@ two and a half days on (grow 0.50); the finback after a ridge from behind: the t
 number, or should a lost tail end the animal outright? (2) the stump's look at the arm ring in first person and the regrowth's steps; (3) a
 hunter that lost a part fleeing (`LOSE.flee`), and whether the flee-by-bites rule (`FLEE`) should now go; (4) the far LOD: a kind's bake
 is shared, so a lost tail shows again past `lodNear`.
+
+## v11.58 — the basin: the same island on a 26 km world, the floor at −1100, the sill's nearest segment (15 Sep 2026)
+
+The person's ask, after a discussion of the map's size (100× the area as the thing to be capable of, an archipelago later, a wide open
+ocean so nothing is a wall): first, nothing but the island as it is, on a world you can swim out of until you hit the sill. The person
+chose the silled basin (DIRECTION, 12 Sep) over the plate, on the condition that it is a real thing and not a gameplay convenience — it is
+(PLANET, The basin: the Cariaco, the Black Sea, and the Iceland-Faroe Ridge for a volcanic ridge with a sill at 480 m); where the ridge
+runs was mine to judge.
+
+- **The world** is `NCELL` 120 cells, 25.8 km a side (`HALF` 12,900); the island's own square is the middle 16. Every cell array scales
+  from the one constant. The player's clamp and the apron are where they were, at the edge.
+- **The island is untouched to the bit**: `sample()` over the old square (185,761 samples, every field) is identical to v11.57's, and the
+  first change on a ray out is at r 3.7 km, where the flank meets the floor. The basin block runs only past r 2400; `smax` (util.js), a
+  smooth max with a knee, is exact past its knee, so the island's own function never sees the floor.
+- **The basin** (`BASIN`): abyssal plain at −1100 with hills of ±60 m at ~1.5 km, manganese-black mud (chunks.js `terrainColor`, darkened
+  from −600 so the pit's floor at −550 is as it was). The flank meets it through a 200 m knee — a rounded foot, the seamount's sediment
+  apron. −1089 at 5 km on the current's axis, the floor to the edges on every side but the north-east.
+- **The sill** (`SILL`): the ridge of drowned older shields crosses the north-east corner, its normal the current's source (`CUR_A` reversed),
+  crest 13 km out with a ±450 m wander: two summit groups near −150 (bare rock, `sub` 0.9), saddles at −410 and the sill proper at −430 —
+  20 m over the chemocline, so the water under it never leaves the basin. The main gap sits on the current's axis; the inflow's jet
+  (`gapF`) is the strongest steady flow in the world (0.95) and carries food in (`nut` +0.35). Flanks at 12° both sides, ribbed; beyond
+  the crest the outer flank goes on down (−1500 at the corner, the ordinary ocean's).
+- **The seamount effect is the island's**: past rw 3–6 km (`BASIN.fade`) `nut`'s upwelling term and the current's wake fade to the basin's
+  water (nut 0.12, flow 0.4). Inside the old square nothing moves (the fade starts past the warped corner).
+- **The far layer streams** (far.js `FAR_R` 2.7 km, `FAR_DROP` 3.6 km): regions are built nearest first within the far plane's reach and
+  dropped beyond it, one a frame; a dropped region's water map block stays. To v11.57 the whole world was built once and kept: on 900
+  regions that was a hundred megabytes of terrain nobody sees. A region is ~25 ms of CPU in 306 pieces; the ring round the player is up
+  in a few seconds. The water map is `NCELL·6` texels a side (720; the texel 35.8 m as before).
+- **The ledger** is 14,400 cells: the census 32 cells a step (eight seconds, not a minute), the model skips cells with no capacity for the
+  kind and none of it (the basin is most of the world) and yields every 2048, so its 110 ms comes in pieces under a millisecond. **The
+  save** run-length codes the five tables (`rle`/`unrle`, save.js): 0.30 MB and 28 ms where raw was 6.6 MB and 105 ms; an older record
+  decodes as itself and, being 256 cells, starts a fresh census as a roster change does.
+- `test/physics.js` and `test/combat.js` indexed the cell grid by a literal 16; they read `NCELL` now.
+
+**Seen** (dev.html in the app's browser, the loop driven by hand — the pane's frames stop when it is not displayed): the old square
+identical; the drowned summit at −141 m a twilight garden of vases and discs on bare rock with the finback's shadow on it; the gap's floor
+at −396 m with the ridge's flank rising ahead in the chemocline's brown; the flank's toe at −796 m and the floor at −1100 m — the dark, as
+the pit is (daylight's floor `DL_MIN` 0.28 shows the mud and the hills, just). The far regions arrive and go with no seam seen.
+**Unseen, ask in this order:** (1) the frame at the old island — the far scan is 900 entries a frame now, the cull the same; the
+readout's `work` should not have moved; (2) a swim from the shelf edge down the flank to the floor and on to the gap at sprint (the
+regions' streaming under real motion; teleports here were 10 km); (3) the basin at night; (4) what lives on the sill: the envelopes to
+−800 give the ridge's flanks pickers, pall, veils and the abyssal, the summits whatever takes rock at −150 — none of it placed on purpose
+(`test/census.js`: the abyssal's world capacity is 144 now, its combs 54, and it declines 14.6 → 5.9 over 40 days on paper — a deep
+resident with nothing to eat on the basin's slopes; the envelope or the comb's is the fix, and the person's call);
+(5) the chemocline over the outer flank beyond the crest, where the deep should be oxic and the game's band still browns it.

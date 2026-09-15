@@ -22,7 +22,7 @@ paraphrased; where a point was raised and not answered it is in [Open](#open) an
   breathers gain only a third more dissolved oxygen from it and Earth's marine giants exist at 21%. The honest argument for big
   hingeshells (buoyancy, closed circulation, moulting as the real limit) works at 21%. Dropping it removes two problems: fire on land and
   the tension with an anoxic deep.
-- **The chemocline stays, as this basin's, not the planet's.** A planet-wide anoxic deep under an animal atmosphere cannot be permanent
+- **The chemocline stays, as this basin's, not the planet's.** *(Built v11.58, 15 Sep: the floor at −1100, the sill's nearest segment across the north-east corner with its gap on the current's axis; PLANET The basin has the Earth cases and the one stretch, the tides.)* A planet-wide anoxic deep under an animal atmosphere cannot be permanent
   (Earth's anoxic events were transients that ended themselves by burying carbon). A **silled basin** is permanent and real (the Black
   Sea, Cariaco, the Baltic deeps; Saanich Inlet has 2–3 m tides and anoxia below 100 m with autumn renewal events): a ridge enclosing
   the chain with its crest near −400 to −450, a basin floor between −800 and −1500, exchange through a few narrow deep gaps. The sill

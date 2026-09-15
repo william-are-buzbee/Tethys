@@ -57,9 +57,9 @@ function ecoCap(c,ch){
     else if(k0>1e-4)POP.n[ei][c]*=K/k0;else POP.n[ei][c]=Math.min(POP.n[ei][c],K);});
   POP.done[c]=1;
 }
-// the paper census of the unloaded world, four cells a step, run in the frame's gaps after boot (main.js); a cell that loads
+// the paper census of the unloaded world, 32 cells a step, run in the frame's gaps after boot (main.js); a cell that loads
 // first is done from its grid (chunks.js) and skipped here
-function* ecoGen(){for(let c=0;c<ECO_CELLS;c++){if(!POP.done[c])ecoCap(c,null);if((c&3)===3)yield;}ecoSettle(c=>chunkGrid[c]!==null);}
+function* ecoGen(){for(let c=0;c<ECO_CELLS;c++){if(!POP.done[c])ecoCap(c,null);if((c&31)===31)yield;}ecoSettle(c=>chunkGrid[c]!==null);} // 32 cells a step since v11.58 (~1.3 ms; a cell is ~42 µs): the basin's 14,400 cells in eight seconds, not a minute
 // the census done, the hunters of the unloaded cells start at what their prey allows (ke, from one step of the model), not at the
 // envelope's full number — a ridge over a terrace with no grazers in reach was starving from the first day otherwise
 function ecoSettle(isLoaded){ecoModel(1e-4,isLoaded);for(let ei=0;ei<SPAWN.length;ei++){if(!ecoOf(SPAWN[ei].kind).hunter)continue;const N=POP.n[ei],KE=POP.ke[ei];for(let c=0;c<ECO_CELLS;c++)if(!isLoaded(c))N[c]=Math.min(N[c],KE[c]*0.8);}}
@@ -87,7 +87,7 @@ function ecoDebit(o){if(o.ent<0||!o.chunk)return;const c=o.chunk.i*NCELL+o.chunk
 const ECO_B={},ECO_TAKE={},ECO_D=[],ECO_RCH=[];
 function ecoReach(kind){let r=ECO_RCH[kind];if(r)return r;const h=DEFS[kind].home||30;r=[];const R=h>=300?2:h>=60?1:0;
   for(let di=-R;di<=R;di++)for(let dj=-R;dj<=R;dj++){const m=Math.max(Math.abs(di),Math.abs(dj));r.push([di,dj,m===0?1:m===1?0.5:0.25]);}return ECO_RCH[kind]=r;}
-// a generator (the tick steps it a piece a frame: 3.6 ms whole on a sandbox CPU); ecoModel drains it (the census)
+// a generator (the tick steps it a piece a frame: 3.6 ms whole on a sandbox CPU for 256 cells; ~130 ms for the basin's 14,400, v11.58, in pieces under a millisecond); ecoModel drains it (the census)
 function* ecoModelGen(dt,isLoaded){
   const E=SPAWN.length;
   for(const k in ECO_B){ECO_B[k].fill(0);ECO_TAKE[k].fill(0);}
@@ -95,7 +95,7 @@ function* ecoModelGen(dt,isLoaded){
     const N=POP.n[ei],food=ecoOf(kind).food;for(let c=0;c<ECO_CELLS;c++)if(N[c]>0)B[c]+=N[c]*food;}
   // the hunt: the ask of every hunter entry in every unloaded cell, laid on its prey by weighted biomass
   for(let ei=0;ei<E;ei++){const K=ecoOf(SPAWN[ei].kind);if(!K.hunter)continue;const N=POP.n[ei],cd=POP.cd[ei],ke=POP.ke[ei],reach=ecoReach(SPAWN[ei].kind);
-    for(let c=0;c<ECO_CELLS;c++){if(!POP.done[c]||isLoaded(c))continue;const n=N[c];const i=Math.floor(c/NCELL),j=c%NCELL;
+    for(let c=0;c<ECO_CELLS;c++){if(!POP.done[c]||isLoaded(c))continue;const n=N[c];if(n<=0&&POP.k[ei][c]<=0)continue;if((c&2047)===2047)yield;const i=Math.floor(c/NCELL),j=c%NCELL; // v11.58: a cell with no capacity for the kind and none of it is skipped (the basin is most of the world); a piece every 2048 cells
       let A=0;for(const [di,dj,w] of reach){const ii=i+di,jj=j+dj;if(ii<0||jj<0||ii>=NCELL||jj>=NCELL)continue;const q=ii*NCELL+jj;for(const p of K.prey)A+=(ECO_B[p]?ECO_B[p][q]:0)*w;}
       const H=K.need*ECO.H,resp=A*A/(A*A+H*H+1e-9),I=n*K.need*resp*dt;if(n<=0){ke[c]=POP.k[ei][c]*(0.1+0.9*resp);continue;}cd[c]+=(resp-cd[c])*(1-Math.exp(-dt/1.5));ke[c]=POP.k[ei][c]*(0.1+0.9*resp); // the condition (trimmed below by what the prey could give) and the capacity the prey allows
       if(I>0&&A>0)for(const [di,dj,w] of reach){const ii=i+di,jj=j+dj;if(ii<0||jj<0||ii>=NCELL||jj>=NCELL)continue;const q=ii*NCELL+jj;for(const p of K.prey){const b=ECO_B[p]?ECO_B[p][q]*w:0;if(b>0)ECO_TAKE[p][q]+=I*b/A;}}}
@@ -103,8 +103,7 @@ function* ecoModelGen(dt,isLoaded){
   // the cap, and what it costs the hunters: a kind's take in a cell over ECO.take of its biomass a day is cut, and every hunter entry
   // in reach loses condition in proportion (approximately: by the cut on its own cell's prey)
   for(const p in ECO_TAKE){const T=ECO_TAKE[p],B=ECO_B[p];for(let c=0;c<ECO_CELLS;c++){const cap=B[c]*ECO.take*dt;if(T[c]>cap){const k=cap/T[c];T[c]=cap;
-    for(let ei=0;ei<E;ei++){const K=ecoOf(SPAWN[ei].kind);if(!K.hunter||K.prey.indexOf(p)<0||POP.n[ei][c]<=0)continue;POP.cd[ei][c]*=1-(1-k)*(1-Math.exp(-dt/1.5));}}}}
-  yield;
+    for(let ei=0;ei<E;ei++){const K=ecoOf(SPAWN[ei].kind);if(!K.hunter||K.prey.indexOf(p)<0||POP.n[ei][c]<=0)continue;POP.cd[ei][c]*=1-(1-k)*(1-Math.exp(-dt/1.5));}}}yield;}
   for(let c=0;c<ECO_CELLS;c++){
     if(!POP.done[c])continue;const loaded=isLoaded(c);
     for(let ei=0;ei<E;ei++){const e=SPAWN[ei],K=ecoOf(e.kind),cap=K.hunter?POP.ke[ei][c]:POP.k[ei][c],ow=loaded?POP.ow[ei][c]:0;let n=POP.n[ei][c]+ow; // a loaded cell breeds from its living plus what it is already owed
@@ -123,7 +122,7 @@ function* ecoModelGen(dt,isLoaded){
     for(let c=0;c<ECO_CELLS;c++){if(!POP.done[c]||isLoaded(c))continue;const n=N[c];if(n<0.02)continue;const i=Math.floor(c/NCELL),j=c%NCELL;let f=0;
       for(let k=0;k<4;k++){const q=k===0?(i>0?c-NCELL:-1):k===1?(i<NCELL-1?c+NCELL:-1):k===2?(j>0?c-1:-1):(j<NCELL-1?c+1:-1);if(q<0||!POP.done[q])continue;
         const free=Cp[q]>0.05?Math.max(0,(Cp[q]-N[q])/Cp[q]):0;if(free>0){const m=ECO.mig*(K.hunter?1+4*(1-POP.cd[ei][c]):1)*dt*n*free*0.25;D[q]+=m;f+=m;}}D[c]-=f;} // a hungry hunter kind moves five times as readily
-    for(let c=0;c<ECO_CELLS;c++)N[c]=Math.max(0,N[c]+D[c]);if((ei&3)===3)yield;}
+    for(let c=0;c<ECO_CELLS;c++)N[c]=Math.max(0,N[c]+D[c]);yield;}
 }
 function ecoModel(dt,isLoaded){const g=ecoModelGen(dt,isLoaded);while(!g.next().done){}}
 // ---------- the tick (main.js, once a frame) ----------

@@ -55,7 +55,7 @@ The sea has a surface and a tide (6–9 m, twice a 30 h day that passes in forty
 | creatures_ai.js | registry, spawning (juveniles), behaviours (hunger, the feed, the scavengers), the carcasses and the eggs, per-frame update with LOD |
 | chunks.js | cell streaming: height grid, terrain mesh, flora, solids (collision), spawns from the ledger (`placeKind`), culling |
 | ecology.js | the world's population as a ledger (v11.26): capacity per cell from the envelopes, the off-screen model (births, predation, starvation, drift), the births owed to loaded cells |
-| far.js | the whole world at once, built once: coarse far terrain, every big structure, every landmark, far impostors for the kelp, bladders and rafts, the water colour map the fog reads |
+| far.js | beyond the cells, regions streamed round the player: coarse far terrain, every big structure, every landmark, far impostors for the kelp, bladders and rafts, the water colour map the fog reads |
 | player.js | clades, movement in water / air / on land, splashes, camera, abilities, damage (the bite and the grab are combat.js) |
 | atmosphere.js | the sea surface and its shader, the sky (one shader: sun, moon, stars, clouds, a bow), rain, marine snow, fog/light by medium, hour and depth, HUD, compass |
 | combat.js | how combat happens (v11.31): the holds (a rope between a grip and a body), the struggle, bites in a hold, wounds that bleed, the blood, the player's grab and bite |

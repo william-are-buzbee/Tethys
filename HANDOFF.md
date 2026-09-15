@@ -1,5 +1,17 @@
 # HANDOFF — tethys
 
+**v11.58 (15 Sep 2026): the basin — the same island on a 26 km world.** The person's first step toward the archipelago: nothing but the
+island as it is, on a world you can swim out of until you hit the sill. `NCELL` 120 (25.8 km a side; the island's square is the middle 16,
+untouched to the bit — verified over every sample of the old square); past r 2400 the flank meets an abyssal plain at −1100 through a
+smooth knee (`smax`); the sill's nearest segment crosses the north-east corner (`SILL`: crest 13 km out, summits to −150, the sill proper
+at −430, the main gap on the current's axis with the inflow's jet); the seamount effect fades past the island. The far layer streams
+(`FAR_R`/`FAR_DROP`), the census and the model are cut into pieces for 14,400 cells, the save's ledger is run-length coded (0.3 MB). The
+person chose the sill over the plate on the condition that it is real (PLANET, The basin: the Cariaco, the Black Sea, the Iceland-Faroe
+Ridge; the tides are the one stretch, answered by few deep gaps and a basin far larger than the map). Seen: the summit garden at −141, the
+gap, the toe, the floor. **Ask first:** the frame at the old island (the far scan is 900 a frame), then a real swim down the flank to the
+gap. Next, per the person: audit the island's believability, then discuss what expanding to more islands looks like (sample() as a sum of
+island records over the basement; the horizon tier so the next island shows from the surface; the float32 ceiling near 50 km).
+
 **v11.57 (15 Sep 2026): COMBAT pass 3 — the wound as a spec edit.** The last of the four passes: a wound edits a live copy of the body's spec and the calculator runs again (`speedK`, `turnK`); a hold on a part's own capsule takes the part instead of the life when the edge is through — the four slowbloods' tail capsules are marked `own: 'tail'`, a torn-off tail hides its meshes, bleeds, and leaves the body at a fifth of its speed (`LOSE.floor`), the hunter let go with its mouthful; a hunter that loses a part flees; a dropped arm keeps a stump (`RIG_STUMP`) and grows back segment by segment over five days; the commit coasts so the bite lands where it was aimed; the save carries the lost parts. Seen in the pane: the stub among seven arms and the same arm half back, the finback without its tail with blood at the stump. **Ask first** whether a tailless finback at a fifth of its speed is the slow death wanted or should end the animal (`LOSE.floor`); then the stump in first person; then whether the flee-by-bites rule (`FLEE`) should go now that a lost part does it. COMBAT.md is built in full; what is left there is tuning by play and the far LOD showing a lost part.
 
 **v11.56 (15 Sep 2026): COMBAT pass 4 — the trail, the miss, the save, the poison.** Hunters read blood: a hungry hunter takes a bleeding body it eats within `SMELL_R` 90 m as its chase, past its eyes. The strike's miss rule: a hunter in reach commits (the mouth opens, the tell) and the bite lands 0.25 s later only if the prey has dodged under `MISS.k` 0.8 of its width across the strike's line — a miss costs it 1.5 cooldowns; strikers, the trap and the lurker's lunge commit the same way. Injuries ride the save (a dropped arm, its regrowth, the bleed). Hingeshells that feed below the chemocline or in the vents' heat carry the sulfur line's toxin (`POISON`): what eats one is sick 45 s at half speed and unfed; the abyssal is immune (its combs). Seen in the pane: the mouth opening at the commit; the dodge trials (turning at the tell: caught 4/5 at k 1.0, missed 4/5 at 0.8 — 0.8 baked in; turning before the tell: missed 5/5); the toxin loading on a scuttle at the rim. **Ask first** whether the tell reads and the dodge is learnable in play (`MISS.t`, `MISS.k`); then whether a wounded finback draws a second hunter on the shelf (`SMELL_R`). Pass 3 built as v11.57.
@@ -284,7 +296,7 @@ wrap); the deep's water was black by table. Now the floor past the apron's toe g
 darkens the deep. The dark inside the square is the pit and the corners; the picker's deep entry went to −300 so the stone and basker
 keep their food; the equilibrium has more hunters (CHANGELOG). **Ask first for the edge from 215 m again, then the deep at −300..−400 by
 day (dim blue — too bright?), then the pit from its rim.** The person's stated direction: the world grows outward down this flank into
-open ocean over the plate as one biome, no walls (PLANET). Not built: that growth; the clamp at HALF−25 stands.
+open ocean over the plate as one biome, no walls (PLANET). Built as the basin instead in v11.58 (the plate became the sill); the clamp at HALF−25 stands, 12.9 km out.
 
 **v11.27 (10 Sep): the edge of the world — built, unseen.** CHANGELOG v11.27; DESIGN Visibility (point 3, the dome paragraph), The far
 layer ("The apron"). The person, 260 m inside the void's edge: a dark band with "a horizon look" toward the open water, "like it's a skybox

@@ -28,14 +28,19 @@ holds the reasons, the numbers and what the person asked for. History and what h
 
 `world.js`: `sample(x,z) → {h,f}` is the analytic terrain and the **condition fields** at a point, and the single source of
 truth. Everything (cell grids, the far terrain, landmark search, structure and flora placement, spawns, the water map) reads
-it. `CELL=215, NCELL=16, HALF=1720`. The geology it encodes is PLANET.md's Geology section (the caldera and its rim, the
+it. `CELL=215, NCELL=120, HALF=12900` (v11.58; 16 and 1720 to v11.57 — the island's own square is the middle 16 cells and is untouched to the bit, verified over 185,761 samples). The geology it encodes is PLANET.md's Geology section (the caldera and its rim, the
 shield profile, the terraces as rings, the collapse scarp and fan, the dike ridges, the rift arms with the pit crater and the
 fissure, the flank cone); its parameters are the constants at the top of world.js (`WIND_A`, `CUR_A`, `RIFT_A`, `COLL`,
 `DIKE`, `RIM_R`, `VENT`, `ISLE`, `PIT`, `FLANK_*`). **The lower flank** (v11.28): beyond the apron's toe (`FLANK_R` 1560, wavy) the floor
 does not fall into a void but goes on down the seamount's flank — the slope ramps with no crease from the apron's 5.7° to 16.7° over 250 m
 (`FLANK_S0`, `FLANK_W`), eases to 12.4° between 600 and 2600 m beyond the toe (`FLANK_S1`, `FLANK_A/B`), ribbed ±15% by sector — −320 at the
-square's edge on an axis, ~−580 at a corner, ~−850 where the far layer's apron ends, the plate ~15 km out (PLANET, The shield). The dark
-(ground < −450) inside the square is the pit and the corners' last 200 m. **There are no biomes** (since v10): no ids, no names, no sector tables. The fan's hummocks are
+old square's edge on an axis, ~−580 at a corner. **The basin and the sill** (v11.58, PLANET The basin; world.js `BASIN`, `SILL`, `smax` in util.js):
+past r 2400 the flank meets an abyssal plain at −1100 (hills ±60 m at ~1.5 km) through a 200 m knee — `smax`, exact past the knee, so nothing
+inside the old square changes; the seamount effect (`nut`'s upwelling, the current's wake) fades to the basin's water over rw 3–6 km. The sill's
+nearest segment crosses the north-east corner: a ridge of drowned older shields with its normal the current's source, crest 13 km out (±450 m
+wander), summits to −150 (bare rock), saddles −410, the sill proper −430 (20 m over the chemocline), the main gap on the current's axis with
+the inflow's jet (`gapF`: flow 0.95, nut +0.35), flanks at 12° both sides, the outer flank going on down beyond the crest. The dark
+(ground < −450) is the pit, the basin and the ridge's lower flanks. **There are no biomes** (since v10): no ids, no names, no sector tables. The fan's hummocks are
 rounded mounds — `smooth(0.5, 0.68, fbm)` (v11.19.1; a tent's crease before, which everything settled on it clipped through).
 
 **The fields** (`FI`, nine floats 0..1 in `s.f`): `sub` substrate (0 mud, ⅓ sand, ⅔ rubble, 1 rock), `flow` current (the
@@ -854,7 +859,9 @@ boundary is a checkered band of cells, not a contour; banded light is the defaul
 
 ## The far layer
 
-`far.js`. Three things exist for the whole world at once, built once, and never unload. Draw cost on high: expect
+`far.js`. The water map and the landmarks exist for the whole world at once; the regions stream (v11.58: built nearest first within `FAR_R`
+2.7 km — the far plane plus a region's reach — and dropped beyond `FAR_DROP` 3.6 km, one a frame; a region is ~25 ms of CPU in 306 pieces; to
+v11.57 all 16 were built once and kept, which 900 could not be). Draw cost on high: expect
 +30–60 draws and +100–200k tris over a near-only world (far terrain ~35k visible, structures ~40k, the surface 74k).
 Build cost: `sample()` is ~2 µs warm (35 cold); the whole layer ~200–400 ms of CPU, streamed under 14 ms/frame behind
 the menu and `Q.farMs` (3/2) in play, nearest region first — the ring beyond the loaded cells is up within a second of
@@ -865,7 +872,7 @@ get only the sun/hemi (the light pool is assigned by distance), so distant vents
   silhouette 25 m past the player's clamp. A region on the world's edge carries its terrain on: six more columns of vertices beyond
   the edge at `APRON` offsets (60…2000, doubling), a block on a corner, from the same `sample()` (the lower flank, v11.28, going on down to ~−850), in the region's own mesh (`apronGen`), so there is no seam; `reg.ext` widens the sphere and the distance test in `cullFar`.
   The last offset must exceed FAR from the clamp on both tiers.
-- **Far terrain.** 16 **regions** of 4×4 cells (`FR`, `regions`, built by `genRegion` under a budget in `manageFar`),
+- **Far terrain.** 900 **regions** of 4×4 cells (`FR`, `regions`; ~35 live round the player, built by `genRegion` under a budget in `manageFar`, dropped by `dropRegion`),
   each one mesh on an 18-unit grid (36 on low) — every 4th vertex of the fine grid from the *same* `sample()` calls, so
   far and near heights are bit-identical where they share a vertex (verified); coloured by the same `terrainColor`.
   Under loaded cells it is pushed 80 down (`farPushVertex/farCellChanged`; a vertex goes under only when *every* cell
@@ -1492,7 +1499,8 @@ far LOD), `setLOD`, steering, one `updateX` per role, `updateCreatures()`.
   `startFrom`; `export` a .json; `delete` asks `sure?` once; `import a file`), `options` (the effects list), `creator` (the lab as the player's,
   once `PROFILE.creator` — opening the lab at all grants it, or `#creator`). Esc in play with the pointer free saves and returns (`toMenu`; with
   the pointer locked the browser keeps the first esc, so twice). A save record: the player (clade, pos, yaw, pitch, hp), `t`, and the ledger's
-  `n/k/ke/cd/ow`, `done`, `last`, the tally — the loaded cells counted as `ecoTick` counts them (`popRows`); ~110 KB. Stored in IndexedDB
+  `n/k/ke/cd/ow`, `done`, `last`, the tally — the loaded cells counted as `ecoTick` counts them (`popRows`), run-length coded since v11.58
+  (`rle`/`unrle`: a run of k equal values is `[v,k]`; 0.30 MB and 28 ms for 14,400 cells, raw was 6.6 MB and 105 ms; an older raw record decodes as itself). Stored in IndexedDB
   (`tethys`/`kv`; localStorage, then memory, as fallbacks; callbacks not promises so the headless tests can drive it; `navigator.storage.persist`
   asked for). Written every `SAVE_EVERY` 30 s of play (`updateSave`), on esc to the menu, when the pointer lock is released (the first esc
   from locked play, v11.47.1), on `visibilitychange`/`pagehide` — and on `pagehide`/`beforeunload` a synchronous shadow copy to

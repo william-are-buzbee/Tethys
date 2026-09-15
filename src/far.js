@@ -318,14 +318,21 @@ function farCellChanged(i,j){
     reg.geo.attributes.position.needsUpdate=true;
     if(i>=reg.ci0&&i<reg.ci0+FR&&j>=reg.cj0&&j<reg.cj0+FR)farApplyCell(reg,i,j);}
 }
+// (v11.58) The regions stream like the cells: built nearest first within FAR_R of the player (the far plane plus a region's reach — nothing
+// beyond it can be drawn), dropped beyond FAR_DROP, one a frame (the band between is hysteresis, so a region on its edge does not thrash).
+// To v11.57 the far layer was the whole world built once and kept: 16 regions. The basin's world is 900, a hundred megabytes of terrain
+// nobody sees. A dropped region's water map block stays filled (the fog reads the whole map); its heights and structures are rebuilt on
+// return from the same samples and caches, so nothing moves.
+const FAR_R=FAR+FR*CELL*0.71+500,FAR_DROP=FAR_R+900;
 function manageFar(budgetMs){
-  if(farBuilt>=FNR*FNR)return;
-  const t0=performance.now();
-  if(!farGen){let best=null,bd=1e9;
-    for(let rj=0;rj<FNR;rj++)for(let ri=0;ri<FNR;ri++){if(regions[ri*FNR+rj])continue;const d=Math.hypot((ri+0.5)*FR*CELL-HALF-player.pos.x,(rj+0.5)*FR*CELL-HALF-player.pos.z);if(d<bd){bd=d;best=[ri,rj];}}
-    if(!best)return;farGen=genRegion(best[0],best[1]);}
-  while(performance.now()-t0<budgetMs){if(farGen.next().done){farGen=null;break;}}
+  const t0=performance.now(),px=player.pos.x,pz=player.pos.z;
+  if(!farGen){let best=null,bd=FAR_R*FAR_R;
+    for(let rj=0;rj<FNR;rj++)for(let ri=0;ri<FNR;ri++){if(regions[ri*FNR+rj])continue;const dx=(ri+0.5)*FR*CELL-HALF-px,dz=(rj+0.5)*FR*CELL-HALF-pz,d=dx*dx+dz*dz;if(d<bd){bd=d;best=[ri,rj];}}
+    if(best)farGen=genRegion(best[0],best[1]);}
+  while(farGen&&performance.now()-t0<budgetMs){if(farGen.next().done){farGen=null;break;}}
+  for(const reg of regions){if(reg&&Math.hypot(reg.cx-px,reg.cz-pz)>FAR_DROP+reg.ext){dropRegion(reg);break;}}
 }
+function dropRegion(reg){scene.remove(reg.group);reg.geo.dispose();for(const o of reg.group.children)if(o.isInstancedMesh)o.dispose();regions[reg.ri*FNR+reg.rj]=null;farBuilt--;} // the structure and card geometries are shared (FLORA's, FAR_IMP's): only the instance buffers go
 // after cullChunks, which sets the frustum
 function cullFar(){
   visibleRegions=0;

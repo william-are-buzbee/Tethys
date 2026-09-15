@@ -102,7 +102,7 @@ test/              headless tests, the THREE stub, real geometry for previews, t
 | creatures_ai.js | registry, spawning, LOD, behaviours by role, hunger, carcasses, eggs, per-frame update |
 | chunks.js | cell streaming: height grid, terrain mesh, flora placement (`settleOn`, `clearOf`), solids, spawns from the ledger, culling |
 | ecology.js | the population as a ledger `POP`: capacity from envelopes, the off-screen model, births owed to loaded cells |
-| far.js | the whole world at once, built once: coarse far terrain, the apron past the edge, every big structure, impostor cards, the water/floor maps |
+| far.js | beyond the cells: coarse far terrain in regions streamed round the player (v11.58), the apron past the edge, every big structure, impostor cards, the water/floor maps for the whole world |
 | player.js | `CLADES`, movement in water / air / on land, camera, abilities, damage, ink, splashes |
 | atmosphere.js | the sea surface, the sky, rain, haze, light shafts, marine snow, fog and light by medium, HUD, compass |
 | combat.js | holds (a rope between a grip and a hit capsule), the struggle, the states (v11.55: the gape, the pin, the placed act by `EDGE`, wounds that bleed and slow, venom, autotomy; v11.56: the blood trail, the strike's miss rule, the poison by feeding; v11.57: the wound as a spec edit — a part torn off, the body re-derived, the stump and the regrowth), blood, the player's grab and bite |
@@ -143,7 +143,7 @@ Docs, most upstream first. When a doc's Open list says a choice is the person's,
   fields (`FI`: sub, flow, expo, nut, turb, young, heat, shel, rel), analytic geology plus fbm. No biome ids anywhere. Species and
   structures carry `env` envelopes; `envW(env,h,slope,f)` is 0..1. Landmarks: the pit and the chimney are fixed by the geology, the
   rest searched on the terrain at load (`findSpot`, seed 4242, fixed sequence — add new ones at the end).
-- **Cells.** 16×16 cells of 215 m (`CELL`, `NCELL`, the world ±`HALF`). A loaded cell is a 49×49 grid, a terrain mesh, its flora as a
+- **Cells.** 120×120 cells of 215 m (`CELL`, `NCELL`, the world ±`HALF` 12.9 km; v11.58 — the island's own square is the middle 16, the rest the basin floor at −1100 and the sill across the north-east corner). A loaded cell is a 49×49 grid, a terrain mesh, its flora as a
   block in each species' pool (v11.52, chunks.js `POOLS`: one `InstancedMesh` per species across every loaded cell; the card species, the
   rafts and the glow clouds keep a mesh per cell), its colliders, its creatures. `genChunk` is a generator run under a frame budget (`Q.budgetMs`,
   the streaming budget is what the last frame left of `Q.target`), nearest first within `LOAD_R`. Inside a cell: terrain → the

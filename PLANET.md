@@ -59,6 +59,22 @@ consequence of "a young oceanic shield volcano, almost drowned", and world.js `s
 
 - **The shield.** Gentle flanks: the shelf is the upper flank at 4–6°, −20 to −60 out to r 700; the slope ring to −250 at
   r 1200; the apron of the volcano's own debris to −290 at 1600. Basalt everywhere: olivine-green sand.
+- **The basin** (15 Sep 2026, built v11.58; the person chose it over the plate on the condition that it is a real thing, and it is).
+  The island stands in a **silled basin** far larger than the world (DIRECTION, 12 Sep). What is real: the Cariaco Basin is 1,400 m deep behind
+  a 146 m sill and has been anoxic below ~250 m for 14,000 years; the Black Sea the same at 2,200 m; in both the chemocline sits at or below
+  the sill. A volcanic ridge with a sill near −450 is real too: the Iceland-Faroe Ridge is the hotspot's older track, subsided to a 480 m
+  sill that governs the Nordic seas' exchange — those seas stay oxic only because cold winters make dense water sink; a warm-lidded basin
+  with the seamount effect's productivity goes anoxic below its sill, and its deep water is sill-depth water at 8–10 °C (the Sulu Sea's,
+  behind its 420 m sill). So: the ridge is the province's older drowned shields, subsided as the terraces record the island subsiding —
+  the same rule. The honest stretch is the tides: tidal mixing over sills is what ventilates fjords, and these are 6–9 m. The gaps are few,
+  narrow and deep (tidal streams concentrate in shallow passes, not a 450 m gap), and the basin's volume — its far shores hundreds of km
+  beyond the map — swamps what leaks in. The game's floor: the flank meets an abyssal plain at −1100 (pelagic mud over hills of ±60 m,
+  manganese-black, anoxic, ~9 °C) through a sediment apron 3.7 km out; the sill's nearest segment crosses the north-east corner, crest
+  13 km out with drowned summits to −150 and saddles at −410, the sill proper at −430 (20 m over the chemocline: the water under it never
+  leaves), the main gap on the current's axis — the inflow through it is what strikes the north-east flank, so the upwelling is the gap's.
+  Beyond the crest the outer flank goes on down toward the plate: the ordinary ocean, whose deep is oxic; the game's chemocline is the
+  basin's and is wrong there (the clamp keeps the player within 5 km of the crest). The paragraph below is the v11.28 reasoning the basin
+  replaced; its numbers for the flank stand, its plate does not.
 - **The lower flank and the plate** (10 Sep 2026, the person: the floor must taper off as a real ocean's would; to v11.27 it fell
   520 m in a hundred into "the void", the world's rocky wrapping). What is real: a seamount whose summit reaches the surface stands
   3–4 km off the plate; its flanks are 10–20° (pillow lava and hyaloclastite pile at the angle they quench at, steeper on a small,
