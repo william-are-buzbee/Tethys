@@ -21,7 +21,7 @@ require('./stub.js');
 require(tmp);
 const h=global.__h;
 for(let i=0;i<30;i++)__step(1);
-h['pick1:click'][0]();
+h['mnew:click'][0](); // v11.47: the menu's new game (the finback)
 let failed=false;
 function ok(c,msg){console.log((c?'  ok   ':'  FAIL ')+msg);if(!c)failed=true;}
 const LM=__sn.lm();

@@ -70,7 +70,7 @@ function fire(k,e){const L=handlers[k];if(L)for(const f of L.slice())f(e||{});} 
 // The pointer lock works (v11.31.4): play starts locked (menu.js choose), so a mousemove is the look and a click is the bite —
 // the paths the person actually plays. It threw 'no lock' before, which left the test on the drag fallback and never on either
 // (the mouse reached zoo.js only). `global.__nolock` puts the refusal back, for the drag fallback (smoke.js).
-global.document={getElementById:el,querySelectorAll(){return[el('pick0'),el('pick1'),el('pick2')];},addEventListener(n,f){(handlers['doc:'+n]=handlers['doc:'+n]||[]).push(f);},createElement(){return el('cv');},pointerLockElement:null,exitPointerLock(){this.pointerLockElement=null;fire('doc:pointerlockchange');}};
+global.document={getElementById:el,querySelectorAll(){return[];},addEventListener(n,f){(handlers['doc:'+n]=handlers['doc:'+n]||[]).push(f);},createElement(){return el('cv');},pointerLockElement:null,exitPointerLock(){this.pointerLockElement=null;fire('doc:pointerlockchange');}};
 global.window=global;global.innerWidth=1280;global.innerHeight=720;global.screen={width:1920,height:1080};global.location={hash:process.env.TIER?'#'+process.env.TIER:''};global.navigator={maxTouchPoints:0};
 global.addEventListener=(n,f)=>{(handlers['win:'+n]=handlers['win:'+n]||[]).push(f);};
 let __now=0;let raf=null;global.requestAnimationFrame=f=>{raf=f;};global.__step=function(n){for(let i=0;i<n;i++){const f=raf;raf=null;__now+=16.7;f(__now);}};global.performance={now:()=>__now};
@@ -98,7 +98,7 @@ global.AudioContext=function(){this.sampleRate=48000;this.currentTime=0;this.sta
 global.__run=function(){
   let now=0;const frame=()=>{const f=raf;raf=null;__now+=16.7;now=__now;f(now);};
   for(let i=0;i<30;i++)frame();
-  handlers['pick'+(process.env.PICK||1)+':click'][0]();
+  const pick=+(process.env.PICK||1);if(pick===1)fire('mnew:click');else global.__start(pick); // v11.47: the menu's `new game` is the finback; the other clades start through the bare choose (smoke.js __start)
   const key=(code,down)=>handlers['win:'+(down?'keydown':'keyup')].forEach(f=>f({code,preventDefault(){}}));
   // every listener, not the first (v11.31.4): zoo.js and lab.js register on the canvas and the window before input.js does, so
   // taking [0] meant the mouse never reached input.js at all — no bite, no look, for all of the fifteen hundred frames.

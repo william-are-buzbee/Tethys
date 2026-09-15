@@ -9,6 +9,9 @@
 // row (the JSON to the clipboard, a paste box, the link, the export lines for creatures_defs.js). Keys as the zoo's: space for the
 // action, s to cruise, r to spin or stop, drag turns (and stops the spin), wheel zooms; p places the creature in the world (a
 // temporary species, DEFS.lab); l or escape back to where you came from.
+// The creator (v11.47): the same panel opened from the menu's `creator` word (menu.js) with lab.player set — only the species, clades,
+// cores and part styles the profile has seen are offered (save.js PROFILE.seen; labOk, labStyles) — and a `saved creatures` list in the
+// save section (the profile's, with a file out and in), shown in every mode. Opening the lab at all grants the creator (grantCreator).
 const labEl = document.getElementById('lab'),
   labPanel = document.getElementById('labpanel'),
   labCap = document.getElementById('labcap');
@@ -33,8 +36,11 @@ const lab = {
   from: 'menu',
   open: {},
   hi: -1,
-  sec: 'species'
+  sec: 'species',
+  player: false // the creator (v11.47): opened from the menu's `creator` word; only the species, clades, cores and part styles the profile has seen are offered (save.js PROFILE.seen, labOk)
 };
+function labOk(k,v){return !lab.player||seen(k,v);} // k: 'sp' | 'cl' | 'co' | 'pt'
+function labStyles(kind,clade,cur){const st=stylesFor(kind,clade);return lab.player?st.filter(s=>s===cur||seen('pt',kind+':'+s)):st;} // the styles offered for a part: all of the clade's, or in the creator the seen ones (and the one it wears)
 const LAB_CLADES = ['ringmouths', 'slowbloods', 'hingeshells', 'drifters'],
   LAB_SECS = ['species', 'core', 'parts', 'coat', 'readout', 'save'];
 const MAT_HI = addTint(new THREE.MeshLambertMaterial({vertexColors: true, emissive: new THREE.Color(0.55, 0.32, 0.08)}), 'lam', true, undefined, undefined, 'body'); // the part under the cursor
@@ -438,8 +444,8 @@ function labPanelHTML() {
   h += '<div class="sec" id="lab-species"><div class="hd">species</div>';
   h +=
     '<label class="row"><span>from</span><select data-act="load"><option value="">—</option>' +
-    LAB_CLADES.map(c => '<option value="new:' + c + '">new ' + c.replace(/s$/, '') + '</option>').join('') +
-    Object.keys(SPECS)
+    LAB_CLADES.filter(c => labOk('cl', c)).map(c => '<option value="new:' + c + '">new ' + c.replace(/s$/, '') + '</option>').join('') +
+    Object.keys(SPECS).filter(k => labOk('sp', k))
       .map(k => '<option value="' + k + '">' + k + ' (' + SPECS[k].clade + ')</option>')
       .join('') +
     '</select></label>';
@@ -459,7 +465,7 @@ function labPanelHTML() {
   // the core
   h +=
     '<div class="sec" id="lab-core"><div class="hd">core</div><label class="row"><span>kind</span>' +
-    labSel('core.kind', gr.cores, s.core.kind) +
+    labSel('core.kind', gr.cores.filter(c => c === s.core.kind || labOk('co', c)), s.core.kind) +
     '</label>';
   for (const k in core.params) h += labSlider('core.' + k, k, core.params[k], s.core[k], ref, F, s.core);
   h +=
@@ -477,7 +483,7 @@ function labPanelHTML() {
     const def = PARTS[p.kind];
     if (!def) return;
     const req = labIsReq(p, gr, core),
-      styles = stylesFor(p.kind, s.clade),
+      styles = labStyles(p.kind, s.clade, p.style),
       open = lab.open[i] !== false;
     h +=
       '<div class="part' +
@@ -506,10 +512,10 @@ function labPanelHTML() {
     }
     h += '</div>';
   });
-  const kinds = Object.keys(PARTS).filter(k => PARTS[k].clades.indexOf(s.clade) >= 0);
+  const kinds = Object.keys(PARTS).filter(k => PARTS[k].clades.indexOf(s.clade) >= 0 && (labStyles(k, s.clade).length > 0 || (!stylesFor(k, s.clade).length && labOk('pt', k + ':'))));
   h +=
     '<label class="row"><span>add</span><select data-act="add"><option value="">—</option>' +
-    kinds.map(k => '<option value="' + k + '">' + k + ' (' + stylesFor(k, s.clade).join(', ') + ')</option>').join('') +
+    kinds.map(k => '<option value="' + k + '">' + k + ' (' + labStyles(k, s.clade).join(', ') + ')</option>').join('') +
     '</select></label></div>';
   // the coat
   const pal = typeof s.coat === 'string' ? PAL[s.coat] : s.coat,
@@ -585,6 +591,10 @@ function labPanelHTML() {
   // save
   h +=
     '<div class="sec" id="lab-save"><div class="hd">save</div><div class="row btns"><button data-act="copy">copy json</button><button data-act="link">link</button><button data-act="export">export</button><button data-act="drop">place in the world</button></div>';
+  // the saved creatures (v11.47): the profile's, by name (save.js PROFILE.creatures); a file out and in for keeping them off the browser
+  const cr = Object.keys(PROFILE.creatures).sort();
+  h += '<div class="hd2">saved creatures</div><div class="row btns"><button data-act="csave">save as ' + escH(s.id || 'new') + '</button><button data-act="cexport">export file</button><button data-act="cimport">import file</button></div>';
+  h += cr.map(k => '<div class="row"><span class="v" data-act="cload" data-id="' + escH(k) + '" title="load">' + escH(k) + '</span><button data-act="cdel" data-id="' + escH(k) + '" title="delete">×</button></div>').join('');
   h += '<textarea data-act="paste" placeholder="paste a spec or export lines here"></textarea><div class="note" id="labmsg"></div></div>';
   return h;
 }
@@ -790,6 +800,46 @@ function labOnClick(e) {
     labClip(txt);
     labMsg('the export lines are in the box and the clipboard');
   } else if (act === 'drop') labDrop();
+  else if (act === 'csave') {
+    const id = String(lab.v.id || 'new').trim().slice(0, 40) || 'new';
+    PROFILE.creatures[id] = specToJSON(lab.v);
+    profileSave();
+    labRender();
+    labMsg('saved ' + id);
+  } else if (act === 'cload') {
+    const j = PROFILE.creatures[t.dataset.id];
+    if (!j) return;
+    try {
+      labLoad(specFromJSON(j));
+      labMsg('loaded ' + t.dataset.id);
+    } catch (err) {
+      labMsg('not a spec: ' + err.message);
+    }
+  } else if (act === 'cdel') {
+    delete PROFILE.creatures[t.dataset.id];
+    profileSave();
+    labRender();
+  } else if (act === 'cexport') fileSave('creatures.tethys.json', JSON.stringify({kind: 'creatures', creatures: PROFILE.creatures}));
+  else if (act === 'cimport')
+    filePick(txt => {
+      let n = 0;
+      try {
+        const o = JSON.parse(txt),
+          cs = o && o.kind === 'creatures' && o.creatures && typeof o.creatures === 'object' ? o.creatures : null;
+        if (!cs) throw new Error('not a creatures file');
+        for (const k in cs) {
+          if (typeof cs[k] !== 'string') continue;
+          specFromJSON(cs[k]); // parses, or throws: nothing that is not a spec goes in
+          PROFILE.creatures[String(k).slice(0, 40)] = cs[k];
+          n++;
+        }
+        profileSave();
+        labRender();
+        labMsg('imported ' + n);
+      } catch (err) {
+        labMsg('not a creatures file: ' + err.message);
+      }
+    });
 }
 function labClip(txt) {
   try {
@@ -807,7 +857,7 @@ function labOnSelect(e) {
   } else if (t.dataset.act === 'add') {
     const k = t.value;
     if (!k) return;
-    const st = stylesFor(k, lab.spec.clade)[0];
+    const st = labStyles(k, lab.spec.clade)[0];
     const p = {kind: k};
     if (st) p.style = st;
     lab.spec.parts.push(p);
@@ -888,11 +938,13 @@ function labDrop() {
   labMsg(inPlay ? 'placed ahead of you' : 'placed at the peak: pick a clade to meet it');
 }
 // ---------- enter, leave, frame ----------
-function labEnter(spec) {
+function labEnter(spec, asPlayer) {
   if (mode !== 'menu' && mode !== 'zoo' && mode !== 'play') return;
   if (mode === 'zoo') zooLeave();
   lab.from = mode;
   mode = 'lab';
+  lab.player = !!asPlayer; // the creator (menu.js): gated to what has been seen
+  grantCreator(); // the lab used once is the creator used (v11.47): the menu shows the word from here
   labEl.classList.add('on');
   lab.pend = true;
   if (lab.from === 'play') {
@@ -907,10 +959,7 @@ function labEnter(spec) {
         .add(player.pos)
     );
     lab.yaw = player.yaw + Math.PI * 0.75;
-  } else {
-    picksEl.style.display = 'none';
-    for (const b of menuCreatures) b.g.visible = false;
-  }
+  } else menuPage('none');
   hintEl.textContent = isTouch
     ? 'drag to turn'
     : 'space for the action, s to cruise, r to spin, drag to turn, wheel to close in, p to place it in the world, l to go back';
@@ -929,9 +978,9 @@ function labLeave() {
     });
     lab.b = null;
   }
+  lab.player = false;
   if (mode === 'menu') {
-    picksEl.style.display = '';
-    for (const b of menuCreatures) b.g.visible = true;
+    menuPage('main');
     layoutMenu();
   } else {
     hintEl.textContent = 'click to look again; l for the lab';

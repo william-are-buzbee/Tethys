@@ -62,6 +62,7 @@ The sea has a surface and a tide (6–9 m, twice a 30 h day that passes in forty
 | effects.js | the effects list (v11.23): the cosmetic systems switchable live, saved in localStorage |
 | zoo.js | the bestiary: one species of the roster at a time at the peak, with its caption and its strike |
 | lab.js | the creature lab (`#lab`, `l`): edit a spec live, derived stats with locks, coats by chemistry, copy/paste/link/export, `p` places it |
-| menu.js, input.js, main.js | selection screen, controls, frame loop |
+| save.js | the save files and the profile (v11.47): slots in IndexedDB with a file export/import, what has been seen, the creator's saved creatures |
+| menu.js, input.js, main.js | the menu (new game, continue, options, the creator), controls, frame loop |
 
 The order above is the build order. Content edits usually touch only `creatures_defs.js` and `flora.js`; a new creature is a spec in `creatures_spec.js` (make it in the lab, export, paste) or, if the kit lacks a part, a new part in `PARTS`; a new plant is a `species()` call in flora.js built from grow.js's bauplans.

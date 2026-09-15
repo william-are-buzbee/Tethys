@@ -1445,8 +1445,21 @@ far LOD), `setLOD`, steering, one `updateX` per role, `updateCreatures()`.
   the floor. Arms and tails simulated as in the menu. Caption: name; clade, family; niche; half-length; "built, not yet placed".
   Keys: left/right (a/d) step, up/down (w/x) cycle the coat (v11.8: the species rebuilt in a palette variant — `PAL_VARIANTS`,
   `palVariant`; the caption names it; eyes and pupils untouched; nothing in the world reads it), space or a click fires the action,
-  s toggles a cruising speed, drag turns, wheel zooms, z or escape returns; touch: drag turns, a tap on an edge steps. The menu
-  creatures are hidden meanwhile and restored on return.
+  s toggles a cruising speed, drag turns, wheel zooms, z or escape returns; touch: drag turns, a tap on an edge steps. The menu's
+  column is hidden meanwhile and restored on return (`menuPage`, v11.47; the menu shows no creatures since then).
+- **The menu and the saves (v11.47, `menu.js`, `save.js`, shell.html `#mlist` `#msaves`):** the caldera under the menu's camera
+  (`layoutMenu`, the v11.13.1 numbers), the title, and a column — `new game` (`startNew`: the world cleared, `ecoReset`, `t=0`, the finback
+  at the peak, a new slot `game N` written at once), `continue` (the slots newest first: name, clade, time played, when; click loads
+  `startFrom`; `export` a .json; `delete` asks `sure?` once; `import a file`), `options` (the effects list), `creator` (the lab as the player's,
+  once `PROFILE.creator` — opening the lab at all grants it, or `#creator`). Esc in play with the pointer free saves and returns (`toMenu`; with
+  the pointer locked the browser keeps the first esc, so twice). A save record: the player (clade, pos, yaw, pitch, hp), `t`, and the ledger's
+  `n/k/ke/cd/ow`, `done`, `last`, the tally — the loaded cells counted as `ecoTick` counts them (`popRows`); ~110 KB. Stored in IndexedDB
+  (`tethys`/`kv`; localStorage, then memory, as fallbacks; callbacks not promises so the headless tests can drive it; `navigator.storage.persist`
+  asked for). Written every `SAVE_EVERY` 30 s of play (`updateSave`), on esc to the menu, on `visibilitychange`/`pagehide`. Loading: every cell
+  out (`worldClear`), `popLoad` (a save from another roster starts fresh with a warning), `playerBody`, `cellsAround` (the 3×3, boot uses it too).
+  The profile (`PROFILE`, one record): the creator's key; `seen` — species, clades, cores, part `kind:style` for anything drawn within `SEEN_R`
+  30 m in play (`seeSpec`) and the player's own clade; the creator's saved creatures. Nothing is written before the stored profile is read
+  (`profileLoaded`). Per person, not per save — open (HANDOFF). The creator's gate in the lab: `lab.player`, `labOk`, `labStyles`.
 - **Previewing a builder without the game** (`test/preview.js`): `node test/preview.js sickle trap` renders contact sheets to
   `test/preview/<id>.png` — four views (three-quarter, side, front, top), idle and action — with real geometry (`test/geo.js`
   patches the stub's random primitives with the shapes three makes) and a software Lambert; the ground line in the side and
@@ -1591,11 +1604,11 @@ distance — a designed pass, not a knob. `render` is CPU submission; the GPU ru
   turning, out after 3.5 s still. The dot under the letters is the bearing of the peak (respawn), shown beyond 150 units
   from it; clamped to the window edge and dimmed when behind you. Remove it by deleting the `dist>150` block.
 - **The effects list (v11.23, `effects.js`, `#fx`):** the cosmetic systems switchable live — caustics (with a `brightness` slider under it, v11.38.1: `FX_SLIDERS`, a number in `FX_DEF` that persists with the switches), pixel light (v11.38: the caustic and the shadows in blocks, or smooth; off by default since v11.38.1), texels (v11.40–41, its own row since v11.41.1: every tinted surface in texels with a pattern per cell, PIXEL.md; off by default), banded light (v11.41.2: the light posterised with the texels' colour, or smooth; off), shadows, world shadows, ground shadows (v11.30), sharp shadows, light shafts,
-  marine snow, rain, clouds, surface glow, vignette — in the lab panel's look, on the right. The word `effects` at the bottom right of the menu,
-  or `e` on the menu and in play (the pointer is released while it is open, taken back on close; escape or a click on the canvas closes it).
+  marine snow, rain, clouds, surface glow, vignette — in the lab panel's look, on the right. `options` on the menu (v11.47; the `effects` word
+  at the bottom right is gone), or `e` on the menu and in play (the pointer is released while it is open, taken back on close; escape or a click on the canvas closes it).
   Saved in localStorage (`tethys.fx`). Each system reads `FX.key` where it draws; a switch is a key in `FX_DEF`, a row in `FX_LIST`, a read.
-- Controls (the hint, `menu.js`): w a s d swim, space rise, c dive, shift burst, q ability, click bite, m mute; mouse
-  look by pointer lock from the first frame of play (the pick's click asks for it), Tab releases it and shows the cursor, Tab or a click
+- Controls (the hint, `menu.js`): w a s d swim, space rise, c dive, shift burst, q ability, click bite, m mute, esc menu (v11.47); mouse
+  look by pointer lock from the first frame of play (`choose` asks for it in the menu word's click), Tab releases it and shows the cursor, Tab or a click
   takes it back; a click while locked is the bite; drag-to-look if the lock is blocked (e.g. inside an iframe). v11.13.1: the invisible
   menu's picks were taking every click below the title (`pointer-events:auto` on a child beats the parent's `none`); `#menu.gone .pick` is none now. Touch: left side drag to swim,
   right side drag to look, tap to bite, two fingers ability.

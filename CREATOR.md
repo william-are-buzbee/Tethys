@@ -263,3 +263,10 @@ only, no eyes). Seven cores and some thirty part styles were added for what thos
 migration rule kept: a spec is the builder parameter for parameter, proved by `test/ident.js` where it could be and by the preview sheets
 side by side where a part was generalised (the trap's arm is the raptors' `fold`; three species carry the mouth their clade requires).
 Not done, still: the player's creator, unlocks, growth, the moult; converting the flora.
+
+## Fourth round (14 Sep 2026, v11.47): the creator on the menu, gated
+The lab is reachable from the menu's `creator` word (menu.js) once it has been opened at all (or `#creator`), as the player's: only the
+species, clades, cores and part styles the profile has seen — any species drawn within 30 m in play, and the player's own clade — are offered
+(lab.js `lab.player`, `labOk`, `labStyles`; save.js `PROFILE.seen`). A `saved creatures` list in the lab's save section keeps the player's
+specs by name, with a file out and in. Still not done: the creator as the start of a new game (the finback starts it for now), the mass budget
+and the mineral/pigment gates at growth stages, the moult.

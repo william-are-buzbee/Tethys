@@ -5,7 +5,7 @@ const fs=require('fs'),path=require('path');
 const ROOT=path.join(__dirname,'..');
 const ORDER=fs.readFileSync(path.join(ROOT,'src','order.txt'),'utf8').split('\n').map(s=>s.trim()).filter(s=>s&&s[0]!=='#');
 let js=ORDER.map(n=>fs.readFileSync(path.join(ROOT,'src',n+'.js'),'utf8')).join('\n');
-js+='\nglobal.__phys={get lastPad(){return lastPad;},solidPush,addSolid,addCapsule,addPad,addEllipsoid,addRock,bodyPush,loadPad,updatePads,livePads,chunks,chunkGrid,cellOf,creatures,player,DEFS,spawn,stepRigs,worldShapes,resolveBodies,sphereOutOf,flowAt,FLOW,setFlow:(n)=>{flowN=n;},updateDisturbers,DIST_A,DIST_B,groundAt,waveH,choose,V3,CLADES,menuCreatures,t:()=>t,setT:(v)=>{t=v;},keys,get mode(){return mode;},FLORA};';
+js+='\nglobal.__phys={get lastPad(){return lastPad;},solidPush,addSolid,addCapsule,addPad,addEllipsoid,addRock,bodyPush,loadPad,updatePads,livePads,chunks,chunkGrid,cellOf,creatures,player,DEFS,spawn,stepRigs,worldShapes,resolveBodies,sphereOutOf,flowAt,FLOW,setFlow:(n)=>{flowN=n;},updateDisturbers,DIST_A,DIST_B,groundAt,waveH,choose,V3,CLADES,t:()=>t,setT:(v)=>{t=v;},keys,get mode(){return mode;},FLORA};';
 const tmp=path.join(require('os').tmpdir(),'tethys_phys.js');
 fs.writeFileSync(tmp,'(function(){"use strict";\n'+js+'\n})();');
 process.env.PICK='0';

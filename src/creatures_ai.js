@@ -386,7 +386,7 @@ function updateCreatures(dt0){
     // the action state the anim reads: the tell and the strike are set by the behaviours above and let go here
     const st=c.st;if(c.tellT<=0&&c.strikeT<=0){st.tell*=Math.exp(-4*dt);st.strike*=Math.exp(-7*dt);if(d.role==='ambush'&&c.state!=='lunge')st.strike*=Math.exp(-7*dt);}st.jet=c.state==='chase'&&d.jetter===true;
     const vis=dp<c.lodFar;c.g.visible=vis;
-    if(vis){visibleCreatures++;if(dp<c.lodNear){setLOD(c,0);c.anim(t+c.t0,Math.min(4,c.vel.length()/(d.size*0.5)),st);}else setLOD(c,1);}
+    if(vis){visibleCreatures++;if(dp<SEEN_R&&mode==='play')seeSpec(c.kind);if(dp<c.lodNear){setLOD(c,0);c.anim(t+c.t0,Math.min(4,c.vel.length()/(d.size*0.5)),st);}else setLOD(c,1);} // seen within SEEN_R (save.js, v11.47): the creator's parts
     if(d.role==='hunter'&&c.hp<d.hp&&!(c.bleed>0)&&t-(c.lastHurt||-1e9)>HUNT_REGEN_W)c.hp=Math.min(d.hp,c.hp+HUNT_REGEN*dt);
     if(vis&&dp<c.lodNear&&c.lod===0)simList.push(c);
     if(vis&&dp<90)near.push(c);

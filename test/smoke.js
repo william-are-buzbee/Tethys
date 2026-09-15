@@ -15,6 +15,9 @@ js+='\nglobal.__eco=()=>{let s=0,nan=0;for(const N of POP.n)for(let c=0;c<N.leng
 js+='\nglobal.__fx=(k)=>{fxToggle(k);return FX[k];};'; // v11.40: the effects list's switch (the de-res on: fxApply, the shimmer hidden)
 js+='\nglobal.__mouse=()=>({yaw:player.yaw,pitch:player.pitch,biteCD:player.biteCD,grab:mouseGrab,locked:locked});'; // v11.31.4: the mouse reaches input.js at all
 js+='\nglobal.__zoo={n:()=>ROSTER.length,mode:()=>mode,specs:()=>Object.keys(SPECS),labLoad:(id)=>labLoad(SPECS[id]),labBlank:(c)=>labLoad(SPEC_BLANK[c]),labAdd:(k)=>{lab.spec.parts.push({kind:k,style:stylesFor(k,lab.spec.clade)[0]});labBuild();labRender();}};';
+js+='\nglobal.__start=(i)=>{choose(i);};'; // v11.47: the bare start (menu.js choose) for the clades the menu no longer offers; stub.js __run
+// the saves (v11.47): the slot the menu wrote, esc to the menu, continue from the list, and what came back
+js+='\nglobal.__save={slots:()=>saveList.map(r=>({id:r.id,name:r.name,clade:r.clade,playT:r.playT})),cur:()=>curSave&&curSave.id,now:()=>saveNow(),menu:()=>{const h=global.__h;h["win:keydown"].forEach(f=>f({code:"Escape",preventDefault(){}}));},cont:(id)=>{saveRefresh();const r=saveList.find(r=>r.id===id);if(!r)throw new Error("no slot "+id);startFrom(r);},del:(id)=>{storeDel(id);saveRefresh();},t:()=>t,pop:()=>{let s=0;for(const N of POP.n)for(let c=0;c<N.length;c++)s+=N[c];return s;},seen:()=>PROFILE.seen.sp.length,creator:()=>PROFILE.creator,locked:()=>locked};';
 const tmp=path.join(require('os').tmpdir(),'tethys_bundle.js');
 fs.writeFileSync(tmp,'(function(){"use strict";\n'+js+'\n})();');
 let failed=false;
@@ -83,6 +86,21 @@ for(const pick of [0,1,2]){
       let t1=Date.now();
       for(let k=0;k<12;k++){__step(700);const d=__dbg();console.log('  frame',(k+1)*700,'wall',(Date.now()-t1)+'ms',JSON.stringify(d));t1=Date.now();if(k===6)key('KeyC',true);}
       const e=__eco();console.log('  ecology:',JSON.stringify(e));if(e.nan)throw new Error('NaN in the ledger');if(!(e.ledger>500))throw new Error('the ledger holds almost nothing');
+      { // the saves (v11.47): the slot new game wrote, esc to the menu (the pointer freed by tab first), continue from the list, the world back as it was, delete
+        const S=global.__save,id=S.cur();if(!id)throw new Error('new game made no slot');
+        if(!S.slots().some(r=>r.id===id))throw new Error('the slot is not in the list');
+        key('Tab',true);key('Tab',false);if(S.locked())throw new Error('tab did not free the pointer');
+        const p0=__dbg().pos.slice(),t0=S.t(),pop0=S.pop();if(!S.now())throw new Error('saveNow refused');
+        S.menu();__step(3);if(__zoo.mode()!=='menu')throw new Error('esc did not return to the menu');
+        if(__dbg().creatures<1)throw new Error('the menu has no creatures under it');
+        S.cont(id);__step(3);if(__zoo.mode()!=='play')throw new Error('continue did not start play');
+        const p1=__dbg().pos,dd=Math.hypot(p1[0]-p0[0],p1[2]-p0[2]);if(dd>2)throw new Error('continue put the player '+dd.toFixed(0)+' m from where it saved');
+        if(Math.abs(S.t()-t0)>1)throw new Error('the clock did not come back: '+t0.toFixed(0)+' vs '+S.t().toFixed(0));
+        const pop1=S.pop();if(Math.abs(pop1-pop0)>pop0*0.05+5)throw new Error('the ledger came back different: '+pop0.toFixed(0)+' vs '+pop1.toFixed(0));
+        if(!(S.seen()>0))throw new Error('nothing was seen');if(!S.creator())throw new Error('the lab was used and the creator is not granted');
+        S.del(id);if(S.slots().some(r=>r.id===id))throw new Error('delete left the slot');
+        console.log('  saves: slot, menu, continue at',dd.toFixed(1),'m, clock',t0.toFixed(0),'s, ledger',pop0.toFixed(0),'->',pop1.toFixed(0),'seen',S.seen());
+      }
     }
   }catch(e){failed=true;console.error('FAILED clade',pick,e&&e.stack||e);}
 }

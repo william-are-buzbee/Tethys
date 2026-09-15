@@ -2,9 +2,9 @@
 // legs:true on a clade (none yet) would make it walk on the strand (landSpeed, jump) instead of flopping.
 // size: the body's half-length in world units (disturbance radius, flow radius); mass: for contact with creatures (size³ for them).
 const CLADES=[
-  {id:'soft',build:()=>compile(SPECS.soft),speed:7.0,jet:true,jetImp:10,accel:3.2,hp:80,bite:9,cam:6.5,turn:7,size:1.6,mass:5},
-  {id:'fin',build:()=>compile(SPECS.fin),speed:8.8,sprint:1.75,accel:2.6,hp:120,bite:26,cam:7.5,turn:4.5,size:1.8,mass:7},
-  {id:'coil',build:()=>compile(SPECS.coil),speed:4.6,jet:true,jetImp:7,accel:1.5,hp:100,bite:6,cam:6.5,turn:3,size:1.5,mass:8}
+  {id:'soft',name:'soft-arm',build:()=>compile(SPECS.soft),speed:7.0,jet:true,jetImp:10,accel:3.2,hp:80,bite:9,cam:6.5,turn:7,size:1.6,mass:5},
+  {id:'fin',name:'finback',build:()=>compile(SPECS.fin),speed:8.8,sprint:1.75,accel:2.6,hp:120,bite:26,cam:7.5,turn:4.5,size:1.8,mass:7},
+  {id:'coil',name:'coilshell',build:()=>compile(SPECS.coil),speed:4.6,jet:true,jetImp:7,accel:1.5,hp:100,bite:6,cam:6.5,turn:3,size:1.5,mass:8}
 ];
 let floor0=-1e9;for(let a=0;a<TAU;a+=0.3)for(let r=0;r<=16;r+=4)floor0=Math.max(floor0,sample(Math.cos(a)*r,Math.sin(a)*r).h);
 const dispY=floor0+4.5,spawnPos=V3(0,floor0+3,0);

@@ -17,17 +17,16 @@ const FX_DEF={caustics:true,cauK:1,pixel:false,texels:false,texelLight:true,shad
 const FX=Object.assign({},FX_DEF);
 (function(){try{const s=window.localStorage&&window.localStorage.getItem('tethys.fx');if(s){const o=JSON.parse(s);for(const k in FX_DEF)if(typeof o[k]===typeof FX_DEF[k])FX[k]=o[k];}}catch(e){}})();
 function fxSave(){try{if(window.localStorage)window.localStorage.setItem('tethys.fx',JSON.stringify(FX));}catch(e){}}
-const fxEl=document.getElementById('fx'),fxListEl=document.getElementById('fxlist'),fxLinkEl=document.getElementById('fxlink'),vigEl=document.getElementById('vig');
-let fxOpen=false,fxLinkOn=true;
+const fxEl=document.getElementById('fx'),fxListEl=document.getElementById('fxlist'),vigEl=document.getElementById('vig');
+let fxOpen=false;
 function fxApply(){vigEl.style.display=FX.vignette?'':'none';pixU.value=FX.pixel?1:0;texU.value=FX.texels?1:0;texLU.value=FX.texelLight?1:0;if(typeof wasAbove==='boolean')applyFog(wasAbove);shadowDirty();} // a switch changes the world map's caster set // the fog's light block reads FX (LIGHT_K); before the first frame applyFog runs on its own
 const FX_SLIDERS={caustics:['brightness','cauK',0,2,0.05]}; // a slider under a switch (v11.38.1, the person's ask): [label, key, min, max, step]; the key is a number in FX_DEF and persists with the switches
 function fxRender(){fxListEl.innerHTML=FX_LIST.map(e=>{let h='<div class="row'+(FX[e[0]]?'':' off')+'" data-k="'+e[0]+'"><span>'+e[1]+'</span><b>'+(FX[e[0]]?'on':'off')+'</b></div>';const s=FX_SLIDERS[e[0]];if(s)h+='<div class="row sl"><span>'+s[0]+'</span><input type="range" data-s="'+s[1]+'" min="'+s[2]+'" max="'+s[3]+'" step="'+s[4]+'" value="'+FX[s[1]]+'"><b>'+FX[s[1]].toFixed(2)+'</b></div>';return h;}).join('');}
 function fxToggle(k){if(!(k in FX_DEF))return;FX[k]=!FX[k];fxSave();fxApply();fxRender();}
 function fxShow(on){if(on===fxOpen)return;fxOpen=on;fxEl.classList.toggle('on',on);if(on){fxRender();if(mode==='play'&&locked)unlock();}else if(mode==='play'&&!isTouch)tryLock();}
-function updateFX(){const on=mode==='menu';if(on!==fxLinkOn){fxLinkOn=on;fxLinkEl.style.opacity=on?'':'0';}if(fxOpen&&!on&&mode!=='play')fxShow(false);} // the menu's word only on the menu; the list closes on the way into the bestiary or the lab
+function updateFX(){if(fxOpen&&mode!=='menu'&&mode!=='play')fxShow(false);} // the list closes on the way into the bestiary or the lab (v11.47: the menu's `effects` word is gone — `options` on the menu opens it, menu.js)
 fxListEl.addEventListener('input',e=>{const el=e.target;if(!(el.dataset&&el.dataset.s))return;FX[el.dataset.s]=+el.value;el.nextElementSibling.textContent=(+el.value).toFixed(2);fxSave();}); // a slider: live, saved, read where the system draws
 fxListEl.addEventListener('click',e=>{let el=e.target;if(el.tagName==='INPUT')return;while(el&&el!==fxListEl&&!(el.dataset&&el.dataset.k))el=el.parentNode;if(el&&el!==fxListEl&&el.dataset&&el.dataset.k)fxToggle(el.dataset.k);});
-fxLinkEl.addEventListener('click',()=>{if(mode==='menu')fxShow(!fxOpen);});
-addEventListener('keydown',e=>{if(e.code==='KeyE'&&(mode==='menu'||mode==='play'))fxShow(!fxOpen);else if(e.code==='Escape'&&fxOpen)fxShow(false);});
+addEventListener('keydown',e=>{if(e.code==='KeyE'&&(mode==='menu'||mode==='play'))fxShow(!fxOpen);else if(e.code==='Escape'&&fxOpen){fxShow(false);e.preventDefault();}}); // the default prevented: menu.js's esc (play to the menu) runs after this and stands down
 document.addEventListener('pointerlockchange',()=>{if(fxOpen&&document.pointerLockElement===canvas)fxShow(false);}); // a click on the canvas took the pointer back: the list is done with
 fxApply();

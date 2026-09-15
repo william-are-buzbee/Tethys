@@ -3355,3 +3355,60 @@ below. `node build.js --test` green on both tiers. **Unseen, ask in this order:*
 not sparkle; the next step is a finer capillary set or a per-fragment hash; (3) whitecaps: too many, too soft (`FOAM_S`; the hash's 0.35);
 (4) the residue's size on a ringmouth's breach and a creature's; (5) the weed forest's frame time — the sway fold has seven sines now, the
 surface's fragment ripSlope (six texture taps, four sines) and restSlope; (6) rain from below in a real shower, and the window's matting.
+
+## v11.47 — the menu: new game, continue, options, the creator; save files (14 Sep 2026)
+
+The person's ask: the game boots to the caldera as before, same camera, but with no clades turning — a title and a column of words, new game,
+continue, options, and a hidden creator; multiple save files that do not live in the browser forever; new game starts as the slowblood; continue
+lists and deletes saves; options is the effects list for now; the creator is the lab, gated to what has been seen.
+
+**The menu** (menu.js rewritten, shell.html `#mlist`, `#msaves`). The three menu creatures and the `leaving` swim-off are gone (`menuCreatures`
+no longer exists; zoo.js and lab.js hide and restore the menu through `menuPage`). `layoutMenu` keeps the v11.13.1 camera. **new game** →
+`startNew(CLADES[1])`: the world cleared, a fresh ledger (`ecoReset`, ecology.js), the clock at boot (`t=0`), the finback built at the peak,
+a new slot written at once. The finback until the creator is the start (DIRECTION: the smallest body the creator allows — the person: "in the
+future this will be the player creator … not right now"). **continue** → the slots, newest played first: name, clade, time played, when; click
+to load (`startFrom`), `export` for a .json file, `delete` asks once (the word turns to `sure?`) and goes on the second click; `import a file`
+reads one back (`saveImport`: shape-checked, a new id if its own is taken). **options** → the effects list (effects.js; the menu's `effects`
+word at the bottom right is gone, `e` still works). **creator** → the lab as the player's (`labEnter(undefined,true)`), shown once
+`PROFILE.creator` is set: opening the lab at all sets it (`grantCreator`), or `#creator` in the URL. **esc** in play with the pointer free saves
+and returns to the menu (`toMenu`); with the pointer locked the browser keeps the first esc for the lock, so it is esc twice (the hint says "esc
+menu"). effects.js prevents the default on the esc that closes its list so menu.js's stands down. `choose(c,pos,yaw,pitch,hp)` is the bare start
+the tests still drive (anim, combat, physics; the smoke test starts the finback through the real `mnew` click and the others through `__start`).
+
+**The saves** (save.js, new; `src/order.txt` after effects). A slot is a record: the player (clade, position, yaw, pitch, hp), the clock (`t`,
+so the hour and the tide follow), and the ledger's five tables (`POP.n/k/ke/cd/ow`), `done`, `last` and the tally — the loaded cells counted
+into the tables as the tick counts them (the living on the ledger, and the eggs). ~110 KB a slot. What a cell drew — carcasses, wounds, a
+school's shape — is not kept, as an unload does not keep it either. **Where:** the browser's IndexedDB (`tethys`, store `kv`; localStorage
+where IndexedDB is missing, memory in the tests — the backends answer through callbacks, since the tests' frames are driven by hand and no
+microtask runs between them), and `navigator.storage.persist()` asked for so the browser will not evict it; the file export/import is what
+does not depend on the browser at all. **When:** `SAVE_EVERY` 30 s of play (`updateSave` in the frame after `ecoTick`), on esc to the menu, and
+on the page hiding (`visibilitychange`, `pagehide`). **Loading** (`startFrom`): every cell unloaded (`worldClear`: the living written back, a
+cell mid-build dropped with what it spawned), `popLoad` — a save from another roster (SPAWN's kinds differ, or the arrays' shapes) gets a fresh
+census with a console warning and the player still loads; the paper census generator is dropped when the save had finished it — then the body
+(`playerBody`), the 3×3 round it (`cellsAround`, which boot uses too now), the camera behind it, the medium snapped. Names are `game N`.
+
+**The profile** (save.js `PROFILE`, one record beside the slots): the creator's key; what has been seen — species ids, clades, core kinds
+and part `kind:style`, marked for any species drawn within `SEEN_R` 30 m in play (creatures_ai `seeSpec`, one Set check a creature a frame)
+and for the player's own clade; and the creator's saved creatures (spec JSON by name). Nothing is written before the stored profile is read
+(`profileLoaded`; main.js `profileLoad` after boot) — a write first would have emptied the seen lists. The profile is a person's, not a game's:
+the creator on the main menu sits outside any slot, so what one game saw stays known. **The creator gate** (lab.js `lab.player`, `labOk`,
+`labStyles`): the species dropdown, the new-clade blanks, the core kinds, each part's style select and the add-part list show only the seen
+ones (a part keeps the style it wears). The paste box and the link still take anything — this is a game's gate, not a lock. **Saved creatures**
+(the lab's save section, every mode): `save as <name>`, the list (click loads, × deletes), `export file` / `import file` for the whole set.
+
+**Tests.** `test/smoke.js`: for the finback, after the ecology run — the slot exists, tab frees the pointer, esc returns to the menu with
+creatures under it, continue from the list puts the player within 2 m, the clock within a second and the ledger within 5 %, something was seen,
+the lab granted the creator, delete removes the slot. `test/stub.js` starts the finback through `mnew:click`; audio.js and snow.js the same;
+physics.js no longer exports `menuCreatures`. `node build.js --test` green on both tiers.
+
+**Seen** (the app's browser, dev.html): the caldera under the same camera with the title and the column; the words over the sand were
+unreadable in the first cut and were moved up under the title over the water with the hint's text shadow; the empty continue page; the
+effects list from options; new game → the finback at the peak with the hint, "game 1" in IndexedDB at 114 KB; esc (dispatched — the pane's
+own esc key does not reach the page) → the menu; continue → `game 1 · finback · 1 min · just now · export · delete`; the slot → play at the
+saved spot; `l` → the lab; back and esc → the menu with `creator` as a fourth word. No console errors beyond the pane's pointer-lock refusal.
+**Unseen, ask in this order:** (1) the column's placement and weight on a 1600×900 screen at other hours (the words sit over the water band;
+at a low sun the water is darker still); (2) esc twice from locked play — does the hint's "esc menu" read, or should a pause page come first;
+(3) a save over a long game: the 30 s autosave's cost (~3 ms of JSON once a minute, unmeasured on the 4060) and whether the world comes back
+believably where you left it (the creatures near you are re-drawn from the ledger, not restored one by one); (4) the creator's gate from a
+real game — is 30 m the right "seen", and should the player's own parts count; (5) export/import round trip through a real file; (6) delete's
+two-click confirm; (7) whether the profile (what has been seen) should be per save instead of per person.

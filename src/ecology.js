@@ -144,6 +144,7 @@ function ecoTick(dt0){
         else got=layEggs(ch,e,ei,Math.min(e.grp?Math.max(3,e.grp):3,extra),rng)||0;
         const fromOw=Math.max(0,got-Math.max(0,gap))/Q.creatures;if(fromOw>0){POP.ow[ei][c]=Math.max(0,POP.ow[ei][c]-fromOw);POP.n[ei][c]+=fromOw;}}}} // what the clutch took out of the owed goes into the ledger: the eggs are counted as living from here (ECO_CNT above)
 }
+function ecoReset(){POP.n.length=POP.k.length=POP.ke.length=POP.cd.length=POP.ow.length=0;POP.byKind={};POP.done.fill(0);POP.last=0;POP.acc=0;POP.model=null;POP.births=POP.deaths=POP.kills=POP.starved=POP.eaten=POP.recruits=POP.laid=POP.hatched=0;ecoInit();} // the ledger as at boot, the paper census to run again: a new game, or a save loading over it (save.js, v11.47) — with every cell unloaded first
 ecoInit(); // the ledger exists before the first cell loads (main.js manageChunks); its paper census runs in ecoTick
 // the readout's fourth line: the ledger's world totals for a few kinds and its tally; the nearest hunter's hunger
 function ecoLine(){

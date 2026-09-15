@@ -1,5 +1,5 @@
-// zoo.js — the bestiary: every species of the roster (creatures_defs.js ROSTER), one at a time, in the water at the peak where the
-// menu shows the three clades, with the game's own light and fog. For looking at a builder before it is placed. Open the game
+// zoo.js — the bestiary: every species of the roster (creatures_defs.js ROSTER), one at a time, in the water at the peak under the
+// menu's camera (v11.47: the menu no longer shows the clades), with the game's own light and fog. For looking at a builder before it is placed. Open the game
 // with #zoo in the URL, or press z on the menu; z or escape returns to the menu. Left and right (or a, d) step through the roster,
 // space fires the action (the tell, then the strike: the states every anim reads, creatures_builders.js), s toggles a cruising
 // speed, drag turns the view, the wheel zooms; on touch, drag turns and a tap on either edge steps. Floor species sit at the
@@ -34,15 +34,13 @@ function zooShow(i){
     (dv?'<br><i>derived: '+dv.mode+', speed '+dv.speed+' (defs '+(d.speed||'–')+'), turn '+dv.turn+' ('+(d.turn||'–')+'), hp '+dv.hp+' ('+(d.hp>1e8?'∞':d.hp)+'), '+dv.mass+' t, '+dv.cost+' points — l to edit</i>':'<br><i>a hand builder, no spec</i>');
 }
 function zooEnter(){
-  if(mode!=='menu')return;mode='zoo';picksEl.style.display='none';zooEl.classList.add('on');
-  for(const b of menuCreatures)b.g.visible=false;
+  if(mode!=='menu')return;mode='zoo';menuPage('none');zooEl.classList.add('on');
   zooHintEl.textContent=isTouch?'drag to turn. tap an edge for the next one':'left and right for the next one, up and down for another coat, space for the strike, s to cruise, drag to turn, wheel to close in, l for the lab, z to go back';
   zooShow(zoo.i);
 }
 function zooLeave(){
-  if(mode!=='zoo')return;mode='menu';picksEl.style.display='';zooEl.classList.remove('on');
+  if(mode!=='zoo')return;mode='menu';menuPage('main');zooEl.classList.remove('on');
   if(zoo.b){scene.remove(zoo.b.g);zoo.b.g.traverse(o=>{if(o.geometry)o.geometry.dispose();});zoo.b=null;}
-  for(const b of menuCreatures)b.g.visible=true;
   layoutMenu();
 }
 function zooAct(){if(zoo.b)zoo.act=0;}
