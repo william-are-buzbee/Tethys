@@ -12,8 +12,6 @@ canvas{display:block;outline:none;touch-action:none}
 #hurt{background:radial-gradient(ellipse at center,rgba(0,0,0,0) 40%,rgba(110,8,8,.8) 100%);opacity:0;transition:opacity .3s}
 #fade{background:#000;opacity:1;transition:opacity 1.8s}
 #biome{position:fixed;bottom:26px;right:32px;font-size:13px;text-shadow:0 0 6px rgba(0,0,0,.9),0 1px 2px rgba(0,0,0,.9);letter-spacing:.3em;font-weight:300;opacity:0;transition:opacity .8s;color:rgba(220,230,235,.75);pointer-events:none;font-variant-numeric:tabular-nums}
-#hp{position:fixed;bottom:28px;left:50%;width:140px;height:1px;margin-left:-70px;background:rgba(255,255,255,.1);opacity:0;transition:opacity .9s;pointer-events:none}
-#hp i{display:block;height:100%;background:rgba(235,240,245,.7);width:100%;transition:width .25s}
 #compass{position:fixed;top:22px;left:50%;width:260px;height:24px;margin-left:-130px;overflow:hidden;opacity:0;transition:opacity 1.2s;pointer-events:none;-webkit-mask-image:linear-gradient(90deg,transparent,#000 24%,#000 76%,transparent);mask-image:linear-gradient(90deg,transparent,#000 24%,#000 76%,transparent)}
 #cstrip{position:absolute;top:0;left:0;height:100%;width:2600px;will-change:transform}
 #cstrip span{position:absolute;top:7px;font-size:11px;font-weight:300;letter-spacing:.3em;text-indent:.3em;color:rgba(215,228,235,.62);transform:translateX(-50%)}
@@ -127,7 +125,6 @@ canvas{display:block;outline:none;touch-action:none}
 <div id="vig" class="layer"></div>
 <div id="hurt" class="layer"></div>
 <div id="biome"></div>
-<div id="hp"><i></i></div>
 <div id="hint"></div>
 <div id="compass"><div id="cstrip"><span style="left:0px">n</span><i style="left:108px"></i><span style="left:216px">e</span><i style="left:324px"></i><span style="left:432px">s</span><i style="left:540px"></i><span style="left:648px">w</span><i style="left:756px"></i><span style="left:864px">n</span><i style="left:972px"></i><span style="left:1080px">e</span><i style="left:1188px"></i><span style="left:1296px">s</span><i style="left:1404px"></i><span style="left:1512px">w</span><i style="left:1620px"></i><span style="left:1728px">n</span><i style="left:1836px"></i><span style="left:1944px">e</span><i style="left:2052px"></i><span style="left:2160px">s</span><i style="left:2268px"></i><span style="left:2376px">w</span><i style="left:2484px"></i><span style="left:2592px">n</span></div><b id="ctick"></b><b id="cpeak"></b></div>
 <div id="menu">

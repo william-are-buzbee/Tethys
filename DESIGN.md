@@ -1274,13 +1274,27 @@ either dies, or when something moves one of them (a respawn, a cell line: rope s
 clock (`ECO_CHASE`) stops while holding; the lurker and the trap keep their target while they have hold of it (the lurker drags its prey
 home to the den and eats it there, which is what an octopus does).
 
-**Bites in the hold**, on the hold's clock (`GRIP.cd`): a share of the holder's `dmg` (`first` on the clamp, `bite` per bite after). Every
-wound lands as a share now and a share that **bleeds** out (`bleed`: `o.bleed` hp still to lose, draining at `0.4 + 0.12·bleed` a second
-and clotting at 0.25/s — a ridge's 32 is ~22 now and ~9 over the next seven seconds). A **jaw** lets go after a bite on prey heavier than
-`HOLD_BIG` 0.6 of itself (bite and spit) and waits two bite cooldowns before it grabs again. A bite in a hold jerks the held
-(`shake`); a free bite (`snap`: a coil's ram, the player's bite on what it doesn't hold) knocks back as before. The player is never
-swallowed whole (the tentacle-ring mouths grip, they don't engulf). Hunters no longer have their hp reset to 60% when they flee at 35%,
-so a hunter that keeps coming back can be killed; a mortal creature bled or bitten to 0 dies through `kill()` (a carcass, the ledger debited).
+**The states (v11.55, COMBAT.md pass 2). There are no hit points.** A fight asks three questions of the two builds. **Gape:** a slowblood
+swallows a body whose widest capsule is under its mouth's radius × `GAPE_K` 1.15 (`swallows`; the player too — the finback's death); ringmouths
+and hingeshells take forage in pieces at the touch by mass (`WHOLE`). **Pin:** a hold kept `PIN.t` 2.5 s × (m_held/m_holder)^0.6 (0.3..3) with
+the struggle under `PIN.pull` 0.5 is a pin; a paralysed body is pinned at once; past 95 m (no rope, no struggle) the pin clock alone resolves
+the fight. **The placed act** by the edge's verdict where the hold is (`placedAct`, `killBy`): `yes`/`nape` — opened (cut), skewered (point),
+crushed (crush), bitten at the nerve cord (beak), dismembered (claws, shred); `thrash` — the next bite on the clock tears the piece out; `joint`,
+`time`, `no` — the hunter lets go and looks elsewhere (`PIN.bored` 8 s). The player's hold acts on its bite (`playerBite`): pinned and through, the
+bite kills; plain petals on a hide only tear. **Bites in the hold** on the hold's clock (`GRIP.cd`) are wounds: no number lands; the body bleeds
+for its clade's clotting time (`BLEED_T`: ringmouths 6 s, slowbloods 14, hingeshells 3, drifters 4; a second bite restarts the clock), swims at
+`WOUND_SLOW` 0.8 while it bleeds (`slowOf`: creatures through `seek`, the player through its speed), trickles, and never dies of it. A jaw still
+lets go after a bite on prey heavier than `HOLD_BIG` 0.6 of itself. A hunter or ambusher bitten `FLEE.n` 3 times by the player (decaying by one
+every 8 s) leaves. **The chemistry** (§3b): `venom` on `DEFS`/`CLADES` — `paralyse` (the lurker 7 s, the coilshell player 5 s; against slowbloods
+and ringmouths) rides the holder's first bite in the hold: steering off, sinking, no ability, pinned at once; `sting` (the basker, the grazer:
+spined) puts a jaw or arms off them after `STING.t` 0.45 s, at half speed for 6 s, 6 s before hunting again, only under `STING.mass` 4 × the
+spined body's mass. **Autotomy** (automatic): a ringmouth about to be pinned by a jaw or claws drops the held arm (`c.gone`: the chain's frames
+collapse to its base in `rigSkin`), the hold goes with it, the holder keeps it (`AUTOTOMY.cool` 6 s), the arm regrows in `AUTOTOMY.regrow` 5
+game days, never the last `keep` 2. **Death ends the slot's animal** (save.js `slotDeath`): the cause on the slot, the menu from the spot with
+the cause as its note, continue a new animal at the peak in the same world. `GRIP.first/bite/bleed` are a bite's size for the blood and the
+debris now. On paper (`test/combat.js`): the eel pins the finback 0.73 s after the hold and tears it open at 1.6 s; the crusher, stone,
+basker, ridge and abyssal swallow it 0.7 s into the hold; the sickle skewers it; the lurker and the ortho bite the nerve cord; the trap and
+the hook let go.
 
 | kind | k | cd | first | bite | bleed | close | slow | shake |
 |---|---|---|---|---|---|---|---|---|
@@ -1301,26 +1315,10 @@ per point, lit by the snow's light and the player's torch), the clade's colour �
 (PLANET, blood) — drifting with the current and the flow round the bodies (`flowAt`), spreading, sinking a little, gone in 2.5–4.5 s;
 a puff at every wound, a trickle from a bleeding body at its last wound; none above the water. On the effects list as `blood`.
 
-**Wounds and healing.** A hunter healed 2 hp/s with no delay, which outran every wound's bleed: nothing a hunter took ever bled out and
-a hunter you fought off was whole again in a minute. Since v11.31.1 the regen waits `HUNT_REGEN_W` (8 s) past the last wound and stops
-while the body is still bleeding (`c.lastHurt`, stamped by `wound` and by every tick of the bleed, the player's own gate as the
-pattern); `HUNT_REGEN` 2 hp/s once it runs. A 20 hp wound on an eel now costs it most of 20 (55 → 37 hp) and it is back at 55 about
-forty seconds later.
-
 **Letting go.** `dropTarget(c, cool)` (creatures_ai.js) is the one routine that ends a pursuit: target, `grab`, the hold, `bored`, the
 tell and strike clocks, the face, the chase clock, and back to wander (an ambusher to `return`, a feeder and a sitter left alone). The
 ink, the finback's pulse, the player's death, a lost chase and a kill each cleared a different subset before v11.31.1, and the one they
 all missed was `c.grab` — a rigged hunter's arms went on reaching for the player from wander.
-
-**On paper** (`test/combat.js`): a ridge takes a grazer in 0.4 s and kills it in the hold in 6 s; a basker runs a grazer down and kills
-it in 8.4 s, its first bite nose-on at 8.6 m; a finback holds a fleeing grazer 2.3 s before it tears free and is dragged 11 m. Against a
-finback thrashing at full speed with no ability (the run varies): eel ~4 s / 24 hp, crusher ~7 s / 90–110, hook ~3 s / 20–26,
-lurker ~4–6 s / 28–50 (it holds longer and costs more than it did, the hold re-forming where the lunge used to fall short); trap,
-stone, basker, sickle, ridge, ortho, abyssal hold for good at 9–23 hp a second — held by a big one you have the ability or ~9 s. That is
-the person's "allowed to lose"; `GRIP.bite` and `k` are the knobs. The test also prints the reach table (every predator's `reach`
-against `hitN + hitB` for each prey) and fails if any pair's bite distance falls under their contact. Not built: venom or
-paralysis (PLANET lists them for the ringmouths), the wound slowing a creature, a hunter returning to bled prey (behaviour — next pass),
-what a held creature's own arms do to its holder.
 
 **The edge and the covering (v11.54, COMBAT.md §2 — pass 1 of injury as states).** Every compiled body has an **edge** beside its grip —
 the weapon's if it has one (spears `point`; claws, fold, whips `claws`; ram `ram`), else the mouth's: `beak`, `rasp`, the hingeshells'

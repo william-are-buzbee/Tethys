@@ -136,8 +136,6 @@ function labCaption() {
     d.speed +
     ' · turn ' +
     d.turn +
-    ' · hp ' +
-    d.hp +
     ' · ' +
     d.cost +
     ' points' +
@@ -554,7 +552,7 @@ function labPanelHTML() {
   // the readout
   const st = s.stats || {};
   h += '<div class="sec" id="lab-readout"><div class="hd">readout</div>';
-  for (const k of ['speed', 'accel', 'turn', 'hp', 'mass'])
+  for (const k of ['speed', 'accel', 'turn', 'mass'])
     h +=
       '<label class="row"><span>' +
       k +
@@ -565,7 +563,7 @@ function labPanelHTML() {
       '"' +
       (st[k] !== undefined && st[k] !== null ? ' checked' : '') +
       ' title="hold a hand value">' +
-      (st[k] !== undefined && st[k] !== null ? labNum('stats.' + k, st[k], k === 'hp' ? 1 : 0.1) : '') +
+      (st[k] !== undefined && st[k] !== null ? labNum('stats.' + k, st[k], 0.1) : '') +
       '</label>';
   h +=
     '<div class="note">' +
@@ -906,7 +904,7 @@ function labDrop() {
     size: s.size,
     speed: st.speed,
     accel: st.accel,
-    hp: st.hp,
+    hp: 100, // a mortal (v11.55: hp is the forage/immortal flag only)
     role: role,
     turn: st.turn,
     cruiseF: 0.45,

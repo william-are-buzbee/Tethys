@@ -2817,8 +2817,8 @@ function compileFrame(spec) {
 // clade (shelled and armoured heavier, a gas chamber lifts); frontal area from the core and what stands out of it; thrust from the
 // propulsors (a tail, fins, a skirt, flap rows, a jet from the mantle's volume), each a number the roster calibrates; the speed as
 // sqrt(thrust/drag) scaled so the roster's finback reads its DEFS speed; turn against length and mass, plus what the fins add;
-// hp from mass and armour. mode is what the propulsors say, never a menu. Everything is at the world scale (spec.s applied).
-const DERIVE_K = {speed: 3.8, accel: 1.4, turn: 8, hp: 12};
+// no hp since v11.55 (COMBAT.md: injury is a state). mode is what the propulsors say, never a menu. Everything is at the world scale (spec.s applied).
+const DERIVE_K = {speed: 3.8, accel: 1.4, turn: 8};
 function derive(spec0) {
   const spec = fillSpec(spec0),
     s = spec.s || 1,
@@ -2912,7 +2912,6 @@ function derive(spec0) {
       (chambered ? 0.5 : 1) *
       (mode === 'flap' ? 0.7 : 1)
   );
-  const hp = DERIVE_K.hp * Math.pow(L, 1.3) * (1 + armour) * (chambered ? 1.5 : 1);
   const buoy = chambered ? 'floats' : mass > vol * 1.05 ? 'sinks' : 'neutral';
   const plausible = [];
   if (spec.size > CLADE_LIMIT[spec.clade]) plausible.push("past PLANET's size limit for the clade");
@@ -2932,7 +2931,6 @@ function derive(spec0) {
     speed: +speed.toFixed(1),
     accel: +accel.toFixed(2),
     turn: +turnK.toFixed(2),
-    hp: Math.round(hp),
     mode: mode,
     buoyancy: buoy,
     jet: jet && !legs,
@@ -3365,6 +3363,7 @@ const SPECS = {
     parts: [
       {kind: 'eyes', style: 'ring', z: 1.05, R: 0.55, pred: false},
       {kind: 'chevrons', z0: 0.8, z1: -0.85, ds: 0.25, sz: 0.14},
+      {kind: 'spines', n: 6, r: 0.07, h: 0.4, z0: 0.6, dz: 0.3, y0: 0.6, dy: 0.02, x: 0, rx: -0.5}, // the grazer's spines (v11.55, COMBAT.md §3b): a herd animal that cannot outrun a holder is a bad thing to hold
       {kind: 'mouth', style: 'tentacles', z: 1.33, r: 0.36, len: 0.42, n: 8, w: 0.12, segs: 2, idle: 0.15, kk: 0},
       {kind: 'fins', z: 0.3, R: 0.66, h: 0.45, len: 0.6, amp: 0.35, dorsal: 0.2},
       {
@@ -3470,6 +3469,7 @@ const SPECS = {
     parts: [
       {kind: 'eyes', style: 'ring', z: 2.7, R: 1.0, pred: true},
       {kind: 'chevrons', z0: 2.0, z1: -1.6, ds: 0.5, sz: 0.3},
+      {kind: 'spines', n: 7, r: 0.12, h: 0.9, z0: 1.4, dz: 0.6, y0: 1.25, dy: 0.06, x: 0, rx: -0.5}, // the basker's spines (v11.55, COMBAT.md §3b): the slowbloods' defensive venom sits on them
       {kind: 'mouth', style: 'tentacles', z: 3.25, r: 0.62, len: 1.0, n: 6, w: 0.24, segs: 2, edge: 'cut'},
       {kind: 'fins', z: 0.9, R: 1.4, h: 1.5, len: 2.0, amp: 0.15, fk: 0.7, dorsal: 0.3, col: 'rust'},
       {
@@ -4028,7 +4028,7 @@ function specExport(spec) {
   const lines = [];
   if (typeof spec.coat !== 'string')
     lines.push('// PAL: ' + id + ':' + JSON.stringify(spec.coat, (k, v) => (typeof v === 'number' ? +v.toFixed(2) : v)));
-  const d = {size: spec.size, speed: st.speed, hp: st.hp, role: role, turn: st.turn, cruiseF: 0.45, home: Math.round(20 + spec.size * 20)};
+  const d = {size: spec.size, speed: st.speed, hp: 100, role: role, turn: st.turn, cruiseF: 0.45, home: Math.round(20 + spec.size * 20)};
   if (role === 'hunter') {
     d.prey = ['darter'];
     d.detect = Math.round(10 + spec.size * 6);

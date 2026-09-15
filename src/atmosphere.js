@@ -577,7 +577,6 @@ function updateAtmosphere(dt){
   const dm=Math.round(depth);if(dm!==curDepth){curDepth=dm;biomeEl.textContent=dm>0?dm+' m':'';}
   biomeEl.style.opacity=above?0:0.55*smooth(2,8,depth);
 }
-function updateHUD(){const P=player;hpBar.style.width=(100*Math.max(0,P.hp)/P.maxhp)+'%';hpEl.style.opacity=(P.hp<P.maxhp*0.985&&!P.dead)?1:0;}
 // Compass: a strip of cardinal letters under a hairline tick, fading in while you move or turn and out when you rest.
 // North is -z. The dot below the letters is the bearing of the peak (home), shown once you're well away from it.
 let compT=0,lastHdg=-1,compOn=false;

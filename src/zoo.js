@@ -31,7 +31,7 @@ function zooShow(i){
   const sp=SPECS[r.id],dv=sp?derive(sp):null;
   zooLineEl.innerHTML=r.clade+', '+r.family+'<br>'+r.niche+'<br>half-length '+size+' m'+(r.new?'<br><i>built, not yet placed</i>':'')+
     (vk?'<br><i>coat: '+PAL_VARIANTS[vk][0]+(pal0?'':' (no palette)')+'</i>':'')+
-    (dv?'<br><i>derived: '+dv.mode+', speed '+dv.speed+' (defs '+(d.speed||'–')+'), turn '+dv.turn+' ('+(d.turn||'–')+'), hp '+dv.hp+' ('+(d.hp>1e8?'∞':d.hp)+'), '+dv.mass+' t, '+dv.cost+' points — l to edit</i>':'<br><i>a hand builder, no spec</i>');
+    (dv?'<br><i>derived: '+dv.mode+', speed '+dv.speed+' (defs '+(d.speed||'–')+'), turn '+dv.turn+' ('+(d.turn||'–')+'), '+dv.mass+' t, '+dv.cost+' points — l to edit</i>':'<br><i>a hand builder, no spec</i>');
 }
 function zooEnter(){
   if(mode!=='menu')return;mode='zoo';menuPage('none');zooEl.classList.add('on');player.pos.set(0,dispY,0); // the cells stream round player.pos: the peak, where the creature is shown (v11.47.2: the menu's camera may be anywhere)

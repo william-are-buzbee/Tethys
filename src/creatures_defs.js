@@ -1,4 +1,7 @@
 // creatures_defs.js — species stats and where they spawn. This is the file to edit for ecology changes.
+// v11.55 (COMBAT.md): there are no hit points. hp keeps two meanings only — ≤1 is forage (dies at the touch), ≥1e8 is immortal (takes no wound);
+// any other value is nothing. dmg is a bite's size for the blood and the debris. venom {kind: 'paralyse' (t seconds, against: clades) | 'sting'}
+// is the clade's chemistry (§3b): the lurker's beak paralyses, the basker's and the grazer's spines sting whatever clamps them.
 // roles: boid (a loose ribbon: flickers, darters) hunter (chases prey) graze ambush (sits, lunges; hang: from up in the structure)
 // trap (sits, strikes) watch (the curious one) coil drift wander. legs: can move out of the water (walks); everything else is a
 // swimmer and flops when beached. size: rough half-length, used for collision, LOD and floor clearance (clear overrides the
@@ -19,14 +22,14 @@ const DEFS={
   darter:{build:()=>compile(SPECS.darter),stock:8,size:0.6,speed:3.6,flee:5.5,hp:1,edible:true,food:14,role:'boid',turn:7},
   glim:{build:()=>compile(SPECS.glim),size:0.55,speed:3.0,flee:5,hp:1,edible:true,food:12,role:'boid',turn:7},
   arrow:{build:()=>compile(SPECS.arrow),size:1.0,speed:5.8,hp:1,edible:true,food:24,role:'hunter',prey:['darter','flicker','scuttle'],detect:14,reach:0.9,dmg:0,biteCD:1,home:26,cruise:8,turn:5,cruiseF:0.5,cool:2},
-  grazer:{build:()=>compile(SPECS.grazer),stock:3,size:2.6,speed:2.3,flee:4.2,hp:70,role:'graze',home:32,floor:true,turn:1.5}, // mortal since v11.26: the ridge's and the sickle's meal (it was 1e9 and every hunt ended bored)
+  grazer:{build:()=>compile(SPECS.grazer),stock:3,size:2.6,venom:{kind:'sting'},speed:2.3,flee:4.2,hp:70,role:'graze',home:32,floor:true,turn:1.5}, // mortal since v11.26: the ridge's and the sickle's meal (it was 1e9 and every hunt ended bored)
   veil:{build:()=>compile(SPECS.veil),size:16,speed:1.4,hp:1e9,role:'wander',home:200,cruise:70,turn:0.35,cruiseF:1},
   great:{build:()=>compile(SPECS.great),size:6,speed:1.0,ram:5,dmg:12,radius:9,reach:5.2,hp:1e9,role:'coil',home:45,cruise:10,turn:0.8,cruiseF:1},
   ridge:{build:()=>compile(SPECS.ridge),size:9,speed:7.8,hp:140,role:'hunter',prey:['player','grazer','picker'],detect:46,reach:6.6,dmg:32,biteCD:1.5,home:240,cruise:60,turn:1.4,cruiseF:0.4,cool:5},
   ortho:{build:()=>compile(SPECS.ortho),size:8,speed:9.5,hp:90,role:'hunter',prey:['player','needle','darter','grazer','picker'],detect:40,reach:5.6,dmg:24,biteCD:1.2,home:220,cruise:70,turn:1.6,cruiseF:0.4,cool:5},
   abyssal:{build:()=>compile(SPECS.abyssal),size:15,speed:9.2,hp:400,role:'hunter',prey:['player','comb'],cycle:10,detect:85,reach:10,dmg:55,biteCD:1.8,home:420,cruise:200,turn:1.0,cruiseF:0.45,cool:6},
   eel:{build:()=>compile(SPECS.eel),size:4,speed:6.4,hp:55,role:'hunter',prey:['player','darter','flicker'],detect:17,reach:4.0,dmg:16,biteCD:1.1,home:40,cruise:14,turn:2.5,cruiseF:0.35,cool:4},
-  lurker:{build:()=>compile(SPECS.lurker),size:2.4,hp:45,role:'ambush',prey:['player','darter','flicker','rasp','scuttle','needle','grazer'],radius:9,lunge:14,reach:3.2,dmg:20,turn:4,lodNear:75},
+  lurker:{build:()=>compile(SPECS.lurker),size:2.4,venom:{kind:'paralyse',t:7,against:{slowbloods:1,ringmouths:1}},hp:45,role:'ambush',prey:['player','darter','flicker','rasp','scuttle','needle','grazer'],radius:9,lunge:14,reach:3.2,dmg:20,turn:4,lodNear:75},
   // drifters (DRIFTERS.md): no eyes, no hunting; they sting what touches them. surface: rides the wave (ys under the crest's origin)
   jelly:{build:()=>compile(SPECS.jelly),size:1.4,hp:1e9,role:'drift',reach:1.4,dmg:4,noOrient:true},
   deepbell:{build:()=>compile(SPECS.deepbell),size:4.5,hp:1e9,role:'drift',reach:4.2,dmg:8,noOrient:true,lodNear:90},
@@ -40,7 +43,7 @@ const DEFS={
   watcher:{build:()=>compile(SPECS.watcher),size:1.8,speed:2.6,hp:1e9,role:'watch',home:30,floor:true,detect:26,stand:6,turn:2.5,cruiseF:0.4,scav:50},
   pall:{build:()=>compile(SPECS.pall),size:9,speed:1.2,hp:1e9,role:'wander',home:160,cruise:60,turn:0.3,cruiseF:0.8,deep:true,lodNear:110},
   needle:{build:()=>compile(SPECS.needle),size:0.9,speed:5.2,flee:6,hp:1,edible:true,food:16,role:'hunter',prey:['flicker','darter'],detect:12,reach:1.2,dmg:0,biteCD:1,home:24,cruise:6,turn:5,cruiseF:0.5,cool:2},
-  basker:{build:()=>compile(SPECS.basker),size:5,speed:7.2,hp:120,role:'hunter',prey:['player','picker','grazer','needle'],detect:32,reach:4.6,dmg:22,biteCD:1.4,home:70,cruise:25,turn:1.6,cruiseF:0.4,cool:5},
+  basker:{build:()=>compile(SPECS.basker),size:5,venom:{kind:'sting'},speed:7.2,hp:120,role:'hunter',prey:['player','picker','grazer','needle'],detect:32,reach:4.6,dmg:22,biteCD:1.4,home:70,cruise:25,turn:1.6,cruiseF:0.4,cool:5},
   stone:{build:()=>compile(SPECS.stone),size:3,hp:200,role:'trap',prey:['player','picker','rasp','grazer'],cycle:5,detect:2.8,reach:3.0,dmg:22,strike:{tell:0.15,dur:0.35},cool:2.5,turn:1.5,floor:true,clear:0.8},
   crusher:{build:()=>compile(SPECS.crusher),size:4,speed:5.6,hp:110,role:'hunter',prey:['rasp','scuttle','player'],preyClade:'coil',scav:40,detect:24,reach:4.2,dmg:28,biteCD:1.5,strike:{tell:0.3,dur:0.35,speed:9,range:1.7},home:50,cruise:14,turn:2,cruiseF:0.4,cool:4},
   trap:{build:()=>compile(SPECS.trap),size:2,hp:60,role:'trap',prey:['player','flicker','needle','darter','scuttle'],detect:4.5,reach:3.3,dmg:24,strike:{tell:0.35,dur:0.3},cool:3,turn:6,floor:true,clear:0.45},

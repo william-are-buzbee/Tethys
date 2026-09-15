@@ -3736,3 +3736,57 @@ m at half a second and 0 at nine, the player at 13 hp by then (the damage is v11
 **Unseen, ask in this order:** (1) bodies bash closer now — every creature's contact shrank by up to 2 m at the nose: does a ridge's nose sink into
 the player, a hunter into the flora, the finback player's own nose into what it bites? (2) a held finback with the ridge's jaws at its flank in
 third person, against the v11.31 look; (3) the lab's `edge` row on the petals.
+
+
+## v11.55 — COMBAT pass 2: the states. No hit points; the gape, the pin and the placed act; wounds that bleed and slow; paralysis and the sting; autotomy; death ends the slot's animal (15 Sep 2026)
+
+The person: "Awesome. Lets move forward", and the three answers that gated it (COMBAT.md §9): autotomy automatic, the finback born with plain
+petals ("no to from birth"), death ends the slot. COMBAT.md §8's pass 2, built.
+
+**Built.**
+- **No hit points.** `hp` and `maxhp` are gone from the player, `derive` and the lab's readout; `DEFS.hp` keeps two meanings only (≤1 forage, ≥1e8
+  immortal) and `dmg` is a bite's size for the blood and the debris. The health bar is gone from the HUD (COMBAT.md §5: the body shows the damage).
+  `HUNT_REGEN` and the player's 8-second heal are gone with them. Eating feeds nothing yet — growth is what it will buy (DIRECTION).
+- **The three questions** (combat.js): a slowblood **swallows** what fits its mouth — the prey's widest capsule against its gape × `GAPE_K` 1.15
+  (ringmouths and hingeshells take forage in pieces at the touch, by mass as before); a hold kept past its **pin time** (`PIN.t` 2.5 s ×
+  (m_held/m_holder)^0.6, floored at 0.3, capped at 3) with the struggle under `PIN.pull` is a pin, and a paralysed body is pinned at once;
+  then the **placed act** by the edge's verdict where the hold is (`EDGE`, v11.54): `yes`/`nape` — opened (cut), skewered (point), crushed
+  (crush), bitten at the nerve cord (beak), dismembered (claws, shred); `thrash` — the next bite on the clock tears the piece out; `joint`,
+  `time`, `no` — the hunter lets go and looks elsewhere for `PIN.bored` 8 s. A kill goes through `kill()` as before (a carcass, or nothing if
+  swallowed); the player's is `die(cause)`. The player's own hold acts on its bite: pinned and through, the bite kills; the finback's plain
+  petals get `no` on a hide and only tear. Past 95 m from the player there is no rope and no struggle, so a far fight resolves on the pin
+  clock alone (the first build pinned only inside the near-rope block and a far fight never ended; `test/combat.js` §1 found it).
+- **Wounds** (`wound`): no number lands. The body bleeds for its clade's clotting time (`BLEED_T`: ringmouths 6 s, slowbloods 14, hingeshells 3,
+  drifters 4; a second bite restarts the clock), swims at `WOUND_SLOW` 0.8 while it bleeds (creatures through `seek`/`seekAway`, the player
+  through `slowOf`), leaves a trickle that is faster while fresh, and never dies of it. A hunter or ambusher bitten `FLEE.n` 3 times by the
+  player (a count that decays by one every 8 s) leaves — the lost part's stand-in until pass 3.
+- **The chemistry** (COMBAT.md §3b): `venom` on DEFS and the coil clade. **Paralysis** — the lurker's beak (7 s) and the coilshell player's
+  (5 s), against slowbloods and ringmouths, carried by the holder's first bite in the hold: the held body's steering is off (a creature drifts
+  and sinks a little, the player's keys do nothing, no ability, no withdraw) and it is pinned at once — which is how a coilshell with a
+  0.6 grip kills. **The sting** — the basker's and the grazer's new spine rows (`spines` parts on both specs): a jaw or arms on them lets
+  go after `STING.t` 0.45 s, swims at half speed for 6 s and waits 6 s before hunting again; only a holder under `STING.mass` 4 × the spined
+  body's mass is put off (a ridge on a grazer swallows the spines; the finback player is stung off a grazer and cannot grab for 6 s). The
+  drifters' cells sting instead of wounding. The hingeshells' poison waits for pass 4 (it needs where an animal fed).
+- **Autotomy** (automatic): a ringmouth about to be pinned by a jaw or claws (0.7 of the pin time) drops the held arm — the chain's frames
+  collapse to its base in `rigSkin` (`c.gone`), the hold goes with it, the holder keeps the arm (`AUTOTOMY.cool` 6 s, a tenth of its hunger),
+  and the arm regrows `AUTOTOMY.regrow` 5 game days later; never the last `keep` 2 arms. The soft-arm player drops arms the same way.
+- **Death ends the slot's animal** (save.js `slotDeath`): the cause is written to the slot (`deaths`: cause, day, playT), the next animal
+  waits at the peak, the menu comes back from the spot of the death with the cause as its note, and the slot's row says how many died and
+  how. Continue starts the new animal in the same world, the ledger and the clock as they stand. Without a slot (the tests, the lab) the
+  respawn as before.
+- **`test/combat.js`** reads the states: the eel pins the finback 0.73 s after the hold (64 against 7) and, pinned, tears it open at 1.6 s; a wound
+  bleeds 14 s on an eel and closes; the lurker's venom stops an eel; the grazer's spines sting the finback off in 0.42 s; the table of every
+  hunter of the player ends in an outcome — the crusher, stone, basker, ridge and abyssal **swallow** the finback 0.7 s into the hold, the
+  sickle skewers it, the eel tears it open, the lurker and the ortho bite the nerve cord, the trap and the hook let go (claws and shred on a
+  hide: `no`). `test/smoke.js` follows the death to the menu and continues the slot as a new animal.
+
+**Seen** (dev.html in the app's browser, the loop driven by hand): a lurker lunging at the finback, the hold line `lurker arms/beak on you
+hide: nape`, the kill "bitten at the nerve cord by a lurker", the fade, the menu opening over the lurker with the finback in its arms and the
+cause as the note, the slot carrying `{cause, day 0, playT 4}`; a hook on the soft-arm, the arm dropped 0.87 s into the hold (`armsLost` 1,
+chain 0 gone, the regrowth at t + 12000 s), the hold gone with it; the basker's and the grazer's spine rows (`test/preview/basker.png`,
+`grazer.png`: a short row along the back ahead of the dorsal fin).
+**Unseen, ask in this order:** (1) **the window** — a ridge, basker or crusher swallows the finback 0.75 s into its hold with no answer but
+the blow: is that the fear, or is `PIN.t` (2.5) or its floor (0.3) to rise? (2) the dropped arm's look — the chain collapses to a point at the
+base; a stump would be pass 3's spec edit; (3) the paralysed finback in first person: 5–7 s of nothing answering, then the beak; (4) the
+grazer's and the basker's spines in play at their scale (`spines` on both specs; the basker's are 1 m); (5) the slot's row with a death on it,
+and the note's wording; (6) hunters bitten three times leaving — too easy a way off a lurker?

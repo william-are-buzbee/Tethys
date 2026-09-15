@@ -9,15 +9,15 @@ const fs=require('fs'),path=require('path');
 const ROOT=path.join(__dirname,'..');
 const ORDER=fs.readFileSync(path.join(ROOT,'src','order.txt'),'utf8').split('\n').map(s=>s.trim()).filter(s=>s&&s[0]!=='#');
 let js=ORDER.map(n=>fs.readFileSync(path.join(ROOT,'src',n+'.js'),'utf8')).join('\n');
-js+='\nglobal.__dbg=()=>({cells:chunks.size,creatures:creatures.length,visible:visibleCreatures,pos:[player.pos.x|0,player.pos.y|0,player.pos.z|0],ground:groundAt(player.pos.x,player.pos.z)|0,sub:+(function(){const ch=chunkAt(player.pos.x,player.pos.z);return ch?ch.f(player.pos.x,player.pos.z)[0]:sample(player.pos.x,player.pos.z).f[0];})().toFixed(2),lights:lightSources.length,hp:player.hp|0});';
-js+='\nglobal.__hurt=(d)=>hurtPlayer(d,creatures[0]&&creatures[0].pos);';
+js+='\nglobal.__dbg=()=>({cells:chunks.size,creatures:creatures.length,visible:visibleCreatures,pos:[player.pos.x|0,player.pos.y|0,player.pos.z|0],ground:groundAt(player.pos.x,player.pos.z)|0,sub:+(function(){const ch=chunkAt(player.pos.x,player.pos.z);return ch?ch.f(player.pos.x,player.pos.z)[0]:sample(player.pos.x,player.pos.z).f[0];})().toFixed(2),lights:lightSources.length,hp:player.dead?0:1|0});';
+js+='\nglobal.__hurt=(d)=>die("the test");';
 js+='\nglobal.__eco=()=>{let s=0,nan=0;for(const N of POP.n)for(let c=0;c<N.length;c++){if(N[c]!==N[c])nan++;s+=N[c];}return {ledger:s|0,nan,kills:POP.kills,starved:POP.starved|0,laid:POP.laid,hatched:POP.hatched,eggs:eggs.length,carcasses:carcasses.length,juv:creatures.filter(c=>c.alive&&c.def.juv).length};};'
 js+='\nglobal.__fx=(k)=>{fxToggle(k);return FX[k];};'; // v11.40: the effects list's switch (the de-res on: fxApply, the shimmer hidden)
 js+='\nglobal.__mouse=()=>({yaw:player.yaw,pitch:player.pitch,biteCD:player.biteCD,grab:mouseGrab,locked:locked});'; // v11.31.4: the mouse reaches input.js at all
 js+='\nglobal.__zoo={n:()=>ROSTER.length,mode:()=>mode,specs:()=>Object.keys(SPECS),labLoad:(id)=>labLoad(SPECS[id]),labBlank:(c)=>labLoad(SPEC_BLANK[c]),labAdd:(k)=>{lab.spec.parts.push({kind:k,style:stylesFor(k,lab.spec.clade)[0]});labBuild();labRender();}};';
 js+='\nglobal.__start=(i)=>{choose(i);};'; // v11.47: the bare start (menu.js choose) for the clades the menu no longer offers; stub.js __run
 // the saves (v11.47): the slot the menu wrote, esc to the menu, continue from the list, and what came back
-js+='\nglobal.__save={slots:()=>saveList.map(r=>({id:r.id,name:r.name,clade:r.clade,playT:r.playT})),cur:()=>curSave&&curSave.id,now:()=>saveNow(),menu:()=>{const h=global.__h;h["win:keydown"].forEach(f=>f({code:"Escape",preventDefault(){}}));},cont:(id)=>{saveRefresh();const r=saveList.find(r=>r.id===id);if(!r)throw new Error("no slot "+id);startFrom(r);},del:(id)=>{storeDel(id);saveRefresh();},t:()=>t,pop:()=>{let s=0;for(const N of POP.n)for(let c=0;c<N.length;c++)s+=N[c];return s;},seen:()=>PROFILE.seen.sp.length,creator:()=>PROFILE.creator,locked:()=>locked};';
+js+='\nglobal.__save={slots:()=>saveList.map(r=>({id:r.id,name:r.name,clade:r.clade,playT:r.playT,deaths:(r.deaths||[]).length})),cur:()=>curSave&&curSave.id,now:()=>saveNow(),menu:()=>{const h=global.__h;h["win:keydown"].forEach(f=>f({code:"Escape",preventDefault(){}}));},cont:(id)=>{saveRefresh();const r=saveList.find(r=>r.id===id);if(!r)throw new Error("no slot "+id);startFrom(r);},del:(id)=>{storeDel(id);saveRefresh();},t:()=>t,pop:()=>{let s=0;for(const N of POP.n)for(let c=0;c<N.length;c++)s+=N[c];return s;},seen:()=>PROFILE.seen.sp.length,creator:()=>PROFILE.creator,locked:()=>locked};';
 const tmp=path.join(require('os').tmpdir(),'tethys_bundle.js');
 fs.writeFileSync(tmp,'(function(){"use strict";\n'+js+'\n})();');
 let failed=false;
@@ -76,8 +76,13 @@ for(const pick of [0,1,2]){
       key('KeyL');__step(3);if(__zoo.mode()!=='lab')throw new Error('l in play did not open the lab');
       __zoo.labLoad('lash');__step(3);__zoo.labAdd('weapon');__step(4);key('Space');__step(20);key('KeyR');__step(3);h['win:keyup'].forEach(f=>f({code:'KeyR',preventDefault(){}})); // r up again: held, it is the grab (v11.31)
       key('KeyL');__step(3);if(__zoo.mode()!=='play')throw new Error('the lab did not return to play');console.log('  lab from play: ok');}
-    __hurt(1e4);__step(20);const d=__dbg();console.log('  killed and respawned:',JSON.stringify(d));
-    if(d.hp<=0||Math.hypot(d.pos[0],d.pos[2])>20)throw new Error('respawn did not put the player back at the peak with health');
+    __hurt(1e4);__step(20);
+    if(pick===1){ // a slot (v11.55, COMBAT.md §9): the death ends the animal — the menu comes back, the slot carries the death, continue puts a new animal at the peak
+      const S0=global.__save;if(__zoo.mode()!=='menu')throw new Error('the death did not return to the menu');
+      const dead=S0.slots().find(r=>r.deaths>0);if(!dead)throw new Error('the death was not written to the slot');
+      S0.cont(dead.id);__step(3);if(__zoo.mode()!=='play')throw new Error('continue after a death did not start play');}
+    const d=__dbg();console.log('  killed and '+(pick===1?'continued as a new animal':'respawned')+':',JSON.stringify(d));
+    if(d.hp<=0||Math.hypot(d.pos[0],d.pos[2])>20)throw new Error('respawn did not put the player back at the peak alive');
     if(pick===1){
       const key=(code,down)=>h['win:'+(down?'keydown':'keyup')].forEach(f=>f({code,preventDefault(){}}));
       const mm=e=>h['win:mousemove'].forEach(f=>f(e));

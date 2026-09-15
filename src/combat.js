@@ -12,6 +12,14 @@
 // at the first touch — a hold is for prey that can fight. The player's grab (right mouse or r, held) is the same hold with the
 // clade's grip, and its bite while holding is a tear. Blood is the clade's (PLANET: copper, iron, vanadium), a pooled point cloud
 // that drifts with the water and the bodies. Where the numbers are: GRIP (the knobs by kind), HOLD_BIG, WHOLE.
+// v11.55 (COMBAT.md, pass 2 — the states): there are no hit points. A fight asks three questions of the two builds — can I swallow it (the gape by
+// geometry, GAPE_K), can I keep hold of it (the struggle as before, and a hold kept past its pin time with the struggle under PIN.pull is a pin),
+// does my edge get through its covering where I hold it (EDGE) — and the answer is a state, not a number: swallowed, opened, skewered, crushed,
+// bitten at the nerve cord, dismembered (a kill), or nothing this edge can do here (the hunter lets go). A bite that is not the placed act is a
+// wound: it bleeds for the clade's clotting time (BLEED_T), slows the body while it bleeds (WOUND_SLOW), and never kills by itself; a hunter bitten
+// FLEE.n times by the player leaves. The chemistry (§3b): a holder's first bite carries its venom — the lurker's and the coilshell's paralysis pins
+// at once — and a jaw or arms on a spined slowblood (the basker, the grazer) is stung off it (STING). A ringmouth about to be pinned drops the
+// held arm (AUTOTOMY; the person, 15 Sep 2026: automatic) and it regrows by the clock. The player's death ends the slot's animal (save.js slotDeath).
 const holds=[]; // {a: holder, b: held, K: GRIP[kind], la: the grip in a's frame, lb: the hold point in b's frame, len: the rope, biteT, load, pull, t}
 // by the way a body takes hold (creatures_spec.js compile → b.grip). k: the grip's strength, a force per mass^(2/3) (muscle scales with
 // cross-section); cd: seconds between bites in the hold; first: the share of dmg on the clamp; bite: the share per bite in the hold;
@@ -44,6 +52,14 @@ function thruOf(edge,cover){const E=EDGE[edge];return E?(E[cover]||'no'):'no';}
 let bpIdx=-1; // the capsule bodyPointNear last chose (an index into shapesW, which is the hit list's order)
 const HOLD_BIG=0.6; // a jaw lets go after a bite on prey heavier than this share of its own mass (bite and spit)
 const WHOLE=0.12,WHOLE_P=0.25; // forage up to this share of the eater's mass is swallowed whole at the touch (the creatures; the player's gulp is WHOLE_P — arrows and needles, not a picker, which is killed and eaten at)
+// the states' knobs (v11.55)
+const PIN={t:2.5,pull:0.5,mass:0.6,bored:8}; // pinned: a hold kept t seconds × (m_held/m_holder)^mass (0.3..3) with the struggle under pull of the grip; bored: a hunter's cooldown when its edge can do nothing where it holds
+const GAPE_K=1.15; // a mouth swallows a body whose widest capsule is under gape × this (prey deform; a fish takes prey to about its mouth's width)
+const BLEED_T={ringmouths:6,slowbloods:14,hingeshells:3,drifters:4}; // seconds an open wound bleeds before it clots, by clade (a ringmouth clots fast, a slowblood slowly, a hingeshell barely bleeds)
+const WOUND_SLOW=0.8; // a body's speed while it bleeds
+const FLEE={n:3,decay:8}; // a hunter or ambusher bitten n times by the player (a count that decays by one every decay seconds) leaves — the lost part's stand-in until pass 3
+const STING={t:0.45,slow:0.5,dur:6,cool:6,mass:4}; // a jaw or arms on a spined slowblood: a holder under mass × the spined body's mass lets go after t seconds, swims at slow for dur, waits cool before it hunts again (a ridge on a grazer swallows the spines)
+const AUTOTOMY={keep:2,regrow:5,cool:6,meal:0.1}; // a ringmouth drops a held arm (never its last keep), it regrows in regrow game days; the holder keeps the arm (a cooldown, a little of its hunger)
 const HOLD_DRAG=3; // per second: how fast the two bodies' velocities are pulled together by the grip
 const PLAYER_GRIP={soft:1.2,fin:1.0,coil:0.6}; // the clades' grips: the jetter's arms are for this; the coilshell's are short
 const BLOOD_COL={ringmouths:[0.16,0.24,0.34],slowbloods:[0.32,0.03,0.03],hingeshells:[0.52,0.5,0.32],drifters:[0.6,0.6,0.6]}; // copper, iron, vanadium (PLANET)
@@ -70,7 +86,7 @@ function startHold(a,b){
   freshShapes(a);freshShapes(b);
   const wa=localToWorld(a,g.at,T1),wb=bodyPointNear(b,wa,T2),lb=worldToLocal(b,wb,[0,0,0]);
   const edge=edgeOf(a),cover=coverAt(b,bpIdx); // what the hold is on and what the edge can do there (v11.54; measured, not yet acted on)
-  const h={a:a,b:b,K:K,kind:g.kind,la:g.at,lb:lb,len:Math.max(0,len3(wa.x-wb.x,wa.y-wb.y,wa.z-wb.z)),biteT:K.cd,load:0,pull:0,t:0,ci:bpIdx,edge:edge,cover:cover,thru:thruOf(edge,cover)};
+  const h={a:a,b:b,K:K,kind:g.kind,la:g.at,lb:lb,len:Math.max(0,len3(wa.x-wb.x,wa.y-wb.y,wa.z-wb.z)),biteT:K.cd,load:0,pull:0,t:0,ci:bpIdx,edge:edge,cover:cover,thru:thruOf(edge,cover),pinned:false,pinT:pinTime(a,b),stingT:stings(b)&&(g.kind==='jaw'||g.kind==='arms')&&massOf(a)<STING.mass*massOf(b)?STING.t:0,thrash:false,bit:false}; // the states (v11.55): pinned at pinT unless the held tears free; a spined slowblood stings the mouth or arms on it
   holds.push(h);a.hold=h;b.held=(b.held||0)+1;
   const dmg=dmgOf(a)*K.first*(a===player?0.5:1);
   if(dmg>0)wound(b,dmg,a,wb,'clamp');else{thump(0.3,90,40,b===player?null:wb,0.8,0.06);bloodBurst(wb,3,cladeOf(b));}
@@ -83,7 +99,7 @@ function releaseAll(o){for(let i=holds.length-1;i>=0;i--){const h=holds[i];if(h.
 function combatBite(a,b){
   if(b===player){if(player.dead)return;if(player.withdrawn){a.bored++;return;}}
   else{if(!b.alive)return;if(b.def.hp>=1e8){a.bored++;return;}
-    if(b.def.hp<=1||b.def.edible&&massOf(b)<=WHOLE*massOf(a)){kill(b,a);dropTarget(a,6);return;}}
+    const sw=swallows(a,b);if(b.def.hp<=1||sw){kill(b,a,sw);dropTarget(a,6);return;}} // forage dies at the touch; a slowblood gulps what fits its gape (v11.55)
   if(!gripOf(a)){wound(b,dmgOf(a),a,null,'snap');return;}
   if(a.hold){if(a.hold.b===b)return;releaseHold(a.hold);}
   startHold(a,b);
@@ -131,32 +147,79 @@ function updateHolds(dt){
       if(b===P)P.heldK=Math.min(P.heldK,K.slow);
       (h.at||(h.at=V3())).copy(B);h.near=true;
     }else h.near=false;
+    // the states, near or far (v11.55, COMBAT.md §2–3): the sting lets the holder go; a ringmouth about to be pinned drops the held arm; a hold
+    // kept past its pin time with the struggle under PIN.pull is a pin (a paralysed body is pinned at once), and the placed act follows from the
+    // edge's verdict where the hold is. Past 95 m there is no rope and no struggle, so a far fight resolves on the pin clock alone
+    {const at=h.near?h.at:b.pos;
+      if(h.stingT>0){h.stingT-=dt;if(h.stingT<=0){stung(a,b,at);releaseHold(h);continue;}}
+      const para=(b===P?P.paraT:b.paraT)>0;
+      if(!h.pinned&&(para||h.t>h.pinT*0.7)&&a!==P&&h.kind!=='arms'&&canDropArm(b)){autotomy(h);continue;}
+      if(!h.pinned&&(para||(h.t>h.pinT&&h.pull<PIN.pull))){h.pinned=true;if(a!==P){placedAct(h);if(holds.indexOf(h)<0)continue;}}}
     // the bites, on the hold's clock (the player bites by hand: playerBite)
     if(a!==P){h.biteT-=dt;if(h.biteT<=0){h.biteT=K.cd;const at=h.near?h.at:b.pos;wound(b,dmgOf(a)*K.bite,a,at,'bite');
+      if(!h.bit){h.bit=true;envenom(a,b);} // the first bite in the hold carries the holder's venom, if it has one (COMBAT.md §3b)
+      if(h.thrash&&holds.indexOf(h)>=0){killBy(h,'thrash');continue;} // pinned, the edge through with a thrash: this bite tears the piece out
       if(h.kind==='jaw'&&mb>HOLD_BIG*ma&&holds.indexOf(h)>=0){a.biteT=(a.def.biteCD||1.2)*2;releaseHold(h);}}}
   }
 }
+// ---------- the states (v11.55) ----------
+function widestR(o){const H=o.b&&o.b.hit,s=o.b&&o.b.g?o.b.g.scale.x:1;let r=0;if(H)for(const h of H)if(h.r*s>r)r=h.r*s;return r;}
+// a slowblood swallows what fits its mouth (the gape by geometry: the prey's widest capsule against gape × GAPE_K); a ringmouth or a hingeshell takes
+// forage in pieces at the touch, by mass as before (WHOLE). The player is swallowed like anything else — the finback's death (COMBAT.md §3)
+function swallows(a,b){if(cladeOf(a)==='slowbloods')return widestR(b)<=(a.b.gape||0)*GAPE_K;return b!==player&&!!b.def.edible&&massOf(b)<=WHOLE*massOf(a);}
+function gulps(tg){const P=player;if(!tg.def||!tg.def.edible)return false;return P.clade.id==='fin'?widestR(tg)<=(P.b.gape||0)*GAPE_K:massOf(tg)<=WHOLE_P*P.mass;} // the player's gulp: the finback by its gape, the beaks by mass (pieces)
+function pinTime(a,b){return PIN.t*clamp(Math.pow(massOf(b)/massOf(a),PIN.mass),0.3,3);}
+function venomOf(o){return o===player?(player.clade&&player.clade.venom)||null:(o.def&&o.def.venom)||null;}
+function stings(o){const v=venomOf(o);return !!(v&&v.kind==='sting');}
+function stung(a,b,at){if(a===player){player.stungT=STING.dur;player.grabCD=STING.cool;hurtPlayer(0,null);}else{a.stungT=STING.dur;dropTarget(a,STING.cool);}thump(0.35,160,70,a===player?null:at,1.2,0.05);bloodBurst(at,2,cladeOf(a));}
+function stingPlayer(){player.stungT=STING.dur;hurtPlayer(0,null);} // the drifters' cells (creatures_ai.js): a sting, no wound
+function envenom(a,b){const v=venomOf(a);if(!v||v.kind!=='paralyse'||!v.against[cladeOf(b)])return;if(b===player){if(player.withdrawn)return;player.paraT=v.t;}else b.paraT=v.t;}
+function armsOf(o){const R=o.b&&o.b.rigs;if(!R)return null;let best=null;for(const r of R)if(r.chains.length>=4&&(!best||r.chains.length>best.chains.length))best=r;return best;} // the arm ring: the rig with the most chains
+function canDropArm(o){if(cladeOf(o)!=='ringmouths')return false;const rig=armsOf(o);if(!rig)return false;return (o.armsLost||0)<rig.chains.length-AUTOTOMY.keep;}
+// autotomy (COMBAT.md §3; the person, 15 Sep 2026: automatic): the held arm is dropped, the hold goes with it, the holder keeps the arm
+function autotomy(h){const a=h.a,b=h.b,rig=armsOf(b);let ch=null;for(const c of rig.chains)if(!c.gone){ch=c;break;}if(!ch)return;
+  ch.gone=true;b.armsLost=(b.armsLost||0)+1;(b.regrow||(b.regrow=[])).push(t+AUTOTOMY.regrow*DAY_S);
+  const at=h.at||b.pos;bloodBurst(at,10,cladeOf(b));hitFx(b,a,at,12);thump(0.4,120,50,b===player?null:at,1,0.06);
+  releaseHold(h);if(a!==player){dropTarget(a,AUTOTOMY.cool);a.hunger=Math.max(0,a.hunger-AUTOTOMY.meal);}else player.grabCD=1.5;
+  if(b===player)hurtPlayer(0,null);}
+function regrowTick(o){const R=o.regrow;if(!R||!R.length||t<R[0])return;R.shift();const rig=armsOf(o);if(rig)for(const c of rig.chains)if(c.gone){c.gone=false;break;}o.armsLost=Math.max(0,(o.armsLost||0)-1);}
+// the placed act once a hunter has pinned its prey: by the gape, else by the edge's verdict where it holds. The player's own hold acts on its bite
+function placedAct(h){const a=h.a,b=h.b;if(b!==player&&!b.alive)return;let act=null;
+  if(cladeOf(a)==='slowbloods'&&swallows(a,b))act='swallowed';
+  else{const v=h.thru,e=h.edge;if(v==='yes'||v==='nape')act=actOf(e);else if(v==='thrash')act='thrash';}
+  if(!act){dropTarget(a,PIN.bored);return;} // nothing this edge can do where it holds: the hunter lets go and looks elsewhere
+  if(act==='thrash'){h.thrash=true;return;} // the next bite on the clock tears the piece out
+  killBy(h,act);}
+function actOf(e){return e==='point'?'skewered':e==='crush'?'crushed':e==='cut'?'opened':e==='beak'?'bitten at the nerve cord':'dismembered';}
+function killBy(h,act){const a=h.a,b=h.b,at=h.at||b.pos,cl=cladeOf(b);bloodBurst(at,16,cl);hitFx(b,a,at,24);thump(0.6,90,40,b===player?null:at,1,0.1);
+  if(b===player){die((act==='swallowed'?'swallowed by':act==='thrash'?'torn open by':act+' by')+' a '+(a===player?'player':a.kind));return;}
+  kill(b,a,act==='swallowed');}
+function slowOf(o){return (o.bleed>0?WOUND_SLOW:1)*(o.stungT>0?STING.slow:1);} // a body's speed factor by its states (creatures_ai.js seek, player.js)
+// once a frame: the states' clocks on the player and every creature (the creatures' paralysis is read in creatures_ai.js updateCreatures)
+function updateStates(dt){const P=player;P.paraT=Math.max(0,(P.paraT||0)-dt);P.stungT=Math.max(0,(P.stungT||0)-dt);if(P.regrow)regrowTick(P);
+  for(const c of creatures){if(!c.alive)continue;if(c.paraT>0)c.paraT-=dt;if(c.stungT>0)c.stungT-=dt;if(c.hurtN>0)c.hurtN=Math.max(0,c.hurtN-dt/FLEE.decay);if(c.regrow)regrowTick(c);}}
 // ---------- wounds ----------
-// dmg lands as a share now and a share that bleeds out (o.bleed: hp still to lose), kind 'snap' (a free bite: knocked back, as before),
-// 'clamp' (taken hold of), 'bite' (in the hold: a jerk), 'tear' (the player's bite on what it holds). An immortal body takes no wound
+// a bite that is not the placed act (v11.55): no number lands. The body bleeds for its clade's clotting time (BLEED_T, seconds — a second bite
+// restarts the clock, it does not add), swims slower while it bleeds (slowOf), leaves a trickle in the water, and never dies of it. kind 'snap'
+// (a free bite: knocked back), 'clamp' (taken hold of), 'bite' (in the hold: a jerk), 'tear' (the player's bite on what it holds). dmg is the
+// bite's size for the blood and the debris only. An immortal body takes no wound
 function wound(o,dmg,by,at,kind){
-  const held=kind!=='snap',bl=dmg*(kind==='clamp'?0.25:0.4),imm=dmg-bl;
+  const held=kind!=='snap',cl=cladeOf(o),T=BLEED_T[cl]||6;
   if(!at)at=o.pos;
   if(o===player){const P=player;if(P.dead)return;if(P.withdrawn){if(by&&by!==player)by.bored++;return;}
-    hurtPlayer(imm,held?null:(by&&by!==player?by.pos:null));if(P.dead)return;P.bleed=(P.bleed||0)+bl;P.woundL=worldToLocal(P,at,P.woundL||[0,0,0]);
+    hurtPlayer(0,held?null:(by&&by!==player?by.pos:null));if(P.dead)return;P.bleed=Math.max(P.bleed||0,T);P.woundL=worldToLocal(P,at,P.woundL||[0,0,0]);
     if(held&&by&&by!==player){const s=GRIP[by.hold&&by.hold.K?by.hold.kind:'jaw'].shake;P.vel.x+=rnd(-s,s);P.vel.y+=rnd(-s,s)*0.5;P.vel.z+=rnd(-s,s);}}
-  else{if(!o.alive)return;if(o.def.hp>=1e8){if(by&&by!==player)by.bored++;bloodBurst(at,2,cladeOf(o));return;}
-    o.hp-=imm;o.bleed=(o.bleed||0)+bl;o.lastHurt=t;o.woundL=worldToLocal(o,at,o.woundL||[0,0,0]);
-    if(o.hp<=0){bloodBurst(at,10+dmg*0.6,cladeOf(o));hitFx(o,by,at,dmg*1.5);kill(o,by);return;}} // the kill leaves the most scraps (fx.js, v11.53)
-  bloodBurst(at,4+dmg*0.4,cladeOf(o));hitFx(o,by,at,dmg); // the flinch, the flush, the debris (fx.js, v11.53)
+  else{if(!o.alive)return;if(o.def.hp>=1e8){if(by&&by!==player)by.bored++;bloodBurst(at,2,cl);return;}
+    o.bleed=Math.max(o.bleed||0,T);o.lastHurt=t;o.woundL=worldToLocal(o,at,o.woundL||[0,0,0]);o.hurtN=(o.hurtN||0)+1;
+    if(by===player&&(o.def.role==='hunter'||o.def.role==='ambush')&&o.hurtN>=FLEE.n&&o.state!=='flee'){dropTarget(o);o.state='flee';o.fleeT=9;}} // bitten enough, a hunter leaves you
+  bloodBurst(at,4+dmg*0.4,cl);hitFx(o,by,at,dmg); // the flinch, the flush, the debris (fx.js, v11.53)
   if(o!==player)thump(clamp(0.15+dmg*0.01,0.15,0.5),110,45,at,0.9,0.05);
 }
-// bleeding, once a frame: a wound loses hp for the seconds after and closes; the wounded leave a trickle in the water
+// bleeding, once a frame: the clock runs down and the wound trickles, faster while it is fresh
 function updateWounds(dt){
   const P=player;
-  const drain=(o)=>{const b=o.bleed;if(!(b>0))return false;const loss=Math.min(b,(0.4+0.12*b)*dt);o.bleed=Math.max(0,b-loss-0.25*dt);
-    if(o===P){P.hp-=loss;P.lastHurt=t;if(P.hp<=0&&!P.dead)die();}else{o.hp-=loss;o.lastHurt=t;if(o.hp<=0&&o.alive){kill(o,null);return false;}}
-    o.bleedT=(o.bleedT||0)-dt;if(o.bleedT<=0&&o.g.visible!==false){o.bleedT=Math.max(0.08,1.2/(1+b));const w=localToWorld(o,o.woundL||[0,0,0],HP1);bloodBurst(w,1,cladeOf(o),0.15);}
+  const drain=(o)=>{if(!(o.bleed>0))return false;o.bleed=Math.max(0,o.bleed-dt);if(o===P)P.lastHurt=t;else o.lastHurt=t;
+    o.bleedT=(o.bleedT||0)-dt;if(o.bleedT<=0&&o.g.visible!==false){o.bleedT=Math.max(0.1,0.3+0.9*(1-Math.min(1,o.bleed/6)));const w=localToWorld(o,o.woundL||[0,0,0],HP1);bloodBurst(w,1,cladeOf(o),0.15);}
     return true;};
   if(!P.dead&&mode==='play')drain(P);else P.bleed=0;
   for(const c of creatures){if(c.alive&&c.bleed>0)drain(c);}
@@ -203,7 +266,7 @@ function playerGrab(want,dt){
   const P=player;P.grabKey=want;P.grabCD=Math.max(0,(P.grabCD||0)-dt);
   if(!want||P.hold||P.grabCD>0||P.dead||P.withdrawn||!gripOf(P))return;
   const tg=playerTarget(false);if(!tg)return;
-  if(tg.def.edible&&massOf(tg)<=WHOLE_P*P.mass){P.grabCD=0.3;return;} // small enough to eat: the bite does that
+  if(gulps(tg)){P.grabCD=0.3;return;} // small enough to eat: the bite does that
   startHold(P,tg);if(P.b.rigs)P.grab=tg;
 }
 // the nearest live body (or carcass, if `dead`) within reach and ahead: the bite's rule
@@ -217,13 +280,14 @@ function playerTarget(dead){const P=player;T3.set(0,0,1).applyQuaternion(P.g.qua
 function playerBite(){
   const P=player;if(mode!=='play'||P.dead||P.withdrawn||P.biteCD>0)return;P.biteCD=0.5;thump(0.35,120,50,null,1.6,0.03);P.pulse=Math.max(P.pulse,0.6);P.snapT=0.1;
   const best=P.hold?P.hold.b:playerTarget(true);if(!best)return;const d=best.def;P.nudgeT=0.15;(P.nudgeD||(P.nudgeD=V3())).copy(best.pos).sub(P.pos).normalize(); // the camera nudged toward the bite (v11.53)T3.set(0,0,1).applyQuaternion(P.g.quaternion);
-  if(best.dead){const m=Math.min(best.flesh,P.clade.size*0.5);best.flesh-=m;P.hp=Math.min(P.maxhp,P.hp+m*6);bloodBurst(best.pos,5,cladeOf(best),0.5);return;} // a carcass: a mouthful
-  if(d.edible&&massOf(best)<=WHOLE_P*P.mass){bloodBurst(best.pos,4,cladeOf(best));kill(best,player,true);P.hp=Math.min(P.maxhp,P.hp+d.food);return;} // eaten whole (v11.26: no respawn; the ledger is debited)
+  if(best.dead){const m=Math.min(best.flesh,P.clade.size*0.5);best.flesh-=m;bloodBurst(best.pos,5,cladeOf(best),0.5);return;} // a carcass: a mouthful (it feeds nothing yet — growth is what eating will buy, DIRECTION)
+  if(gulps(best)){bloodBurst(best.pos,4,cladeOf(best));kill(best,player,true);return;} // eaten whole (v11.26: no respawn; the ledger is debited; v11.55: by the finback's gape, the beaks by mass)
   if(P.b.rigs&&!P.hold){P.grab=best;P.grabT=0.6;} // the arms close on what you bite
   const held=P.hold&&P.hold.b===best,at=held&&P.hold.near?P.hold.at:T1.copy(best.pos).sub(P.pos).multiplyScalar(0.5).add(P.pos);
+  if(held){const h=P.hold;if(h.pinned&&(h.thru==='yes'||h.thru==='nape'||h.thru==='thrash')){killBy(h,h.thru==='thrash'?'thrash':actOf(h.edge));return;} // the player's placed act: pinned, and the edge through where it holds (v11.55)
+    if(!h.bit){h.bit=true;envenom(P,best);}} // the coilshell's venom on its first bite in a hold (COMBAT.md §3b)
   wound(best,P.clade.bite*(held?1.5:1),player,at,held?'tear':'snap');
   if(!best.alive)return;
   if(!held)best.vel.addScaledVector(T3,4);
   if(best.hold&&best.hold.b===P)best.hold.pull+=0.35; // it has you: a bite is a reason to let go
-  if((d.role==='hunter'||d.role==='ambush')&&best.hp<d.hp*0.35&&best.state!=='flee'){best.state='flee';best.fleeT=9;best.target=null;}
 }

@@ -82,10 +82,10 @@ function loop(now){
   updateSchools(dt);updateCreatures(dt);if(mode==='play')finishPlayer(dt,bodies); // bodies, contact, arms, then the camera
   updateEggs(dt);ecoTick(dt);updateSave(dt); // the clutches hatch; the world's ledger (v11.26): the model every few seconds, the births owed; the autosave clock (save.js, v11.47)
   updatePads(dt);updateDisturbers(dt);if(FX.snow)updatePlankton(dt);physMs=performance.now()-p0;
-  updateWounds(dt);updateInks(dt);updateSplashes(dt);updateBlood(dt);updateDebris(dt);updateFlush(dt); // the wounds bleed and the blood drifts (combat.js, v11.31)
+  updateWounds(dt);updateStates(dt);updateInks(dt);updateSplashes(dt);updateBlood(dt);updateDebris(dt);updateFlush(dt); // the wounds bleed and the blood drifts (combat.js, v11.31)
   updateAtmosphere(dt);updateSurface();
   camera.updateMatrixWorld();updateFogCamera();cullChunks(dt);cullFar();assignLights();updateShadow();updateShadowS(dt);updateAudio(dt); // the shadow map's box and casters (v11.23): after everything has moved; the sound (v11.14) last, with the camera where it is
-  updateHUD();updateCompass(dt);updateFX();
+  updateCompass(dt);updateFX(); // no health bar since v11.55: the body shows the damage (COMBAT.md §5)
   const r0=performance.now();renderer.render(scene,camera);renderMs=performance.now()-r0;
   if(!warmed){warmed=true;warmShaders();} // the first frame, behind the fade
   updateStats(dt);frameMs=performance.now()-f0;

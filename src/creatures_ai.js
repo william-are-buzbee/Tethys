@@ -36,12 +36,12 @@ const KIND_GEO={},SHARED_GEO=new Set();
 // size-dependent numbers scaled, chained to the adult's so every other read falls through; its geometry is cached apart (KIND_GEO 'kind~')
 const JUV_DEF={};
 function juvDef(kind){let j=JUV_DEF[kind];if(j)return j;const d=DEFS[kind],s=ECO.juv,sp=SPECS[kind];j=JUV_DEF[kind]=Object.create(d);
-  j.size=d.size*s;j.juv=true;j.build=()=>compile(sp,s*(sp.s||1));if(d.speed)j.speed=d.speed*Math.sqrt(s);if(d.flee)j.flee=d.flee*Math.sqrt(s);if(d.reach)j.reach=d.reach*s;if(d.hp<1e8)j.hp=d.hp*s*s;if(d.dmg)j.dmg=d.dmg*s*s;
+  j.size=d.size*s;j.juv=true;j.build=()=>compile(sp,s*(sp.s||1));if(d.speed)j.speed=d.speed*Math.sqrt(s);if(d.flee)j.flee=d.flee*Math.sqrt(s);if(d.reach)j.reach=d.reach*s;if(d.dmg)j.dmg=d.dmg*s*s;
   if(d.radius)j.radius=d.radius*s;if(d.lunge)j.lunge=d.lunge*Math.sqrt(s);if(d.detect)j.detect=d.detect*s;if(d.clear!==undefined)j.clear=d.clear*s;if(d.food)j.food=Math.max(1,Math.round(d.food*s));return j;}
 function spawn(ch,kind,pos,rng,opt){
   const juv=!!(opt&&opt.juv),d=juv?juvDef(kind):DEFS[kind],b=d.build(),EK=ecoOf(kind);
   const c={kind:kind,def:d,g:b.g,anim:b.anim,pos:pos.clone(),vel:V3(0,0,0),home:pos.clone(),hp:d.hp,state:'wander',t0:rng()*100,lastSpd:0,lastYaw:0,roll:0,rollV:0,sq:0,stunSide:rng()<0.5?-1:1,target:null,biteT:0,wanderT:0,wander:pos.clone(),alive:true,gone:false,stun:0,bored:0,cool:rng()*3,scanT:rng()*0.5,alarm:0,fleeT:0,lungeT:0,ramT:0,school:null,off:null,offT:0,chunk:ch,lod:-1,parts:null,lodMeshes:null,sub:1,wet:true,grounded:false,flopT:0,
-    b:b,mass:bodyMass(d),bound:0,reach:0,shapesW:null,chainW:null,grab:null,holding:0,hold:null,held:0,bleed:0,cWith:null,d6:0,par:creatures.length&1, // hold: the hold it has on something, held: how many have hold of it, bleed: hp still to lose to its wounds (combat.js)
+    b:b,mass:bodyMass(d),bound:0,reach:0,shapesW:null,chainW:null,grab:null,holding:0,hold:null,held:0,bleed:0,paraT:0,stungT:0,hurtN:0,armsLost:0,regrow:null,cWith:null,d6:0,par:creatures.length&1, // hold: the hold it has on something, held: how many have hold of it, bleed: hp still to lose to its wounds (combat.js)
     st:{tell:0,strike:0,jet:false},tellT:0,strikeT:0,recoverT:0,burstT:rng()*2,face:null,bit:false,accT:0,threat:null,
     ent:opt&&opt.ent!==undefined?opt.ent:-1,hunger:EK.hunter?rng():0,starveT:0,hunt:0,feedT:0,feedAt:null,dead:false,flesh:0,deadT:0,scav:null,scavT:rng()*0.5,juv:juv?EK.grow*DAY_S*(0.8+0.4*rng()):0}; // ent: the ledger entry; hunger 0 fed..1 starving (ecology.js); juv: seconds until it grows up // st: what the anim reads (creatures_builders.js); the tell and the strike as clocks
   b.g.position.copy(pos);scene.add(b.g);
@@ -84,11 +84,11 @@ function growUp(c){const ch=c.chunk,a=spawn(ch,c.kind,c.pos,Math.random,{ent:c.e
   if(c.school){a.school=c.school;c.school.members.push(a);}if(c.state==='sit'){a.state='sit';}removeCreature(c);return a;}
 
 // ---------- steering ----------
-function seek(c,target,speed,dt,accel){T1.copy(target).sub(c.pos);const L=T1.length();if(L<0.001)return;T1.multiplyScalar(speed/L);curComp(c,T1,speed);c.vel.lerp(T1,1-Math.exp(-accel*dt));}
+function seek(c,target,speed,dt,accel){speed*=slowOf(c);T1.copy(target).sub(c.pos);const L=T1.length();if(L<0.001)return;T1.multiplyScalar(speed/L);curComp(c,T1,speed);c.vel.lerp(T1,1-Math.exp(-accel*dt));}
 // the way through the water that gives the wanted way over the ground in this current, no faster than CUR_FIGHT times the speed asked
 const CUR_FIGHT=1.2;
 function curComp(c,v,speed){if(!c.carried||!c.cur)return;v.sub(c.cur);const l=v.length(),m=speed*CUR_FIGHT;if(l>m)v.multiplyScalar(m/l);}
-function seekAway(c,from,speed,dt){T1.copy(c.pos).sub(from);T1.y*=0.3;const L=T1.length()||1;T1.multiplyScalar(speed/L);c.vel.lerp(T1,1-Math.exp(-2*dt));}
+function seekAway(c,from,speed,dt){speed*=slowOf(c);T1.copy(c.pos).sub(from);T1.y*=0.3;const L=T1.length()||1;T1.multiplyScalar(speed/L);c.vel.lerp(T1,1-Math.exp(-2*dt));}
 function setWander(c){
   const d=c.def,R=d.home||30;let p,fh;
   for(let k=0;k<6;k++){ // swimmers steer for wet ground only; a legged creature goes where it likes
@@ -111,7 +111,7 @@ function findPrey(c,R){
 // The kill (v11.26): the ledger is debited and nothing comes back. Eaten whole (the player's bite, a small prey in a big mouth) the
 // body goes; otherwise it is a carcass — it stays in the scene, sinks, lies on its side, and is eaten away (updateCarcass) by what
 // killed it, by the scavengers it draws and by the water, ECO.carc days untouched. `by` is what killed it: it feeds
-function kill(c,by,whole){if(!c.alive)return;c.alive=false;c.target=null;c.grab=null;c.threat=null;c.scav=null;c.bleed=0;releaseAll(c);ecoDebit(c);POP.kills++;
+function kill(c,by,whole){if(!c.alive)return;c.alive=false;c.target=null;c.grab=null;c.threat=null;c.scav=null;c.bleed=0;c.paraT=0;releaseAll(c);ecoDebit(c);POP.kills++;
   const mass=bioMass(c.def);
   if(by&&by!==player){const K=ecoOf(by.kind),food=ecoOf(c.kind).food;by.hunger=Math.max(0,by.hunger-food/K.meal);by.starveT=0;if(mass<=K.meal*0.35)whole=true;}
   if(whole||c.def.role==='boid'&&c.def.size<0.5){removeCreature(c);return;}
@@ -174,9 +174,6 @@ function landBite(c,tg){if(tg)combatBite(c,tg);} // the guard is here and not at
 // ECO.hungry — a fed ridge cruises past the player; a kill sets it back by the prey's mass over its meal; at 1 it starves, and
 // past a cycle and a fifth of that it dies (a carcass). The feed state: it stays at a carcass it made and eats
 const ECO_CHASE=9; // seconds a hunter keeps after prey that is not the player
-// a hunter heals between hunts, not during one: 2 hp/s with no delay outran every wound's bleed, so nothing ever bled out
-// (v11.31.1, analysis_review 3; the player's own gate in player.js is the pattern). Both clocks in seconds since the last wound.
-const HUNT_REGEN=2,HUNT_REGEN_W=8;
 // Casting for prey (v11.31.2, analysis_review 13): the nearest animal a hunter eats sits 40-48 m off on the shelf against a detect of
 // 9-17, so a wandering hunter only ever met prey by accident — a tenth of them sat at hunger 1.00 with a school two cells away and
 // starved 0 all session. The eyes are the ring's (PLANET: 360 degrees, motion); past them a hunter has the water itself — scent and the
@@ -318,7 +315,7 @@ function updateLurker(c,dt){
 }
 function updateJelly(c,dt){
   const k=c.def.size>3?0.5:1;c.vel.set(0.3*k*Math.sin(t*0.3*k+c.t0),0.15*k*Math.sin(t*0.5*k+c.t0),0.3*k*Math.cos(t*0.27*k+c.t0));
-  c.biteT-=dt;if(c.def.dmg>0&&!player.dead&&c.biteT<=0&&c.pos.distanceTo(player.pos)<Math.max((c.def.reach||0)+1,reachOf(c,player))){c.biteT=0.6;hurtPlayer(c.def.dmg,null);}
+  c.biteT-=dt;if(c.def.dmg>0&&!player.dead&&c.biteT<=0&&c.pos.distanceTo(player.pos)<Math.max((c.def.reach||0)+1,reachOf(c,player))){c.biteT=0.6;stingPlayer();}
 }
 // The sailer (DRIFTERS.md): rides the wave (the surface rule below), carried by the current like everything, and sails at ~5% of the
 // wind at 40° off downwind — left- or right-handed by the animal, so one wind sorts a fleet two ways. The whole animal is yawed to its
@@ -332,7 +329,7 @@ function updateSailer(c,dt){
   const cs=Math.cos(th),sn=Math.sin(th),wx=-c.vel.x,wz=-c.vel.z;c.st.lx=wx*cs-wz*sn;c.st.lz=wx*sn+wz*cs;
   c.biteT-=dt;if(c.biteT<=0&&!player.dead&&c.lod===0&&c.b.rigs){const R=d.lines*d.lines;
     for(const rig of c.b.rigs)for(const ch of rig.chains){const P=ch.pts;for(let k=1;k<=ch.n;k++){const dx=P[k*3]-player.pos.x,dy=P[k*3+1]-player.pos.y,dz=P[k*3+2]-player.pos.z;
-      if(dx*dx+dy*dy+dz*dz<R){c.biteT=0.7;hurtPlayer(d.dmg,null);return;}}}}
+      if(dx*dx+dy*dy+dz*dz<R){c.biteT=0.7;stingPlayer();return;}}}}
 }
 
 // ---------- per frame ----------
@@ -350,7 +347,8 @@ function updateCreatures(dt0){
     let dt=dt0;if(dp>150){c.accT+=dt0;if((frameNo+c.par)&1)continue;dt=c.accT;c.accT=0;}
     // the medium, as for the player: sub is the submerged fraction. Steering only works in the water.
     const R=d.size*0.4,sub=c.pos.y+R<TIDE-TIDE_A1-WAVE_AMP*2?1:clamp((waveH(c.pos.x,c.pos.z)-(c.pos.y-R))/(2*R),0,1),vx0=c.vel.x,vy0=c.vel.y,vz0=c.vel.z;c.sub=sub; // the wave is only read near the surface: a thousand creatures a frame
-    switch(d.role){
+    if(c.paraT>0){c.vel.multiplyScalar(1-3*dt);c.pos.y-=0.2*dt;c.grab=null;} // paralysed (combat.js envenom, COMBAT.md §3b): no steering, sinking a little
+    else switch(d.role){
       case 'boid':updateBoid(c,dt);break;
       case 'trap':updateTrap(c,dt);break;
       case 'watch':updateWatcher(c,dt);break;
@@ -387,7 +385,6 @@ function updateCreatures(dt0){
     const st=c.st;if(c.tellT<=0&&c.strikeT<=0){st.tell*=Math.exp(-4*dt);st.strike*=Math.exp(-7*dt);if(d.role==='ambush'&&c.state!=='lunge')st.strike*=Math.exp(-7*dt);}st.jet=c.state==='chase'&&d.jetter===true;
     const vis=dp<c.lodFar;c.g.visible=vis;
     if(vis){visibleCreatures++;if(dp<SEEN_R&&mode==='play')seeSpec(c.kind);if(dp<c.lodNear){setLOD(c,0);c.anim(t+c.t0,Math.min(4,c.vel.length()/(d.size*0.5)),st);T4.set(0,0,1).applyQuaternion(c.g.quaternion);bodyPose(c,dt,Math.atan2(T4.x,T4.z));}else setLOD(c,1);} // bodyPose (fx.js, v11.53): squash and stretch, banking, the stun's list // seen within SEEN_R (save.js, v11.47): the creator's parts
-    if(d.role==='hunter'&&c.hp<d.hp&&!(c.bleed>0)&&t-(c.lastHurt||-1e9)>HUNT_REGEN_W)c.hp=Math.min(d.hp,c.hp+HUNT_REGEN*dt);
     if(vis&&dp<c.lodNear&&c.lod===0)simList.push(c);
     if(vis&&dp<90)near.push(c);
   }

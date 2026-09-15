@@ -1,6 +1,6 @@
 # COMBAT.md — injury as states, not numbers
 
-**Status: designed 15 Sep 2026; pass 1 built v11.54 the same day** (the edge and the covering read off the spec, the hold knows what it is on, no capsule past the nose; nothing dies differently yet — §7 has what the matrix found). Passes 2–4 are §8. Replaces the hit-point half of v11.31 (DESIGN Combat): the hold, the rope, the struggle by
+**Status: designed 15 Sep 2026; pass 1 built v11.54 and pass 2 built v11.55 the same day** (pass 1: the edge and the covering read off the spec, the hold knows what it is on, no capsule past the nose; pass 2: no hit points — the gape, the pin and the placed act, wounds that bleed and slow, paralysis and the sting, autotomy, death ends the slot's animal; the numbers in DESIGN Combat). §7 has what the matrix found; passes 3–4 are §8. Replaces the hit-point half of v11.31 (DESIGN Combat): the hold, the rope, the struggle by
 mass, the blood and the debris stay; `hp`, `dmg`, the bite clock's damage share and the bleed-as-hp-loss go. The person's ask, in
 their words: "instead of taking damage from a skewer, you are actually physically skewered, and die"; "instead of taking damage from a
 bite, you mostly just die from the bite"; dismemberment; "a realistic and believable combat system that is as scary and freaky as real
@@ -196,8 +196,11 @@ gape by geometry. Findings, for the person:
 ## 8. The passes
 
 1. **The edge and the covering** — built v11.54 (above).
-2. **The states**: hp out of the loop; pinned, the placed act by the edge's verdict (swallowed, opened, skewered, a part lost); the hunters'
-   flee rule by a lost part; venom's three states (§3b). Gated by §9's 1–3.
+2. **The states** — built v11.55: hp out of the loop; pinned by `PIN` (2.5 s by the mass ratio), the placed act by the edge's verdict (swallowed,
+   opened, skewered, crushed, the nerve cord, dismembered; the lost part itself is pass 3); the hunters' flee rule as a count of the player's
+   bites until pass 3; paralysis and the sting (§3b; the poison is pass 4); autotomy automatic; the slot's animal ends at death. Two rules
+   the build added: the sting puts off only a holder under `STING.mass` 4 × the spined body's mass (a ridge swallows a grazer's spines), and
+   past 95 m a fight resolves on the pin clock alone.
 3. **The wound as a spec edit**: the live spec per creature, derive rerun, the rig truncated, a variant geometry for merged parts, regrowth.
 4. **The consequence**: hunters read blood, the strike's miss rule, injuries in the save; the hingeshells' poison by feeding.
 
@@ -205,10 +208,15 @@ gape by geometry. Findings, for the person:
 
 1. **Autotomy as the soft-arm's escape:** does dropping the held arm replace the ink (`Q`) or join it (the ink stays the ability, the
    drop is automatic when a hold pins an arm)? The realistic form is the second: the animal does not choose.
+   **Answered 15 Sep 2026: automatic.** A pinned arm drops when the struggle is lost, the hold goes with it, the ink stays the ability.
 2. **Death per slot:** the respawn as built, or the slot ends (a new animal in the same world, the ledger kept)? DIRECTION's growth
    stages make the second heavier and truer.
+   **Answered 15 Sep 2026: the slot ends.** The animal is dead; the world and its ledger are kept, a new animal starts in the slot.
 3. **Cutting petals for the finback:** born with them (the finback is the roster's fast hunter) or a creator choice later? The roster's
    slowblood hunters (ridge, eel, abyssal) get them either way.
+   **Answered 15 Sep 2026: later, by the creator.** The default slowblood swallows; blades on the petals are derived, in the lineages that
+   take prey past their gape (ridge, abyssal, basker; the eel's knot is its thrash). A 3.5 m swimmer has a diet that fits whole; it earns
+   the edge when it is big enough to take pieces from a grazer. Until then its answer to the ridge is the sprint and the blow.
 4. **The rasp as a player path** (latch on a basker and feed): a fourth playable, or the rasp's own thing? Not now, but it decides
    whether the sucker grip gets a player branch.
 5. **How much the hunters miss:** `MISS` at the escape-reflex rule, or looser for the first hours of a slot?

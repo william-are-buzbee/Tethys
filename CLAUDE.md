@@ -39,7 +39,7 @@ node serve.js            static server; open http://localhost:8080/dev.html (edi
 | `test/anim.js` | tail rate and arm-tip jerk two minutes in through accelerate/cruise/turn/sprint/coast; fails on spin, shiver or fling | `node test/anim.js` (`T0=600`) |
 | `test/audio.js` | the audio graph against the stub's fake `AudioContext` (any NaN param throws), the space at five sites, tick cost | `node test/audio.js` |
 | `test/snow.js` | the marine snow mix at thirteen sites, layering invariants, tick cost | `node test/snow.js` |
-| `test/combat.js` | holds form and kill, ropes never NaN, the player held/bleeds/grabs/bites; a table of every hunter's hold; the matrix (v11.54): every hunter at contact behind each prey — the covering under the hold, the edge's verdict, the gape, the jaws' distance | `node test/combat.js` |
+| `test/combat.js` | holds form and kill, ropes never NaN, the player held, bled, pinned and killed, the grab, the bite, the sting, the paralysis; a table of every hunter of the player and its outcome; the matrix (v11.54): every hunter at contact behind each prey — the covering under the hold, the edge's verdict, the gape, the jaws' distance | `node test/combat.js` |
 | `test/pool.js` | the flora pools (v11.52): blocks contiguous, counts summing, no NaN, a cell's block identical alone, first or last, the others untouched by a removal, the card species per cell, growth without loss | `node test/pool.js` |
 | `test/census.js` | the ecology on paper: capacities, rates, the model for N days; fails if a kind collapses under a fifth | `node test/census.js 120` (`--test` runs 40) |
 | `test/live.js` | the ecology where the player is: four game days of clutches laid and hatched with cells loaded, then a table of every hunter's hunger against the distance to its nearest meal | `node test/live.js`, `TIER=low …` |
@@ -105,10 +105,10 @@ test/              headless tests, the THREE stub, real geometry for previews, t
 | far.js | the whole world at once, built once: coarse far terrain, the apron past the edge, every big structure, impostor cards, the water/floor maps |
 | player.js | `CLADES`, movement in water / air / on land, camera, abilities, damage, ink, splashes |
 | atmosphere.js | the sea surface, the sky, rain, haze, light shafts, marine snow, fog and light by medium, HUD, compass |
-| combat.js | holds (a rope between a grip and a hit capsule), the struggle, bites, wounds that bleed, blood, the player's grab and bite |
+| combat.js | holds (a rope between a grip and a hit capsule), the struggle, the states (v11.55: the gape, the pin, the placed act by `EDGE`, wounds that bleed and slow, venom, autotomy), blood, the player's grab and bite |
 | fx.js | the body's effects (v11.53, POLISH pass B): the debris points (silt, bubbles, scraps) and their emitters, `bodyPose` (squash and stretch, banking, the stun), `hitFx` (the flinch, the flush, the debris at a wound) |
 | effects.js | the effects list (`e`): cosmetic systems switched live, saved in `localStorage['tethys.fx']` |
-| save.js | the save files (v11.47): slots in IndexedDB (localStorage, memory as fallbacks) with a .json export/import; the profile (what has been seen, the creator's key and its saved creatures); `startNew`/`startFrom`/`worldClear` |
+| save.js | the save files (v11.47): slots in IndexedDB (localStorage, memory as fallbacks) with a .json export/import; the profile (what has been seen, the creator's key and its saved creatures); `startNew`/`startFrom`/`worldClear`; `slotDeath` (v11.55: the animal's death written to the slot, the menu) |
 | menu.js zoo.js lab.js | the menu (new game, continue, options, the creator; esc from play); the bestiary (`#zoo`, `z`); the creature lab (`#lab`, `l`; `p` places the spec in the world; as the creator it offers only what has been seen) |
 | bench.js | the sound bench (`#bench`, `b`): every sound rendered to a wav and posted to serve.js for `test/spectro.js` to draw |
 | input.js main.js | pointer lock, keys, touch; boot, the frame loop, the debug readout |
@@ -126,7 +126,7 @@ Docs, most upstream first. When a doc's Open list says a choice is the person's,
 | `CREATOR.md` | the spec-compiled body plans and the lab (v11.10–11.25); the person's decisions at its end |
 | `PIXEL.md` | the de-res (14 Sep 2026, designed, not built): every surface in world/body-fixed texels at the pixel light's grain, one switch on `e`; the person's answers at its end (14 Sep) — ready to build |
 | `POLISH.md` | the low-budget effects survey: pass A built (v11.13, v11.23), pass B (v11.53); pass C, the night, is next |
-| `COMBAT.md` | injury as states, not numbers (15 Sep 2026): gape, hold, edge against covering; wounds as spec edits; the per-clade kill, escape and chemistry; pass 1 built v11.54 (the edge and the covering read off the spec), passes 2–4 in §8; §7 the matrix's findings; its Open list is the person's |
+| `COMBAT.md` | injury as states, not numbers (15 Sep 2026): gape, hold, edge against covering; wounds as spec edits; the per-clade kill, escape and chemistry; pass 1 built v11.54 (the edge and the covering), pass 2 v11.55 (the states, no hit points), passes 3–4 in §8; §7 the matrix's findings; §9 the person's answers |
 | `AUDIO.md` | the sound's design (v11.14); every number was chosen blind |
 | `DESIGN.md` | **the reference**: one section per system with the owning file, the numbers, the knobs and the reasons |
 | `analysis_believability.md` | the 12 Sep analysis: how the world, flora, clades and spawning work, and where the believability is strong and thin |
@@ -166,7 +166,11 @@ Docs, most upstream first. When a doc's Open list says a choice is the person's,
 - **Combat** (combat.js): a fight is a hold — a rope between a grip (jaws, arms, claws, read off the spec by `compile`) and the
   held body's hit capsule; struggle by mass; bites on the hold's clock; wounds bleed; blood a pooled cloud in the clade's colour.
   Drifters and the coil's withdraw bypass holds by design. Since v11.54 a body also has an edge and a covering per capsule (compile,
-  COMBAT.md §2) and a hold knows what it is on (`h.edge`, `h.cover`, `h.thru`, `EDGE`); the states that act on it are pass 2.
+  COMBAT.md §2) and a hold knows what it is on (`h.edge`, `h.cover`, `h.thru`, `EDGE`). **There are no hit points (v11.55):** a hold kept past
+  its pin time (`PIN`) is a pin and the placed act follows from the verdict (swallowed by the gape, opened, skewered, crushed, the nerve cord)
+  or the hunter lets go; a bite that is not the act is a wound that bleeds for the clade's `BLEED_T` and slows the body; venom (`DEFS.venom`:
+  the lurker's paralysis, the spined slowbloods' sting) and autotomy (a ringmouth drops the held arm) ride the same hold. `DEFS.hp` is only the
+  forage (≤1) / immortal (≥1e8) flag. The player's death ends the slot's animal (save.js `slotDeath`).
 - **The frame** (main.js `loop`): clock and tide → streaming (`manageChunks`, `manageFar`) → menu/zoo/lab → `updatePlayer`
   (move, rock, floor) → `updateCreatures` (creatures move; bodies push apart with the player among them; the player out of arms;
   arms simulated) → `finishPlayer` (pose, own arms, camera) → eggs, ecology tick → pads, disturbers, snow → wounds, ink, splashes,
@@ -248,7 +252,7 @@ Docs, most upstream first. When a doc's Open list says a choice is the person's,
 ## Dev tools in the game
 
 - URL: `#low` `#high` (tier), `#zoo` (bestiary), `#lab` or `#lab=<base64 spec>` (the lab), `#bench` (the sound bench; it arms the first click, since an audio context needs a gesture), `#creator` (grants the menu's creator word without opening the lab first).
-- The menu (v11.47): `new game` starts the finback in a new slot; `continue` lists the slots (the store is IndexedDB — clear it from the browser's site data to start clean; the tests use memory); esc in play with the pointer free (esc twice when locked) saves and returns to the menu.
+- The menu (v11.47): `new game` starts the finback in a new slot; `continue` lists the slots (the store is IndexedDB — clear it from the browser's site data to start clean; the tests use memory); esc in play with the pointer free (esc twice when locked) saves and returns to the menu. Death (v11.55) writes the cause to the slot and returns to the menu with it as the note; `continue` starts a new animal at the peak in the same world.
 - The effects list (`e`): `pixel light` (v11.38) is the caustic and the shadows in 30 cm blocks with hard edges, or smooth (the default); `texels` (v11.40–41, PIXEL.md) is every surface in texels with a pattern per cell — separate rows since v11.41.1 so either can be tried alone; `test/caustic.js` draws either light (`PIX=0`). A slider under a switch is a row in `FX_SLIDERS` and a number in `FX_DEF` (v11.38.1: caustics' `brightness`).
 - Keys: `z` bestiary (left/right step, space strike, s cruise, drag turn, wheel zoom); `l` lab, `p` place the spec; `e` the effects
   list; `b` the sound bench (1 one-shots, 2 noise and irs, 3 the beds, 4 a live capture; `node serve.js` must be running); `f` first person; `r` or right mouse grab, click bite; `Q` the clade ability; `M` mute.

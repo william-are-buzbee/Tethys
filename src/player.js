@@ -2,14 +2,14 @@
 // legs:true on a clade (none yet) would make it walk on the strand (landSpeed, jump) instead of flopping.
 // size: the body's half-length in world units (disturbance radius, flow radius); mass: for contact with creatures (size³ for them).
 const CLADES=[
-  {id:'soft',name:'soft-arm',build:()=>compile(SPECS.soft),speed:7.0,jet:true,jetImp:10,accel:3.2,hp:80,bite:9,cam:6.5,turn:7,size:1.6,mass:5},
-  {id:'fin',name:'finback',build:()=>compile(SPECS.fin),speed:8.8,sprint:1.75,accel:2.6,hp:120,bite:26,cam:7.5,turn:4.5,size:1.8,mass:7},
-  {id:'coil',name:'coilshell',build:()=>compile(SPECS.coil),speed:4.6,jet:true,jetImp:7,accel:1.5,hp:100,bite:6,cam:6.5,turn:3,size:1.5,mass:8}
+  {id:'soft',name:'soft-arm',build:()=>compile(SPECS.soft),speed:7.0,jet:true,jetImp:10,accel:3.2,bite:9,cam:6.5,turn:7,size:1.6,mass:5},
+  {id:'fin',name:'finback',build:()=>compile(SPECS.fin),speed:8.8,sprint:1.75,accel:2.6,bite:26,cam:7.5,turn:4.5,size:1.8,mass:7},
+  {id:'coil',name:'coilshell',build:()=>compile(SPECS.coil),speed:4.6,jet:true,jetImp:7,accel:1.5,bite:6,cam:6.5,turn:3,size:1.5,mass:8,venom:{kind:'paralyse',t:5,against:{slowbloods:1,ringmouths:1}}} // bite: the bite's size for the blood and the debris (v11.55: no hit points); venom (COMBAT.md §3b): the coilshell's beak paralyses what its short arms hold
 ];
 let floor0=-1e9;for(let a=0;a<TAU;a+=0.3)for(let r=0;r<=16;r+=4)floor0=Math.max(floor0,sample(Math.cos(a)*r,Math.sin(a)*r).h);
 const dispY=floor0+4.5,spawnPos=V3(0,floor0+3,0);
-const player={clade:null,pos:V3(0,dispY,0),vel:V3(0,0,0),yaw:0,pitch:0,hp:100,maxhp:100,g:null,b:null,anim:null,inkT:0,withdrawn:false,cd:0,jetT:0,hurtT:0,lastHurt:-100,dead:true,pulse:0,spd:0,biteCD:0,sub:1,wet:true,grounded:false,flopT:0,camAbove:false,camFlipT:0,fp:false,
-  mass:6,bound:0,reach:0,shapesW:null,chainW:null,grab:null,grabT:0,heldT:0,heldK:1,holding:0,hold:null,held:0,grabKey:false,grabCD:0,bleed:0,woundL:null,cWith:null,onPad:null,def:{size:1.6},hitRk:0,hitFl:0,landV:0,wasGrounded:false}; // hitRk/hitFl: this frame's push was against rock / a plant; landV: the speed of the last landing on the floor (audio.js consumes both) // def.size: creatures read it when the player is their target
+const player={clade:null,pos:V3(0,dispY,0),vel:V3(0,0,0),yaw:0,pitch:0,g:null,b:null,anim:null,inkT:0,withdrawn:false,cd:0,jetT:0,hurtT:0,lastHurt:-100,dead:true,pulse:0,spd:0,biteCD:0,sub:1,wet:true,grounded:false,flopT:0,camAbove:false,camFlipT:0,fp:false,
+  mass:6,bound:0,reach:0,shapesW:null,chainW:null,grab:null,grabT:0,heldT:0,heldK:1,holding:0,hold:null,held:0,grabKey:false,grabCD:0,bleed:0,woundL:null,paraT:0,stungT:0,armsLost:0,regrow:null,cause:'',cWith:null,onPad:null,def:{size:1.6},hitRk:0,hitFl:0,landV:0,wasGrounded:false}; // hitRk/hitFl: this frame's push was against rock / a plant; landV: the speed of the last landing on the floor (audio.js consumes both) // def.size: creatures read it when the player is their target
 const keys={};let locked=false,drag=null,touchL=null,touchAbility=false;
 const JET_W=0.18; // s of thrust per 0.5 s jet cycle
 const CAM_DWELL=0.5,CAM_FLIP=0.4; // v11.42: CAM_CLEAR (0.35, the camera held clear of the wave) is gone — the camera may rest on the line, half in and half out (WATER.md L; the fog is per fragment, scene.js); camAbove flips CAM_FLIP past the wave, for the light, the sound and the water's things only
@@ -23,17 +23,17 @@ function toggleFP(){const P=player;P.fp=!P.fp;if(P.g)ghostBody(P.g,P.fp);applyCa
 
 function hurtPlayer(dmg,from){
   const P=player;if(P.dead||mode!=='play')return;if(P.withdrawn)return;
-  P.hp-=dmg;P.hurtT=0.7;P.lastHurt=t;P.fovKickT=0.2;P.rollV=(P.rollV||0)+rnd(-1,1)*2.5;hurtEl.style.opacity=1;setTimeout(()=>{hurtEl.style.opacity=0;},240);thump(0.6,80,30,from,0.5,0.1);
+  P.hurtT=0.7;P.lastHurt=t;P.fovKickT=0.2;P.rollV=(P.rollV||0)+rnd(-1,1)*2.5;hurtEl.style.opacity=1;setTimeout(()=>{hurtEl.style.opacity=0;},240);thump(0.6,80,30,from,0.5,0.1);
   if(from){T4.copy(P.pos).sub(from).normalize();P.vel.addScaledVector(T4,7);}
-  if(P.hp<=0)die();
 }
-function die(){
-  const P=player;if(P.dead)return;camNote();P.dead=true;P.hp=0;P.bleed=0;releaseAll(P);fadeEl.style.opacity=1; // camNote (save.js, v11.47.2): the title screen opens from the spot you died in
-  setTimeout(()=>{P.pos.copy(spawnPos);P.vel.set(0,0,0);P.hp=P.maxhp;P.inkT=0;P.bleed=0;P.hold=null;P.held=0;P.camAbove=false;P.camFlipT=0;snapMed=true;P.wet=true;P.sub=1;for(const c of creatures){if(c.target===player)dropTarget(c);}camera.position.copy(P.pos).add(V3(0,2,8));setTimeout(()=>{fadeEl.style.opacity=0;P.dead=false;},500);},2800);
+function die(cause){ // v11.55: a placed act (combat.js killBy) — swallowed, opened, skewered, crushed, the nerve cord; the slot's animal is dead (the person, 15 Sep 2026): its world kept, the menu, a new animal on continue
+  const P=player;if(P.dead)return;camNote();P.dead=true;P.cause=cause||'';P.bleed=0;P.paraT=0;P.stungT=0;releaseAll(P);fadeEl.style.opacity=1; // camNote (save.js, v11.47.2): the title screen opens from the spot you died in
+  setTimeout(()=>{if(curSave&&mode==='play'){slotDeath(P.cause);return;} // a slot: the death is written and the menu comes back (save.js); without one (the tests, the lab) the respawn as before
+    P.pos.copy(spawnPos);P.vel.set(0,0,0);P.inkT=0;P.bleed=0;P.hold=null;P.held=0;P.camAbove=false;P.camFlipT=0;snapMed=true;P.wet=true;P.sub=1;for(const c of creatures){if(c.target===player)dropTarget(c);}camera.position.copy(P.pos).add(V3(0,2,8));setTimeout(()=>{fadeEl.style.opacity=0;P.dead=false;},500);},2800);
 }
 function bite(){playerBite();} // v11.31: combat.js — a gulp, a mouthful of a carcass, or a wound (a tear on what you hold)
 function ability(){
-  const P=player,C=P.clade;if(mode!=='play'||P.dead||!C||P.cd>0)return;
+  const P=player,C=P.clade;if(mode!=='play'||P.dead||!C||P.cd>0||P.paraT>0)return; // paralysed, nothing answers (v11.55)
   if(C.id==='soft'){spawnInk(P.pos);P.inkT=6;P.cd=12;for(const c of creatures){if(c.target===player)dropTarget(c,6);}} // v11.31.1: dropTarget lets go of the arms too, not only the target
   else if(C.id==='fin'){let hit=false;for(const c of creatures){if(!c.alive)continue;const r=c.def.role;if(!(r==='hunter'||r==='ambush'||r==='coil'))continue;if(c.pos.distanceTo(P.pos)<6+c.def.size*0.3){c.stun=2.5;T1.copy(c.pos).sub(P.pos).normalize();c.vel.addScaledVector(T1,9);dropTarget(c,5);hit=true;}}P.cd=hit?9:1.5;P.pulse=1;thump(0.7,60,25,null,0.25,0.12);}
 }
@@ -86,18 +86,19 @@ function updatePlayer(dt){
     mx=(keys.KeyD?1:0)-(keys.KeyA?1:0);mz=(keys.KeyW?1:0)-(keys.KeyS?1:0);my=(keys.Space?1:0)-(keys.KeyC?1:0);
     if(touchL){mx+=touchL.mx;mz+=touchL.mz;if(touchL.sprint)sprint=true;}
     if(keys.ShiftLeft||keys.ShiftRight)sprint=true;
-    P.withdrawn=C.id==='coil'&&(!!keys.KeyQ||touchAbility);
+    P.withdrawn=C.id==='coil'&&(!!keys.KeyQ||touchAbility)&&!(P.paraT>0);
     if(P.withdrawn)sprint=false;
     P.sprint=sprint;
-    if(P.hp<P.maxhp&&t-P.lastHurt>8)P.hp=Math.min(P.maxhp,P.hp+1.2*dt);
   }else{P.withdrawn=false;P.sprint=false;}
   const move=T1.set(0,0,0).addScaledVector(fwd,mz).addScaledVector(right,mx);move.y+=my*0.8;if(move.lengthSq()>1)move.normalize();
   const moving=move.lengthSq()>0.001;
   let spd=C.speed;if(C.sprint&&sprint)spd*=C.sprint;
   P.heldT=Math.max(0,P.heldT-dt);if(P.heldT>0)spd*=0.8; // brushed by something's arms
   spd*=P.heldK||1; // held (combat.js updateHolds sets it): in jaws or claws you thrash, in arms you barely swim
+  spd*=slowOf(P); // bleeding, or stung (combat.js, v11.55)
   P.grabT=Math.max(0,P.grabT-dt);if(P.grabT<=0||(P.grab&&!P.grab.alive))P.grab=null;
   if(P.withdrawn)move.set(0,0,0);
+  if(P.paraT>0){move.set(0,0,0);sprint=false;} // paralysed (COMBAT.md §3b): the body does nothing you ask of it
   // The medium. sub is how much of the body is under the local water level: 1 swimming, 0 in the air or on the strand.
   // Thrust and water drag scale with it; gravity with what is left. Nothing stops you leaving the water except gravity.
   const wl=waveH(P.pos.x,P.pos.z),R=0.9,sub=clamp((wl-(P.pos.y-R))/(2*R),0,1);P.sub=sub;

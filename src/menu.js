@@ -33,15 +33,15 @@ function fmtPlay(s){return s<3600?Math.max(1,Math.round(s/60))+' min':(s/3600).t
 function menuSlots(){
   if(!saveList.length){mslotsEl.innerHTML='<div class="mdim">no saved games</div>';return;}
   mslotsEl.innerHTML=saveList.map(r=>{const C=CLADES.find(c=>c.id===r.clade),conf=menu.confirm===r.id;
-    return '<div class="slot" data-id="'+escH(r.id)+'"><b>'+escH(r.name||'game')+'</b><span>'+escH(C?C.name:r.clade)+'</span><span>'+fmtPlay(+r.playT||0)+'</span><span>'+fmtAgo(+r.played||+r.made||Date.now())+'</span><i data-act="export">export</i><i data-act="del"'+(conf?' class="warn"':'')+'>'+(conf?'sure?':'delete')+'</i></div>';}).join('');
+    return '<div class="slot" data-id="'+escH(r.id)+'"><b>'+escH(r.name||'game')+'</b><span>'+escH(C?C.name:r.clade)+'</span><span>'+fmtPlay(+r.playT||0)+'</span><span>'+fmtAgo(+r.played||+r.made||Date.now())+'</span>'+(r.deaths&&r.deaths.length?'<span>'+r.deaths.length+' dead · '+escH(r.deaths[r.deaths.length-1].cause||'')+'</span>':'')+'<i data-act="export">export</i><i data-act="del"'+(conf?' class="warn"':'')+'>'+(conf?'sure?':'delete')+'</i></div>';}).join('');
 }
 function menuGo(fn){ // a quick fade to black round a change of world (a game starting, the menu coming back); the fade's own 1.8 s is the boot's and death's
   if(menu.busy)return;menu.busy=true;fadeEl.style.transition='opacity .35s';fadeEl.style.opacity=1;
   setTimeout(()=>{fn();menu.busy=false;setTimeout(()=>{fadeEl.style.opacity=0;setTimeout(()=>{fadeEl.style.transition='';},500);},120);},380);
 }
-function choose(c,pos,yaw,pitch,hp){ // into play as clade c (an index or the clade), at pos (the peak by default): the body, the cells round it, the mode
+function choose(c,pos,yaw,pitch){ // into play as clade c (an index or the clade), at pos (the peak by default): the body, the cells round it, the mode
   const C=typeof c==='number'?CLADES[c]:c;
-  playerBody(C,pos||V3(0,dispY,0),yaw,pitch,hp);cellsAround();
+  playerBody(C,pos||V3(0,dispY,0),yaw,pitch);cellsAround();
   mode='play';menuEl.classList.add('gone');fxShow(false);
   hintEl.textContent=isTouch?'left side: drag to swim. right side: drag to look, tap to bite, hold to grab. two fingers: ability':'w a s d swim, space rise, c dive, shift burst, q ability, click bite, right button or r hold, f first person, tab cursor, m mute, esc menu';
   hintEl.style.opacity=1;setTimeout(()=>{hintEl.style.opacity=0;},10000);

@@ -290,6 +290,7 @@ function rigSkin(rig,e){
       const d=ux*zx+uy*zy+uz*zz;let yx=ux-zx*d,yy=uy-zy*d,yz=uz-zz*d;let yl=len3(yx,yy,yz);if(yl<1e-4){yx=zy;yy=-zx;yz=0;yl=len3(yx,yy,yz)||1;}yx/=yl;yy/=yl;yz/=yl;
       const xx=yy*zz-yz*zy,xy=yz*zx-yx*zz,xz=yx*zy-yy*zx;
       const f=(seg+k)*12;F[f]=xx;F[f+1]=xy;F[f+2]=xz;F[f+3]=yx;F[f+4]=yy;F[f+5]=yz;F[f+6]=zx;F[f+7]=zy;F[f+8]=zz;F[f+9]=LP[i];F[f+10]=LP[i+1];F[f+11]=LP[i+2];}
+    if(c.gone)for(let k=0;k<n;k++){const f=(seg+k)*12;for(let q=0;q<9;q++)F[f+q]=0;F[f+9]=LP[0];F[f+10]=LP[1];F[f+11]=LP[2];} // a dropped arm (combat.js autotomy, v11.55): its segments collapse to the base point until it regrows
     seg+=n;}
   for(let v=0,nv=SG.length;v<nv;v++){const f=SG[v]*12,i=v*3,lx=LO[i],ly=LO[i+1],lz=LO[i+2],nx=LN[i],ny=LN[i+1],nz=LN[i+2];
     pos[i]=F[f]*lx+F[f+3]*ly+F[f+6]*lz+F[f+9];pos[i+1]=F[f+1]*lx+F[f+4]*ly+F[f+7]*lz+F[f+10];pos[i+2]=F[f+2]*lx+F[f+5]*ly+F[f+8]*lz+F[f+11];
