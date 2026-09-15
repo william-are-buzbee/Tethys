@@ -41,7 +41,7 @@ function juvDef(kind){let j=JUV_DEF[kind];if(j)return j;const d=DEFS[kind],s=ECO
 function spawn(ch,kind,pos,rng,opt){
   const juv=!!(opt&&opt.juv),d=juv?juvDef(kind):DEFS[kind],b=d.build(),EK=ecoOf(kind);
   const c={kind:kind,def:d,g:b.g,anim:b.anim,pos:pos.clone(),vel:V3(0,0,0),home:pos.clone(),hp:d.hp,state:'wander',t0:rng()*100,lastSpd:0,lastYaw:0,roll:0,rollV:0,sq:0,stunSide:rng()<0.5?-1:1,target:null,biteT:0,wanderT:0,wander:pos.clone(),alive:true,gone:false,stun:0,bored:0,cool:rng()*3,scanT:rng()*0.5,alarm:0,fleeT:0,lungeT:0,ramT:0,school:null,off:null,offT:0,chunk:ch,lod:-1,parts:null,lodMeshes:null,sub:1,wet:true,grounded:false,flopT:0,
-    b:b,mass:bodyMass(d),bound:0,reach:0,shapesW:null,chainW:null,grab:null,holding:0,hold:null,held:0,bleed:0,paraT:0,stungT:0,hurtN:0,armsLost:0,regrow:null,cWith:null,d6:0,par:creatures.length&1, // hold: the hold it has on something, held: how many have hold of it, bleed: hp still to lose to its wounds (combat.js)
+    b:b,mass:bodyMass(d),bound:0,reach:0,shapesW:null,chainW:null,grab:null,holding:0,hold:null,held:0,bleed:0,paraT:0,stungT:0,hurtN:0,armsLost:0,regrow:null,sickT:0,poison:0,poisT:rng()*2,lungeC:0,missN:0,cWith:null,d6:0,par:creatures.length&1, // hold: the hold it has on something, held: how many have hold of it, bleed: hp still to lose to its wounds (combat.js)
     st:{tell:0,strike:0,jet:false},tellT:0,strikeT:0,recoverT:0,burstT:rng()*2,face:null,bit:false,accT:0,threat:null,
     ent:opt&&opt.ent!==undefined?opt.ent:-1,hunger:EK.hunter?rng():0,starveT:0,hunt:0,feedT:0,feedAt:null,dead:false,flesh:0,deadT:0,scav:null,scavT:rng()*0.5,juv:juv?EK.grow*DAY_S*(0.8+0.4*rng()):0}; // ent: the ledger entry; hunger 0 fed..1 starving (ecology.js); juv: seconds until it grows up // st: what the anim reads (creatures_builders.js); the tell and the strike as clocks
   b.g.position.copy(pos);scene.add(b.g);
@@ -113,7 +113,7 @@ function findPrey(c,R){
 // killed it, by the scavengers it draws and by the water, ECO.carc days untouched. `by` is what killed it: it feeds
 function kill(c,by,whole){if(!c.alive)return;c.alive=false;c.target=null;c.grab=null;c.threat=null;c.scav=null;c.bleed=0;c.paraT=0;releaseAll(c);ecoDebit(c);POP.kills++;
   const mass=bioMass(c.def);
-  if(by&&by!==player){const K=ecoOf(by.kind),food=ecoOf(c.kind).food;by.hunger=Math.max(0,by.hunger-food/K.meal);by.starveT=0;if(mass<=K.meal*0.35)whole=true;}
+  if(by&&by!==player){const K=ecoOf(by.kind),food=ecoOf(c.kind).food;if(c.poison>POISON.min&&!by.def.immune)sicken(by);else{by.hunger=Math.max(0,by.hunger-food/K.meal);by.starveT=0;}if(mass<=K.meal*0.35)whole=true;} // a body fed at the seeps is no meal: the eater is sick (combat.js POISON, v11.56)
   if(whole||c.def.role==='boid'&&c.def.size<0.5){removeCreature(c);return;}
   c.dead=true;c.flesh=mass;c.deadT=0;c.vel.multiplyScalar(0.3);carcasses.push(c);
   _q.setFromAxisAngle(V3(0,0,1),c.t0>50?HPI:-HPI);c.lieQ=c.g.quaternion.clone().multiply(_q); // rolled onto its side
@@ -130,7 +130,8 @@ function updateCarcass(c,dt,dp){
   if(c.flesh<=0||c.deadT>ECO.carc*DAY_S*1.5){POP.eaten+=1;removeCreature(c);}
 }
 // eating at a carcass: a mouthful a second scaled to the eater; the eater's hunger falls with it
-function eatAt(o,c,dt){const om=bioMass(o.def),K=ecoOf(o.kind),bite=(K.hunter?Math.min(om/75,K.meal/20):om/40)*dt;c.flesh-=bite;if(o.hunger>0){o.hunger=Math.max(0,o.hunger-bite/ecoOf(o.kind).meal);o.starveT=0;}}
+function eatAt(o,c,dt){if(c.poison>POISON.min&&!o.def.immune){if(!(o.sickT>0))sicken(o);return;} // a poisoned carcass sickens its scavenger (v11.56)
+  const om=bioMass(o.def),K=ecoOf(o.kind),bite=(K.hunter?Math.min(om/75,K.meal/20):om/40)*dt;c.flesh-=bite;if(o.hunger>0){o.hunger=Math.max(0,o.hunger-bite/ecoOf(o.kind).meal);o.starveT=0;}}
 // the nearest carcass within R of o, still worth eating
 function findCarcass(o,R){let best=null,bd=R;for(const c of carcasses){if(c.gone||c.flesh<=0)continue;const d=o.pos.distanceTo(c.pos);if(d<bd){bd=d;best=c;}}
   for(const g of eggs){if(g.gone||g.flesh<=0||g.kind===o.kind)continue;const d=o.pos.distanceTo(g.pos);if(d<bd*0.5){bd=d;best=g;}}return best;} // a clutch too (not its own kind's), from half the distance
@@ -163,7 +164,7 @@ function armReach(c,tg,k){return Math.max((c.def.reach||0)*k,reachOf(c,tg))+(tg.
 // a kill each cleared a different subset and left c.grab pointing at the old target, so a rigged hunter's arms went on reaching for
 // the player out of wander. Everything that ends a pursuit goes through here.
 function dropTarget(c,cool){
-  c.target=null;c.grab=null;c.bored=0;c.tellT=0;c.strikeT=0;c.face=null;c.chaseT=0;
+  c.target=null;c.grab=null;c.bored=0;c.tellT=0;c.strikeT=0;c.face=null;c.chaseT=0;c.lungeC=0;
   if(c.hold)releaseHold(c.hold);
   if(cool!==undefined)c.cool=cool;
   if(c.state!=='feed'&&c.state!=='sit'){c.state=c.def.role==='ambush'?'return':'wander';if(c.state==='wander')setWander(c);}
@@ -201,14 +202,14 @@ function updateHunter(c,dt){
     // pursuit that has run ECO_CHASE seconds without a bite (a real pursuit is short; prey with a flee speed at its hunter's cruise outran
     // every hunter for good before this, and no hunt in the game ever ended in a meal). The clock stops while it has hold of the prey (v11.31)
     if(!c.hold)c.chaseT=(c.chaseT||0)+dt;const chaseK=tg===player?1:1+0.6*smooth(6,2,c.chaseT);
-    const lost=!tg||(tg!==player&&!tg.alive)||ashore||dist>d.detect*1.6||(tg===player&&(player.dead||(player.inkT>0&&dist>3.5)))||c.bored>2||c.pos.distanceTo(c.home)>(d.home||30)*1.9||(tg!==player&&c.chaseT>ECO_CHASE);
+    const lost=!tg||(tg!==player&&!tg.alive)||ashore||dist>(bleeding(tg)?Math.max(d.detect*1.6,SMELL_R*1.2):d.detect*1.6)||(tg===player&&(player.dead||(player.inkT>0&&dist>3.5)))||c.bored>2||c.pos.distanceTo(c.home)>(d.home||30)*1.9||(tg!==player&&c.chaseT>ECO_CHASE);
     if(lost){dropTarget(c,d.cool||4);}
     else if(d.strike){
       // the strike (PLANET, hingeshells; the platebacks' bite): in range, the tell first — it slows, cocks and turns to the prey —
       // then a burst at the prey with the strike pose on, the bite landing once if it gets within reach; then the cooldown
       const S=d.strike;c.biteT-=dt;
-      if(c.strikeT>0){c.strikeT-=dt;c.st.strike=1;seek(c,tpos,S.speed,dt,8);if(!c.bit&&dist<reachOf(c,tg)){c.bit=true;landBite(c,tg);}if(c.strikeT<=0){c.biteT=d.biteCD||1.5;c.grab=null;}}
-      else if(c.tellT>0){c.tellT-=dt;c.st.tell=Math.min(1,c.st.tell+dt/S.tell*1.5);c.vel.multiplyScalar(1-3*dt);c.face=tpos;if(c.tellT<=0){c.strikeT=S.dur;c.bit=false;c.face=null;}}
+      if(c.strikeT>0){c.strikeT-=dt;c.st.strike=1;seek(c,tpos,S.speed,dt,8);if(!c.bit&&dist<reachOf(c,tg)){c.bit=true;if(dodged(tpos,c.strikeP,c.strikeN)<missWin(tg,S.dur))landBite(c,tg);else missed(c,tg);}if(c.strikeT<=0){c.biteT=d.biteCD||1.5;c.grab=null;}} // the strike is the commit: prey that has moved its own width since it began is missed (v11.56)
+      else if(c.tellT>0){c.tellT-=dt;c.st.tell=Math.min(1,c.st.tell+dt/S.tell*1.5);c.vel.multiplyScalar(1-3*dt);c.face=tpos;if(c.tellT<=0){c.strikeT=S.dur;c.bit=false;c.face=null;[c.strikeP,c.strikeN]=commitAt(c,tpos,c.strikeP,c.strikeN);}}
       else{const k=burstK(c,dt)*chaseK;seek(c,tpos,d.speed*k,dt,2.2*k);c.grab=null;
         if(dist<reachOf(c,tg)*(S.range||1.6)&&c.biteT<=0){c.tellT=S.tell;c.st.tell=0;}}
       if(c.strikeT>0)c.grab=(c.b.rigs&&dist<armReach(c,tg,1.3))?tg:null;
@@ -216,13 +217,16 @@ function updateHunter(c,dt){
     else{
       const k=burstK(c,dt)*chaseK;seek(c,tpos,d.speed*k,dt,2.2*k);c.biteT-=dt;
       c.grab=(c.b.rigs&&dist<armReach(c,tg,1.3))?tg:null; // the arms reach for prey in range and close on it (physics.js)
-      if(dist<reachOf(c,tg)&&c.biteT<=0){c.biteT=d.biteCD||1.2;landBite(c,tg);}
+      // the commit (v11.56, COMBAT.md §5): in reach, the mouth opens (the tell) and the bite lands MISS.t later — on the prey if it has moved under its own
+      // width since and is still in reach, on water if it dodged; a miss costs the hunter MISS.cool cooldowns. The escape reflex as a rule
+      if(c.lungeC>0){c.lungeC-=dt;c.st.strike=1;if(c.lungeC<=0){c.lungeC=0;c.biteT=d.biteCD||1.2;if(dist<reachOf(c,tg)*MISS.range&&dodged(tpos,c.lungeP,c.lungeN)<missWin(tg,MISS.t))landBite(c,tg);else missed(c,tg);}}
+      else if(dist<reachOf(c,tg)&&c.biteT<=0){c.lungeC=MISS.t;[c.lungeP,c.lungeN]=commitAt(c,tpos,c.lungeP,c.lungeN);c.st.strike=1;}
     }
   }else{
-    if(c.scanT<=0){c.scanT=0.4;c.hunt=0;if(c.cool<=0&&c.hunger>ECO.hungry){const tg=findPrey(c,d.detect*HUNT_SEEK);
+    if(c.scanT<=0){c.scanT=0.4;c.hunt=0;if(c.cool<=0&&c.hunger>ECO.hungry){const tb=findBleeding(c,SMELL_R);if(tb){c.state='chase';c.target=tb;c.bored=0;c.chaseT=0;}else{const tg=findPrey(c,d.detect*HUNT_SEEK); // the blood first (combat.js, v11.56): a bleeding body it eats within SMELL_R is the chase, past its eyes
       if(tg){const tp=tg===player?player.pos:tg.pos,dd=c.pos.distanceTo(tp);
         if(dd<d.detect){c.state='chase';c.target=tg;c.bored=0;c.chaseT=0;} // seen: the chase
-        else if(tp.distanceTo(c.home)<(d.home||30)*HUNT_HOME){c.wander.copy(tp);c.wanderT=rnd(4,8);c.hunt=1;}}}} // sensed: swim that way and look again
+        else if(tp.distanceTo(c.home)<(d.home||30)*HUNT_HOME){c.wander.copy(tp);c.wanderT=rnd(4,8);c.hunt=1;}}}}} // sensed: swim that way and look again
     if(c.hunt){const k=burstK(c,dt);seek(c,c.wander,d.speed*HUNT_CAST*k,dt,1.2*k);}else wander(c,dt);
   }
 }
@@ -231,8 +235,8 @@ function updateHunter(c,dt){
 // takes the bite. Then it settles for `cool` seconds. A sitting one is as heavy as a rock for contact (updateCreatures).
 function updateTrap(c,dt){
   const d=c.def,S=d.strike;c.vel.set(0,0,0);c.cool-=dt;
-  if(c.strikeT>0){c.strikeT-=dt;c.st.strike=1;const tg=c.target;if(tg&&!c.bit){const tpos=tg===player?player.pos:tg.pos;if(c.pos.distanceTo(tpos)<reachOf(c,tg)&&(tg===player||tg.alive)){c.bit=true;landBite(c,tg);}}if(c.strikeT<=0){c.cool=d.cool||2;c.face=null;if(!c.hold)c.target=null;c.state='sit';}return;} // v11.31: the target stays while it is held
-  if(c.tellT>0){c.tellT-=dt;c.st.tell=Math.min(1,c.st.tell+dt/S.tell*1.5);const tg=c.target;if(tg)c.face=tg===player?player.pos:tg.pos;if(c.tellT<=0){c.strikeT=S.dur;c.bit=false;}return;}
+  if(c.strikeT>0){c.strikeT-=dt;c.st.strike=1;const tg=c.target;if(tg&&!c.bit){const tpos=tg===player?player.pos:tg.pos;if(c.pos.distanceTo(tpos)<reachOf(c,tg)&&(tg===player||tg.alive)){c.bit=true;if(!c.strikeP||dodged(tpos,c.strikeP,c.strikeN)<missWin(tg,S.dur))landBite(c,tg);else missed(c,tg);}}if(c.strikeT<=0){c.cool=d.cool||2;c.face=null;if(!c.hold)c.target=null;c.state='sit';}return;} // v11.31: the target stays while it is held
+  if(c.tellT>0){c.tellT-=dt;c.st.tell=Math.min(1,c.st.tell+dt/S.tell*1.5);const tg=c.target;if(tg)c.face=tg===player?player.pos:tg.pos;if(c.tellT<=0){c.strikeT=S.dur;c.bit=false;if(tg)[c.strikeP,c.strikeN]=commitAt(c,c.face,c.strikeP,c.strikeN);}return;}
   c.scanT-=dt;if(hungerTick(c,dt))return;if(c.scanT<=0){c.scanT=0.25;if(c.cool<=0&&c.hunger>ECO.hungry*0.4){const tg=findPrey(c);if(tg){c.target=tg;c.tellT=S.tell;c.st.tell=0;c.state='strike';}}} // a trap strikes at most things (a reflex), but not on a full stomach
 }
 // The watcher (PLANET: a curious omnivore that never attacks and never flees far): wanders the floor; within `detect` of the
@@ -307,7 +311,8 @@ function updateLurker(c,dt){
   const d=c.def;if(hungerTick(c,dt))return;
   if(c.state==='sit'){c.vel.set(0,0,0);c.cool-=dt;c.scanT-=dt;if(c.scanT<=0){c.scanT=0.25;if(c.cool<=0&&c.hunger>ECO.hungry){const tg=findPrey(c,d.radius);if(tg){c.state='lunge';c.target=tg;c.lungeT=1.3;}}}}
   else if(c.state==='lunge'){const tg=c.target,tp=tg===player?player.pos:tg?tg.pos:c.home,dist=c.pos.distanceTo(tp);c.lungeT-=dt;seek(c,tp,d.lunge,dt,6);c.biteT-=dt;c.grab=c.b.rigs&&tg&&dist<armReach(c,tg,1.6)?tg:null;if(d.hang)c.st.strike=1;
-    if(tg&&dist<reachOf(c,tg)&&c.biteT<=0){c.biteT=1;landBite(c,tg);if(c.state!=='feed')c.state='return';}if(c.lungeT<=0||!tg||(tg!==player&&!tg.alive)||(tg===player&&player.dead))c.state='return';}
+    if(c.lungeC>0){c.lungeC-=dt;if(c.lungeC<=0){c.lungeC=0;c.biteT=1;if(tg&&dist<reachOf(c,tg)*MISS.range&&dodged(tp,c.lungeP,c.lungeN)<missWin(tg,MISS.t))landBite(c,tg);else if(tg)missed(c,tg);if(c.state!=='feed')c.state='return';}} // the lunge's commit (v11.56)
+    else if(tg&&dist<reachOf(c,tg)&&c.biteT<=0){c.lungeC=MISS.t;[c.lungeP,c.lungeN]=commitAt(c,tp,c.lungeP,c.lungeN);}if((c.lungeT<=0&&!(c.lungeC>0))||!tg||(tg!==player&&!tg.alive)||(tg===player&&player.dead)){c.state='return';c.lungeC=0;}}
   else if(c.state==='feed'){const f=c.feedAt;c.feedT-=dt;if(!f||f.gone||f.flesh<=0||c.feedT<=0){c.state='return';c.feedAt=null;return;}const dist=c.pos.distanceTo(f.pos);if(dist>reachOf(c,f)*0.8)seek(c,f.pos,3,dt,2);else{c.vel.multiplyScalar(1-3*dt);eatAt(c,f,dt);}}
   else{c.grab=null;if(!c.hold)c.target=null;seek(c,c.home,4,dt,2);if(c.pos.distanceTo(c.home)<0.8){c.state='sit';c.cool=3;c.pos.copy(c.home);}} // v11.31: what it has hold of comes home with it
   if(c.stun>0){c.stun-=dt;c.vel.multiplyScalar(1-2*dt);c.pos.y-=0.3*dt;}

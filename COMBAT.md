@@ -1,6 +1,6 @@
 # COMBAT.md — injury as states, not numbers
 
-**Status: designed 15 Sep 2026; pass 1 built v11.54 and pass 2 built v11.55 the same day** (pass 1: the edge and the covering read off the spec, the hold knows what it is on, no capsule past the nose; pass 2: no hit points — the gape, the pin and the placed act, wounds that bleed and slow, paralysis and the sting, autotomy, death ends the slot's animal; the numbers in DESIGN Combat). §7 has what the matrix found; passes 3–4 are §8. Replaces the hit-point half of v11.31 (DESIGN Combat): the hold, the rope, the struggle by
+**Status: designed 15 Sep 2026; passes 1, 2 and 4 built the same day (v11.54, v11.55, v11.56)** (pass 1: the edge and the covering read off the spec, the hold knows what it is on, no capsule past the nose; pass 2: no hit points — the gape, the pin and the placed act, wounds that bleed and slow, paralysis and the sting, autotomy, death ends the slot's animal; pass 4: hunters read blood, the strike's miss rule, injuries in the save, the poison by feeding; the numbers in DESIGN Combat). §7 has what the matrix found; pass 3 is what remains (§8). Replaces the hit-point half of v11.31 (DESIGN Combat): the hold, the rope, the struggle by
 mass, the blood and the debris stay; `hp`, `dmg`, the bite clock's damage share and the bleed-as-hp-loss go. The person's ask, in
 their words: "instead of taking damage from a skewer, you are actually physically skewered, and die"; "instead of taking damage from a
 bite, you mostly just die from the bite"; dismemberment; "a realistic and believable combat system that is as scary and freaky as real
@@ -186,7 +186,8 @@ gape by geometry. Findings, for the person:
 - **The ram** has no route through anything: a blow, by design (the stun).
 - **The hood, the lash and the ram** hunt the grazer and the finback and their claws get through neither's hide: the hingeshell hunters of
   slowbloods have no kill in the kit. Either a lathe gets joints (the fins' roots as skin) or the person says they hold and never kill.
-- **The abyssal's comb** (PLANET) is shell to a cutting edge: no route. Adapted (a crush), or the comb is not its meal.
+- **The abyssal's comb** (PLANET) is shell to a cutting edge: no route. Adapted (a crush), or the comb is not its meal. v11.56 made it immune
+  to the comb's poison; the edge question stands.
 - **The stone's petals are `hold`**: a trap eats by gape alone, which is what an anglerfish does; its gape (0.80) is wider than the player.
 - **The gape by geometry against the player's body** (soft 0.57, fin 0.53, coil 0.80): ridge 0.68, basker 0.74, stone 0.80, crusher 0.80,
   abyssal 1.35. Under the gape rule the soft-arm and the finback are swallowed by all five, the coilshell by the abyssal alone. That is §3's
@@ -202,7 +203,10 @@ gape by geometry. Findings, for the person:
    the build added: the sting puts off only a holder under `STING.mass` 4 × the spined body's mass (a ridge swallows a grazer's spines), and
    past 95 m a fight resolves on the pin clock alone.
 3. **The wound as a spec edit**: the live spec per creature, derive rerun, the rig truncated, a variant geometry for merged parts, regrowth.
-4. **The consequence**: hunters read blood, the strike's miss rule, injuries in the save; the hingeshells' poison by feeding.
+4. **The consequence** — built v11.56: hunters read blood (`SMELL_R` 90 m); the strike's miss rule as a commit with the mouth open 0.25 s
+   before the bite and a dodge across the strike's line (`MISS.k` 0.8 of the prey's width, set by five trials each way); injuries in the
+   save; the hingeshells' poison by where they fed (below the chemocline, in the vents' heat), the abyssal immune to its combs (§7's answer:
+   adapted).
 
 ## 9. Open — the person's
 

@@ -1288,7 +1288,18 @@ lets go after a bite on prey heavier than `HOLD_BIG` 0.6 of itself. A hunter or 
 every 8 s) leaves. **The chemistry** (§3b): `venom` on `DEFS`/`CLADES` — `paralyse` (the lurker 7 s, the coilshell player 5 s; against slowbloods
 and ringmouths) rides the holder's first bite in the hold: steering off, sinking, no ability, pinned at once; `sting` (the basker, the grazer:
 spined) puts a jaw or arms off them after `STING.t` 0.45 s, at half speed for 6 s, 6 s before hunting again, only under `STING.mass` 4 × the
-spined body's mass. **Autotomy** (automatic): a ringmouth about to be pinned by a jaw or claws drops the held arm (`c.gone`: the chain's frames
+spined body's mass. **The trail, the miss, the poison (v11.56, pass 4).** A hungry hunter's scan takes a bleeding body on its prey list within `SMELL_R` 90 m as
+its chase, past its `detect`, and keeps it while it bleeds (`findBleeding`, `bleeding`). **The miss rule** (`MISS`): a chasing hunter in reach
+commits — `lungeC` = `t` 0.25 s, `st.strike` 1 (the mouth opens: the tell), the prey's position and the line to it kept (`commitAt`) — and the bite
+lands when the clock runs out if the prey is within `range` 1.15 × reach and has moved under `k` 0.8 of its width across that line (`dodged`;
+running away is the reach's business), else the jaws close on water (`missed`: `cool` 1.5 bite cooldowns, a snap, the player's fov kicked).
+Strikers and the trap commit at the strike's start with its `dur` as the window (`missWin` scales by dur/t), the lurker's lunge as a chaser,
+lasting out the commit; `dropTarget` forgets a commit. Seen 15 Sep 2026: a finback at sprint turning 90° at the tell is missed 4 of 5 at k
+0.8 (caught 4 of 5 at 1.0), turning before the tell missed 5 of 5. **Injuries in the save** (save.js `injuriesLoad`): `arms`, `regrow`
+(absolute world-clock times), `bleed`. **The poison** (`POISON`, `poisonTick` every 2 s per hingeshell): below `deep` −440 or where the field's
+heat is over 0.45, `c.poison` loads to 1 in `load` 0.4 game days and clears in `clear` 3; a kill or a carcass over `min` 0.35 sickens the eater
+(`sicken`: `sickT` `t` 45 s, `slow` 0.5, its cool held so it hunts nothing; the player slowed, the hurt flash) instead of feeding it; `DEFS.immune`
+(the abyssal) eats it whole. **Autotomy** (automatic): a ringmouth about to be pinned by a jaw or claws drops the held arm (`c.gone`: the chain's frames
 collapse to its base in `rigSkin`), the hold goes with it, the holder keeps it (`AUTOTOMY.cool` 6 s), the arm regrows in `AUTOTOMY.regrow` 5
 game days, never the last `keep` 2. **Death ends the slot's animal** (save.js `slotDeath`): the cause on the slot, the menu from the spot with
 the cause as its note, continue a new animal at the peak in the same world. `GRIP.first/bite/bleed` are a bite's size for the blood and the

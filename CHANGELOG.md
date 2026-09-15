@@ -3790,3 +3790,40 @@ the blow: is that the fear, or is `PIN.t` (2.5) or its floor (0.3) to rise? (2) 
 base; a stump would be pass 3's spec edit; (3) the paralysed finback in first person: 5–7 s of nothing answering, then the beak; (4) the
 grazer's and the basker's spines in play at their scale (`spines` on both specs; the basker's are 1 m); (5) the slot's row with a death on it,
 and the note's wording; (6) hunters bitten three times leaving — too easy a way off a lurker?
+
+
+## v11.56 — COMBAT pass 4: hunters read blood; the strike's miss rule; injuries kept in the save; the hingeshells' poison by where they feed (15 Sep 2026)
+
+The person: "Wow, works great! Keep going." COMBAT.md §8's pass 4, built — the smaller pass, and the one that answers v11.55's window: the
+tell before the bite, and a dodge that works.
+
+**Built.**
+- **Hunters read blood** (combat.js `findBleeding`, creatures_ai.js `updateHunter`): a hungry hunter's scan takes a bleeding body on its prey list
+  within `SMELL_R` 90 m as its chase, past its eyes, and keeps it past `detect` while it bleeds. An eel 60 m from a whole finback (detect 17)
+  casts about; wounded, the finback is its chase within a scan. The wound you survived is what brings the next hunter (COMBAT.md §4).
+- **The strike's miss rule** (`MISS`): a chasing hunter in reach **commits** — the mouth opens (`st.strike`, the tell) and the bite lands
+  `MISS.t` 0.25 s later, on the prey if it is still within `range` 1.15 × reach and has **dodged** under `MISS.k` 0.8 of its own width across the
+  line the strike was aimed along (`dodged`: running straight away is caught by the reach check, the sideways burst is what is measured),
+  on water otherwise; a miss costs the hunter `cool` 1.5 bite cooldowns and a snap. A striker's strike phase (the tell/dur hunters, the
+  trap) and the lurker's lunge are their commits, scaled by their duration; a lunge lasts out its commit and a dropped pursuit forgets
+  it. The escape reflex as a rule (COMBAT.md §5).
+- **Injuries in the save** (save.js): a dropped arm is still dropped when you come back (`arms`, `regrow` as the world clock's times,
+  `bleed`), put back on the body by `injuriesLoad`; a death writes the new animal whole.
+- **The poison by feeding** (`POISON`, `poisonTick`): a hingeshell whose floor is below the chemocline (`deep` −440) or whose water carries
+  the vents' heat (`heat` 0.45) loads the sulfur line's toxin — full after `load` 0.4 game days there, clear `clear` 3 days after it leaves —
+  and a body over `min` 0.35 is no meal: what eats it, or its carcass, is sick for `t` 45 s at half speed and hunts nothing (`sicken`); the
+  player that gulps one is sick and slowed. The abyssal is **immune** (`DEFS.immune`; its comb is its whole diet — the garter snake's
+  answer to the newt), which is COMBAT.md §7's answer to "adapted, or not its meal".
+- **`test/combat.js` §13**: the eel that cannot see a whole finback at 60 m reads its blood in 0.2 s; a chasing ridge commits, a grazer moved
+  2.5 m across in the window is missed (biteT 2.25), one that holds still is taken in 1.6 s with no miss; a lurker that eats a body fed at the
+  seeps is sick 45 s and unfed, the abyssal is fed, the finback that gulps one is at half speed.
+
+**Seen** (dev.html in the app's browser, the loop driven by hand): a ridge on the finback's tail with the readout open — the mouth opening at
+the commit (`st.strike` 0.89) 6.6 m out; **the dodge trials**, five each: at `MISS.k` 1.0 a finback at sprint that turns 90° at the tell is
+caught 4 of 5 and one that turns before the tell (at 1.6 × reach) is missed 5 of 5; at 0.8 the turn at the tell is missed 4 of 5 — 0.8 is
+baked in, so the tell is answerable; a scuttle placed on the rim floor at −450 loads the toxin (0.0063 after 2.5 s: 1.0 in 0.4 days), a
+darter beside it stays clean; the eel's chase of a bleeding finback and the poisoned meal by the numbers (the test).
+**Unseen, ask in this order:** (1) **the tell in play** — is the mouth opening 0.25 s out readable at speed, and is the dodge learnable
+(`MISS.t`, `MISS.k`)? (2) the trail: does a wounded finback now draw a second hunter in the shelf's traffic, and is 90 m too far
+(`SMELL_R`)? (3) a sick finback for 45 s at half speed after a gulp at the rim — too long, or should the HUD say why (`POISON.t`)? (4) the
+arm still gone on a continue, then back five days on.

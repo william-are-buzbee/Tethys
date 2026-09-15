@@ -8,7 +8,7 @@ const fs=require('fs'),path=require('path');
 const ROOT=path.join(__dirname,'..');
 const ORDER=fs.readFileSync(path.join(ROOT,'src','order.txt'),'utf8').split('\n').map(s=>s.trim()).filter(s=>s&&s[0]!=='#');
 let js=ORDER.map(n=>fs.readFileSync(path.join(ROOT,'src',n+'.js'),'utf8')).join('\n');
-js+='\nglobal.__cb={fxStats,peak(){player.pos.set(0,dispY,0);cellsAround();},groundAt,chunkGrid,cellOf,creatures,carcasses,player,DEFS,SPAWN,spawn,choose,V3,keys,holds,GRIP,startHold,releaseHold,playerGrab,playerBite,updateHolds,wound,get blLive(){return blLive;},updateBlood,updateWounds,updateCreatures,updatePlayer,finishPlayer,bodies,updateSchools,get mode(){return mode;},get t(){return t;},setT:(v)=>{t=v;},massOf,cladeOf,gripOf,localToWorld,removeCreature,ECO,setWander,bodyExt,reachOf,BITE_M,ability,CLADES,EDGE,WHOLE,BLEED_T,WOUND_SLOW,STING,PIN,slowOf,envenom,edgeOf,coverAt,thruOf,bodyPointNear,freshShapes,get bpIdx(){return bpIdx;},worldShapes};';
+js+='\nglobal.__cb={fxStats,peak(){player.pos.set(0,dispY,0);cellsAround();},groundAt,chunkGrid,cellOf,creatures,carcasses,player,DEFS,SPAWN,spawn,choose,V3,keys,holds,GRIP,startHold,releaseHold,playerGrab,playerBite,updateHolds,wound,get blLive(){return blLive;},updateBlood,updateWounds,updateCreatures,updatePlayer,finishPlayer,bodies,updateSchools,get mode(){return mode;},get t(){return t;},setT:(v)=>{t=v;},massOf,cladeOf,gripOf,localToWorld,removeCreature,ECO,setWander,bodyExt,reachOf,BITE_M,ability,CLADES,EDGE,WHOLE,BLEED_T,WOUND_SLOW,STING,PIN,slowOf,envenom,SMELL_R,MISS,POISON,kill,sicken,findBleeding,edgeOf,coverAt,thruOf,bodyPointNear,freshShapes,get bpIdx(){return bpIdx;},worldShapes};';
 const tmp=path.join(require('os').tmpdir(),'tethys_combat.js');
 fs.writeFileSync(tmp,'(function(){"use strict";\n'+js+'\n})();');
 process.env.PICK='0';
@@ -141,7 +141,7 @@ const groundY=-12;
     if(!g.alive){died=i;break;}}
   console.log('  the basker bit the grazer '+bites+' times; the first at '+firstD.toFixed(1)+' m, their bodies touching at '+contact.toFixed(1)+' (before this pass it was 4.4 — it had to blow past and take the grazer alongside its mid-body)');
   check(died>0,'a basker runs a grazer down and kills it ('+(died>0?(died*dt).toFixed(1)+' s':'alive after 30 s')+')');
-  check(firstD>contact-1.5,'and its first bite lands nose-on, where its jaws are');
+  check(firstD>contact-1.5-X.DEFS.basker.speed*X.MISS.t,'and its first bite lands nose-on, where its jaws are (less what it closes during the '+X.MISS.t+' s commit)');
 }
 // ---- 9. a wound is a clock (v11.55): it bleeds for the clade's clotting time and closes; nothing dies of it ----
 {
@@ -215,6 +215,35 @@ const groundY=-12;
   console.log('  hunters with no route through any of their prey (a finding for the person, not a failure): '+(stuck.length?stuck.join(', '):'none'));
   check(far===0,'every grip is within 1 m of the body it would hold at contact ('+far+' further off)');
   X.choose(1);clearAll();
+}
+// ---- 13. pass 4 (v11.56, COMBAT.md §4–5): hunters read blood, the strike's miss rule, the poison by feeding ----
+{
+  clearAll();P.pos.set(0,-30,30);P.vel.set(0,0,0);P.dead=false;P.cause='';P.bleed=0;P.inkT=0;
+  // blood: an eel (detect 17) 60 m from a whole finback casts about but cannot see it; bleeding, the finback is its chase within a scan
+  const e=put('eel',X.V3(0,-30,90),'wander');e.hunger=1;e.cool=0;e.home.copy(e.pos);
+  for(let i=0;i<60*1.5;i++){frame();e.pos.set(0,-30,90);e.vel.set(0,0,0);}
+  check(e.state!=='chase','an eel 60 m from a whole finback (detect '+X.DEFS.eel.detect+') does not chase it');
+  X.wound(P,10,null,P.pos,'snap');let chased=-1;
+  for(let i=0;i<60*2;i++){frame();e.pos.set(0,-30,90);if(e.state==='chase'&&e.target===P){chased=i;break;}}
+  check(chased>=0,'and reads its blood from 60 m ('+(chased>=0?(chased*dt).toFixed(1):'-')+' s; SMELL_R '+X.SMELL_R+')');
+  P.bleed=0;
+  // the miss: a chasing ridge commits its bite MISS.t before it lands; a grazer moved its own width in that window is missed, one that holds still is taken
+  clearAll();P.pos.set(0,-30,30);const gy=X.groundAt(0,60);
+  let g=put('grazer',X.V3(0,gy+2,60),'wander'),r=put('ridge',X.V3(0,gy+4,40),'chase',g);let committed=-1,landed=-1,missedAt=-1;
+  for(let i=0;i<60*10;i++){frame();g.vel.set(0,0,0);g.threat=null;if(r.lungeC>0&&committed<0){committed=i;g.pos.x+=2.5;}if(r.hold&&landed<0)landed=i;if(committed>=0&&r.missN>0&&missedAt<0)missedAt=i;if(landed>=0||missedAt>=0)break;}
+  check(committed>=0,'a chasing ridge commits its bite (the mouth opens '+X.MISS.t+' s before it lands)');
+  check(missedAt>=0&&landed<0,'and a grazer that moved 2.5 m in that window is missed (biteT '+r.biteT.toFixed(2)+': '+X.MISS.cool+' cooldowns)');
+  clearAll();g=put('grazer',X.V3(0,gy+2,60),'wander');r=put('ridge',X.V3(0,gy+4,40),'chase',g);let held=-1;
+  for(let i=0;i<60*10;i++){frame();g.vel.set(0,0,0);g.threat=null;if(r.hold){held=i;break;}}
+  check(held>=0&&r.missN===0,'a grazer that holds still is taken ('+(held>=0?(held*dt).toFixed(1):'-')+' s, no miss)');
+  // the poison: a body fed at the seeps is no meal — the eater is sick and unfed; the abyssal is immune; the player that gulps one is sick and slowed
+  clearAll();const s1=put('darter',X.V3(0,gy+1,60),'wander');s1.poison=1;const l=put('lurker',X.V3(0,gy+1,62),'sit');l.hunger=1;X.kill(s1,l);
+  check(l.sickT>0&&l.hunger===1,'a lurker that eats a body fed at the seeps is sick for '+X.POISON.t+' s and gets no meal');
+  const s2=put('darter',X.V3(0,gy+1,70),'wander');s2.poison=1;const a=put('abyssal',X.V3(0,gy+4,72),'wander');a.hunger=1;X.kill(s2,a);
+  check(!(a.sickT>0)&&a.hunger<1,'the abyssal is immune (its combs) and is fed');
+  clearAll();P.pos.set(0,-30,30);P.sickT=0;const s3=put('darter',X.V3(0,-30,32),'wander');s3.poison=1;X.playerBite();
+  check(!s3.alive&&P.sickT>0&&X.slowOf(P)<1,'the finback that gulps one is sick and slowed (×'+X.slowOf(P)+')');P.sickT=0;
+  clearAll();
 }
 let nanH=0;for(const h of X.holds)for(const v of [h.len,h.load,h.pull])if(!isFinite(v))nanH++;
 check(nanH===0,'no NaN in any hold');
