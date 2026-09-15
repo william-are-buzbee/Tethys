@@ -3554,3 +3554,9 @@ order:** (1) whether it now reads as "through a shader" in play, and `WIN_T` (0.
 things in the air are seen through the surface now, which v11.42.1 made opaque to stop a flicker at the line — the angle band should keep
 it smooth, but look; (3) night: the stars and the moon through the surface; (4) the render ms looking up — the dome's march runs under
 water now instead of the window's (about the same).
+
+## v11.50.1 — the sparkles on the underside: the whitecaps drawn from above only (15 Sep 2026)
+
+The person, with a still from 40 m under the shelf looking up: "strange sparkles (not the marine snow) that show up on the surface of the water when you look up … they look really weird." Found by elimination in the app's browser (the loop driven by hand at 38 m, each layer hidden in turn): not the sun's specular, not the shafts, not the snow, not the dome's cirrus or its deck — hiding the sky kept them and hiding the surface removed them. They were v11.46's **whitecaps seen from below**: the foam by steepness (`vFoam`, hashed into streaks 6 m along the wind by 1.5 m across) mixed into the underside as a grey patch, and through 40 m of water the streaks were soft pale lozenges all lying one way, scattered over the whole surface — the person's sparkles.
+
+**Built** (atmosphere.js `SURF_MAT`, the underside branch): the underside's foam term is the surf alone (`vBrk`, the breaking excess at the beach); the whitecaps stay on the topside as they were. Nothing else touched. **Seen** (`test/render/v501_after.png` against `v501_t_nosky.png`, the sky hidden to show them plain): from 38 m looking up the lozenges are gone; what remains are the shafts' straight lines and the snow's squares. `node build.js --test` green on both tiers. **Unseen, ask in this order:** (1) the same view in play at 1600×900 on the 4060; (2) the surf zone from below — the breaking still shows, and whether it looks lonely without the whitecaps round it.
