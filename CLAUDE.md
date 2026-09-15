@@ -39,7 +39,7 @@ node serve.js            static server; open http://localhost:8080/dev.html (edi
 | `test/anim.js` | tail rate and arm-tip jerk two minutes in through accelerate/cruise/turn/sprint/coast; fails on spin, shiver or fling | `node test/anim.js` (`T0=600`) |
 | `test/audio.js` | the audio graph against the stub's fake `AudioContext` (any NaN param throws), the space at five sites, tick cost | `node test/audio.js` |
 | `test/snow.js` | the marine snow mix at thirteen sites, layering invariants, tick cost | `node test/snow.js` |
-| `test/combat.js` | holds form and kill, ropes never NaN, the player held/bleeds/grabs/bites; a table of every hunter's hold | `node test/combat.js` |
+| `test/combat.js` | holds form and kill, ropes never NaN, the player held/bleeds/grabs/bites; a table of every hunter's hold; the matrix (v11.54): every hunter at contact behind each prey — the covering under the hold, the edge's verdict, the gape, the jaws' distance | `node test/combat.js` |
 | `test/pool.js` | the flora pools (v11.52): blocks contiguous, counts summing, no NaN, a cell's block identical alone, first or last, the others untouched by a removal, the card species per cell, growth without loss | `node test/pool.js` |
 | `test/census.js` | the ecology on paper: capacities, rates, the model for N days; fails if a kind collapses under a fifth | `node test/census.js 120` (`--test` runs 40) |
 | `test/live.js` | the ecology where the player is: four game days of clutches laid and hatched with cells loaded, then a table of every hunter's hunger against the distance to its nearest meal | `node test/live.js`, `TIER=low …` |
@@ -126,7 +126,7 @@ Docs, most upstream first. When a doc's Open list says a choice is the person's,
 | `CREATOR.md` | the spec-compiled body plans and the lab (v11.10–11.25); the person's decisions at its end |
 | `PIXEL.md` | the de-res (14 Sep 2026, designed, not built): every surface in world/body-fixed texels at the pixel light's grain, one switch on `e`; the person's answers at its end (14 Sep) — ready to build |
 | `POLISH.md` | the low-budget effects survey: pass A built (v11.13, v11.23), pass B (v11.53); pass C, the night, is next |
-| `COMBAT.md` | injury as states, not numbers (15 Sep 2026, designed, not built): gape, hold, edge against covering; wounds as spec edits; the per-clade kill and escape; its Open list is the person's |
+| `COMBAT.md` | injury as states, not numbers (15 Sep 2026): gape, hold, edge against covering; wounds as spec edits; the per-clade kill, escape and chemistry; pass 1 built v11.54 (the edge and the covering read off the spec), passes 2–4 in §8; §7 the matrix's findings; its Open list is the person's |
 | `AUDIO.md` | the sound's design (v11.14); every number was chosen blind |
 | `DESIGN.md` | **the reference**: one section per system with the owning file, the numbers, the knobs and the reasons |
 | `analysis_believability.md` | the 12 Sep analysis: how the world, flora, clades and spawning work, and where the believability is strong and thin |
@@ -165,7 +165,8 @@ Docs, most upstream first. When a doc's Open list says a choice is the person's,
   `SPAWN.n` is capacity, not a count; the equilibrium (`node test/census.js 120`) is the number in the world. Rates per game day.
 - **Combat** (combat.js): a fight is a hold — a rope between a grip (jaws, arms, claws, read off the spec by `compile`) and the
   held body's hit capsule; struggle by mass; bites on the hold's clock; wounds bleed; blood a pooled cloud in the clade's colour.
-  Drifters and the coil's withdraw bypass holds by design.
+  Drifters and the coil's withdraw bypass holds by design. Since v11.54 a body also has an edge and a covering per capsule (compile,
+  COMBAT.md §2) and a hold knows what it is on (`h.edge`, `h.cover`, `h.thru`, `EDGE`); the states that act on it are pass 2.
 - **The frame** (main.js `loop`): clock and tide → streaming (`manageChunks`, `manageFar`) → menu/zoo/lab → `updatePlayer`
   (move, rock, floor) → `updateCreatures` (creatures move; bodies push apart with the player among them; the player out of arms;
   arms simulated) → `finishPlayer` (pose, own arms, camera) → eggs, ecology tick → pads, disturbers, snow → wounds, ink, splashes,
@@ -233,6 +234,8 @@ Docs, most upstream first. When a doc's Open list says a choice is the person's,
 - A cell's small flora lives in its species' pool (chunks.js `POOLS`), not in `ch.meshes`/`ch.flora`: a block per cell, the tail moved down on
   unload, the written range uploaded (`updateRange`). Placement reads the cell's own hash only (`solidPush(…, own)`), which `placeBigSolids`
   completes with every neighbour's reaching structure — `test/pool.js` fails if a cell's blocks differ by arrival order.
+- No hit capsule ends past the frame's nose: `compile` clamps every capsule's nose end at `F.nose − r` (v11.54). A hand-written `hit` list
+  that reaches past the mouth is cut back silently; a spec's own list puts the shell's capsule first (the covering reads it so).
 - Never mutate a spawned creature's body geometry (it is shared per kind in `KIND_GEO`) — build a variant. `disposeCreature`
   skips shared geometry.
 - The cell and region generators (`buildTerrain`, `placeFloraType`, `makeSchool`, `bigsGen`, `impostorsGen`) yield inside their

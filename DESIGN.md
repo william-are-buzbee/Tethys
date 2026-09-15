@@ -1112,7 +1112,10 @@ that jumps onto a raft flops until it is off). Each raft instance dips under loa
 geometry with an instanced `aDip` attribute the bob shader subtracts. The camera ignores pads.
 
 **Hitboxes.** Every builder returns `hit`: capsules in the creature's own frame (the mantle, the shell, the tail, the
-bell). Each frame the creatures within 90 of the player and the player get them in world space (`worldShapes`), plus
+bell). **No capsule past the nose (v11.54):** `compile` clamps every capsule's nose end at `F.nose − r` — measured against the real hulls,
+every lathe's capsule (the cores' formulas and the kept hand lists alike) ended 0.5–0.7 of a body unit past the frame's nose, 2 m at the
+ridge's scale, so bodies touched before a mouth arrived and a hold's rope stopped that far off the jaws; the tail end is left alone. Each
+capsule knows its owner part (`hitOwn`) and its covering (`b.cover`, DESIGN Combat). Each frame the creatures within 90 of the player and the player get them in world space (`worldShapes`), plus
 `chainW`, the live segments of their arms. `resolveBodies` pushes touching bodies apart along the closest points of
 their capsules (Ericson's segment–segment), the lighter one moving more (mass = size³, the player's clade `mass`, a
 sitting lurker 10⁶ — it is wedged in its rock), and kills the closing velocity. The player is then kept out of every arm
@@ -1318,6 +1321,17 @@ the person's "allowed to lose"; `GRIP.bite` and `k` are the knobs. The test also
 against `hitN + hitB` for each prey) and fails if any pair's bite distance falls under their contact. Not built: venom or
 paralysis (PLANET lists them for the ringmouths), the wound slowing a creature, a hunter returning to bled prey (behaviour — next pass),
 what a held creature's own arms do to its holder.
+
+**The edge and the covering (v11.54, COMBAT.md §2 — pass 1 of injury as states).** Every compiled body has an **edge** beside its grip —
+the weapon's if it has one (spears `point`; claws, fold, whips `claws`; ram `ram`), else the mouth's: `beak`, `rasp`, the hingeshells'
+mouthparts `shred`, the slowbloods' petals by the `mouth:tentacles` param `edge` (`hold` default; `cut` ridge, abyssal, eel, basker; `point`
+needle; `crush` crusher) — and a **covering** per hit capsule by clade (ringmouths skin; slowbloods hide, plate under `plates`; hingeshells
+plate, shell under the big valves; drifters skin; a shell part's capsule shell; a spec's own hit list puts the shell first), plus `gape`, the
+mouth's radius at the world scale. `EDGE` (combat.js) is edge × covering → `yes` / `nape` / `joint` / `thrash` / `time` / `no`. A hold
+records the capsule it took (`bodyPointNear` sets `bpIdx`), the covering and the verdict (`h.ci`, `h.edge`, `h.cover`, `h.thru`); the
+readout's hold line shows them. **Nothing acts on the verdict yet** — pass 2 replaces the numbers with the states. `test/combat.js` §12 prints the
+matrix (every hunter at contact behind each of its prey, the player as all three clades) and fails if a grip is over a metre off the body it
+would hold; its findings are COMBAT.md §7.
 
 ## The canopy
 

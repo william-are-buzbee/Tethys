@@ -1243,7 +1243,8 @@ const PARTS = {
       idle: {k: 'k', b: [0, 0.3], x: [0, 0.7], d: 0},
       tell: {k: 'k', b: [0, 0.3], x: [0, 1], d: 0},
       kk: {k: 'k', b: [0, 1], x: [0, 1.5], d: 1},
-      pulse: {k: 'b', d: false}
+      pulse: {k: 'b', d: false},
+      edge: {k: 's', opts: ['hold', 'cut', 'point', 'crush'], d: 'hold'} // the petals' inner edges (COMBAT.md §2, v11.54): hold (a clamp that swallows or lets go), cut (tears a piece out with a thrash), point (a needle jaw: skewers), crush (the crusher's plate jaw: shell and plate)
     },
     build: (ctx, p) => {
       const P = ctx.P,
@@ -2510,7 +2511,7 @@ const PSTYLE = {
   'mouth:rasp': ['z', 'y', 'R', 'h'],
   'mouth:slit': ['z', 'y', 'R', 'h'],
   'mouth:peck': ['z', 'y', 'len', 'r', 'dip', 'pk', 'wob'],
-  'mouth:tentacles': ['z', 'r', 'len', 'n', 'w', 'segs', 'idle', 'tell', 'kk', 'pulse'],
+  'mouth:tentacles': ['z', 'r', 'len', 'n', 'w', 'segs', 'idle', 'tell', 'kk', 'pulse', 'edge'],
   'mouth:plates': ['where', 'z', 'y', 'R', 'plen', 'feed', 'fn', 'flen', 'snap'],
   'weapon:ram': [],
   'arms:jet': ['n', 'z', 'R', 'len', 'w', 'segs', 'curve', 'ks', 'damp', 'cosMax', 'plan', 'phase', 'taper', 'col', 'shade'],
@@ -2593,6 +2594,7 @@ function compile(spec, s, pal, opt) {
   const hooks = [],
     rigs = [],
     hit = F.hit.slice(),
+    hitOwn = hit.map(() => -1), // which part each hit capsule belongs to (−1: the core); the covering is read off it (v11.54, COMBAT.md §2)
     soft = spec.core.kind === 'coilbody' ? new THREE.Group() : null;
   // the shelled ringmouths carry the soft body in its own group so it can withdraw (buildCoil); the shell mesh is added first
   const built = [],
@@ -2612,7 +2614,11 @@ function compile(spec, s, pal, opt) {
     r.D = [d0, bf.children.length];
     built.push(r);
     if (r.rig) rigs.push(r.rig);
-    if (r.hit) for (const h of r.hit) hit.push(h);
+    if (r.hit)
+      for (const h of r.hit) {
+        hit.push(h);
+        hitOwn.push(spec.parts.indexOf(p));
+      }
     if (r.anim) hooks.push(r.anim);
   }
   const split = !!(opt && opt.split) && !F.finish; // the lab: every part's static geometry as its own mesh, so a part can be lit up under the cursor (not on a chain body: its parts ride the root segment)
@@ -2681,7 +2687,31 @@ function compile(spec, s, pal, opt) {
       grip = {kind: cl === 'slowbloods' ? 'jaw' : cl === 'hingeshells' ? 'claws' : 'arms', at: [0, y, p.z + (p.style === 'plates' && p.where === 'probe' ? p.plen : 0)]};
   });
   if (grip && grip.kind === 'arms' && !rigs.length) grip.kind = 'jaw'; // a beak with no arms to hold with bites like a jaw
-  return {g: g, anim: anim, rigs: rigs, hit: spec.hit || hit, built: built, F: F, grip: grip, pat: pat, frame: bf, body: body}; // frame, body (v11.53): the secondary motion scales and rolls the frame (fx.js bodyPose)
+  // The edge and the coverings (v11.54, COMBAT.md §2 — pass 1 of injury as states): what this body cuts with, and what each of its hit
+  // capsules is covered by, both read off the parts so a fight can ask whether the one gets through the other (combat.js EDGE). The edge is the
+  // weapon's if it has one, else the mouth's: a beak, a rasp, the hingeshells' shredding mouthparts, or the slowbloods' petals by their `edge`
+  // (hold, cut, point, crush). A covering is by clade — ringmouths skin, slowbloods hide (plate under `plates`), hingeshells plate (shell under
+  // the big valves), drifters skin — and a shell part's own capsule is shell. gape: the mouth's radius at the world scale, what it can take whole.
+  let edge = null, gape = 0;
+  const hasPlates = spec.parts.some(p => p.kind === 'plates'), bigValves = spec.parts.some(p => p.kind === 'valves' && (p.style === 'back' || p.style === 'hood' || p.style === 'placed'));
+  for (const p of spec.parts) {
+    if (p.kind === 'weapon') { if (p.style === 'spears') edge = 'point'; else if (p.style === 'claws' || p.style === 'fold' || p.style === 'whips') edge = 'claws'; else if (p.style === 'ram') edge = 'ram'; }
+    else if (p.kind === 'mouth' && !edge) { if (p.style === 'beak') edge = 'beak'; else if (p.style === 'rasp') edge = 'rasp'; else if (p.style === 'plates') edge = 'shred'; else if (p.style === 'tentacles') edge = p.edge || 'hold'; }
+    if (p.kind === 'mouth' && !gape) gape = (p.style === 'tentacles' ? p.r : p.style === 'peck' ? p.r : p.R) || 0;
+  }
+  const base = cl === 'slowbloods' ? (hasPlates ? 'plate' : 'hide') : cl === 'hingeshells' ? (bigValves ? 'shell' : 'plate') : 'skin';
+  const hasShell = spec.parts.some(p => p.kind === 'shell'),
+    cover = spec.hit ? spec.hit.map((h, i) => (i === 0 && hasShell ? 'shell' : base)) : hitOwn.map(i => (i >= 0 && spec.parts[i].kind === 'shell' ? 'shell' : base)); // a spec's own hit list (coil, great, ortho) puts the shell's capsule first
+  // No capsule past the nose (v11.54). Measured against the real hulls (the CHANGELOG's table): every lathe's capsule, the cores' formulas and the
+  // kept hand lists alike, ended 0.5–0.7 of a body unit past the frame's nose — 2 m of capsule in front of the ridge's mouth, 1.6 of the basker's — so
+  // two bodies touched and pushed apart before a mouth reached the other, and a hold's rope, which stops closing at the contact, held the prey
+  // that far off the jaws for good. The mouth sits at F.nose (its default z); a capsule's surface now ends there. The tail end is left alone.
+  const hitF = (spec.hit || hit).map(h => {
+    const o = {a: h.a.slice(), b: h.b.slice(), r: h.r};
+    if (isFinite(F.nose)) { if (o.a[2] + o.r > F.nose) o.a[2] = F.nose - o.r; if (o.b[2] + o.r > F.nose) o.b[2] = F.nose - o.r; }
+    return o;
+  });
+  return {g: g, anim: anim, rigs: rigs, hit: hitF, built: built, F: F, grip: grip, edge: edge, cover: cover, gape: gape * s, pat: pat, frame: bf, body: body}; // frame, body (v11.53): the secondary motion scales and rolls the frame (fx.js bodyPose)
 }
 // A spec with every part's defaults filled and its styles resolved, without touching the given object.
 function fillSpec(spec) {
@@ -3236,7 +3266,7 @@ const SPECS = {
       {kind: 'eyes', style: 'ring', z: 1.1, R: 0.37, pred: true},
       {kind: 'chevrons', z0: 0.8, z1: -0.5, ds: 0.22, sz: 0.12},
       {kind: 'spines', n: 6, r: 0.08, h: 0.45, z0: 0.5, dz: 0.32, y0: 0.55, dy: 0.02, x: 0, rx: -0.5},
-      {kind: 'mouth', style: 'tentacles', z: 1.38, r: 0.22, len: 0.5, n: 6, w: 0.1, segs: 2, pulse: true},
+      {kind: 'mouth', style: 'tentacles', z: 1.38, r: 0.22, len: 0.5, n: 6, w: 0.1, segs: 2, pulse: true, edge: 'cut'},
       {kind: 'fins', z: 0.35, R: 0.5, h: 0.55, len: 0.6, amp: 0.25, dorsal: 0.3},
       {kind: 'tail', style: 'lathe', prof: FIN_TPROF, z: -0.55, lz: -1.25, lh: 0.85, ll: 0.5, amp: 0.45, sp0: 0.25, spk: 0.2, body: 0.05}
     ],
@@ -3282,7 +3312,7 @@ const SPECS = {
         r: 0.05,
         z: 1.9
       },
-      {kind: 'mouth', style: 'tentacles', z: 1.45, r: 0.27, len: 0.7, n: 8, w: 0.1, segs: 2},
+      {kind: 'mouth', style: 'tentacles', z: 1.45, r: 0.27, len: 0.7, n: 8, w: 0.1, segs: 2, edge: 'cut'},
       {kind: 'fins', z: 0.35, R: 0.62, h: 0.7, len: 0.9, amp: 0.2, dorsal: 0.3},
       {
         kind: 'tail',
@@ -3408,7 +3438,7 @@ const SPECS = {
     parts: [
       {kind: 'eyes', style: 'ring', z: 0.92, R: 0.115, pred: true},
       {kind: 'chevrons', z0: 0.7, z1: -0.5, ds: 0.2, sz: 0.05},
-      {kind: 'mouth', style: 'tentacles', z: 1.1, r: 0.07, len: 0.65, n: 4, w: 0.035, segs: 2, kk: 0.8},
+      {kind: 'mouth', style: 'tentacles', z: 1.1, r: 0.07, len: 0.65, n: 4, w: 0.035, segs: 2, kk: 0.8, edge: 'point'},
       {kind: 'fins', z: 0.35, R: 0.15, h: 0.16, len: 0.25, amp: 0},
       {kind: 'tail', style: 'cyl', r0: 0.09, r1: 0.03, L: 0.5, segs: 6, z: -0.7, lz: -0.6, lh: 0.36, ll: 0.2, amp: 0.45, sp0: 0.3, spk: 0.3, body: 0}
     ],
@@ -3440,7 +3470,7 @@ const SPECS = {
     parts: [
       {kind: 'eyes', style: 'ring', z: 2.7, R: 1.0, pred: true},
       {kind: 'chevrons', z0: 2.0, z1: -1.6, ds: 0.5, sz: 0.3},
-      {kind: 'mouth', style: 'tentacles', z: 3.25, r: 0.62, len: 1.0, n: 6, w: 0.24, segs: 2},
+      {kind: 'mouth', style: 'tentacles', z: 3.25, r: 0.62, len: 1.0, n: 6, w: 0.24, segs: 2, edge: 'cut'},
       {kind: 'fins', z: 0.9, R: 1.4, h: 1.5, len: 2.0, amp: 0.15, fk: 0.7, dorsal: 0.3, col: 'rust'},
       {
         kind: 'tail',
@@ -3491,7 +3521,7 @@ const SPECS = {
       {kind: 'eyes', style: 'ring', z: 2.8, R: 0.98, pred: true},
       {kind: 'barbels', style: 'cone', x: 0.7, y: -0.5, z: 3.4, len: 0.7, r: 0.05, rx: HPI - 0.5, ry: 0.5},
       {kind: 'plates', rows: 3, n: 6, z0: 2.4, dz: 0.75, w: 0.55, th: 0.12, l: 0.5, spread: 0.62, yk: 0.98, rr: [1.15, 1.15, 1.15, 1.15, 0.9, 0.9]},
-      {kind: 'mouth', style: 'tentacles', z: 3.25, r: 0.7, len: 0.85, n: 6, w: 0.3, segs: 2, tell: 0.12},
+      {kind: 'mouth', style: 'tentacles', z: 3.25, r: 0.7, len: 0.85, n: 6, w: 0.3, segs: 2, tell: 0.12, edge: 'crush'},
       {kind: 'fins', z: 1.0, R: 1.2, h: 0.9, len: 1.2, amp: 0.3, dorsal: 0.2},
       {kind: 'tail', style: 'cyl', r0: 0.5, r1: 0.12, L: 1.1, segs: 8, z: -1.5, lz: -1.25, lh: 1.5, ll: 0.8, amp: 0.35, sp0: 0.25, spk: 0.3, body: 0}
     ],
@@ -3714,7 +3744,7 @@ const SPECS = {
     core: {kind: 'chain', n: 11, L: 0.68, w0: 0.16, w1: 0.5, hl: 0.7, fin: true, fh: 0.8, lobes: 2.6, ll: 0.7, amp: 0.3, sp0: 0.25, spk: 0.3, kph: 0.75, ks: 130, damp: 12, cosMax: 0.72, beat: [2.2, 0.8]},
     parts: [
       {kind: 'eyes', style: 'ring', z: 0.5, R: 0.4092, pred: true},
-      {kind: 'mouth', style: 'tentacles', z: 0.7, r: 0.28, len: 0.45, n: 6, w: 0.1, segs: 2}
+      {kind: 'mouth', style: 'tentacles', z: 0.7, r: 0.28, len: 0.45, n: 6, w: 0.1, segs: 2, edge: 'cut'}
     ],
     hit: [{a: [0, 0, 0], b: [0, 0, 0.75], r: 0.36}],
     behaviour: {role: 'hunter'}

@@ -22,6 +22,26 @@ const GRIP={
   arms:{k:16,cd:0.9,first:0,bite:0.45,bleed:0.25,close:1.5,slow:0.55,shake:0.8},
   claws:{k:24,cd:0.7,first:0.8,bite:0.3,bleed:0.3,close:1.2,slow:0.7,shake:1.2}
 };
+// The edge against the covering (v11.54, COMBAT.md §2 — pass 1 of injury as states): what a hold can do where it is. A body's edge and the
+// covering of each of its hit capsules are read off its spec by compile (b.edge, b.cover, b.gape); a hold records the capsule it took (h.ci),
+// the covering there and the verdict (h.thru). Nothing acts on the verdict yet — the bites still deal dmg — it is measured (test/combat.js,
+// the matrix) and shown (the readout's hold line), so the person can see what each fight would be before the states replace the numbers.
+// yes: through; nape: only at a pinned animal's nape; joint: only at a joint of the armour; thrash: with the body's thrash; time: given time; no
+const EDGE={
+  beak:{skin:'yes',hide:'nape',plate:'joint',shell:'joint'}, // cuts pieces from what the arms hold; the kill is one placed bite at the nerve cord
+  rasp:{skin:'yes',hide:'no',plate:'no',shell:'time'}, // latches (the lamprey); drills a shell (the octopus)
+  hold:{skin:'no',hide:'no',plate:'no',shell:'no'}, // plain petals: a clamp that ends in a swallow or a release
+  cut:{skin:'yes',hide:'thrash',plate:'no',shell:'no'}, // cutting petals: a piece torn out, the hide with a thrash
+  point:{skin:'yes',hide:'yes',plate:'no',shell:'no'}, // a needle jaw or spears: skewers
+  crush:{skin:'yes',hide:'yes',plate:'yes',shell:'yes'}, // the crusher's plate jaw
+  shred:{skin:'yes',hide:'no',plate:'joint',shell:'no'}, // the hingeshells' mouthparts: dismember at the joints
+  claws:{skin:'yes',hide:'no',plate:'joint',shell:'no'}, // the hard grip: holds what is slower
+  ram:{skin:'no',hide:'no',plate:'no',shell:'no'} // a blow: the stun, nothing through
+};
+function edgeOf(o){return (o.b&&o.b.edge)||null;}
+function coverAt(o,i){const C=o.b&&o.b.cover;return C&&C.length?(C[i]||C[0]):'skin';}
+function thruOf(edge,cover){const E=EDGE[edge];return E?(E[cover]||'no'):'no';}
+let bpIdx=-1; // the capsule bodyPointNear last chose (an index into shapesW, which is the hit list's order)
 const HOLD_BIG=0.6; // a jaw lets go after a bite on prey heavier than this share of its own mass (bite and spit)
 const WHOLE=0.12,WHOLE_P=0.25; // forage up to this share of the eater's mass is swallowed whole at the touch (the creatures; the player's gulp is WHOLE_P — arrows and needles, not a picker, which is killed and eaten at)
 const HOLD_DRAG=3; // per second: how fast the two bodies' velocities are pulled together by the grip
@@ -34,11 +54,11 @@ function dmgOf(o){return o===player?(player.clade?player.clade.bite:8):(o.def.dm
 function localToWorld(o,l,out){const e=o.g.matrix.elements;out.x=e[0]*l[0]+e[4]*l[1]+e[8]*l[2]+o.pos.x;out.y=e[1]*l[0]+e[5]*l[1]+e[9]*l[2]+o.pos.y;out.z=e[2]*l[0]+e[6]*l[1]+e[10]*l[2]+o.pos.z;return out;}
 function worldToLocal(o,w,out){const e=o.g.matrix.elements,s2=e[0]*e[0]+e[1]*e[1]+e[2]*e[2]||1,wx=w.x-o.pos.x,wy=w.y-o.pos.y,wz=w.z-o.pos.z;out[0]=(e[0]*wx+e[1]*wy+e[2]*wz)/s2;out[1]=(e[4]*wx+e[5]*wy+e[6]*wz)/s2;out[2]=(e[8]*wx+e[9]*wy+e[10]*wz)/s2;return out;}
 // the point on o's body (the axis of the nearest hit capsule) closest to w; o.pos if it has no shapes this frame
-function bodyPointNear(o,w,out){const W=o.shapesW;let bx=o.pos.x,by=o.pos.y,bz=o.pos.z,bd=1e9;
-  if(W)for(const c of W){const ex=c.bx-c.ax,ey=c.by-c.ay,ez=c.bz-c.az,l2=ex*ex+ey*ey+ez*ez;let qx=c.ax,qy=c.ay,qz=c.az;
+function bodyPointNear(o,w,out){const W=o.shapesW;let bx=o.pos.x,by=o.pos.y,bz=o.pos.z,bd=1e9,bi=-1;
+  if(W)for(let k=0;k<W.length;k++){const c=W[k],ex=c.bx-c.ax,ey=c.by-c.ay,ez=c.bz-c.az,l2=ex*ex+ey*ey+ez*ez;let qx=c.ax,qy=c.ay,qz=c.az;
     if(l2>1e-6){const tt=clamp(((w.x-c.ax)*ex+(w.y-c.ay)*ey+(w.z-c.az)*ez)/l2,0,1);qx+=ex*tt;qy+=ey*tt;qz+=ez*tt;}
-    const d=len3(w.x-qx,w.y-qy,w.z-qz)-c.r;if(d<bd){bd=d;bx=qx;by=qy;bz=qz;}}
-  out.x=bx;out.y=by;out.z=bz;return out;}
+    const d=len3(w.x-qx,w.y-qy,w.z-qz)-c.r;if(d<bd){bd=d;bx=qx;by=qy;bz=qz;bi=k;}}
+  bpIdx=bi;out.x=bx;out.y=by;out.z=bz;return out;}
 function gripOf(o){return o.b&&o.b.grip;}
 // The capsules a hold anchors to must be this frame's (v11.31.1, analysis_review 6): updateCreatures refreshes shapesW only within 90 m
 // of the player, so a hold taken further off read the shapes from wherever that body last was near and anchored the rope at a point
@@ -49,7 +69,8 @@ function startHold(a,b){
   const g=gripOf(a);if(!g||a.hold)return null;const K=GRIP[g.kind];
   freshShapes(a);freshShapes(b);
   const wa=localToWorld(a,g.at,T1),wb=bodyPointNear(b,wa,T2),lb=worldToLocal(b,wb,[0,0,0]);
-  const h={a:a,b:b,K:K,kind:g.kind,la:g.at,lb:lb,len:Math.max(0,len3(wa.x-wb.x,wa.y-wb.y,wa.z-wb.z)),biteT:K.cd,load:0,pull:0,t:0};
+  const edge=edgeOf(a),cover=coverAt(b,bpIdx); // what the hold is on and what the edge can do there (v11.54; measured, not yet acted on)
+  const h={a:a,b:b,K:K,kind:g.kind,la:g.at,lb:lb,len:Math.max(0,len3(wa.x-wb.x,wa.y-wb.y,wa.z-wb.z)),biteT:K.cd,load:0,pull:0,t:0,ci:bpIdx,edge:edge,cover:cover,thru:thruOf(edge,cover)};
   holds.push(h);a.hold=h;b.held=(b.held||0)+1;
   const dmg=dmgOf(a)*K.first*(a===player?0.5:1);
   if(dmg>0)wound(b,dmg,a,wb,'clamp');else{thump(0.3,90,40,b===player?null:wb,0.8,0.06);bloodBurst(wb,3,cladeOf(b));}

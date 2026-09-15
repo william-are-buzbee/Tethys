@@ -1,6 +1,6 @@
 # COMBAT.md — injury as states, not numbers
 
-**Status: designed 15 Sep 2026, not built.** Replaces the hit-point half of v11.31 (DESIGN Combat): the hold, the rope, the struggle by
+**Status: designed 15 Sep 2026; pass 1 built v11.54 the same day** (the edge and the covering read off the spec, the hold knows what it is on, no capsule past the nose; nothing dies differently yet — §7 has what the matrix found). Passes 2–4 are §8. Replaces the hit-point half of v11.31 (DESIGN Combat): the hold, the rope, the struggle by
 mass, the blood and the debris stay; `hp`, `dmg`, the bite clock's damage share and the bleed-as-hp-loss go. The person's ask, in
 their words: "instead of taking damage from a skewer, you are actually physically skewered, and die"; "instead of taking damage from a
 bite, you mostly just die from the bite"; dismemberment; "a realistic and believable combat system that is as scary and freaky as real
@@ -49,10 +49,11 @@ between the answer and the outcome.
 |---|---|---|---|
 | beak | `mouth:beak` (ringmouths) | skin; hide only at a held animal's nape; a shell or plate only at a joint | cuts small pieces from what the arms hold; the kill is one placed bite at the nerve cord |
 | rasp | `mouth:rasp` (ringmouths) | skin (latches: the lamprey); shell, given time (drills: the octopus) | feeds on a larger animal that stays alive; no grip today (`compile` gives a rasp none) — it gets a **sucker** grip, weak (`k` low), that the held rarely notices |
-| petals, cutting | `mouth:slit` with an inner edge (new flag, `edge:'cut'`; PLANET: "teeth are the variable" as the petals' inner edges) | skin, hide — with a thrash | the clamp then the thrash tears a piece out; the kill is a body wall opened |
-| petals, holding | `mouth:slit` plain, `comb:teeth` | skin only (holds, does not cut) | a clamp that ends in a swallow or a release; the comb strains |
-| needle | `weapon:spears`, a needle jaw (`mouth:slit` with `edge:'point'`) | skin, hide; not plate or shell | a point: the held is **skewered**, the rope of length zero through the capsule; tearing off it costs an open wound; through the core is death |
-| plate jaw | `mouth:plates` (hingeshells; PLANET gives the crusher its plate jaws) | shell, plate, everything under them | crushes: the kill is the covering broken and the body inside taken |
+| petals, cutting | `mouth:tentacles` with `edge:'cut'` (v11.54; PLANET: "teeth are the variable" as the petals' inner edges) | skin; hide with a thrash | the clamp then the thrash tears a piece out; the kill is a body wall opened |
+| petals, holding | `mouth:tentacles` with `edge:'hold'` (the default), `comb:teeth` | nothing (holds, does not cut) | a clamp that ends in a swallow or a release; the comb strains |
+| needle | `weapon:spears`, a needle jaw (`mouth:tentacles` with `edge:'point'`) | skin, hide; not plate or shell | a point: the held is **skewered**, the rope of length zero through the capsule; tearing off it costs an open wound; through the core is death |
+| plate jaw | `mouth:tentacles` with `edge:'crush'` (the crusher: PLANET gives it plate jaws) | shell, plate, everything under them | crushes: the kill is the covering broken and the body inside taken |
+| mouthparts | `mouth:plates` (every hingeshell) | skin; a joint of a plate | shreds what the claws hold; dismembers at the joints |
 | claws | `weapon:claws`, `fold`, `whips` | skin; a joint of a plate | the hard grip: holds what is slower, dismembers at the joints |
 | ram | `weapon:ram` | nothing — a blow | the stun, as built (v11.53), and a push; the great's |
 | rake, peck | `comb:rake`, `mouth:peck` | nothing living | grazing and carrion; no offence, no grip |
@@ -177,7 +178,30 @@ a number: the flank bite you survived is what brings the ridge.
 Where the numbers will be: `EDGE` (edge → coverings beaten, and whether a thrash is needed), `COVER` (part kind/style → covering),
 `PIN_T`, `BLEED_T`, `REGROW`, `SMELL_R`, `MISS`, `VENOM` (§3b). A table each, a comment per key, as the conventions say.
 
-## 7. Open — the person's
+## 7. What the matrix says (v11.54, `test/combat.js` §12)
+
+Every hunter placed at contact behind each of its prey, the player as all three clades: the covering under the hold, the edge's verdict, the
+gape by geometry. Findings, for the person:
+
+- **The ram** has no route through anything: a blow, by design (the stun).
+- **The hood, the lash and the ram** hunt the grazer and the finback and their claws get through neither's hide: the hingeshell hunters of
+  slowbloods have no kill in the kit. Either a lathe gets joints (the fins' roots as skin) or the person says they hold and never kill.
+- **The abyssal's comb** (PLANET) is shell to a cutting edge: no route. Adapted (a crush), or the comb is not its meal.
+- **The stone's petals are `hold`**: a trap eats by gape alone, which is what an anglerfish does; its gape (0.80) is wider than the player.
+- **The gape by geometry against the player's body** (soft 0.57, fin 0.53, coil 0.80): ridge 0.68, basker 0.74, stone 0.80, crusher 0.80,
+  abyssal 1.35. Under the gape rule the soft-arm and the finback are swallowed by all five, the coilshell by the abyssal alone. That is §3's
+  finback death; today's "the player is never swallowed" falls in pass 2.
+- **The finback's tail capsule reads hide**: the kept hit lists have no owner part; a fin is skin. Pass 3 gives the tail a part.
+
+## 8. The passes
+
+1. **The edge and the covering** — built v11.54 (above).
+2. **The states**: hp out of the loop; pinned, the placed act by the edge's verdict (swallowed, opened, skewered, a part lost); the hunters'
+   flee rule by a lost part; venom's three states (§3b). Gated by §9's 1–3.
+3. **The wound as a spec edit**: the live spec per creature, derive rerun, the rig truncated, a variant geometry for merged parts, regrowth.
+4. **The consequence**: hunters read blood, the strike's miss rule, injuries in the save; the hingeshells' poison by feeding.
+
+## 9. Open — the person's
 
 1. **Autotomy as the soft-arm's escape:** does dropping the held arm replace the ink (`Q`) or join it (the ink stays the ability, the
    drop is automatic when a hold pins an arm)? The realistic form is the second: the animal does not choose.

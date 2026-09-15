@@ -3691,3 +3691,48 @@ too little under a jet? (`FXK[0]`, the rates in `updateFXEmit`); (2) the banking
 if it leans the wrong way, negate it) and whether a rigged ringmouth's arms follow the lean; (3) the squash on a jet and a strike (`sqMax`,
 `strike`); (4) a bite: the scraps, the flinch, the nudge and the snap together — too much? (5) the stun's list on a stunned hunter; (6) `flush`
 on, for a verdict; (7) the ring on a breach from above; (8) the seeps' bubbles at the rim by day.
+
+## v11.54 — COMBAT pass 1: the edge and the covering read off the spec; no capsule past the nose (15 Sep 2026)
+
+The person: "If that first pass means fixing collisions and getting that right, lets do it." COMBAT.md (written the same day: injury as states, not
+numbers; the chemistry per clade in §3b) is built in passes; this is the first, and it changes no outcome yet — the bites still deal `dmg` — it
+makes every fight *readable*, and in reading it found the contact fault the person has been seeing.
+
+**Built.**
+- **The edge and the coverings** (creatures_spec.js `compile`, beside the grip): every body's edge — the weapon's if it has one (spears `point`,
+  claws/fold/whips `claws`, ram `ram`), else the mouth's (a beak, a rasp, the hingeshells' `plates` mouthparts as `shred`, the slowbloods'
+  petals by a new `mouth:tentacles` param **`edge`**: `hold` (the default), `cut`, `point`, `crush`) — and a covering per hit capsule, by clade
+  (ringmouths skin; slowbloods hide, plate under `plates`; hingeshells plate, shell under the big valves; drifters skin; a shell part's own
+  capsule shell; a spec's own hit list puts the shell first). `b.edge`, `b.cover[]`, `b.gape` (the mouth's radius at the world scale). Each hit
+  capsule knows its owner part (`hitOwn`). The lab shows `edge` on the petals. The six slowblood hunters get theirs: ridge, abyssal, eel, basker
+  `cut`; needle `point`; crusher `crush`. The finback player stays `hold` (COMBAT.md Open 3 is the person's).
+- **`EDGE`** (combat.js): edge × covering → the verdict — `yes`, `nape` (only at a pinned animal's nape), `joint`, `thrash` (with the body's
+  thrash), `time`, `no`. A hold records the capsule it took (`bodyPointNear` now says which: `bpIdx`), the covering there and the verdict
+  (`h.ci`, `h.edge`, `h.cover`, `h.thru`). Nothing acts on the verdict yet.
+- **The readout's hold line** (main.js `holdLine`): every hold near the player — `hold ridge jaw/cut on you hide: thrash  0.3s pull 0.00`.
+- **No capsule past the nose** (compile, one rule): measured against the real hulls (`test/geo.js`), every lathe's hit capsule ended 0.5–0.7 of a
+  body unit past the frame's nose, the cores' formulas and the kept hand lists alike — at the ridge's scale **2 m of capsule in front of its
+  mouth**, 1.6 of the basker's, 0.7 of the finback player's. Two bodies touched and pushed apart before a mouth reached the other, and a hold's
+  rope, which stops closing at the contact, held the prey that far off the jaws for good. That is the "biting isn't working right" of the
+  person's opening line, on paper. Every capsule's nose end is now clamped at `F.nose − r` (the mouth's default z); the tail end is left alone.
+  The measurement, world metres past the nose, before: ridge 2.08, basker 1.58, great 1.70, pall 1.64, veil 1.54, crusher 1.19, tread 1.16,
+  comb 0.95, stone 0.75, hood 0.75, fin 0.71, grazer 0.70; after: none.
+- **`test/combat.js` §12, the matrix**: every kind's capsules covered, every hunter edged, then every hunter nose-on at contact behind each of its
+  prey (the player as all three clades): the hold point as `startHold` takes it, the covering there, the verdict, the gape against the prey's
+  widest capsule, the grip's distance from the hold point; fails if a grip is over a metre off the body it would hold. The jaws' distance at
+  contact before the rule: ridge on the finback 2.6 m, abyssal 5.0, basker 2.3, ridge on a grazer 3.1; after: 0.4, 0.6, 0.4, 0.4. The reach
+  table: 45 → 30 of 58 pairs have a DEFS `reach` under their contact. The ridge takes a grazer at 0.3 s (0.4), the basker kills one in 8.7 s (8.5).
+
+**What the matrix says** (findings for the person, in COMBAT.md §7): the ram has no route through anything (a blow: by design); the hood, lash
+and ram's claws get through none of the grazer's or the finback's hide — hingeshell hunters of slowbloods have no kill in the kit (joints on a
+lathe, or the person's call); the abyssal's comb (PLANET) is shell to a cutting edge: no route; the stone's petals are `hold`, so a trap eats by
+gape alone; by geometry the ridge (0.68), basker (0.74), stone (0.80), crusher (0.80) and abyssal (1.35) gape wider than the player's body
+(soft 0.57, fin 0.53) — under the gape rule the player is swallowed, which is COMBAT.md's finback death; the finback's tail capsule reads hide
+(the kept hit lists have no owner part; a fin is skin).
+
+**Seen** (dev.html in the app's browser, a ridge placed on the finback from the console, the readout open): the hold line
+`hold ridge jaw/cut on you hide: thrash`, first on the tail capsule (ci 1) as the ridge came from behind, then on the body (ci 0), the rope 0.76
+m at half a second and 0 at nine, the player at 13 hp by then (the damage is v11.31's still). The matrix and the fit table above.
+**Unseen, ask in this order:** (1) bodies bash closer now — every creature's contact shrank by up to 2 m at the nose: does a ridge's nose sink into
+the player, a hunter into the flora, the finback player's own nose into what it bites? (2) a held finback with the ridge's jaws at its flank in
+third person, against the v11.31 look; (3) the lab's `edge` row on the petals.

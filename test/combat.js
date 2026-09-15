@@ -8,7 +8,7 @@ const fs=require('fs'),path=require('path');
 const ROOT=path.join(__dirname,'..');
 const ORDER=fs.readFileSync(path.join(ROOT,'src','order.txt'),'utf8').split('\n').map(s=>s.trim()).filter(s=>s&&s[0]!=='#');
 let js=ORDER.map(n=>fs.readFileSync(path.join(ROOT,'src',n+'.js'),'utf8')).join('\n');
-js+='\nglobal.__cb={fxStats,peak(){player.pos.set(0,dispY,0);cellsAround();},groundAt,chunkGrid,cellOf,creatures,carcasses,player,DEFS,SPAWN,spawn,choose,V3,keys,holds,GRIP,startHold,releaseHold,playerGrab,playerBite,updateHolds,wound,get blLive(){return blLive;},updateBlood,updateWounds,updateCreatures,updatePlayer,finishPlayer,bodies,updateSchools,get mode(){return mode;},get t(){return t;},setT:(v)=>{t=v;},massOf,cladeOf,gripOf,localToWorld,removeCreature,ECO,setWander,bodyExt,reachOf,BITE_M,ability,CLADES};';
+js+='\nglobal.__cb={fxStats,peak(){player.pos.set(0,dispY,0);cellsAround();},groundAt,chunkGrid,cellOf,creatures,carcasses,player,DEFS,SPAWN,spawn,choose,V3,keys,holds,GRIP,startHold,releaseHold,playerGrab,playerBite,updateHolds,wound,get blLive(){return blLive;},updateBlood,updateWounds,updateCreatures,updatePlayer,finishPlayer,bodies,updateSchools,get mode(){return mode;},get t(){return t;},setT:(v)=>{t=v;},massOf,cladeOf,gripOf,localToWorld,removeCreature,ECO,setWander,bodyExt,reachOf,BITE_M,ability,CLADES,EDGE,WHOLE,edgeOf,coverAt,thruOf,bodyPointNear,freshShapes,get bpIdx(){return bpIdx;},worldShapes};';
 const tmp=path.join(require('os').tmpdir(),'tethys_combat.js');
 fs.writeFileSync(tmp,'(function(){"use strict";\n'+js+'\n})();');
 process.env.PICK='0';
@@ -168,6 +168,45 @@ const groundY=-12;
   c.grab=P;c.target=P;P.cd=0;X.ability();
   check(c.grab===null&&c.target===null&&!c.hold,'the ink drops the target, the arms and the hold at once (it left c.grab on the player before)');
   X.choose(1);
+}
+// ---- 12. the edge against the covering (v11.54, COMBAT.md §2, pass 1): every capsule covered, every hunter edged, and the matrix ----
+{
+  clearAll();P.pos.set(0,-30,30);P.vel.set(0,0,0);P.hp=P.maxhp;P.dead=false;
+  const COV={skin:1,hide:1,plate:1,shell:1},kinds=Object.keys(X.DEFS);let bad=0;const noEdge=[];
+  for(const k of kinds){const c=put(k,X.V3(0,-30,60),'wander'),b=c.b;
+    if(!b.cover||b.cover.length!==b.hit.length)bad++;else for(const cv of b.cover)if(!COV[cv])bad++;
+    if(!b.edge&&c.def.prey&&c.def.prey.length)noEdge.push(k);
+    X.removeCreature(c);}
+  check(bad===0,'every hit capsule of every kind has a covering ('+bad+' without)');
+  check(noEdge.length===0,'every hunter with prey has an edge'+(noEdge.length?' — none on '+noEdge.join(', '):''));
+  // the matrix: each hunter nose-on at contact behind each of its prey (the player as all three clades), both facing +z; the hold
+  // point taken as startHold takes it (the nearest capsule to the grip), the covering read there, the edge's verdict; the route is a swallow
+  // if today's gape rule (forage, or WHOLE of the hunter's mass) takes the prey whole. Fails if a grip is nowhere near the body it would hold
+  const pairs=[];for(const k of kinds){const d=X.DEFS[k];if(!d.prey)continue;for(const p of d.prey)pairs.push([k,p]);}
+  const rows=[],routes={};let far=0;
+  for(const [hk,pk] of pairs){
+    const preys=pk==='player'?X.CLADES.map((C,i)=>({player:i})):[{kind:pk}];
+    for(const pr of preys){
+      clearAll();let prey,pname;
+      if(pr.kind!==undefined){prey=put(pr.kind,X.V3(0,-30,60),'wander');prey.vel.set(0,0,0);pname=pr.kind;}
+      else{X.choose(pr.player);prey=P;P.pos.set(0,-30,60);P.vel.set(0,0,0);P.dead=false;P.hp=P.maxhp;P.yaw=0;P.pitch=0;pname='you as '+X.CLADES[pr.player].id;}
+      const h=put(hk,X.V3(0,-30,0),'wander');h.vel.set(0,0,0); // no frame is run: a boid put by hand has no school, and the shapes are refreshed by hand below
+      const reach=X.bodyExt(h).hitN+X.bodyExt(prey).hitB+X.BITE_M;h.pos.set(0,-30,60-reach);h.home.copy(h.pos);h.wander.copy(h.pos); // at contact, where a hold's rope ends up (the AI may take hold from its DEFS reach; the rope closes from there)
+      X.freshShapes(h);if(prey===P){P.g.position.copy(P.pos);P.g.updateMatrix();X.worldShapes(P);}else X.freshShapes(prey);
+      if(!h.b.grip){rows.push(hk.padEnd(8)+' -       → '+pname.padEnd(14)+' (no grip)');continue;}
+      const wa=X.localToWorld(h,h.b.grip.at,X.V3()),wb=X.bodyPointNear(prey,wa,X.V3()),ci=X.bpIdx,cover=X.coverAt(prey,ci),edge=X.edgeOf(h),thru=X.thruOf(edge,cover);
+      const cap=prey.shapesW&&prey.shapesW[ci],gap=Math.hypot(wa.x-wb.x,wa.y-wb.y,wa.z-wb.z)-(cap?cap.r:0);if(gap>1.0)far++;
+      const ps=prey.b.g.scale.x||1;let pr_=0;for(const c of prey.b.hit)if(c.r*ps>pr_)pr_=c.r*ps;
+      const d=prey===P?null:prey.def,swallow=d&&(d.hp<=1||(d.edible&&X.massOf(prey)<=X.WHOLE*X.massOf(h)));
+      const route=swallow?'swallow':thru;(routes[hk]||(routes[hk]=[])).push(route);
+      rows.push(hk.padEnd(8)+' '+(edge||'-').padEnd(6)+' → '+pname.padEnd(14)+' '+cover.padEnd(5)+' '+route.padEnd(7)+'  gape '+h.b.gape.toFixed(2)+' / r '+pr_.toFixed(2)+'  jaws '+gap.toFixed(1)+' m off the body');
+    }}
+  console.log('  the matrix (hunter edge → prey covering: the verdict; the gape against the prey\'s widest capsule; the grip\'s distance from the hold point):');
+  for(const r of rows)console.log('    '+r);
+  const stuck=Object.keys(routes).filter(k=>routes[k].every(r=>r==='no'));
+  console.log('  hunters with no route through any of their prey (a finding for the person, not a failure): '+(stuck.length?stuck.join(', '):'none'));
+  check(far===0,'every grip is within 1 m of the body it would hold at contact ('+far+' further off)');
+  X.choose(1);clearAll();
 }
 let nanH=0;for(const h of X.holds)for(const v of [h.len,h.load,h.pull])if(!isFinite(v))nanH++;
 check(nanH===0,'no NaN in any hold');
