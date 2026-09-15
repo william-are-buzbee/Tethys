@@ -1,0 +1,161 @@
+# COMBAT.md — injury as states, not numbers
+
+**Status: designed 15 Sep 2026, not built.** Replaces the hit-point half of v11.31 (DESIGN Combat): the hold, the rope, the struggle by
+mass, the blood and the debris stay; `hp`, `dmg`, the bite clock's damage share and the bleed-as-hp-loss go. The person's ask, in
+their words: "instead of taking damage from a skewer, you are actually physically skewered, and die"; "instead of taking damage from a
+bite, you mostly just die from the bite"; dismemberment; "a realistic and believable combat system that is as scary and freaky as real
+combat, while still leaving the art style low poly and the game physics based." Decisions recorded at the end. Read PLANET (the
+stalemate rule: no clade has jaws, bone and metabolism together) and CLADES (every mouth is radial) first; this doc follows from them.
+
+## 1. What is real
+
+- **Water is size-structured.** Nearly every aquatic predator is gape-limited: it eats what fits in its mouth, whole, and prey run a
+  third to a tenth of the predator's length. Bite force scales with mass to about the two-thirds, so a small animal cannot tear or
+  crack a big animal's covering by force. It needs a point, an edge, or time.
+- **Taking a piece out of something bigger is derived and rare.** It needs a cutting edge and a body strong enough to thrash and saw:
+  a big predator's tool (sharks, orcas). The small exceptions are the parasites: lampreys and hagfish (jawless ring mouths, a sucker
+  disc and a rasping tongue, feeding on larger fish that swim off alive), cookiecutter sharks, scale- and fin-eating cichlids and
+  piranhas. Nothing evolves to injure what it does not eat; harm without a meal is defence only (spines, venom, ink).
+- **Hold is the norm.** Cephalopods hold with arms and kill with a small beak placed at the nerve cord, or drill the shell with the
+  radula and take the crab apart at the joints. Morays, crocodiles and sea snakes bite and hold. Strike-and-release is the rarity
+  (white sharks on seals, cone snails). Most things that kill prey near their own size do it by hold then one placed act.
+- **Most attacks fail.** Success on alert prey is well under half; a fish's escape reflex fires in milliseconds. A landed attack is
+  settled in seconds, and where it landed decides it: the nape or the gut kills; the flank is survived, and fish carry appalling
+  healed wounds. The survivor is slower and bleeds, and the second predator finds it.
+- **Teeth track diet, fast.** Tooth form is not chosen in a life but nearly: cichlid jaws remodel in a few generations, many fish
+  swap tooth shape as they grow and change diet. A player picking a mouth is picking a diet; the mouth is its consequence (DIRECTION:
+  the body is the tech).
+- **Venom is left out of the rule set** (the person, 15 Sep 2026): each clade may arrive at it or not by its own route; the drifters'
+  stinging cells are the one that has it from the start. Nothing below depends on it.
+
+## 2. The rule set
+
+**A fight asks three questions, in order.** Each is a comparison of two bodies' builds, read off their specs; there is no number
+between the answer and the outcome.
+
+| question | of the attacker | of the defender | the outcome |
+|---|---|---|---|
+| **gape** — can I swallow it whole? | mouth radius (the mouth part's `R` at the world scale; a slowblood's petals open to it; `WHOLE`/`WHOLE_P` are its stand-ins today) | the hit capsule's radius | yes: it is eaten at the touch, the fight never starts (`combatBite`'s forage branch, generalised) |
+| **hold** — can I keep hold of it? | the grip: `jaw`, `arms`, `claws` (compile, unchanged), strength by mass^(2/3) (`GRIP.k`) | its mass, its steering (the struggle as built: `h.load` against `str`) | yes: the held is **pinned** and the third question is asked; no: it tears free at the cost of a wound where the grip was |
+| **edge** — does my edge get through its covering? | the mouth or weapon style, below | the covering of the part the grip is on, below | yes: the placed act (the kill by clade, §3); no: the hold ends in a release, or in a swallow if a later gape says so |
+
+**Edges** are the mouth and weapon styles that already exist in `PARTS` (creatures_spec.js). New ones are new styles, not new numbers.
+
+| edge | style | gets through | how |
+|---|---|---|---|
+| beak | `mouth:beak` (ringmouths) | skin; hide only at a held animal's nape; a shell or plate only at a joint | cuts small pieces from what the arms hold; the kill is one placed bite at the nerve cord |
+| rasp | `mouth:rasp` (ringmouths) | skin (latches: the lamprey); shell, given time (drills: the octopus) | feeds on a larger animal that stays alive; no grip today (`compile` gives a rasp none) — it gets a **sucker** grip, weak (`k` low), that the held rarely notices |
+| petals, cutting | `mouth:slit` with an inner edge (new flag, `edge:'cut'`; PLANET: "teeth are the variable" as the petals' inner edges) | skin, hide — with a thrash | the clamp then the thrash tears a piece out; the kill is a body wall opened |
+| petals, holding | `mouth:slit` plain, `comb:teeth` | skin only (holds, does not cut) | a clamp that ends in a swallow or a release; the comb strains |
+| needle | `weapon:spears`, a needle jaw (`mouth:slit` with `edge:'point'`) | skin, hide; not plate or shell | a point: the held is **skewered**, the rope of length zero through the capsule; tearing off it costs an open wound; through the core is death |
+| plate jaw | `mouth:plates` (hingeshells; PLANET gives the crusher its plate jaws) | shell, plate, everything under them | crushes: the kill is the covering broken and the body inside taken |
+| claws | `weapon:claws`, `fold`, `whips` | skin; a joint of a plate | the hard grip: holds what is slower, dismembers at the joints |
+| ram | `weapon:ram` | nothing — a blow | the stun, as built (v11.53), and a push; the great's |
+| rake, peck | `comb:rake`, `mouth:peck` | nothing living | grazing and carrion; no offence, no grip |
+
+**Coverings** are the parts the grip lands on, read off the held body's spec at the hold point (`h.lb` is already in the held's frame;
+the part whose extent contains it is the covering).
+
+| covering | which bodies | beaten by |
+|---|---|---|
+| skin | ringmouths everywhere; a slowblood's fins; a hingeshell's joints and underside | any edge but rake and peck |
+| hide | a slowblood's trunk (a lathe with `armour` 0) | cutting petals with a thrash, a needle, a beak only at the nape once pinned |
+| plate | `plates:rows` (armour 0.25), `tailplate`, a `shield` core | plate jaw; claws and beak only at a joint |
+| shell | `shell:coil`, `shell:cone`, `valves` (armour 0.1–0.4; a chambered shell implodes below −450 regardless) | plate jaw; a rasp with time; nothing else — and a withdrawn coilshell offers nothing but shell |
+
+**Wounds are edits to the spec.** A lost part is removed from the creature's live spec and `derive` runs again: the body is slower,
+turns worse, sinks or floats differently because it is missing the thing that did that. This is what makes locational damage free —
+the parts list already is the location list — and it is DIRECTION's rule run backwards. The kinds:
+
+| state | what it is in the build | what it does |
+|---|---|---|
+| **pinned** | a hold whose struggle the held lost (`h.pull` never reached 1 in `PIN_T` seconds with the grip at the head or the core) | the placed act follows; the AI's target keeps it |
+| **skewered** | a hold with `len` 0 and the grip inside the capsule | carried; tearing free costs an open wound at the point; the core: death |
+| **open wound** | a part marked `torn` at a local point (`woundL`, as built) | bleeds a trail (§4) for `BLEED_T[clade]` seconds, then closes; the part's `thrust`/`turn` contribution halved while open |
+| **lost part** | the part removed from the live spec; a rig truncated (`makeChain` at the cut), a merged part hidden by its extent (a per-creature geometry: `KIND_GEO` is shared, so a variant is built, as the rule says) | re-derived; a scrap and a burst of the clade's blood (fx.js scraps, combat.js blood, both built); regrows by the clock or never (§3) |
+| **opened** | a cutting edge through the trunk's covering | death; the carcass as built |
+| **swallowed** | gape won | death; for the player a second of dark then the menu |
+| **stunned** | as built (the ram, the finback's blow) | as built |
+
+No `hp`, no `dmg`, no `maxhp`, no regeneration by seconds. `derive.hp` goes; `DEFS.hp` survives only as the immortal flag (`1e9`) until
+the last immortals (the veil, the great, the drifters, the watcher) are given coverings that nothing on the roster gets through, which
+is the believable form of the same thing. The hunters' "flee at 35% hp" becomes "flee having lost a part".
+
+## 3. Each clade's fight, and its escape
+
+**Slowbloods (jaws and bone, no metabolism): engulf, clamp and thrash, crush.** A jaw is a grip, so hold and bite are the same act
+and the fight has one stage. Most of a slowblood's meals are gape: sit or drift, then the prey is inside. Prey too big to swallow is
+clamped, and then the body does the work — the thrash (a shark's head-shake, a moray's knot) — which needs cutting petals to become a
+piece torn out; without the edge the clamp ends in a release (`HOLD_BIG` as built). The crusher's plate jaw is the third way and the
+only thing on the roster that opens a shell. A slowblood never grapples with the body: nothing to hold with but the mouth, so prey it
+cannot close its mouth on cannot be fought at all. A lost fin never regrows; the animal is crippled for good and is the next hunter's.
+*The finback player:* grab and bite are one control (the clamp); the thrash is the bite while holding (`playerBite`'s `tear`, kept);
+a cutting edge is a mouth choice for later (the creator). Its escape is the sprint and the blow (the ability, as built).
+
+**Ringmouths (metabolism and brain, a beak, no bone): hold, then a placed bite.** The arms fight, the beak does none of it. Gape never
+limits a ringmouth: it eats things its own size, in pieces, if it can hold them. The kill is not damage: once the prey's head is pinned
+the beak goes in at the nerve cord, once. So the mass struggle is the whole fight — a ringmouth that cannot pin the head never gets its
+bite, and prey heavier than it swims off with the arms attached. The rasp branch is the lamprey: latch, feed on a bigger animal that
+stays alive, let go (the rasp is the only ringmouth with a visible mouth, and this is its mouth). Their cost is being soft: anything
+with an edge takes an arm. An arm is survivable and regrows — cephalopods drop arms and regrow them in weeks; here `REGROW_D` game days —
+which is why **autotomy** is the ringmouths' escape: a held arm is dropped and the hold goes with it. *The soft-arm player:* grab is
+the arms (built), the bite is the beak's placed bite once the hold has pinned (a new condition on `playerBite`, no longer a wound);
+dropping the held arm is the escape (Open 1: whether it replaces the ink or joins it). *The coilshell player:* the withdraw beats every
+edge but the crusher's plate jaw and, given time, a rasp; its arms are short and its grip weak (`PLAYER_GRIP.coil` 0.6, kept).
+
+**Hingeshells (armour, no jaws, no bone): hold hard, dismember, or strike.** They swallow nothing; the mouthparts shred, so every meal is
+dismembered. The claws are the grip, rigid and slow, so they hold what is slower than they are: shells, sessile things, carrion, the
+wounded. The two real strikes live here — the mantis shrimp's latch-spring blow and the sea scorpion's raptorial snap from the floor —
+one shot then a hold (the `strike` tell/dur as built is the shape of it). Under 28% oxygen they are big. Their edge is the armour: a
+slowblood's clamp does nothing to a plate, a beak gets in only at a joint, so only the crusher and another hingeshell eat one. A lost
+limb regrows at the next moult (`MOULT_D` game days; no moulting is built — PLANET Hooks). The roster's slow tanks: nearly unkillable
+by most, unable to catch most. No hingeshell player yet.
+
+**Drifters:** sting what touches them, as built; no grip, no gape; the one clade with venom from the start.
+
+**Regrowth, by the clock (game days, `REGROW`):** a ringmouth arm `REGROW_D`; a hingeshell limb at the moult; a slowblood fin never;
+nothing regrows a mantle, a head or a trunk. Regrowth is the part put back into the live spec at a fraction of its scale, growing.
+
+## 4. Blood, the trail, the second predator
+
+Blood is built (combat.js: the pooled cloud in the clade's colour). Two changes: an open wound bleeds by the clade's clotting
+(`BLEED_T`: ringmouths clot fast, slowbloods slow, hingeshells barely bleed) and stops on its own — bleeding never kills by itself; and
+**hunters read the blood**: a hungry hunter (creatures_ai.js hunger, built) within `SMELL_R` of a bleeding body takes it as a target
+past its `detect`, so a wounded animal, or a wounded player, is found. That is the consequence that makes the graze frightening without
+a number: the flank bite you survived is what brings the ridge.
+
+## 5. The player
+
+- **The tell before the bite must be legible, and the escape real.** Predators must mostly miss: the strike's tell (built) is the
+  warning; the first half second is the player's — the jet, the withdraw, the ink or the dropped arm, the sprint — and a miss costs the
+  hunter its cooldown (built). `MISS` in the hunter's strike: the strike lands only if the prey has not moved more than its own length
+  across the strike's line since the tell, which is the escape reflex as a rule.
+- **No health bar.** The body shows the damage: a missing arm on the rig, the blood trail, the slower turn. The hurt flash and the
+  camera nudge (built) stay. The HUD shows nothing new.
+- **Death** is the swallow, the opened trunk, the skewer through the core, or losing what the clade cannot lose. The finback's death
+  is mostly the ridge's mouth from inside. `die()` as built (the fade, the respawn) until Open 2 is decided.
+- **Injuries persist across saves** (save.js: the live spec's edits and their regrowth clocks in the save record; the record already
+  carries `hp`, which goes). A missing arm regrows across sessions by the game clock; a lost fin is in the save forever.
+
+## 6. What goes, what stays
+
+| goes | stays |
+|---|---|
+| `hp`, `maxhp`, `dmg`, `DERIVE_K.hp`, `derive.hp`; `GRIP.first/bite/bleed`; `wound()`'s hp arithmetic; `hurtPlayer`'s hp; `HUNT_REGEN`; the 8-second heal; flee at 35% | the hold as a rope; the struggle by mass; `HOLD_DRAG`, `close`, `slow`, `shake`; `HOLD_BIG`; `WHOLE` as the gape's first form; the blood cloud; `hitFx`, the scraps, the flinch and the flush; the grab and the bite as two controls; the withdraw, the ink, the blow; the strike tell; the carcass and the ledger's `kill()` |
+
+Where the numbers will be: `EDGE` (edge → coverings beaten, and whether a thrash is needed), `COVER` (part kind/style → covering),
+`PIN_T`, `BLEED_T`, `REGROW`, `SMELL_R`, `MISS`. A table each, a comment per key, as the conventions say.
+
+## 7. Open — the person's
+
+1. **Autotomy as the soft-arm's escape:** does dropping the held arm replace the ink (`Q`) or join it (the ink stays the ability, the
+   drop is automatic when a hold pins an arm)? The realistic form is the second: the animal does not choose.
+2. **Death per slot:** the respawn as built, or the slot ends (a new animal in the same world, the ledger kept)? DIRECTION's growth
+   stages make the second heavier and truer.
+3. **Cutting petals for the finback:** born with them (the finback is the roster's fast hunter) or a creator choice later? The roster's
+   slowblood hunters (ridge, eel, abyssal) get them either way.
+4. **The rasp as a player path** (latch on a basker and feed): a fourth playable, or the rasp's own thing? Not now, but it decides
+   whether the sucker grip gets a player branch.
+5. **How much the hunters miss:** `MISS` at the escape-reflex rule, or looser for the first hours of a slot?
+
+Answered 15 Sep 2026: venom is per clade and outside the rule set; the drifters have it from the start.
