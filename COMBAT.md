@@ -1,6 +1,6 @@
 # COMBAT.md — injury as states, not numbers
 
-**Status: designed 15 Sep 2026; passes 1, 2 and 4 built the same day (v11.54, v11.55, v11.56)** (pass 1: the edge and the covering read off the spec, the hold knows what it is on, no capsule past the nose; pass 2: no hit points — the gape, the pin and the placed act, wounds that bleed and slow, paralysis and the sting, autotomy, death ends the slot's animal; pass 4: hunters read blood, the strike's miss rule, injuries in the save, the poison by feeding; the numbers in DESIGN Combat). §7 has what the matrix found; pass 3 is what remains (§8). Replaces the hit-point half of v11.31 (DESIGN Combat): the hold, the rope, the struggle by
+**Status: designed and built in full 15 Sep 2026 (passes 1, 2, 4, 3: v11.54–v11.57)** (pass 1: the edge and the covering read off the spec, the hold knows what it is on, no capsule past the nose; pass 2: no hit points — the gape, the pin and the placed act, wounds that bleed and slow, paralysis and the sting, autotomy, death ends the slot's animal; pass 4: hunters read blood, the strike's miss rule, injuries in the save, the poison by feeding; pass 3: the wound as a spec edit — a tail torn off, the body re-derived, the stump and the regrowth; the numbers in DESIGN Combat). §7 has what the matrix found; §8 the passes as built. What is left is tuning by play. Replaces the hit-point half of v11.31 (DESIGN Combat): the hold, the rope, the struggle by
 mass, the blood and the debris stay; `hp`, `dmg`, the bite clock's damage share and the bleed-as-hp-loss go. The person's ask, in
 their words: "instead of taking damage from a skewer, you are actually physically skewered, and die"; "instead of taking damage from a
 bite, you mostly just die from the bite"; dismemberment; "a realistic and believable combat system that is as scary and freaky as real
@@ -192,7 +192,7 @@ gape by geometry. Findings, for the person:
 - **The gape by geometry against the player's body** (soft 0.57, fin 0.53, coil 0.80): ridge 0.68, basker 0.74, stone 0.80, crusher 0.80,
   abyssal 1.35. Under the gape rule the soft-arm and the finback are swallowed by all five, the coilshell by the abyssal alone. That is §3's
   finback death; today's "the player is never swallowed" falls in pass 2.
-- **The finback's tail capsule reads hide**: the kept hit lists have no owner part; a fin is skin. Pass 3 gives the tail a part.
+- **The finback's tail capsule reads hide**: the kept hit lists have no owner part; a fin is skin. Pass 3 gave the tail its part (v11.57).
 
 ## 8. The passes
 
@@ -202,7 +202,10 @@ gape by geometry. Findings, for the person:
    bites until pass 3; paralysis and the sting (§3b; the poison is pass 4); autotomy automatic; the slot's animal ends at death. Two rules
    the build added: the sting puts off only a holder under `STING.mass` 4 × the spined body's mass (a ridge swallows a grazer's spines), and
    past 95 m a fight resolves on the pin clock alone.
-3. **The wound as a spec edit**: the live spec per creature, derive rerun, the rig truncated, a variant geometry for merged parts, regrowth.
+3. **The wound as a spec edit** — built v11.57: the live spec per creature, derive rerun (`speedK`, `turnK`), a hold on a part's own capsule
+   takes the part (the tail; `own: 'tail'` on the slowbloods' hit lists), the stump and the arm growing back segment by segment, the lost
+   parts in the save. Not built: a variant geometry for merged parts (no losable part is merged — the tail is its own mesh) and the far
+   bake without the part (shared per kind).
 4. **The consequence** — built v11.56: hunters read blood (`SMELL_R` 90 m); the strike's miss rule as a commit with the mouth open 0.25 s
    before the bite and a dodge across the strike's line (`MISS.k` 0.8 of the prey's width, set by five trials each way); injuries in the
    save; the hingeshells' poison by where they fed (below the chemocline, in the vents' heat), the abyssal immune to its combs (§7's answer:

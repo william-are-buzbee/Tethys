@@ -3827,3 +3827,40 @@ darter beside it stays clean; the eel's chase of a bleeding finback and the pois
 (`MISS.t`, `MISS.k`)? (2) the trail: does a wounded finback now draw a second hunter in the shelf's traffic, and is 90 m too far
 (`SMELL_R`)? (3) a sick finback for 45 s at half speed after a gulp at the rim — too long, or should the HUD say why (`POISON.t`)? (4) the
 arm still gone on a continue, then back five days on.
+
+
+## v11.57 — COMBAT pass 3: the wound as a spec edit — a tail torn off and the body slower for good; the stump, and the arm growing back (15 Sep 2026)
+
+The person: "Keep going, I checked and it looks good." The last of COMBAT.md's four passes.
+
+**Built.**
+- **A creature's body is its spec, and a wound edits it** (combat.js `liveSpec`, `rederive`): the first wound copies the filled spec to the
+  body (`o.live`); a lost part is `lost` on it; the calculator runs on the live build against the whole one and the ratios are the body's
+  from then on — `speedK` (floored at `LOSE.floor` 0.2: a finback without its tail has its fins and nothing else) through `slowOf`, `turnK`
+  through the creatures' and the player's turn rate. A dropped arm edits the arm count the same way (`armsLive`).
+- **What a hold can take** (`LOSE.parts`: the tail): a hold on a capsule that belongs to a part (compile's `hitOwn`; the four slowbloods with a
+  tail capsule mark it `own: 'tail'` in their hit lists, and a tail or a fin is skin on any clade) takes the part instead of the life when
+  the edge is through (`actOn` → `losePart`): the part's meshes are hidden (`r.nodes`, the objects a part added at compile), the body
+  re-derived, a big burst of blood and a bleed, the hunter let go with its mouthful (`LOSE.cool` 4 s, `meal` 0.15). A gape swallows from
+  the body, never from a tail. A hunter that loses a part flees `LOSE.flee` 12 s — the flee rule the pass 2 bite count stood in for.
+- **The stump and the regrowth** (physics.js `RIG_STUMP` 1, combat.js `regrowTick`): a dropped arm keeps one segment; the rest collapse to
+  its end and grow back segment by segment as the arm's clock runs (`c.grow` 0..1 over `AUTOTOMY.regrow` 5 days; the first arm gone is the
+  first back). A slowblood's tail never regrows.
+- **The commit coasts**: a chasing hunter's body slows while its jaws open (`c.vel × (1−3·dt)` for the quarter second), so the bite lands
+  where it was aimed — without it a ridge ran two body-lengths past its commit and bit the mid-body. On the floor a big hunter still bites
+  from above (its clearance keeps it 2 m up), so the tail is taken in open water, the joint on the floor.
+- **The save** carries the lost parts (`lost`), put back by `injuriesLoad`.
+- **`test/combat.js` §14**: a ridge from behind in open water takes the finback by the tail (capsule 1, skin) at 2.6 s and tears it off, not
+  the life; the finback is at speedK 0.15 (the floor then; 0.2 now) and turnK 1.5 with the tail's meshes hidden, and is swallowed 6.7 s later
+  — the survivor is slower and the second bite finds it; the soft-arm drops an arm to a hook at 1.2 s, the chain gone with grow 0 and the
+  live spec at seven arms, half back halfway through five days, whole after them with the speed back. The states now run in the test's
+  frame (`updateStates`); §3's eel is placed ahead of the finback (from behind it took the tail, which is right, and not what §3 measures).
+
+**Seen** (dev.html in the app's browser, the loop driven by hand): the soft-arm from above after a hook, one arm a stub among seven whole
+(`armsLost` 1, the live spec at 7, speedK 0.989 — the arms hardly move a jetter), the blood scraps round it; the same arm at half length
+two and a half days on (grow 0.50); the finback after a ridge from behind: the tail gone, blood at the stump, the pectoral fins left
+(speedK 0.2, turnK 1.5, bleeding 13.5 s), the ridge let go with its mouthful.
+**Unseen, ask in this order:** (1) a finback without its tail in play — at a fifth of its speed it is a slow death; is `LOSE.floor` the
+number, or should a lost tail end the animal outright? (2) the stump's look at the arm ring in first person and the regrowth's steps; (3) a
+hunter that lost a part fleeing (`LOSE.flee`), and whether the flee-by-bites rule (`FLEE`) should now go; (4) the far LOD: a kind's bake
+is shared, so a lost tail shows again past `lodNear`.

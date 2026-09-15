@@ -1299,7 +1299,14 @@ lasting out the commit; `dropTarget` forgets a commit. Seen 15 Sep 2026: a finba
 (absolute world-clock times), `bleed`. **The poison** (`POISON`, `poisonTick` every 2 s per hingeshell): below `deep` −440 or where the field's
 heat is over 0.45, `c.poison` loads to 1 in `load` 0.4 game days and clears in `clear` 3; a kill or a carcass over `min` 0.35 sickens the eater
 (`sicken`: `sickT` `t` 45 s, `slow` 0.5, its cool held so it hunts nothing; the player slowed, the hurt flash) instead of feeding it; `DEFS.immune`
-(the abyssal) eats it whole. **Autotomy** (automatic): a ringmouth about to be pinned by a jaw or claws drops the held arm (`c.gone`: the chain's frames
+(the abyssal) eats it whole. **The wound as a spec edit (v11.57, pass 3).** The first wound copies the filled spec to the body (`liveSpec`); a lost part is `lost` on it and
+`rederive` runs the calculator on the live build against the whole one: `speedK` (floored at `LOSE.floor` 0.2) into `slowOf`, `turnK` into the
+turn rates; a dropped arm edits the arm count (`armsLive`). A hold on a capsule a part owns (`b.hitOwn`; the slowbloods' tail capsules are
+`own: 'tail'`; a tail or a fin is skin) takes the part when the edge is through (`actOn` → `losePart`: the part's `r.nodes` hidden, a burst of
+blood and a bleed, the holder let go with its mouthful — `LOSE.cool` 4 s, `meal` 0.15; a hunter that loses a part flees `LOSE.flee` 12 s);
+a gape swallows from the body only. A dropped arm keeps `RIG_STUMP` 1 segment and the rest grow back with `c.grow` (`regrowTick`, the first
+gone the first back); a tail never regrows. The commit coasts (`c.vel × (1−3·dt)`) so the bite lands where aimed. The far bake is shared per
+kind, so a lost part shows again past `lodNear`. **Autotomy** (automatic): a ringmouth about to be pinned by a jaw or claws drops the held arm (`c.gone`: the chain's frames
 collapse to its base in `rigSkin`), the hold goes with it, the holder keeps it (`AUTOTOMY.cool` 6 s), the arm regrows in `AUTOTOMY.regrow` 5
 game days, never the last `keep` 2. **Death ends the slot's animal** (save.js `slotDeath`): the cause on the slot, the menu from the spot with
 the cause as its note, continue a new animal at the peak in the same world. `GRIP.first/bite/bleed` are a bite's size for the blood and the

@@ -39,7 +39,7 @@ node serve.js            static server; open http://localhost:8080/dev.html (edi
 | `test/anim.js` | tail rate and arm-tip jerk two minutes in through accelerate/cruise/turn/sprint/coast; fails on spin, shiver or fling | `node test/anim.js` (`T0=600`) |
 | `test/audio.js` | the audio graph against the stub's fake `AudioContext` (any NaN param throws), the space at five sites, tick cost | `node test/audio.js` |
 | `test/snow.js` | the marine snow mix at thirteen sites, layering invariants, tick cost | `node test/snow.js` |
-| `test/combat.js` | holds form and kill, ropes never NaN, the player held, bled, pinned and killed, the grab, the bite, the sting, the paralysis, the blood trail, the miss rule, the poison; a table of every hunter of the player and its outcome; the matrix (v11.54): every hunter at contact behind each prey — the covering under the hold, the edge's verdict, the gape, the jaws' distance | `node test/combat.js` |
+| `test/combat.js` | holds form and kill, ropes never NaN, the player held, bled, pinned and killed, the grab, the bite, the sting, the paralysis, the blood trail, the miss rule, the poison, a tail torn off and the stump growing back; a table of every hunter of the player and its outcome; the matrix (v11.54): every hunter at contact behind each prey — the covering under the hold, the edge's verdict, the gape, the jaws' distance | `node test/combat.js` |
 | `test/pool.js` | the flora pools (v11.52): blocks contiguous, counts summing, no NaN, a cell's block identical alone, first or last, the others untouched by a removal, the card species per cell, growth without loss | `node test/pool.js` |
 | `test/census.js` | the ecology on paper: capacities, rates, the model for N days; fails if a kind collapses under a fifth | `node test/census.js 120` (`--test` runs 40) |
 | `test/live.js` | the ecology where the player is: four game days of clutches laid and hatched with cells loaded, then a table of every hunter's hunger against the distance to its nearest meal | `node test/live.js`, `TIER=low …` |
@@ -105,7 +105,7 @@ test/              headless tests, the THREE stub, real geometry for previews, t
 | far.js | the whole world at once, built once: coarse far terrain, the apron past the edge, every big structure, impostor cards, the water/floor maps |
 | player.js | `CLADES`, movement in water / air / on land, camera, abilities, damage, ink, splashes |
 | atmosphere.js | the sea surface, the sky, rain, haze, light shafts, marine snow, fog and light by medium, HUD, compass |
-| combat.js | holds (a rope between a grip and a hit capsule), the struggle, the states (v11.55: the gape, the pin, the placed act by `EDGE`, wounds that bleed and slow, venom, autotomy; v11.56: the blood trail, the strike's miss rule, the poison by feeding), blood, the player's grab and bite |
+| combat.js | holds (a rope between a grip and a hit capsule), the struggle, the states (v11.55: the gape, the pin, the placed act by `EDGE`, wounds that bleed and slow, venom, autotomy; v11.56: the blood trail, the strike's miss rule, the poison by feeding; v11.57: the wound as a spec edit — a part torn off, the body re-derived, the stump and the regrowth), blood, the player's grab and bite |
 | fx.js | the body's effects (v11.53, POLISH pass B): the debris points (silt, bubbles, scraps) and their emitters, `bodyPose` (squash and stretch, banking, the stun), `hitFx` (the flinch, the flush, the debris at a wound) |
 | effects.js | the effects list (`e`): cosmetic systems switched live, saved in `localStorage['tethys.fx']` |
 | save.js | the save files (v11.47): slots in IndexedDB (localStorage, memory as fallbacks) with a .json export/import; the profile (what has been seen, the creator's key and its saved creatures); `startNew`/`startFrom`/`worldClear`; `slotDeath` (v11.55: the animal's death written to the slot, the menu) |
@@ -126,7 +126,7 @@ Docs, most upstream first. When a doc's Open list says a choice is the person's,
 | `CREATOR.md` | the spec-compiled body plans and the lab (v11.10–11.25); the person's decisions at its end |
 | `PIXEL.md` | the de-res (14 Sep 2026, designed, not built): every surface in world/body-fixed texels at the pixel light's grain, one switch on `e`; the person's answers at its end (14 Sep) — ready to build |
 | `POLISH.md` | the low-budget effects survey: pass A built (v11.13, v11.23), pass B (v11.53); pass C, the night, is next |
-| `COMBAT.md` | injury as states, not numbers (15 Sep 2026): gape, hold, edge against covering; wounds as spec edits; the per-clade kill, escape and chemistry; pass 1 built v11.54 (the edge and the covering), pass 2 v11.55 (the states, no hit points), pass 4 v11.56 (the trail, the miss, the poison), pass 3 in §8; §7 the matrix's findings; §9 the person's answers |
+| `COMBAT.md` | injury as states, not numbers (15 Sep 2026): gape, hold, edge against covering; wounds as spec edits; the per-clade kill, escape and chemistry; pass 1 built v11.54 (the edge and the covering), pass 2 v11.55 (the states, no hit points), pass 4 v11.56 (the trail, the miss, the poison), pass 3 v11.57 (the wound as a spec edit) — built in full; §7 the matrix's findings; §9 the person's answers |
 | `AUDIO.md` | the sound's design (v11.14); every number was chosen blind |
 | `DESIGN.md` | **the reference**: one section per system with the owning file, the numbers, the knobs and the reasons |
 | `analysis_believability.md` | the 12 Sep analysis: how the world, flora, clades and spawning work, and where the believability is strong and thin |
@@ -172,7 +172,9 @@ Docs, most upstream first. When a doc's Open list says a choice is the person's,
   the lurker's paralysis, the spined slowbloods' sting) and autotomy (a ringmouth drops the held arm) ride the same hold. `DEFS.hp` is only the
   forage (≤1) / immortal (≥1e8) flag. The player's death ends the slot's animal (save.js `slotDeath`). A hunter commits its bite 0.25 s out
   with its mouth open and misses prey that dodges across the line (`MISS`); hungry hunters take a bleeding body within `SMELL_R` as their
-  chase; hingeshells fed below the chemocline or in the vents' heat are poison to eat (`POISON`, `DEFS.immune`).
+  chase; hingeshells fed below the chemocline or in the vents' heat are poison to eat (`POISON`, `DEFS.immune`). A wound edits a live copy of
+  the body's spec and the calculator reruns (`speedK`, `turnK`); a hold on a part's own capsule (`hitOwn`, the slowbloods' tails) takes the
+  part instead of the life (`losePart`); a dropped arm keeps a stump and grows back (`RIG_STUMP`, `c.grow`).
 - **The frame** (main.js `loop`): clock and tide → streaming (`manageChunks`, `manageFar`) → menu/zoo/lab → `updatePlayer`
   (move, rock, floor) → `updateCreatures` (creatures move; bodies push apart with the player among them; the player out of arms;
   arms simulated) → `finishPlayer` (pose, own arms, camera) → eggs, ecology tick → pads, disturbers, snow → wounds, ink, splashes,
@@ -242,6 +244,8 @@ Docs, most upstream first. When a doc's Open list says a choice is the person's,
   completes with every neighbour's reaching structure — `test/pool.js` fails if a cell's blocks differ by arrival order.
 - No hit capsule ends past the frame's nose: `compile` clamps every capsule's nose end at `F.nose − r` (v11.54). A hand-written `hit` list
   that reaches past the mouth is cut back silently; a spec's own list puts the shell's capsule first (the covering reads it so).
+- A lost part is hidden by its meshes (`r.nodes`, compile) and struck from the live spec; the kind's shared far bake still has it, so it shows
+  again past `lodNear`. A spec's own `hit` list marks a part's capsule with `own` (the tails) or the covering reads the core's.
 - Never mutate a spawned creature's body geometry (it is shared per kind in `KIND_GEO`) — build a variant. `disposeCreature`
   skips shared geometry.
 - The cell and region generators (`buildTerrain`, `placeFloraType`, `makeSchool`, `bigsGen`, `impostorsGen`) yield inside their

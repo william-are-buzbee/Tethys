@@ -8,7 +8,7 @@ const fs=require('fs'),path=require('path');
 const ROOT=path.join(__dirname,'..');
 const ORDER=fs.readFileSync(path.join(ROOT,'src','order.txt'),'utf8').split('\n').map(s=>s.trim()).filter(s=>s&&s[0]!=='#');
 let js=ORDER.map(n=>fs.readFileSync(path.join(ROOT,'src',n+'.js'),'utf8')).join('\n');
-js+='\nglobal.__cb={fxStats,peak(){player.pos.set(0,dispY,0);cellsAround();},groundAt,chunkGrid,cellOf,creatures,carcasses,player,DEFS,SPAWN,spawn,choose,V3,keys,holds,GRIP,startHold,releaseHold,playerGrab,playerBite,updateHolds,wound,get blLive(){return blLive;},updateBlood,updateWounds,updateCreatures,updatePlayer,finishPlayer,bodies,updateSchools,get mode(){return mode;},get t(){return t;},setT:(v)=>{t=v;},massOf,cladeOf,gripOf,localToWorld,removeCreature,ECO,setWander,bodyExt,reachOf,BITE_M,ability,CLADES,EDGE,WHOLE,BLEED_T,WOUND_SLOW,STING,PIN,slowOf,envenom,SMELL_R,MISS,POISON,kill,sicken,findBleeding,edgeOf,coverAt,thruOf,bodyPointNear,freshShapes,get bpIdx(){return bpIdx;},worldShapes};';
+js+='\nglobal.__cb={fxStats,peak(){player.pos.set(0,dispY,0);cellsAround();},groundAt,chunkGrid,cellOf,creatures,carcasses,player,DEFS,SPAWN,spawn,choose,V3,keys,holds,GRIP,startHold,releaseHold,playerGrab,playerBite,updateHolds,wound,get blLive(){return blLive;},updateBlood,updateWounds,updateCreatures,updatePlayer,finishPlayer,bodies,updateSchools,get mode(){return mode;},get t(){return t;},setT:(v)=>{t=v;},massOf,cladeOf,gripOf,localToWorld,removeCreature,ECO,setWander,bodyExt,reachOf,BITE_M,ability,CLADES,EDGE,WHOLE,BLEED_T,WOUND_SLOW,STING,PIN,slowOf,envenom,SMELL_R,MISS,POISON,kill,sicken,findBleeding,AUTOTOMY,DAY_S,LOSE,updateStates,edgeOf,coverAt,thruOf,bodyPointNear,freshShapes,get bpIdx(){return bpIdx;},worldShapes};';
 const tmp=path.join(require('os').tmpdir(),'tethys_combat.js');
 fs.writeFileSync(tmp,'(function(){"use strict";\n'+js+'\n})();');
 process.env.PICK='0';
@@ -19,7 +19,7 @@ const dt=1/60;
 const ch=X.chunkGrid[X.cellOf(0)*16+X.cellOf(0)];
 const P=X.player;
 // one frame of the game's combat path: the player, the creatures (contact, holds, arms), the wounds and the blood
-function frame(){X.setT(X.t+dt);if(X.mode==='play')X.updatePlayer(dt);X.updateSchools(dt);X.updateCreatures(dt);if(X.mode==='play')X.finishPlayer(dt,X.bodies);X.updateWounds(dt);X.updateBlood(dt);}
+function frame(){X.setT(X.t+dt);if(X.mode==='play')X.updatePlayer(dt);X.updateSchools(dt);X.updateCreatures(dt);if(X.mode==='play')X.finishPlayer(dt,X.bodies);X.updateWounds(dt);X.updateStates(dt);X.updateBlood(dt);}
 function clearAll(){for(const c of X.creatures.slice())X.removeCreature(c);for(const h of X.holds.slice())X.releaseHold(h);}
 function put(kind,pos,state,target){const c=X.spawn(ch,kind,pos,Math.random,{ent:-1});c.hunger=1;c.cool=0;c.scanT=0;if(state){c.state=state;c.target=target||null;c.chaseT=0;}c.home.copy(pos);return c;}
 function anchorGap(h){const A=X.localToWorld(h.a,h.la,X.V3()),B=X.localToWorld(h.b,h.lb,X.V3());return Math.hypot(A.x-B.x,A.y-B.y,A.z-B.z);}
@@ -55,7 +55,7 @@ const groundY=-12;
 // ---- 3. the player held (v11.55, the states): an eel takes hold, bites on its clock, the player bleeds and is slowed; pinned, the eel's cutting edge kills ----
 {
   clearAll();P.pos.set(0,-30,30);P.vel.set(0,0,0);P.bleed=0;P.cause='';P.dead=false;
-  const e=put('eel',X.V3(0,-30,26),'chase',P);
+  const e=put('eel',X.V3(0,-30,34),'chase',P); // ahead of the finback (at rest it faces +z): from behind it would take the tail (v11.57)
   let formed=-1,pinned=-1,died=-1,bleedSeen=false,slowSeen=false,heldK=1;
   for(let i=0;i<60*10;i++){frame();if(e.hold&&e.hold.b===P){if(formed<0)formed=i;heldK=Math.min(heldK,P.heldK);if(e.hold.pinned&&pinned<0)pinned=i;}if(P.bleed>0){bleedSeen=true;if(X.slowOf(P)<1)slowSeen=true;}if(P.cause&&died<0){died=i;break;}}
   check(formed>=0,'the eel takes hold of the player');
@@ -244,6 +244,30 @@ const groundY=-12;
   clearAll();P.pos.set(0,-30,30);P.sickT=0;const s3=put('darter',X.V3(0,-30,32),'wander');s3.poison=1;X.playerBite();
   check(!s3.alive&&P.sickT>0&&X.slowOf(P)<1,'the finback that gulps one is sick and slowed (×'+X.slowOf(P)+')');P.sickT=0;
   clearAll();
+}
+// ---- 14. pass 3 (v11.57, COMBAT.md §2): the wound as a spec edit — a tail torn off, the body slower for good; a stump that grows back ----
+{
+  clearAll();X.choose(1);const gy0=X.groundAt(0,30);P.pos.set(0,gy0+12,30);P.vel.set(0,0,0);P.dead=false;P.cause='';P.yaw=0; // at rest the body faces +z: its tail is toward −z; in open water, so the ridge comes level (on the floor its clearance keeps it 2 m up and it bites the joint from above)
+  const r=put('ridge',X.V3(0,gy0+12,14),'chase',P);let lost=-1,ci=-1;
+  for(let i=0;i<60*12;i++){frame();if(r.hold&&r.hold.b===P&&ci<0)ci=r.hold.ci;if(P.lost&&P.lost.length&&lost<0){lost=i;break;}if(P.cause)break;}
+  check(lost>=0,'a ridge from behind takes the finback by the tail (capsule '+ci+', skin) and tears it off, not the life ('+(lost>=0?(lost*dt).toFixed(1):'-')+' s; cause "'+P.cause+'")');
+  check(P.speedK<0.75&&P.turnK!==1,'and the finback is slower for good: the live spec without its tail re-derived (speedK '+P.speedK.toFixed(2)+', turnK '+P.turnK.toFixed(2)+')');
+  const hid=P.lost&&P.lost.every(pi=>{const b=P.b.built[pi];return b&&b.nodes&&b.nodes.length&&b.nodes.every(m=>m.visible===false);});
+  check(!!hid,'the tail\'s meshes are hidden');
+  let taken=-1;for(let i=0;i<60*12;i++){frame();if(P.cause){taken=i;break;}}
+  console.log('  crippled, the finback '+(taken>=0?'is taken '+(taken*dt).toFixed(1)+' s later: '+P.cause:'is still alive 12 s later'));
+  // the stump: the soft-arm drops an arm to a hook; one segment stays; halfway through five days half of it is back; then all of it
+  clearAll();let si=0;for(let i=0;i<X.CLADES.length;i++)if(X.CLADES[i].id==='soft')si=i;X.choose(si);P.pos.set(0,-30,30);P.vel.set(0,0,0);P.dead=false;P.cause='';
+  const hk=put('hook',X.V3(0,-30,34),'lunge',P);hk.lungeT=3;hk.hunger=1;let dropped=-1;
+  for(let i=0;i<60*8;i++){frame();if(P.armsLost>0){dropped=i;break;}if(P.cause)break;}
+  const rig=P.b.rigs.find(r=>r.chains.length>=4),ch=rig&&rig.chains.find(c=>c.gone);
+  check(dropped>=0&&!!ch,'the soft-arm drops an arm to the hook ('+(dropped>=0?(dropped*dt).toFixed(2):'-')+' s)');
+  const k0=P.speedK;check(ch&&ch.grow===0&&P.live&&P.live.parts.some(p=>p.kind==='arms'&&p.n===7),'the stump: the chain gone with grow 0, the live spec at seven arms (speedK '+k0.toFixed(2)+')');
+  X.setT(X.t+X.AUTOTOMY.regrow*X.DAY_S*0.5);frame();
+  check(ch.gone&&ch.grow>0.45&&ch.grow<0.55,'halfway through '+X.AUTOTOMY.regrow+' days the arm is half back (grow '+ch.grow.toFixed(2)+')');
+  X.setT(X.t+X.AUTOTOMY.regrow*X.DAY_S*0.51);frame();
+  check(!ch.gone&&P.armsLost===0&&P.live.parts.some(p=>p.kind==='arms'&&p.n===8)&&P.speedK===1,'and whole after them: eight arms, the speed back (speedK '+P.speedK.toFixed(2)+')');
+  X.choose(1);clearAll();
 }
 let nanH=0;for(const h of X.holds)for(const v of [h.len,h.load,h.pull])if(!isFinite(v))nanH++;
 check(nanH===0,'no NaN in any hold');

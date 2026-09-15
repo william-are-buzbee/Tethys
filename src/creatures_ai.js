@@ -41,7 +41,7 @@ function juvDef(kind){let j=JUV_DEF[kind];if(j)return j;const d=DEFS[kind],s=ECO
 function spawn(ch,kind,pos,rng,opt){
   const juv=!!(opt&&opt.juv),d=juv?juvDef(kind):DEFS[kind],b=d.build(),EK=ecoOf(kind);
   const c={kind:kind,def:d,g:b.g,anim:b.anim,pos:pos.clone(),vel:V3(0,0,0),home:pos.clone(),hp:d.hp,state:'wander',t0:rng()*100,lastSpd:0,lastYaw:0,roll:0,rollV:0,sq:0,stunSide:rng()<0.5?-1:1,target:null,biteT:0,wanderT:0,wander:pos.clone(),alive:true,gone:false,stun:0,bored:0,cool:rng()*3,scanT:rng()*0.5,alarm:0,fleeT:0,lungeT:0,ramT:0,school:null,off:null,offT:0,chunk:ch,lod:-1,parts:null,lodMeshes:null,sub:1,wet:true,grounded:false,flopT:0,
-    b:b,mass:bodyMass(d),bound:0,reach:0,shapesW:null,chainW:null,grab:null,holding:0,hold:null,held:0,bleed:0,paraT:0,stungT:0,hurtN:0,armsLost:0,regrow:null,sickT:0,poison:0,poisT:rng()*2,lungeC:0,missN:0,cWith:null,d6:0,par:creatures.length&1, // hold: the hold it has on something, held: how many have hold of it, bleed: hp still to lose to its wounds (combat.js)
+    b:b,mass:bodyMass(d),bound:0,reach:0,shapesW:null,chainW:null,grab:null,holding:0,hold:null,held:0,bleed:0,paraT:0,stungT:0,hurtN:0,armsLost:0,regrow:null,sickT:0,poison:0,poisT:rng()*2,lungeC:0,missN:0,speedK:1,turnK:1,live:null,lost:null,cWith:null,d6:0,par:creatures.length&1, // hold: the hold it has on something, held: how many have hold of it, bleed: hp still to lose to its wounds (combat.js)
     st:{tell:0,strike:0,jet:false},tellT:0,strikeT:0,recoverT:0,burstT:rng()*2,face:null,bit:false,accT:0,threat:null,
     ent:opt&&opt.ent!==undefined?opt.ent:-1,hunger:EK.hunter?rng():0,starveT:0,hunt:0,feedT:0,feedAt:null,dead:false,flesh:0,deadT:0,scav:null,scavT:rng()*0.5,juv:juv?EK.grow*DAY_S*(0.8+0.4*rng()):0}; // ent: the ledger entry; hunger 0 fed..1 starving (ecology.js); juv: seconds until it grows up // st: what the anim reads (creatures_builders.js); the tell and the strike as clocks
   b.g.position.copy(pos);scene.add(b.g);
@@ -219,7 +219,7 @@ function updateHunter(c,dt){
       c.grab=(c.b.rigs&&dist<armReach(c,tg,1.3))?tg:null; // the arms reach for prey in range and close on it (physics.js)
       // the commit (v11.56, COMBAT.md §5): in reach, the mouth opens (the tell) and the bite lands MISS.t later — on the prey if it has moved under its own
       // width since and is still in reach, on water if it dodged; a miss costs the hunter MISS.cool cooldowns. The escape reflex as a rule
-      if(c.lungeC>0){c.lungeC-=dt;c.st.strike=1;if(c.lungeC<=0){c.lungeC=0;c.biteT=d.biteCD||1.2;if(dist<reachOf(c,tg)*MISS.range&&dodged(tpos,c.lungeP,c.lungeN)<missWin(tg,MISS.t))landBite(c,tg);else missed(c,tg);}}
+      if(c.lungeC>0){c.lungeC-=dt;c.st.strike=1;c.vel.multiplyScalar(1-3*dt);if(c.lungeC<=0){c.lungeC=0;c.biteT=d.biteCD||1.2;if(dist<reachOf(c,tg)*MISS.range&&dodged(tpos,c.lungeP,c.lungeN)<missWin(tg,MISS.t))landBite(c,tg);else missed(c,tg);}}
       else if(dist<reachOf(c,tg)&&c.biteT<=0){c.lungeC=MISS.t;[c.lungeP,c.lungeN]=commitAt(c,tpos,c.lungeP,c.lungeN);c.st.strike=1;}
     }
   }else{
@@ -311,7 +311,7 @@ function updateLurker(c,dt){
   const d=c.def;if(hungerTick(c,dt))return;
   if(c.state==='sit'){c.vel.set(0,0,0);c.cool-=dt;c.scanT-=dt;if(c.scanT<=0){c.scanT=0.25;if(c.cool<=0&&c.hunger>ECO.hungry){const tg=findPrey(c,d.radius);if(tg){c.state='lunge';c.target=tg;c.lungeT=1.3;}}}}
   else if(c.state==='lunge'){const tg=c.target,tp=tg===player?player.pos:tg?tg.pos:c.home,dist=c.pos.distanceTo(tp);c.lungeT-=dt;seek(c,tp,d.lunge,dt,6);c.biteT-=dt;c.grab=c.b.rigs&&tg&&dist<armReach(c,tg,1.6)?tg:null;if(d.hang)c.st.strike=1;
-    if(c.lungeC>0){c.lungeC-=dt;if(c.lungeC<=0){c.lungeC=0;c.biteT=1;if(tg&&dist<reachOf(c,tg)*MISS.range&&dodged(tp,c.lungeP,c.lungeN)<missWin(tg,MISS.t))landBite(c,tg);else if(tg)missed(c,tg);if(c.state!=='feed')c.state='return';}} // the lunge's commit (v11.56)
+    if(c.lungeC>0){c.lungeC-=dt;c.vel.multiplyScalar(1-2*dt);if(c.lungeC<=0){c.lungeC=0;c.biteT=1;if(tg&&dist<reachOf(c,tg)*MISS.range&&dodged(tp,c.lungeP,c.lungeN)<missWin(tg,MISS.t))landBite(c,tg);else if(tg)missed(c,tg);if(c.state!=='feed')c.state='return';}} // the lunge's commit (v11.56)
     else if(tg&&dist<reachOf(c,tg)&&c.biteT<=0){c.lungeC=MISS.t;[c.lungeP,c.lungeN]=commitAt(c,tp,c.lungeP,c.lungeN);}if((c.lungeT<=0&&!(c.lungeC>0))||!tg||(tg!==player&&!tg.alive)||(tg===player&&player.dead)){c.state='return';c.lungeC=0;}}
   else if(c.state==='feed'){const f=c.feedAt;c.feedT-=dt;if(!f||f.gone||f.flesh<=0||c.feedT<=0){c.state='return';c.feedAt=null;return;}const dist=c.pos.distanceTo(f.pos);if(dist>reachOf(c,f)*0.8)seek(c,f.pos,3,dt,2);else{c.vel.multiplyScalar(1-3*dt);eatAt(c,f,dt);}}
   else{c.grab=null;if(!c.hold)c.target=null;seek(c,c.home,4,dt,2);if(c.pos.distanceTo(c.home)<0.8){c.state='sit';c.cool=3;c.pos.copy(c.home);}} // v11.31: what it has hold of comes home with it
@@ -383,8 +383,8 @@ function updateCreatures(dt0){
         c.vel.x+=-gx/gl*3.4+rnd(-0.5,0.5);c.vel.z+=-gz/gl*3.4+rnd(-0.5,0.5);c.vel.y=3.6+d.size*0.25;}}
     const wet=sub>0.5;if(wet!==c.wet){if(dp<160&&Math.abs(c.vel.y)>2.5)splash(c.pos,Math.abs(c.vel.y)*(0.5+d.size*0.12));c.wet=wet;}
     c.pos.x=clamp(c.pos.x,-HALF+12,HALF-12);c.pos.z=clamp(c.pos.z,-HALF+12,HALF-12);
-    if(!d.noOrient){if(c.face){_m.lookAt(c.face,c.pos,UP);_q.setFromRotationMatrix(_m);c.g.quaternion.slerp(_q,1-Math.exp(-(d.turn||2)*2*dt));} // turning to a thing (the tell, the watcher's stare)
-      else if(c.vel.lengthSq()>0.02){T2.copy(c.pos).add(c.vel);_m.lookAt(T2,c.pos,UP);_q.setFromRotationMatrix(_m);c.g.quaternion.slerp(_q,1-Math.exp(-(d.turn||2)*dt));}}
+    if(!d.noOrient){if(c.face){_m.lookAt(c.face,c.pos,UP);_q.setFromRotationMatrix(_m);c.g.quaternion.slerp(_q,1-Math.exp(-(d.turn||2)*(c.turnK||1)*2*dt));} // turning to a thing (the tell, the watcher's stare)
+      else if(c.vel.lengthSq()>0.02){T2.copy(c.pos).add(c.vel);_m.lookAt(T2,c.pos,UP);_q.setFromRotationMatrix(_m);c.g.quaternion.slerp(_q,1-Math.exp(-(d.turn||2)*(c.turnK||1)*dt));}}
     c.g.position.copy(c.pos);
     // the action state the anim reads: the tell and the strike are set by the behaviours above and let go here
     const st=c.st;if(c.tellT<=0&&c.strikeT<=0){st.tell*=Math.exp(-4*dt);st.strike*=Math.exp(-7*dt);if(d.role==='ambush'&&c.state!=='lunge')st.strike*=Math.exp(-7*dt);}st.jet=c.state==='chase'&&d.jetter===true;

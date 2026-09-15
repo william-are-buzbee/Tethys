@@ -2613,6 +2613,7 @@ function compile(spec, s, pal, opt) {
     r.C = [c0, g.children.length];
     r.D = [d0, bf.children.length];
     built.push(r);
+    r.nodes = g.children.slice(c0).concat(bf.children.slice(d0)); // the objects this part added (v11.57: a lost part hides them; the references survive the reorder below)
     if (r.rig) rigs.push(r.rig);
     if (r.hit)
       for (const h of r.hit) {
@@ -2700,8 +2701,10 @@ function compile(spec, s, pal, opt) {
     if (p.kind === 'mouth' && !gape) gape = (p.style === 'tentacles' ? p.r : p.style === 'peck' ? p.r : p.R) || 0;
   }
   const base = cl === 'slowbloods' ? (hasPlates ? 'plate' : 'hide') : cl === 'hingeshells' ? (bigValves ? 'shell' : 'plate') : 'skin';
-  const hasShell = spec.parts.some(p => p.kind === 'shell'),
-    cover = spec.hit ? spec.hit.map((h, i) => (i === 0 && hasShell ? 'shell' : base)) : hitOwn.map(i => (i >= 0 && spec.parts[i].kind === 'shell' ? 'shell' : base)); // a spec's own hit list (coil, great, ortho) puts the shell's capsule first
+  const shellIdx = spec.parts.findIndex(p => p.kind === 'shell');
+  if (spec.hit) { hitOwn.length = 0; spec.hit.forEach((h, i) => hitOwn.push(h.own ? spec.parts.findIndex(p => p.kind === h.own) : i === 0 && shellIdx >= 0 ? shellIdx : -1)); } // a spec's own hit list: the shell's capsule first (coil, great, ortho); a tail's marked own: 'tail' (fin, ridge, abyssal, basker; v11.57)
+  const coverOf = i => (i < 0 ? base : spec.parts[i].kind === 'shell' ? 'shell' : spec.parts[i].kind === 'tail' || spec.parts[i].kind === 'fins' ? 'skin' : base), // a fin or a tail is skin on any clade (COMBAT.md §2)
+    cover = hitOwn.map(coverOf);
   // No capsule past the nose (v11.54). Measured against the real hulls (the CHANGELOG's table): every lathe's capsule, the cores' formulas and the
   // kept hand lists alike, ended 0.5–0.7 of a body unit past the frame's nose — 2 m of capsule in front of the ridge's mouth, 1.6 of the basker's — so
   // two bodies touched and pushed apart before a mouth reached the other, and a hold's rope, which stops closing at the contact, held the prey
@@ -2711,7 +2714,7 @@ function compile(spec, s, pal, opt) {
     if (isFinite(F.nose)) { if (o.a[2] + o.r > F.nose) o.a[2] = F.nose - o.r; if (o.b[2] + o.r > F.nose) o.b[2] = F.nose - o.r; }
     return o;
   });
-  return {g: g, anim: anim, rigs: rigs, hit: hitF, built: built, F: F, grip: grip, edge: edge, cover: cover, gape: gape * s, pat: pat, frame: bf, body: body}; // frame, body (v11.53): the secondary motion scales and rolls the frame (fx.js bodyPose)
+  return {g: g, anim: anim, rigs: rigs, hit: hitF, hitOwn: hitOwn, built: built, F: F, grip: grip, edge: edge, cover: cover, gape: gape * s, pat: pat, frame: bf, body: body}; // frame, body (v11.53): the secondary motion scales and rolls the frame (fx.js bodyPose)
 }
 // A spec with every part's defaults filled and its styles resolved, without touching the given object.
 function fillSpec(spec) {
@@ -3249,7 +3252,7 @@ const SPECS = {
     ],
     hit: [
       {a: [0, 0, -0.45], b: [0, 0, 1.6], r: 0.5},
-      {a: [0, 0, -1.8], b: [0, 0, -0.45], r: 0.24}
+      {a: [0, 0, -1.8], b: [0, 0, -0.45], r: 0.24, own: 'tail'}
     ],
     behaviour: {role: 'player'}
   },
@@ -3270,7 +3273,7 @@ const SPECS = {
     ],
     hit: [
       {a: [0, 0, -0.45], b: [0, 0, 1.6], r: 0.5},
-      {a: [0, 0, -1.8], b: [0, 0, -0.45], r: 0.24}
+      {a: [0, 0, -1.8], b: [0, 0, -0.45], r: 0.24, own: 'tail'}
     ],
     behaviour: {role: 'hunter'}
   },
@@ -3336,7 +3339,7 @@ const SPECS = {
     ],
     hit: [
       {a: [0, 0, -0.55], b: [0, 0, 1.75], r: 0.62},
-      {a: [0, 0, -2.1], b: [0, 0, -0.55], r: 0.3}
+      {a: [0, 0, -2.1], b: [0, 0, -0.55], r: 0.3, own: 'tail'}
     ],
     behaviour: {role: 'hunter'}
   },
@@ -3492,7 +3495,7 @@ const SPECS = {
     ],
     hit: [
       {a: [0, 0, -1.9], b: [0, 0, 3.6], r: 1.3},
-      {a: [0, 0, -4.2], b: [0, 0, -1.9], r: 0.5}
+      {a: [0, 0, -4.2], b: [0, 0, -1.9], r: 0.5, own: 'tail'}
     ],
     behaviour: {role: 'hunter'}
   },
