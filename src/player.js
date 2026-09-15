@@ -27,7 +27,7 @@ function hurtPlayer(dmg,from){
   if(P.hp<=0)die();
 }
 function die(){
-  const P=player;if(P.dead)return;P.dead=true;P.hp=0;P.bleed=0;releaseAll(P);fadeEl.style.opacity=1;
+  const P=player;if(P.dead)return;camNote();P.dead=true;P.hp=0;P.bleed=0;releaseAll(P);fadeEl.style.opacity=1; // camNote (save.js, v11.47.2): the title screen opens from the spot you died in
   setTimeout(()=>{P.pos.copy(spawnPos);P.vel.set(0,0,0);P.hp=P.maxhp;P.inkT=0;P.bleed=0;P.hold=null;P.held=0;P.camAbove=false;P.camFlipT=0;snapMed=true;P.wet=true;P.sub=1;for(const c of creatures){if(c.target===player)dropTarget(c);}camera.position.copy(P.pos).add(V3(0,2,8));setTimeout(()=>{fadeEl.style.opacity=0;P.dead=false;},500);},2800);
 }
 function bite(){playerBite();} // v11.31: combat.js — a gulp, a mouthful of a carcass, or a wound (a tear on what you hold)

@@ -3443,3 +3443,34 @@ the idle fade — the caldera alone at 14 s — and the wake on a mouse move; th
 spot. `node build.js --test` green on both tiers after the last source change (the shell's CSS is not in the bundle). **Unseen, ask in this
 order:** (1) the halo's weight at 1600×900 — too much of a panel, or right; (2) the rise's timing against the boot fade on the 4060 (the pane's
 timing is not the PC's); (3) the idle fade's 12 s — too soon while reading the continue list?; (4) the shadow save after a real close and reopen.
+
+## v11.47.2 — the title screen's camera: the sea shot, then wherever you last were; the words white (14 Sep 2026)
+
+The person on v11.47.1: "good job"; the white text looks grey ("text should go over the shading — unless I'm wrong and it already is"); and a
+handful of camera positions — the caldera is one, the starting one must be a shot with the horizon in the middle and the ocean under it, the
+island in the background or not; and after any play at all — "rage quit, randomly exit, save, die or whatever" — the title screen must open from
+the exact spot you died, left or saved in, every time.
+
+**The words** (shell.html `.mi`, `.slot`). They were over the halo already; they read grey because the colour was `rgba(205,217,225)` at .72.
+Near white now (`rgba(234,241,245,.92)`, hover `#fff`; the rows `rgba(232,240,244,.92)`), and the halo lighter (.45 → .24 at 45 %) — over the
+sea shot the v11.47.1 halo read as a dark disc on the water (seen).
+
+**The shots** (menu.js `MENU_SHOTS`, `menuCam`, `camNow`; save.js `camNote`, `camRead`). A table: **sea** — the start: from the water 6 m up at
+(700, −700) off the north-east coast, looking (−0.55, 0, 0.835), so the horizon is in the middle, the ocean under it, and the island's 48 m cone
+at (346, −346) sits on the horizon right of centre (found with a scan of `sample` along 24 bearings: the land is a low ring 2–7 m high with the
+caldera in the middle and one cone at bearing 315°, so that is the only silhouette to be had); **caldera** — the v11.13.1 shot over the peak's
+shallows, kept in the table and used by nothing now. **The last spot** overrides both: `camNote` writes the camera's position and look direction
+to localStorage (`tethys.cam`, a few dozen bytes, synchronous) at every event that ends or fixes a game — the 30 s autosave, esc to the menu,
+the pointer's release, the page's exit (`saveShadow`) and death (player.js `die`, the moment of death, before the fade) — and `menuCam(camRead()
+|| MENU_SHOTS.sea)` at boot puts the title screen there. Esc to the menu does not move the camera at all: `toMenu` takes `camNow()` and the
+menu holds it (`menuCam` after `worldClear`). A shot sets `player.pos` too, since the cells stream round it — the bestiary and the lab put it
+back at the peak on entry (their creature is shown there) and `layoutMenu` restores the shot on leaving. `camRead` refuses a position outside
+the world's apron or a direction of no length.
+
+**Seen** (the app's browser): the sea shot — horizon mid-frame, the cone on it, the sea's rows and the floor through the water, clouds; new game,
+the finback moved to the shelf; esc → the title screen in the weed forest at the play camera, the column over it; a page reload → the same
+camera again (`tethys.cam` at (281, −11.5, 58)); the words white. `node build.js --test` green on both tiers. **Unseen, ask in this order:**
+(1) the sea shot on the 4060 through the day — the cone's placement, the 6 m height against the open sea's chop (a crest through the camera flips
+the medium for a frame); (2) whether a title screen from a death spot (mid-fight, blood in the water) reads as intended, or whether death should
+wait for the respawn; (3) the halo at .45 over sand; (4) whether the caldera shot should come back anywhere (a first boot after a wipe is the
+sea shot; the table is there for more).

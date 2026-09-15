@@ -959,7 +959,10 @@ function labEnter(spec, asPlayer) {
         .add(player.pos)
     );
     lab.yaw = player.yaw + Math.PI * 0.75;
-  } else menuPage('none');
+  } else {
+    menuPage('none');
+    player.pos.set(0, dispY, 0); // the cells stream round player.pos: the peak, where the creature is shown (v11.47.2: the menu's camera may be anywhere)
+  }
   hintEl.textContent = isTouch
     ? 'drag to turn'
     : 'space for the action, s to cruise, r to spin, drag to turn, wheel to close in, p to place it in the world, l to go back';

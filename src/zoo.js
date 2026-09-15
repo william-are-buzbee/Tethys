@@ -34,7 +34,7 @@ function zooShow(i){
     (dv?'<br><i>derived: '+dv.mode+', speed '+dv.speed+' (defs '+(d.speed||'–')+'), turn '+dv.turn+' ('+(d.turn||'–')+'), hp '+dv.hp+' ('+(d.hp>1e8?'∞':d.hp)+'), '+dv.mass+' t, '+dv.cost+' points — l to edit</i>':'<br><i>a hand builder, no spec</i>');
 }
 function zooEnter(){
-  if(mode!=='menu')return;mode='zoo';menuPage('none');zooEl.classList.add('on');
+  if(mode!=='menu')return;mode='zoo';menuPage('none');zooEl.classList.add('on');player.pos.set(0,dispY,0); // the cells stream round player.pos: the peak, where the creature is shown (v11.47.2: the menu's camera may be anywhere)
   zooHintEl.textContent=isTouch?'drag to turn. tap an edge for the next one':'left and right for the next one, up and down for another coat, space for the strike, s to cruise, drag to turn, wheel to close in, l for the lab, z to go back';
   zooShow(zoo.i);
 }

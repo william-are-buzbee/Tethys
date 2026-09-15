@@ -1,4 +1,5 @@
-// menu.js — the menu (v11.47, the person's ask): the caldera under the menu's camera as before, the title, and a column — new game, continue,
+// menu.js — the menu (v11.47, the person's ask): the world under the title screen's camera (v11.47.2: the sea shot at first, then wherever you last
+// left, died or saved — MENU_SHOTS, menuCam), the title, and a column — new game, continue,
 // options, and the creator once it is yours (save.js PROFILE.creator: the lab used once, or #creator in the URL). New game starts as the finback
 // (the slowblood) at the peak, in a new slot; continue lists the save files (save.js) to load, export to a file, or delete (twice: the word asks
 // first); a file can be imported; options opens the effects list (effects.js) over the caldera; the creator opens the lab as the player's
@@ -15,8 +16,15 @@ function updateMenu(){ // the column's rise and the idle fade (main.js, every fr
 }
 addEventListener('mousemove',()=>{if(mode==='menu')menuWake();});addEventListener('touchstart',()=>{if(mode==='menu')menuWake();},{passive:true});addEventListener('keydown',()=>{if(mode==='menu')menuWake();});
 const mlistEl=document.getElementById('mlist'),msavesEl=document.getElementById('msaves'),mslotsEl=document.getElementById('mslots'),mcreatorEl=document.getElementById('mcreator'),mnoteEl=document.getElementById('mnote');
-function layoutMenu(){const portrait=innerWidth<innerHeight*0.95;camera.position.set(0,dispY+0.6,portrait?12:10);camera.lookAt(0,dispY-0.2,0);} // the camera as it was over the three clades (v11.13.1 numbers): the peak's shallows
-layoutMenu();menuRise(MENU_RISE);
+// The title screen's camera (v11.47.2, the person's ask): a table of shots — the sea shot is the start (from the water 6 m up off the north-east
+// coast, the horizon in the middle, the ocean under it, the 48 m cone at (346,−346) in the background), the caldera shot is the v11.13.1 one over
+// the peak's shallows, kept — and after any game at all the title screen opens from the exact camera of the moment you left, died or last saved
+// (save.js camNote/camRead, written synchronously at every one of those events), every time. The cells stream round player.pos, so a shot sets it too.
+const MENU_SHOTS={sea:{p:[700,6,-700],d:[-0.55,0,0.835]},caldera:{p:[0,dispY+0.6,10],d:[0,-0.08,-1]}};
+function menuCam(shot){const p=shot.p,d=shot.d;menu.shot={p:p.slice(),d:d.slice()};camera.position.set(p[0],p[1],p[2]);camera.lookAt(p[0]+d[0],p[1]+d[1],p[2]+d[2]);player.pos.set(p[0],p[1],p[2]);player.vel.set(0,0,0);snapMed=true;}
+function camNow(){const d=V3(0,0,-1).applyQuaternion(camera.quaternion);return {p:[camera.position.x,camera.position.y,camera.position.z],d:[d.x,d.y,d.z]};}
+function layoutMenu(){menuCam(menu.shot);} // the current shot again (a resize; the bestiary and the lab moved the camera)
+menuCam(camRead()||MENU_SHOTS.sea);menuRise(MENU_RISE);
 function menuPage(p){menu.page=p;menu.confirm=null;mlistEl.style.display=p==='main'?'':'none';msavesEl.classList.toggle('on',p==='saves');if(p==='saves')menuSlots();menuWake();} // 'main' | 'saves' | 'none' (the bestiary and the lab)
 function menuRefresh(){mcreatorEl.style.display=PROFILE.creator?'':'none';saveRefresh(()=>{if(menu.page==='saves')menuSlots();});} // the profile and the slots read again (boot, main.js; the creator granted)
 function menuNote(s){mnoteEl.textContent=s;mnoteEl.style.opacity=s?1:0;if(s)setTimeout(()=>{if(mnoteEl.textContent===s)mnoteEl.style.opacity=0;},3000);}
@@ -41,7 +49,8 @@ function choose(c,pos,yaw,pitch,hp){ // into play as clade c (an index or the cl
 }
 function toMenu(){ // play to the menu (esc with the pointer free): the game saved, the world cleared, the peak's cells back under the menu's camera
   if(mode!=='play')return;saveNow();curSave=null;unlock();
-  menuGo(()=>{playerDrop();mode='menu';worldClear();player.pos.set(0,dispY,0);player.vel.set(0,0,0);cellsAround();layoutMenu();snapMed=true;menuEl.classList.remove('gone');menuPage('main');menuRise(MENU_RISE_BACK);hintEl.style.opacity=0;menuRefresh();});
+  const shot=camNow(); // the camera as it is: the title screen opens from here (v11.47.2)
+  menuGo(()=>{playerDrop();mode='menu';worldClear();menuCam(shot);cellsAround();menuEl.classList.remove('gone');menuPage('main');menuRise(MENU_RISE_BACK);hintEl.style.opacity=0;menuRefresh();});
 }
 document.getElementById('mnew').addEventListener('click',()=>{if(mode==='menu'&&menu.page==='main')menuGo(()=>{startNew(CLADES[1]);});}); // the finback until the creator is the start (DIRECTION: the smallest body the creator allows)
 document.getElementById('mcont').addEventListener('click',()=>{if(mode==='menu')menuPage('saves');});

@@ -1447,9 +1447,13 @@ far LOD), `setLOD`, steering, one `updateX` per role, `updateCreatures()`.
   `palVariant`; the caption names it; eyes and pupils untouched; nothing in the world reads it), space or a click fires the action,
   s toggles a cruising speed, drag turns, wheel zooms, z or escape returns; touch: drag turns, a tap on an edge steps. The menu's
   column is hidden meanwhile and restored on return (`menuPage`, v11.47; the menu shows no creatures since then).
-- **The menu and the saves (v11.47, `menu.js`, `save.js`, shell.html `#mlist` `#msaves`):** the caldera under the menu's camera
-  (`layoutMenu`, the v11.13.1 numbers), the title, and a column in the centre of the screen in a soft dark halo (the words sit on white sand;
-  v11.47.1) that rises over 1.6 s a second after the fade clears (`MENU_RISE` 3200 ms from boot, `MENU_RISE_BACK` 1200 after play, `#mlist.up`),
+- **The menu and the saves (v11.47, `menu.js`, `save.js`, shell.html `#mlist` `#msaves`):** the world under the title screen's camera —
+  v11.47.2: a table of shots, `MENU_SHOTS` (`sea`: 6 m over the water at (700, −700) looking (−0.55, 0, 0.835), the horizon mid-frame and the
+  island's one cone on it, the start; `caldera`: the v11.13.1 shot over the peak, kept, unused), overridden after any play by the camera of the
+  moment you last left, died or saved (`camNote` → localStorage `tethys.cam`, synchronous, at every autosave, esc, pointer release, page exit
+  and death; `camRead` at boot; `menuCam` sets the camera, the shot and `player.pos`, which the cells stream round; `layoutMenu` restores the
+  shot after the bestiary or the lab) — the title, and a column in the centre of the screen in a soft dark halo (the words sit on white sand;
+  v11.47.1; near white since v11.47.2) that rises over 1.6 s a second after the fade clears (`MENU_RISE` 3200 ms from boot, `MENU_RISE_BACK` 1200 after play, `#mlist.up`),
   the whole menu fading away after `MENU_IDLE` 12 s without the mouse moving and back on the first move (`#menu.idle`, `updateMenu`, the wall
   clock so a throttled loop still idles on time) — `new game` (`startNew`: the world cleared, `ecoReset`, `t=0`, the finback
   at the peak, a new slot `game N` written at once), `continue` (the slots newest first: name, clade, time played, when; click loads

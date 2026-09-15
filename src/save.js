@@ -67,14 +67,19 @@ function saveRecord(){ // the game as it stands, as a record for the store
   const P=player,s=curSave;
   return {id:s.id,kind:'save',v:SAVE_V,name:s.name,made:s.made,played:Date.now(),playT:Math.round(playT),clade:P.clade.id,pos:[r3(P.pos.x),r3(P.pos.y),r3(P.pos.z)],yaw:r3(P.yaw),pitch:r3(P.pitch),hp:Math.round(P.hp),t:r3(t),pop:popRows()};
 }
-function saveNow(){if(!curSave||mode!=='play'||player.dead||!player.clade)return false;const rec=saveRecord();curSave.played=rec.played;curSave.playT=rec.playT;storePut(rec);if(profileDirty)profileSave();saveT=SAVE_EVERY;return true;}
+function saveNow(){if(!curSave||mode!=='play'||player.dead||!player.clade)return false;camNote();const rec=saveRecord();curSave.played=rec.played;curSave.playT=rec.playT;storePut(rec);if(profileDirty)profileSave();saveT=SAVE_EVERY;return true;}
 function updateSave(dt){if(mode!=='play'||!curSave)return;playT+=dt;saveT-=dt;if(saveT<=0)saveNow();}
 function saveRefresh(cb){ // the slots read again; first, a shadow the page left on its way out (saveShadow) goes into the store — it is the latest state of that slot, nothing later can exist
   let sh=null;try{const ls=window.localStorage,s=ls&&ls.getItem('tethys.last');if(s){ls.removeItem('tethys.last');sh=JSON.parse(s);}}catch(e){}
   const go=()=>storeAll(rs=>{saveList=rs.filter(r=>r&&r.kind==='save'&&r.pop).sort((a,b)=>(b.played||b.made||0)-(a.played||a.made||0));if(cb)cb();});
   if(sh&&sh.kind==='save'&&sh.pop&&typeof sh.id==='string')storePut(sh,go);else go();
 }
-function saveShadow(){if(!curSave||mode!=='play'||player.dead||!player.clade)return;try{const ls=window.localStorage;if(ls)ls.setItem('tethys.last',JSON.stringify(saveRecord()));}catch(e){}} // the page going away (v11.47.1): IndexedDB's put may not finish before it does, localStorage's write is synchronous and does; read back by saveRefresh at the next boot
+// The title screen's camera (v11.47.2, the person's ask): from the exact spot you last died, left or saved in, every time. The camera's
+// position and look direction go to localStorage synchronously at every one of those events (saveNow, saveShadow, player.js die) — a few
+// dozen bytes, the one thing here that must survive even a hard close — and menu.js reads it at boot (menuCam). Nothing until the first game.
+function camNote(){try{const ls=window.localStorage;if(!ls||mode!=='play')return;const d=V3(0,0,-1).applyQuaternion(camera.quaternion);ls.setItem('tethys.cam',JSON.stringify({p:[r3(camera.position.x),r3(camera.position.y),r3(camera.position.z)],d:[r3(d.x),r3(d.y),r3(d.z)],t:Date.now()}));}catch(e){}}
+function camRead(){try{const ls=window.localStorage,s=ls&&ls.getItem('tethys.cam');if(!s)return null;const o=JSON.parse(s);if(!Array.isArray(o.p)||!Array.isArray(o.d)||o.p.length!==3||o.d.length!==3)return null;const p=o.p.map(v=>+v||0),d=o.d.map(v=>+v||0);if(Math.abs(p[0])>HALF+2000||Math.abs(p[2])>HALF+2000||!(d[0]*d[0]+d[1]*d[1]+d[2]*d[2]>0.1))return null;return {p:p,d:d};}catch(e){return null;}}
+function saveShadow(){if(!curSave||mode!=='play'||player.dead||!player.clade)return;camNote();try{const ls=window.localStorage;if(ls)ls.setItem('tethys.last',JSON.stringify(saveRecord()));}catch(e){}} // the page going away (v11.47.1): IndexedDB's put may not finish before it does, localStorage's write is synchronous and does; read back by saveRefresh at the next boot
 function saveName(){let n=0;for(const r of saveList){const m=/^game (\d+)$/.exec(r.name||'');if(m&&+m[1]>n)n=+m[1];}return 'game '+(n+1);}
 function saveImport(txt,cb){ // a file back in (menu.js): checked as far as the shape goes, given a new id if its own is taken, stored
   let r=null;try{r=JSON.parse(txt);}catch(e){}
