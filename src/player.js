@@ -154,6 +154,7 @@ function finishPlayer(dt,near){
   const cp=Math.cos(P.pitch),sp=Math.sin(P.pitch),cy=Math.cos(P.yaw),sy=Math.sin(P.yaw);
   const fwd=T3.set(-sy*cp,sp,-cy*cp);
   P.g.position.copy(P.pos);P.spd=P.vel.length();
+  {const ro=P.sub>0.95?1:0;if(P.ro!==ro){P.ro=ro;P.g.traverse(o=>{if(o.isMesh)o.renderOrder=ro;});}} // the body's place in the opaque pass (v11.51, atmosphere.js refrMark): under water it draws after the refraction's copy of the frame, so the surface never samples it and smears its edge into the sky; in the air, or crossing, it is in the copy and seen through the surface refracted like the land
   P.anim(t,P.spd,{jet:P.sprint&&C.jet,withdrawn:P.withdrawn,pulse:P.pulse,strike:P.hold?1:0}); // strike: the mouth stays open on what is held (the finback's ring blooms)
   stepRigs(P,near,dt);
   P.pulse=Math.max(0,P.pulse-dt*2);
