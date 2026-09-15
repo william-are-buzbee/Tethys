@@ -130,6 +130,18 @@ const waveSumGLSL=(name,chop,wshName,fade)=>'float '+name+'(vec2 p,float t,float
   WAVES.map((w,i)=>'h+='+waveAmpGLSL(w,chop)+'*mix('+WSH_MEAN.toFixed(4)+','+wshName+'(sin(dot(p,vec2('+w.dx.toFixed(5)+','+w.dz.toFixed(5)+'))*'+w.k.toFixed(5)+'-'+w.w.toFixed(5)+'*t+'+w.ph.toFixed(4)+')),1.0-smoothstep('+(fade==='sp'?(w.L*0.14).toFixed(2)+','+(w.L*0.30).toFixed(2):WAVE_FADE_D[i][0].toFixed(2)+','+WAVE_FADE_D[i][1].toFixed(2))+','+(fade==='sp'?'sp':'rm')+'));').join('')+'return h;}\n';
 const WAVE_GLSL='uniform float uChop;float wsh(float s){return 2.0*pow(max((s+1.0)*0.5,1e-4),1.7)-1.0;}\n'+waveSumGLSL('waveH','uChop','wsh','sp')+
   'float waveBrk(vec2 p,vec2 dw){float cap='+WAVE_BRK.toFixed(2)+'*dw.x;float b=0.0;'+WAVES.map(w=>'b=max(b,('+waveAmpGLSL(w,'uChop').replace(/^min\(/,'(').replace(/,cap\)$/,')')+'-cap)/cap);').join('')+'return clamp(b,0.0,1.0);}\n';
+// The slopes (v11.46). chopSlope: the wind sea's gradient (L < 20, the full amplitude — the physics' chop) for the foam by steepness (WATER.md E): a whitecap
+// is where the short waves are locally too steep, not where the swell is high. restSlope: for the surface's fragment, the gradient of what the mesh has faded
+// out — each component by the complement of its drawn weight (the vertex's fade by aSpace) — so a facet tilts its reflection by the wave it no longer carries
+// in height ("the ripple layer lives only in the light", for the swell at distance; WATER.md Part 3, P3), each component faded again where its phase turns
+// more than SLOPE_AA rad per pixel (fwidth) so it never aliases. wshD is the crest sharpening's derivative, so the slope is the drawn shape's.
+const SLOPE_AA=[0.8,1.6];
+const waveSlopeGLSL=(name,chop,which,rest)=>'vec2 '+name+'(vec2 p,float t'+(rest?',float sp':'')+',vec2 dw){vec2 sl=vec2(0.0);float cap='+WAVE_BRK.toFixed(2)+'*dw.x;'+
+  WAVES.map(w=>which(w)?'{float ph=dot(p,vec2('+w.dx.toFixed(5)+','+w.dz.toFixed(5)+'))*'+w.k.toFixed(5)+'-'+w.w.toFixed(5)+'*t+'+w.ph.toFixed(4)+';float s=sin(ph);float wg='+(rest?'smoothstep('+(w.L*0.14).toFixed(2)+','+(w.L*0.30).toFixed(2)+',sp)*(1.0-smoothstep('+SLOPE_AA[0].toFixed(2)+','+SLOPE_AA[1].toFixed(2)+',fwidth(ph)))':'1.0')+';'+
+    'sl+='+waveAmpGLSL(w,chop)+'*'+w.k.toFixed(5)+'*vec2('+w.dx.toFixed(5)+','+w.dz.toFixed(5)+')*cos(ph)*wshD(s)*wg;}':'').join('')+'return sl;}\n';
+const WSHD_GLSL='float wshD(float s){return 1.7*pow(max((s+1.0)*0.5,1e-4),0.7);}\n';
+const WAVE_SLOPE_GLSL=WSHD_GLSL+waveSlopeGLSL('chopSlope','uChop',w=>w.L<20,false);
+const WAVE_REST_GLSL=waveSlopeGLSL('restSlope','uChop',w=>true,true);
 // The fog chunk sums the same waves per fragment near the water level (v11.42) under its own names, since the lit materials' fragment stage
 // already declares uTime and uChop (LIGHT_PARS) and the surface's declares uTime.
 // The fog chunk's wave sum is the *drawn* surface's (v11.42.2): the mesh fades each wave out where its grid cannot resolve it (aSpace: fully drawn at
@@ -361,15 +373,31 @@ const PIX_GRID_V=grid=>grid==='world'?'vGrid=(modelMatrix*wpp).xyz;':'vGrid=pGri
       let a=Math.atan2(nz,nx)-WIND_A;a=Math.atan2(Math.sin(a),Math.cos(a));if(Math.abs(a)>CAU_SPREAD)continue;
       const b=Math.min(CAU_DIRS-1,Math.floor((a+CAU_SPREAD)/(2*CAU_SPREAD)*CAU_DIRS)),err=Math.abs(l/L-1);if(!bins[b]||err<bins[b].err)bins[b]={nx:nx,nz:nz,a:a,err:err};}
     for(const b of bins)if(b){const k=TAU*Math.hypot(b.nx,b.nz)/T,dx=b.nx/Math.hypot(b.nx,b.nz),dz=b.nz/Math.hypot(b.nx,b.nz),A=A0*(0.6+0.4*Math.cos(b.a))*(0.7+0.6*rng());trains.push({kx:TAU*b.nx/T,kz:TAU*b.nz/T,c:-A*k*k,dx:dx,dz:dz,ph:rng()*TAU});}
-    const S=new Uint8Array(N*N*4),C=new Uint8Array(N*N*4),q=127.5/CAU_HMAX;
-    for(let j=0;j<N;j++)for(let i=0;i<N;i++){const x=(i+0.5)/N*T,z=(j+0.5)/N*T;let sxx=0,sxy=0,szz=0,cxx=0,cxy=0,czz=0;
-      for(const w of trains){const p=x*w.kx+z*w.kz+w.ph,s=Math.sin(p)*w.c,c=Math.cos(p)*w.c;sxx+=s*w.dx*w.dx;sxy+=s*w.dx*w.dz;szz+=s*w.dz*w.dz;cxx+=c*w.dx*w.dx;cxy+=c*w.dx*w.dz;czz+=c*w.dz*w.dz;}
-      const o=(j*N+i)*4;S[o]=clamp(sxx*q+127.5,0,255);S[o+1]=clamp(sxy*q+127.5,0,255);S[o+2]=clamp(szz*q+127.5,0,255);S[o+3]=255;C[o]=clamp(cxx*q+127.5,0,255);C[o+1]=clamp(cxy*q+127.5,0,255);C[o+2]=clamp(czz*q+127.5,0,255);C[o+3]=255;}
+    const S=new Uint8Array(N*N*4),C=new Uint8Array(N*N*4),G=new Uint8Array(N*N*4),q=127.5/CAU_HMAX;
+    let sm=0;for(const w of trains)sm+=Math.abs(w.c)/Math.hypot(w.kx,w.kz);sm=Math.max(sm,1e-4);const qg=127.5/sm; // the ring's slope scale: Σ A·k (|c| = A k², over k) — the gradient tile's full range (v11.46)
+    for(let j=0;j<N;j++)for(let i=0;i<N;i++){const x=(i+0.5)/N*T,z=(j+0.5)/N*T;let sxx=0,sxy=0,szz=0,cxx=0,cxy=0,czz=0,gsx=0,gsz=0,gcx=0,gcz=0;
+      for(const w of trains){const p=x*w.kx+z*w.kz+w.ph,s=Math.sin(p)*w.c,c=Math.cos(p)*w.c,ak=-w.c/Math.hypot(w.kx,w.kz);sxx+=s*w.dx*w.dx;sxy+=s*w.dx*w.dz;szz+=s*w.dz*w.dz;cxx+=c*w.dx*w.dx;cxy+=c*w.dx*w.dz;czz+=c*w.dz*w.dz;gsx+=Math.sin(p)*ak*w.dx;gsz+=Math.sin(p)*ak*w.dz;gcx+=Math.cos(p)*ak*w.dx;gcz+=Math.cos(p)*ak*w.dz;}
+      const o=(j*N+i)*4;S[o]=clamp(sxx*q+127.5,0,255);S[o+1]=clamp(sxy*q+127.5,0,255);S[o+2]=clamp(szz*q+127.5,0,255);S[o+3]=255;C[o]=clamp(cxx*q+127.5,0,255);C[o+1]=clamp(cxy*q+127.5,0,255);C[o+2]=clamp(czz*q+127.5,0,255);C[o+3]=255;
+      G[o]=clamp(gsx*qg+127.5,0,255);G[o+1]=clamp(gsz*qg+127.5,0,255);G[o+2]=clamp(gcx*qg+127.5,0,255);G[o+3]=clamp(gcz*qg+127.5,0,255);} // the gradient tile (v11.46, the glitter): the slope's sin part (rg) and cos part (ba) of the same trains — h = Σ A sin(p − ωt), so ∇h = Σ A k dir (cos p cos ωt + sin p sin ωt)
     const mk=d=>{const t=new THREE.DataTexture(d,N,N,THREE.RGBAFormat,THREE.UnsignedByteType);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.minFilter=t.magFilter=THREE.LinearFilter;t.generateMipmaps=false;t.needsUpdate=true;t.clone=function(){return this;};return t;};
-    CAU_TEX.push({L:L,w:Math.sqrt(9.8*TAU/L),n:trains.length,s:mk(S),c:mk(C)});}
+    CAU_TEX.push({L:L,w:Math.sqrt(9.8*TAU/L),n:trains.length,s:mk(S),c:mk(C),g:mk(G),sm:sm});}
   {const G=CAU_GN,D=new Uint8Array(G*G*4),sc=CAU_GUST[0];for(let j=0;j<G;j++)for(let i=0;i<G;i++){const o=(j*G+i)*4;let v=0,w=0;for(let k=0;k<3;k++){const f=1<<k;v+=fbm(((i/G)*f%1)*sc*0.035+40,((j/G)*f%1)*sc*0.035+70,2)/f;w+=1/f;}v=clamp((v/w-0.5)*4.0+0.5,0,1);D[o]=D[o+1]=D[o+2]=Math.round(v*255);D[o+3]=255;}
     const t=new THREE.DataTexture(D,G,G,THREE.RGBAFormat,THREE.UnsignedByteType);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.minFilter=t.magFilter=THREE.LinearFilter;t.generateMipmaps=false;t.needsUpdate=true;t.clone=function(){return this;};CAU_GTEX=t;} // the gust tile: three octaves of the world's value noise, wrapped by taking each octave's coordinate mod 1 of the tile (a seam per octave that the blur hides), stretched to fill 0..1
 })();
+// The ripples' slope at a surface point, for the glitter (v11.46, WATER.md F): the same trains the caustic is drawn from — "the ripple layer that lives only in the
+// light" (PLANET, 14 Sep) — read as a gradient from the tiles' rg/ba parts at the ring's phase, carried by the swell as the caustic's are, gusted by the same
+// patches (cat's paws are exactly what glitter shows), each ring faded where its wavelength is under a few pixels (RIP_FAR: the caustic's own CAU_FAR, in
+// metres of distance per metre of wavelength). The surface's fragment tilts the normal the *specular* sees by it (GLIT_K), and nothing else: the reflected sky
+// and the Fresnel keep the facet, the mesh holds no ripples. Uniforms bound by SURF_MAT: uCauR<i>, uCauG, uWindOff, uChop.
+const RIP_FAR=[30,70],GLIT_K=1.0;
+const RIP_CAP=[[0.22,0.10,-0.5],[0.15,0.09,0.3],[0.11,0.08,0.9]]; // slopes to a Cox–Munk rms of ~0.16 rad at 7 m/s (the first cut at half this left the lobe whole: one grey oval per near facet, seen) // the capillary ripples (v11.46): [wavelength m, slope rad, direction off the wind] — the cm-scale roughness a 7 m/s wind raises on every wave, which the caustic's rings stop short of (0.5 m: the net's scale) and which is what makes a sea *sparkle* rather than sheen; analytic in the fragment with the capillary dispersion (σ/ρ 7.4e-5), each faded where its phase turns more than ~1 rad a pixel, so they live within ~10 m of the eye, where the rings' smooth slopes gave one soft oval per facet (seen). Wind-scaled by uChop like the rings
+const RIP_PARS=CAU_TEX.map((r,i)=>'uniform sampler2D uCauR'+i+';').join('')+'uniform sampler2D uCauG;uniform vec2 uWindOff;';
+const RIP_GLSL=(function(){let s='vec2 ripSlope(vec2 wp,float dist,float ct){vec2 ps=wp;';
+  for(let i=0;i<CAU_SWELL;i++){const w=WAVES[i];s+='ps+=vec2('+w.dx.toFixed(5)+','+w.dz.toFixed(5)+')*('+w.A.toFixed(3)+(w.L<20?'*uChop':'')+'*sin(dot(ps,vec2('+w.dx.toFixed(5)+','+w.dz.toFixed(5)+'))*'+w.k.toFixed(5)+'-'+w.w.toFixed(5)+'*ct+'+w.ph.toFixed(4)+'));';}
+  s+='vec2 cu=ps*'+(1/CAU_TILE).toFixed(6)+';float gu=1.0-'+CAU_GUST[1].toFixed(2)+'*(1.0-texture2D(uCauG,(ps-uWindOff)*'+(1/CAU_GUST[0]).toFixed(6)+').r);vec2 sl=vec2(0.0);';
+  for(let i=0;i<CAU_TEX.length;i++){const r=CAU_TEX[i];s+='{float g=1.0-smoothstep('+(r.L*RIP_FAR[0]).toFixed(1)+','+(r.L*RIP_FAR[1]).toFixed(1)+',dist);if(g>0.002){float ph='+r.w.toFixed(5)+'*ct;vec4 t=texture2D(uCauR'+i+',cu)*2.0-1.0;sl+=(t.ba*cos(ph)+t.rg*sin(ph))*('+r.sm.toFixed(4)+'*g*gu);}}';}
+  for(const c of RIP_CAP){const k=TAU/c[0],w=Math.sqrt(9.8*k+7.4e-5*k*k*k),a=WIND_A+c[2],dx=Math.cos(a),dz=Math.sin(a);s+='{float ph=dot(wp,vec2('+dx.toFixed(5)+','+dz.toFixed(5)+'))*'+k.toFixed(4)+'-'+w.toFixed(4)+'*ct+'+(c[2]*5.1).toFixed(3)+';sl+=vec2('+dx.toFixed(5)+','+dz.toFixed(5)+')*('+c[1].toFixed(3)+'*cos(ph))*(1.0-smoothstep(0.8,1.6,fwidth(ph)));}';}
+  return s+'return sl*uChop;}\n';})();
 // The focusing at a surface point, now, on the CPU (v11.39): the shader's math over the same tiles — the swell carry, the gust, the rings' sin/cos parts at
 // their phases, the sun-disc blur, det J. The light shafts read it at their heads (atmosphere.js updateShafts): a shaft is a beam the surface focused, so its
 // brightness is the same field the floor's net is drawn from — one clock for both, and the audit's "four clocks for one surface" is down to the shimmer.

@@ -12,7 +12,7 @@
 const WM_T=2*HALF/WM_N,wmRaw=new Float32Array(WM_N*WM_N*4),fmRaw=new Float32Array(WM_N*WM_N),wfRaw=new Float32Array(WM_N*WM_N); // fmRaw (v11.27): the floor's depth, 0..1 of FM_SCALE, filled and blurred beside the colour; wfRaw (v11.44): the place's wave energy (world.js waveFac) in the floor map's green
 function wmFill(i0,i1,j0,j1,step){
   for(let j=j0;j<j1;j+=step)for(let i=i0;i<i1;i+=step){
-    const x=-HALF+(i+0.5*step)*WM_T,z=-HALF+(j+0.5*step)*WM_T,s=sample(x,z),c=waterColor(s),a=canopyW(x,z),fd=clamp(-s.h/FM_SCALE,0,1),wf=lerp(0.35,1,s.f[FI.expo])*(1-0.75*s.f[FI.shel]);
+    const x=-HALF+(i+0.5*step)*WM_T,z=-HALF+(j+0.5*step)*WM_T,s=sample(x,z),c=waterColor(s),a=canopyW(x,z),fd=clamp(-s.h/FM_SCALE,0,1),wf=waveEnergy(x,z,s);
     for(let jj=j;jj<Math.min(j1,j+step);jj++)for(let ii=i;ii<Math.min(i1,i+step);ii++){const n=(jj*WM_N+ii)*4;wmRaw[n]=c[0];wmRaw[n+1]=c[1];wmRaw[n+2]=c[2];wmRaw[n+3]=a;fmRaw[jj*WM_N+ii]=fd;wfRaw[jj*WM_N+ii]=wf;}
   }
 }

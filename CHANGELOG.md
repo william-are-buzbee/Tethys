@@ -3299,3 +3299,59 @@ swell, in play — whether the rows read as water or as stripes, and whether `RE
 soft band at this density; a clearer day (`AIR.dens` 0.0015) sharpens it but changes the look; (3) the sun's side — the glitter is still
 five grey bars (WATER.md F not built); (4) dusk and night from above (the reflected sky is the reduced one: no clouds, the deck's mean
 shade); (5) the weed forest's frame time (one more sine in the sway fold) and the render ms in air (`skyLite` in every fragment).
+
+## v11.46 — the rest of the water from above: foam by steepness, the glitter, the slope in the light, the breach, rain from below; the open sea's waves back (14 Sep 2026)
+
+The person on v11.45: "mostly looks the same except I feel I can see farther out and see more waves … more reflections further out";
+the rows "read as water but could be a little less row-like, a little"; "build the rest". Built, in the order WATER.md Part 3 left:
+
+**A short-crested swell** (world.js `WAVES`): the 46 m swell is two trains at ±0.15 rad of 0.28 m — a swell has a directional spread, so its
+crests are ~150 m long and the sea is a lattice of lozenges rather than rulings to the horizon; 0.56 where they meet, 0.4 rms, the same sea.
+Seven components now; the caustic's carry (`CAU_SWELL` 4) takes both 46 m trains, the 29 and the 15.
+
+**The open sea's waves back** (world.js `waveEnergy`, `LEE`; far.js `wmFill`). Found on the way: v11.44 read the place's wave energy off the
+*expo* field, which is a shore field — zero wherever the water is deeper than 30 m — so since v11.44 the open sea has had 35% of its chop and
+two thirds of its swell everywhere (measured: 0.35 at every azimuth at r 1000). The sea is full on open water now; what takes from it is the
+island's wind shadow — the lee: downwind of the shield, within its width across the wind, fading over 1.5 km (`LEE` [0.65, 400, 600, 1000,
+1500]: 0.41 at (−900, −300)) — and the lagoon's shelter as before; the struck shore keeps expo's 1. The v11.45 frames were of the 35% sea.
+
+**Foam by steepness** (atmosphere.js `SURF_MAT` vertex, `FOAM_S`; scene.js `chopSlope`; WATER.md E). A whitecap is where the wind sea's
+slope passes `FOAM_S` [0.17, 0.27] rad — the three chop components sum to 0.22 in line, 0.35 shoaled — not where the swell is high; the same
+test 2.5 and 5 m downwave is where the crest was a moment ago, so the foam trails on the back slope at 0.6 and 0.3 (a whitecap outlives its
+crest); broken into streaks by a hash on cells 6 m along the wind by 1.5 m across it (`vFoam`). In a calm the quarter chop never reaches the
+threshold. The foam by height (`vH/uAmp`) is gone; the breaking foam (`vBrk`) stays. From below the foam is a grey patch like the breaking.
+Per vertex: soft-edged, and coarse where the grid is (streaks seen from 40 m as pale smudges).
+
+**The glitter** (scene.js `RIP_GLSL`, `RIP_FAR`, `RIP_CAP`, `GLIT_K`; `SURF_MAT`; WATER.md F). The caustic's bake writes a third tile per ring — the
+same trains' *gradient*, sin and cos parts (`CAU_TEX[i].g`, `sm`) — and the surface's fragment reads the ripple layer's slope at its point
+(`ripSlope`: carried by the swell and gusted like the caustic, each ring faded where its wavelength is under a few pixels), plus three
+capillary trains analytic in the fragment (`RIP_CAP`: 22, 15 and 11 cm, slopes to a Cox–Munk rms of ~0.16 rad at 7 m/s, the capillary
+dispersion; faded by `fwidth` so they live within ~10 m of the eye), and tilts the normal the *sun's specular* sees by it; the reflected sky
+and the Fresnel keep the flat facet — "the ripple layer lives only in the light". The specular is 0xd8d8d8 at shininess 500 (0x8a8a8a at 90):
+a sharp lobe over a rough field is specks; a broad one was one grey oval per near facet (seen, two rounds). **Seen:** from the shelf toward the
+sun the five grey bars are a sparkling path and the whole sea glints; from 1 m into the sun the path is a scatter of pale patches, still soft
+close in — the rings' tile is bilinear at 10 cm and the capillary term does not break them as far as it should; **ask**.
+
+**The slope in the light** (scene.js `restSlope`, `SLOPE_AA`; WATER.md Part 3, P3). The surface's fragment tilts its reflection by the gradient of
+what the mesh faded out — each component by the complement of its drawn weight (the vertex's fade by `aSpace`), each faded again where its phase
+turns more than 0.8–1.6 rad a pixel — so the rows go on past the grid's reach in the light alone, smooth where the mesh could not hold them.
+Six sin/cos and six `fwidth`s per surface fragment.
+
+**The breach residue** (player.js `splash`, `residues`, `RES_N` 16, `RES_T` 6 s, `RES_UP`/`RES_DN`; WATER.md I). A foam patch where a body crossed:
+an irregular ten-gon 0.86 m at v 8, doubling over ~4 s and fading by the square, riding the wave — white in the sky's light 6 cm over the surface
+(drawn after it from above, hidden from below by the opaque underside's depth) and a grey patch 10 cm under it (drawn before the surface from
+above so the body tints it, after it from below so it shows through the window), both fogged by their medium — and a puff of twenty bubbles
+rising at 0.2–0.35 m/s for four seconds, capped at the water. A flat polygon, no radial gradient. The creatures' crossings within 160 m make
+one too (creatures_ai, the same `splash`). The first cut at twice the size read as a raft (seen); the bubbles at 12 cm as tiles (seen).
+
+**Rain from below** (`SURF_MAT` underside; WATER.md K). The drops roughen the surface: the eye's refraction leans halfway to the mean surface
+(the facets' flip matted) and the window a third of the way to the sky's mean (the disc smeared); the drops' rings and dots read as bright specks
+from beneath within ~30 m (`rainRing`, the v11.18 rings as a function used by both sides). Seen with `uRain` forced from 3 m under.
+
+**Seen** (`test/render/v46*.png`): 15 m across the swell — lozenges to the horizon, whitecap streaks; 1 m across it — a faceted crest against
+the sky; 40 m — the sea's rows to the far distance with streaks; the shelf toward the sun — glitter; the splash from above and below; rain from
+below. `node build.js --test` green on both tiers. **Unseen, ask in this order:** (1) the open sea's full chop in play after two versions at
+35% — too rough? (`LEE`, and the chop's amplitudes are the table's); (2) the glitter from 1 m into a low sun — the near path is soft patches,
+not sparkle; the next step is a finer capillary set or a per-fragment hash; (3) whitecaps: too many, too soft (`FOAM_S`; the hash's 0.35);
+(4) the residue's size on a ringmouth's breach and a creature's; (5) the weed forest's frame time — the sway fold has seven sines now, the
+surface's fragment ripSlope (six texture taps, four sines) and restSlope; (6) rain from below in a real shower, and the window's matting.

@@ -1,6 +1,6 @@
 # WATER.md — the sea surface from both sides: audit and proposals (14 Sep 2026)
 
-Status: Part 1–2 the 14 Sep audit (A, B, C, D and H built as v11.42–v11.44); Part 3 (14 Sep, later) the line from above — built as v11.45 but for P3 and P5. The person asked for scrutiny of how the game looks through the water from below and at it from
+Status: Part 1–2 the 14 Sep audit (A, B, C, D and H built as v11.42–v11.44); Part 3 (14 Sep, later) the line from above — built as v11.45 and v11.46; nothing in this file is left unbuilt. The person asked for scrutiny of how the game looks through the water from below and at it from
 above, then a brainstorm of believable additions. Read with DESIGN *The surface*, *Visibility*, *The medium*, and POLISH's
 "What not to build". Files: atmosphere.js (the surface block, `updateAtmosphere`), scene.js (the fog chunk, `WAVE_GLSL`, `addTint`),
 world.js (`WAVES`, `waveH`, `WCOL`, `SEA_FOG`, `AIR`), player.js (`camAbove`, `CAM_CLEAR`, `splash`), far.js (the water and floor maps).
@@ -178,7 +178,7 @@ island itself is not reflected — screen-space reflections are out by POLISH, a
 4. **D** — the exposed flank at high spring, the lagoon in a wind, the strand at mid-tide.
 5. **E, F, G, I, J, K** as polish, one at a time.
 
-## Part 3 — the line from above (14 Sep 2026, second audit; P1, P2, P4, P6 and G built as v11.45; P3's slope-in-the-light and P5 not)
+## Part 3 — the line from above (14 Sep 2026, second audit; P1, P2, P4, P6 and G built as v11.45; P3, P5 and E, I, K as v11.46 — everything in this file is built)
 
 The person's ask, after v11.44: the water line seen from above — good when something stands in the distance (the kelp's tops, a shore:
 "like Wind Waker"), odd for depth perception over open water. Measured in the app's browser at 1280×720 with the loop stepped by hand

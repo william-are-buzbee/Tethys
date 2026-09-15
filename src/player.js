@@ -47,13 +47,31 @@ function splash(pos,v){
   for(let i=0;i<n;i++){arr[i*3]=pos.x+rnd(-0.6,0.6);arr[i*3+1]=y0;arr[i*3+2]=pos.z+rnd(-0.6,0.6);vel[i*3]=rnd(-1,1)*v*0.35;vel[i*3+1]=rnd(0.4,1)*v*0.55;vel[i*3+2]=rnd(-1,1)*v*0.35;}
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(arr,3));
   const pts=new THREE.Points(g,new THREE.PointsMaterial({color:0xe8f4f8,size:0.22,transparent:true,opacity:0.9,depthWrite:false}));pts.frustumCulled=false;pts.renderOrder=2;scene.add(pts); // over the surface: the spray is thrown above it
-  splashes.push({g:g,pts:pts,vel:vel,t:0,n:n});
+  splashes.push({g:g,pts:pts,vel:vel,t:0,n:n,life:1.1,grav:1});
+  // The residue (v11.46, WATER.md I): a foam patch on the water where the body crossed — an irregular ten-gon, growing over RES_T and fading, riding the
+  // wave: white in the sky's light from above (RES_UP over the surface, drawn after it; hidden from below by the opaque underside's depth) and a grey patch
+  // from below (RES_DN under it, drawn before the surface from above so the body tints it, after it from below so it shows through the window) — and a puff of
+  // bubbles rising under it at 0.2–0.35 m/s for four seconds, capped at the water. Both fogged by the medium they sit in. RES_N patches at once; a creature's
+  // crossing within 160 m makes one too (creatures_ai). No radial gradient: a flat polygon, the low-poly foam.
+  const r0=0.35+0.18*Math.sqrt(v),K=SKY,lit=K.skyL; // 0.86 m at v 8, grown to 1.7: a patch 3–4 m across for a 3 m animal (the first cut at twice this read as a raft, seen)
+  const mk=(dy,cr,cg,cb,ro)=>{const m=10,pa=new Float32Array((m+2)*3),idx=[],rr=[];for(let i=0;i<m;i++)rr.push(rnd(0.7,1.15));for(let i=0;i<=m;i++){const a=i/m*TAU,q=rr[i%m];pa[(i+1)*3]=Math.cos(a)*q;pa[(i+1)*3+1]=0;pa[(i+1)*3+2]=Math.sin(a)*q;if(i<m)idx.push(0,i+2,i+1);}
+    const gg=new THREE.BufferGeometry();gg.setAttribute('position',new THREE.BufferAttribute(pa,3));gg.setIndex(idx);const mm=new THREE.Mesh(gg,new THREE.MeshBasicMaterial({color:new THREE.Color(cr*K.tint[0]*lit,cg*K.tint[1]*lit,cb*K.tint[2]*lit),transparent:true,opacity:0.8,depthWrite:false,side:THREE.DoubleSide}));
+    mm.renderOrder=ro;mm.frustumCulled=false;mm.position.set(pos.x,y0+dy,pos.z);mm.scale.set(r0,1,r0);scene.add(mm);return mm;};
+  residues.push({up:mk(RES_UP,0.90,0.93,0.93,1.5),dn:mk(-RES_DN,0.70,0.74,0.74,-0.5),x:pos.x,z:pos.z,r0:r0,t:0});
+  if(residues.length>RES_N)dropRes(residues.shift());
+  const nb=20,ba=new Float32Array(nb*3),bv=new Float32Array(nb*3);for(let i=0;i<nb;i++){ba[i*3]=pos.x+rnd(-0.5,0.5);ba[i*3+1]=y0-rnd(0.3,1.8);ba[i*3+2]=pos.z+rnd(-0.5,0.5);bv[i*3]=rnd(-0.15,0.15);bv[i*3+1]=rnd(0.2,0.35);bv[i*3+2]=rnd(-0.15,0.15);}
+  const bg=new THREE.BufferGeometry();bg.setAttribute('position',new THREE.BufferAttribute(ba,3));const bp=new THREE.Points(bg,new THREE.PointsMaterial({color:0xdde8ec,size:0.07,transparent:true,opacity:0.5,depthWrite:false}));bp.frustumCulled=false;bp.renderOrder=0;scene.add(bp);
+  splashes.push({g:bg,pts:bp,vel:bv,t:0,n:nb,life:4.0,grav:0,cap:y0-0.05});
 }
+const residues=[],RES_N=16,RES_T=6.0,RES_UP=0.06,RES_DN=0.10; // the patches alive at once; a patch's life (s); the foam's height over the wave and the grey patch's depth under it (clear of the surface's depth either side)
+function dropRes(r){for(const m of [r.up,r.dn]){scene.remove(m);m.geometry.dispose();m.material.dispose();}}
 function updateSplashes(dt){
-  for(let i=splashes.length-1;i>=0;i--){const s=splashes[i];s.t+=dt;const a=s.g.attributes.position.array;
-    for(let k=0;k<s.n;k++){s.vel[k*3+1]-=GRAV*dt;a[k*3]+=s.vel[k*3]*dt;a[k*3+1]+=s.vel[k*3+1]*dt;a[k*3+2]+=s.vel[k*3+2]*dt;}
-    s.g.attributes.position.needsUpdate=true;s.pts.material.opacity=0.9*(1-s.t/1.1);
-    if(s.t>1.1){scene.remove(s.pts);s.g.dispose();s.pts.material.dispose();splashes.splice(i,1);}}
+  for(let i=splashes.length-1;i>=0;i--){const s=splashes[i];s.t+=dt;const a=s.g.attributes.position.array,life=s.life||1.1;
+    for(let k=0;k<s.n;k++){if(s.grav)s.vel[k*3+1]-=GRAV*dt;a[k*3]+=s.vel[k*3]*dt;a[k*3+1]+=s.vel[k*3+1]*dt;a[k*3+2]+=s.vel[k*3+2]*dt;if(s.cap!==undefined&&a[k*3+1]>s.cap)a[k*3+1]=s.cap;} // the bubbles (grav 0) rise and stop at the water
+    s.g.attributes.position.needsUpdate=true;s.pts.material.opacity=(s.grav?0.9:0.7)*(1-s.t/life);
+    if(s.t>life){scene.remove(s.pts);s.g.dispose();s.pts.material.dispose();splashes.splice(i,1);}}
+  for(let i=residues.length-1;i>=0;i--){const r=residues[i];r.t+=dt;const k=r.t/RES_T;if(k>=1){dropRes(r);residues.splice(i,1);continue;}
+    const y=waveH(r.x,r.z),sc=r.r0*(1+1.0*(1-Math.exp(-r.t/1.5))),op=0.6*(1-k)*(1-k);r.up.position.y=y+RES_UP;r.dn.position.y=y-RES_DN;r.up.scale.set(sc,1,sc);r.dn.scale.set(sc*1.2,1,sc*1.2);r.up.material.opacity=op;r.dn.material.opacity=op*0.7;} // the patch doubles over ~4 s and fades by the square, riding the wave
 }
 function updatePlayer(dt){
   const P=player,C=P.clade;

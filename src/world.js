@@ -160,7 +160,10 @@ const HAZE={dens:1.7e-4,h:70,spray:0.0025,sprayH:4.0,glow:0.8,lift:0.3}; // the 
 // storm upwind in the trade belt (within 0.08 rad of WIND_A), so it strikes the flank the exposure field already gives surf, cones and spray to — a
 // swell from another belt would put the surf on a shore the geology says is a lee. Last in the table so the caustic's carry (CAU_SWELL), the
 // spray and the audio, which index the first entries, keep the 46 m as "the swell"; every sum reads the whole table. Drawn to ~1.4 km by the grid.
-const WAVES=[[46,0.50,WIND_A],[29,0.32,WIND_A-0.19],[15,0.18,WIND_A+0.36],[8.5,0.11,WIND_A-0.49],[6,0.06,WIND_A+0.56],[150,0.30,WIND_A+0.08]].map(w=>{const k=TAU/w[0];return {L:w[0],A:w[1],dx:Math.cos(w[2]),dz:Math.sin(w[2]),k:k,w:Math.sqrt(9.8*k),ph:w[2]*7.3};});
+// v11.46: the 46 m swell is two trains at ±0.15 rad of 0.28 (the person on v11.45: the rows "could be a little less row-like"): a swell has a directional
+// spread, so its crests are ~150 m long and the sea is a lattice of lozenges rather than rulings to the horizon; 0.56 where they meet, 0.4 rms — the same sea.
+// The first CAU_SWELL entries carry the caustic's ripples (both 46 m trains, the 29 and the 15 now; the 8.5 dropped out of the carry, a centimetre of it).
+const WAVES=[[46,0.28,WIND_A-0.15],[46,0.28,WIND_A+0.15],[29,0.32,WIND_A-0.19],[15,0.18,WIND_A+0.36],[8.5,0.11,WIND_A-0.49],[6,0.06,WIND_A+0.56],[150,0.30,WIND_A+0.08]].map(w=>{const k=TAU/w[0];return {L:w[0],A:w[1],dx:Math.cos(w[2]),dz:Math.sin(w[2]),k:k,w:Math.sqrt(9.8*k),ph:w[2]*7.3};});
 const WAVE_AMP=WAVES.reduce((a,w)=>a+w.A,0);
 const GRAV=9.8; // 1 g, 1 unit = 1 m (PLANET.md); what pulls a body back down once it is out of the water. Was 14 to v9.3.
 function wsh(s){return 2*Math.pow((s+1)*0.5,1.7)-1;}
@@ -174,6 +177,14 @@ function wsh(s){return 2*Math.pow((s+1)*0.5,1.7)-1;}
 // two; at the strand itself the amplitude goes to nothing and the water stands at the tide — no more puddles winking on the sand. Every wave
 // sum reads waveFac: this, the GLSL (scene.js WAVE_GLSL, the surface, the kelp's fold, the rafts, the fog's level) and the caustic's carry.
 const WAVE_BRK=0.39,WAVE_SHOAL_MAX=1.6; // the breaking limit as amplitude over depth (H/d 0.78); the most Green's law may raise a wave
+// The place's wave energy (v11.46; far.js wmFill writes it into the floor map's green). v11.44 read it off the *expo* field, which is a shore field — zero
+// wherever the water is deeper than 30 m — so the open sea had 35% of its chop and two thirds of its swell everywhere (measured 14 Sep: 0.35 at every
+// azimuth at r 1000). The sea is full on the open water; what takes from it is the island's wind shadow — the lee: downwind of the shield (LEE_DW past the
+// centre along the wind), within its width across the wind (LEE_CW), fading over LEE_L — and the lagoon's shelter (shel). The struck shore keeps expo's 1.
+const LEE=[0.65,400,600,1000,1500]; // the chop lost in the lee at most; the downwind distance the shadow starts; the across-wind half-width whole and gone; the fade length beyond
+function waveEnergy(x,z,s){const wx=Math.cos(WIND_A),wz=Math.sin(WIND_A),dw=x*wx+z*wz,cw=Math.abs(x*wz-z*wx);
+  const lee=smooth(0,LEE[1],dw)*(1-smooth(LEE[2],LEE[3],cw))*Math.exp(-Math.max(dw-2*LEE[1],0)/LEE[4]);
+  return Math.max(1-LEE[0]*lee,lerp(0.35,1,s.f[FI.expo]))*(1-0.75*s.f[FI.shel]);}
 const _wfac=new Float32Array(WAVES.length*2);
 function waveFac(x,z,out){const d=Math.max(wmFloor(x,z)+TIDE,0.05),wf=wmWave(x,z),cap=WAVE_BRK*d;for(let i=0;i<WAVES.length;i++){const w=WAVES[i];const a=w.A*(w.L<20?SEA_CHOP*wf:0.5+0.5*wf)*Math.min(Math.max(Math.pow(w.L*0.5/d,0.25),1),WAVE_SHOAL_MAX);out[i]=Math.min(a,cap);out[WAVES.length+i]=Math.max(0,(a-cap)/cap);}return out;} // out: the amplitude now per wave, then the breaking excess per wave
 function waveH(x,z){const f=waveFac(x,z,_wfac);let h=TIDE;for(let i=0;i<WAVES.length;i++){const w=WAVES[i];h+=f[i]*wsh(Math.sin((x*w.dx+z*w.dz)*w.k-w.w*t+w.ph));}return h;}
