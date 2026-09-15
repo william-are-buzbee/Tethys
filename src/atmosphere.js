@@ -293,7 +293,7 @@ function updateFume(dt,above){const K=SKY;fume.visible=above;if(!above)return;co
 // written on the CPU each frame (SH_N × 4, the snow's way). Alpha per shaft: none over water shallower than 4 m under its top, full at
 // 16 (it never reaches the ground: the bottom stops 1.5 m over groundAt); by 1 - 0.85 canopy (the water map); fading within 5 m of the
 // camera (so the near plane never slices one). In the shader: a soft width, a profile that rises over the top 14% and decays down
-// the length, a flicker on two slow sines (the sun through waves), the fog's extinction only (an additive thing takes no veil, DESIGN).
+// the length, the fog's extinction only (an additive thing takes no veil, DESIGN). Blended as screen since v11.50.1, see shM.
 // Strength: SH_A × the beam's share × the sky's light × wk (hidden the frame the camera is in air, faded in under it, like the shimmer).
 // Believability: crepuscular rays through a wave surface, only from a sun that is up and clear, never under the canopy or a shower.
 const SH_K=Q.shafts,SH_N=SH_K*SH_K,SH_S=7.0,SH_L=30,SH_TOP=3,SH_A=0.16,SH_FOC=8; // SH_FOC (v11.39): the depth at which a shaft reads the surface's focusing (scene.js cauFocus) — its brightness is the same field the floor's net is drawn from; the two-sine flicker it had is gone
@@ -302,7 +302,8 @@ for(let i=0;i<SH_N;i++){const b=i*4;shV[b]=0;shV[b+1]=0;shV[b+2]=1;shV[b+3]=1;sh
 const shI=new Uint16Array(SH_N*6);for(let i=0;i<SH_N;i++){const b=i*4,k=i*6;shI[k]=b;shI[k+1]=b+1;shI[k+2]=b+2;shI[k+3]=b;shI[k+4]=b+2;shI[k+5]=b+3;}
 const shG=new THREE.BufferGeometry();shG.setAttribute('position',new THREE.BufferAttribute(shP,3));shG.setAttribute('uv',new THREE.BufferAttribute(shUV,2));shG.setAttribute('aA',new THREE.BufferAttribute(shA,1));shG.setAttribute('aV',new THREE.BufferAttribute(shV,1));shG.setAttribute('aPh',new THREE.BufferAttribute(shPh,1));shG.setIndex(new THREE.BufferAttribute(shI,1));
 const shU={uTime:timeU,uCol:{value:new THREE.Color(0.55,0.72,0.8)},uK:{value:0},uFogP:{value:FOG_PS},uFogD:{value:SEA_FOG.dens}};
-const shM=new THREE.ShaderMaterial({uniforms:shU,transparent:true,depthWrite:false,depthTest:true,blending:THREE.AdditiveBlending,side:THREE.DoubleSide,
+const shM=new THREE.ShaderMaterial({uniforms:shU,transparent:true,depthWrite:false,depthTest:true,blending:THREE.CustomBlending,blendEquation:THREE.AddEquation,blendSrc:THREE.OneMinusDstColorFactor,blendDst:THREE.OneFactor,side:THREE.DoubleSide, // screen, not additive (v11.50.1): dst+src*(1-dst) — what a shaft adds is scaled by the pixel's distance from white, so it can never clip. Plain additive over the far kelp crowns (fogged to the pale veil at the water line) summed four stacked shafts onto an already-pale pixel and blew it out: the person's "white patch the shape of the god ray", seen 15 Sep, gone with the shafts off
+  
   vertexShader:'attribute float aA;attribute float aV;attribute float aPh;varying float vA;varying float vV;varying float vPh;varying float vD;varying vec2 vU;\nvoid main(){vA=aA;vV=aV;vPh=aPh;vU=uv;vec4 mv=modelViewMatrix*vec4(position,1.0);vD=length(mv.xyz);gl_Position=projectionMatrix*mv;}',
   fragmentShader:'uniform float uTime;uniform vec3 uCol;uniform float uK;uniform vec4 uFogP;uniform float uFogD;varying float vA;varying float vV;varying float vPh;varying float vD;varying vec2 vU;\n'+
     'void main(){float w=1.0-abs(vU.x*2.0-1.0);w*=w;float pr=smoothstep(0.0,0.14,vV)*exp(-vV*2.4);float fl=1.0;'+

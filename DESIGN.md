@@ -783,7 +783,7 @@ quad turned to face the camera about the vertical. Alpha per shaft: none over wa
 bottom stops 1.5 m over `groundAt`, so a shaft never cuts a rock); × `1 − 0.85·canopy`; × a fade within 5 m of the camera (the near
 plane never slices one); in the shader a soft width, a profile rising over the top 14% and decaying down the length, since v11.39 the surface's own focusing
 over its head in place of the two-sine flicker it had (× (0.25 + 0.5·I), I from scene.js `cauFocus` at `SH_FOC` 8 m, the same tiles the
-floor's net is drawn from — a shaft is a beam the surface focused), and the fog's extinction only (an additive thing takes no veil). Strength `SH_A` 0.16 × the beam's
+floor's net is drawn from — a shaft is a beam the surface focused), and the fog's extinction only (an additive thing takes no veil). **Blended as screen, not additive** (v11.50.2: `dst + src·(1 − dst)`, `CustomBlending` with `OneMinusDstColorFactor`/`OneFactor`): what a shaft adds is scaled by the pixel's distance from white, so four stacked shafts over the far kelp crowns — fogged to the pale veil at the water line — can no longer clip to a white patch the shaft's shape (the person, 15 Sep). Strength `SH_A` 0.16 × the beam's
 share × the sky's light × `wk` (hidden the frame the camera is in air, faded in under it, like the shimmer) × gone for a camera below
 ~50 m. Colour: the lamp's, `(0.55, 0.72, 0.8) × K.lumC` — white-warm under the sun, amber at dusk, silver-blue under the moon
 (v11.31.4; the line that does it had been glued to the end of a comment since the pass, so until then they were the cold literal at
