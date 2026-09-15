@@ -3654,3 +3654,5 @@ count, every block's data intact through the moves.
 4.7M and 434); the air spot 4.66M and 208 (v11.52: 9.6M). The forest by day, facing both ways. **Unseen, ask in this order:** (1) the same four
 readouts — the interval should be back at 8.3 with `work` where v11.52 put it; (2) a slow turn in the forest with the readout open, for a hitch
 when a cell's block moves; (3) `world shadows` on: a kelp behind the camera casting ahead as before.
+
+**Seen by the person (15 Sep 2026, four readouts on the 4060 at 1920×1080):** 120 fps and 8.3–8.4 ms everywhere. The forest at 11 m under: `work 4.1/4.5 ms`, 231 draws, 4.79M tris (v11.51: 7.3/9.7, 447, 4.7M); looking up from 11 m: 4.2/4.8, 143 draws, 2.8M; the air over the forest: 4.1/4.6, 203 draws, 4.0M; the shadow re-render 2.3–2.4 ms. Their first readouts were of the v11.52 build (11M tris with four cells in view), not this one.
