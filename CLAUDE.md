@@ -40,6 +40,7 @@ node serve.js            static server; open http://localhost:8080/dev.html (edi
 | `test/audio.js` | the audio graph against the stub's fake `AudioContext` (any NaN param throws), the space at five sites, tick cost | `node test/audio.js` |
 | `test/snow.js` | the marine snow mix at thirteen sites, layering invariants, tick cost | `node test/snow.js` |
 | `test/combat.js` | holds form and kill, ropes never NaN, the player held/bleeds/grabs/bites; a table of every hunter's hold | `node test/combat.js` |
+| `test/pool.js` | the flora pools (v11.52): blocks contiguous, counts summing, no NaN, a cell's block identical alone, first or last, the others untouched by a removal, the card species per cell, growth without loss | `node test/pool.js` |
 | `test/census.js` | the ecology on paper: capacities, rates, the model for N days; fails if a kind collapses under a fifth | `node test/census.js 120` (`--test` runs 40) |
 | `test/live.js` | the ecology where the player is: four game days of clutches laid and hatched with cells loaded, then a table of every hunter's hunger against the distance to its nearest meal | `node test/live.js`, `TIER=low …` |
 | `test/smoke.js` | boots, walks the bestiary and the lab, swims all three clades headlessly; fails on any runtime error | `node test/smoke.js`, `TIER=low …` |
@@ -140,8 +141,9 @@ Docs, most upstream first. When a doc's Open list says a choice is the person's,
   fields (`FI`: sub, flow, expo, nut, turb, young, heat, shel, rel), analytic geology plus fbm. No biome ids anywhere. Species and
   structures carry `env` envelopes; `envW(env,h,slope,f)` is 0..1. Landmarks: the pit and the chimney are fixed by the geology, the
   rest searched on the terrain at load (`findSpot`, seed 4242, fixed sequence — add new ones at the end).
-- **Cells.** 16×16 cells of 215 m (`CELL`, `NCELL`, the world ±`HALF`). A loaded cell is a 49×49 grid, a terrain mesh, one
-  `InstancedMesh` per flora entry, its colliders, its creatures. `genChunk` is a generator run under a frame budget (`Q.budgetMs`,
+- **Cells.** 16×16 cells of 215 m (`CELL`, `NCELL`, the world ±`HALF`). A loaded cell is a 49×49 grid, a terrain mesh, its flora as a
+  block in each species' pool (v11.52, chunks.js `POOLS`: one `InstancedMesh` per species across every loaded cell; the card species, the
+  rafts and the glow clouds keep a mesh per cell), its colliders, its creatures. `genChunk` is a generator run under a frame budget (`Q.budgetMs`,
   the streaming budget is what the last frame left of `Q.target`), nearest first within `LOAD_R`. Inside a cell: terrain → the
   structures' collision → cliffs → rock → the other flora (each asks `clearOf` against the hash) → landmarks → creatures.
 - **Near and far.** far.js builds every big structure, coarse terrain in 4×4-cell regions, the apron to 2000 past the edge, impostor
@@ -201,7 +203,7 @@ Docs, most upstream first. When a doc's Open list says a choice is the person's,
   far.js and scene.js; the hand-builder branches in `creatures_defs.js` and zoo.js; reef `fill`/`drop`/`clear` handling with no
   entry setting them. **Left alive on purpose** (v11.33, and each says so where it lives): `GLOW` and the `f.glow` branches, for
   when bioluminescence returns as events (PLANET Hooks); the `pads` path through grow.js, chunks.js and physics.js, which costs an
-  empty loop a frame; `y:'mid'`; and `DEFS.glim`, `SPECS.glim` and `PAL.glim` — the darter's pale variant is a roster question, not
+  empty loop a frame; `y:'mid'`; and `DEFS.glim`, `SPECS.glim` and `PAL.glim` — the darter's pale variant is a species, kept (the person, 15 Sep 2026), not
   drift. Fixed in v11.32-11.33: the chemocline literal (`CHEMO`), the daylight and canopy curves, the two masses, `ROSTER.new` on
   the fifteen species that spawn, lint.js's acorn line and `creatures_spec.js`'s `test/spec.js`.
 
@@ -226,6 +228,9 @@ Docs, most upstream first. When a doc's Open list says a choice is the person's,
   doubles up. Change the ground rule in `settleOn`, nowhere else.
 - Since v11.12 the flora has a draw distance `FLORA_FAR`: a new small species wants a cut material; a new big one wants a card in
   `FAR_IMP` and no cut. The disturbance loop runs only within `DIST_R` of the camera.
+- A cell's small flora lives in its species' pool (chunks.js `POOLS`), not in `ch.meshes`/`ch.flora`: a block per cell, the tail moved down on
+  unload, the written range uploaded (`updateRange`). Placement reads the cell's own hash only (`solidPush(…, own)`), which `placeBigSolids`
+  completes with every neighbour's reaching structure — `test/pool.js` fails if a cell's blocks differ by arrival order.
 - Never mutate a spawned creature's body geometry (it is shared per kind in `KIND_GEO`) — build a variant. `disposeCreature`
   skips shared geometry.
 - The cell and region generators (`buildTerrain`, `placeFloraType`, `makeSchool`, `bigsGen`, `impostorsGen`) yield inside their

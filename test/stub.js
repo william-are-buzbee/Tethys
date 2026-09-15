@@ -24,7 +24,7 @@ class Matrix4{constructor(){this.e=[1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1];} get eleme
 class Matrix3{getNormalMatrix(){return this;}}
 class Color{constructor(r,g,b){this.r=1;this.g=1;this.b=1;if(typeof r==='number'&&g===undefined){this.r=((r>>16)&255)/255;this.g=((r>>8)&255)/255;this.b=(r&255)/255;}else if(r!==undefined){this.r=r;this.g=g;this.b=b;}}
  setRGB(r,g,b){this.r=r;this.g=g;this.b=b;return this;} copy(c){return this.setRGB(c.r,c.g,c.b);} multiply(c){this.r*=c.r;this.g*=c.g;this.b*=c.b;return this;} multiplyScalar(s){this.r*=s;this.g*=s;this.b*=s;return this;} lerp(c,t){this.r+=(c.r-this.r)*t;this.g+=(c.g-this.g)*t;this.b+=(c.b-this.b)*t;return this;} setHSL(){return this;} setHex(){return this;} getHex(){return 0;}}
-class BufferAttribute{constructor(arr,n){this.array=arr;this.itemSize=n;this.count=arr.length/n;this.needsUpdate=false;} setUsage(){return this;}
+class BufferAttribute{constructor(arr,n){this.array=arr;this.itemSize=n;this.count=arr.length/n;this.needsUpdate=false;this.updateRange={offset:0,count:-1};} setUsage(){return this;}
  setXYZ(i,x,y,z){const a=this.array,k=i*this.itemSize;a[k]=x;a[k+1]=y;a[k+2]=z;} getX(i){return this.array[i*this.itemSize];} getY(i){return this.array[i*this.itemSize+1];} getZ(i){return this.array[i*this.itemSize+2];} setY(i,v){this.array[i*this.itemSize+1]=v;}}
 class Float32BufferAttribute extends BufferAttribute{constructor(a,n){super(Float32Array.from(a),n);}}
 class InstancedBufferAttribute extends BufferAttribute{}
@@ -49,7 +49,7 @@ class Group extends Object3D{}
 class Mesh extends Object3D{constructor(g,m){super();this.isMesh=true;this.geometry=g;this.material=m;}}
 class Points extends Object3D{constructor(g,m){super();this.isPoints=true;this.geometry=g;this.material=m;}}
 class LineSegments extends Object3D{constructor(g,m){super();this.isLineSegments=true;this.geometry=g;this.material=m;}}
-class InstancedMesh extends Mesh{constructor(g,m,n){super(g,m);this.isInstancedMesh=true;this.count=n;this.instanceMatrix={needsUpdate:false,array:new Float32Array(n*16)};this.instanceColor=null;} dispose(){} setMatrixAt(i,m){this.instanceMatrix.array.set(m.elements,i*16);} setColorAt(){this.instanceColor={needsUpdate:false};}}
+class InstancedMesh extends Mesh{constructor(g,m,n){super(g,m);this.isInstancedMesh=true;this.count=n;this.instanceMatrix=new InstancedBufferAttribute(new Float32Array(n*16),16);this.instanceColor=null;} dispose(){} setMatrixAt(i,m){this.instanceMatrix.array.set(m.elements,i*16);} setColorAt(){this.instanceColor={needsUpdate:false};}}
 class Material{constructor(o){Object.assign(this,o||{});this.color=new Color(o&&o.color);this.opacity=1;} dispose(){}}
 class Scene extends Object3D{}
 class Light extends Object3D{constructor(c,i,d,dec){super();this.color=new Color(c);this.groundColor=new Color(typeof i==='number'&&d!==undefined&&typeof d!=='number'?i:0);this.intensity=i;this.castShadow=false;this.target=new Object3D();this.shadow={camera:Object.assign(new Camera(),{left:-5,right:5,top:5,bottom:-5,near:0.5,far:500}),mapSize:new Vector2(512,512),matrix:new Matrix4(),map:null,bias:0};}} // shadow, target (v11.23): the shadow map's light

@@ -75,11 +75,11 @@ function addFloraSolids(ch,f,m,x,y,z,inst,soft){ // soft: a swaying plant — it
 // sticks) and `lastPad` says so; a body below is kept under it. A pad seen from the side is nothing.
 let lastPad=null,contactK=0; // contactK: what the pushes since it was last cleared moved a point out of — 1 a soft plant, 2 rock or a hard thing (the player clears it, audio.js reads it)
 // noPad: ignore pads (the camera).
-function solidPush(p,pad,vel,extra,noPad){
+function solidPush(p,pad,vel,extra,noPad,own){ // own (v11.52): only extra's hash — a cell placing its flora must not read what neighbours happen to be loaded (DESIGN Determinism; test/pool.js found the wisp placed differently by arrival order)
   const ci=cellOf(p.x),cj=cellOf(p.z);let any=false;lastPad=null;
   for(let pass=0;pass<3;pass++){
     let moved=false;
-    for(let n=-1;n<=8;n++){
+    for(let n=-1;n<=(own?-1:8);n++){
       let ch;if(n<0)ch=extra;else{const i=ci+(n%3)-1,j=cj+((n/3)|0)-1;if(i<0||j<0||i>=NCELL||j>=NCELL)continue;ch=chunkGrid[i*NCELL+j];}
       if(!ch||!ch.solids.length)continue;
       const mg=ch.solidR+pad;if(p.x<ch.x0-mg||p.x>ch.x0+CELL+mg||p.z<ch.z0-mg||p.z>ch.z0+CELL+mg)continue;

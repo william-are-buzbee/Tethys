@@ -457,7 +457,7 @@ function shadowCentre(cx,cy,cz,tx,out){
 const SH_C=new Float32Array(3);
 function updateShadow(){
   setShadowSize();
-  const on=FX.shadows&&LIGHT_K[1]>0;renderer.shadowMap.enabled=on;SHM_P[1]=on&&sun.shadow.map?1:0;shadowFrame();if(!on)return;
+  const on=FX.shadows&&LIGHT_K[1]>0;renderer.shadowMap.enabled=on;SHM_P[1]=on&&sun.shadow.map?1:0;shadowFrame();if(!on){if(sun.shadow.map){dropShadowMap(sun);shMapU.value=null;}return;} // off: the map freed (v11.52; the 13 Sep audit — it was kept at 16 MB, 67 sharp, for nothing)
   const N=sun.shadow.mapSize.x;SHM_P[0]=1/N;SHM_P[2]=SHM_BIAS/(2*SHM_D);SHM_P[3]=2*(2*SHM_R/N);
   const lx=SH_F[6],ly=SH_F[7],lz=SH_F[8];SHM_L[0]=lx;SHM_L[1]=ly;SHM_L[2]=lz;
   // the centre: ahead of the camera by 0.45 of the box, snapped to the map's texels in the box's frame
@@ -546,19 +546,21 @@ function updateShadowS(dt,force){ // after updateShadow (shadowFrame has run); f
   const st=force||FX.statics,gr=force||FX.ground;shsVis.length=0;
   for(const ch of chunks.values()){if(!cellInBox(ch,SHS_C,SHS_R))continue;shsVis.push(ch,ch.group.visible);ch.group.visible=true;
     if(st){for(const m of ch.flora)m.castShadow=true;for(const m of ch.shBig)m.castShadow=true;}if(gr&&ch.terrain)ch.terrain.castShadow=true;}
+  if(st)for(const P of POOLS.values())P.im.castShadow=true; // the species pools (v11.52, chunks.js): every loaded cell's small flora and rock at once
   if(st)for(const m of LMK.meshes){const q=m.position;if(Math.abs(q.x-cx)<SHS_R+SHM_D&&Math.abs(q.z-cz)<SHS_R+SHM_D)m.castShadow=true;}
   const en=renderer.shadowMap.enabled,rt=renderer.getRenderTarget();renderer.shadowMap.enabled=true;
   try{renderer.setRenderTarget(shsRT);renderer.render(scene,camS);}catch(e){console.warn('world shadows: '+e.message);}
   renderer.setRenderTarget(rt);renderer.shadowMap.enabled=en;
   for(let i=0;i<shsVis.length;i+=2){const ch=shsVis[i];ch.group.visible=shsVis[i+1];for(const m of ch.flora)m.castShadow=false;for(const m of ch.shBig)m.castShadow=false;if(ch.terrain)ch.terrain.castShadow=false;}
-  for(const m of LMK.meshes)m.castShadow=false;shsVis.length=0;
+  for(const m of LMK.meshes)m.castShadow=false;for(const P of POOLS.values())P.im.castShadow=false;shsVis.length=0;
   shMapSU.value=sunS.shadow.map?sunS.shadow.map.texture:null;SHS_P[1]=sunS.shadow.map?1:0;
   shsDirty=false;shsT=SHS_GAP;shsN++;shsMs=performance.now()-t0;
 }
 // one map's shadow (v11.30, the same code for both): `s` names the uniform set ('' the creatures' uShMap/uShMat/uShP/uShL, 'S' the world's)
+const SHM_PEN=[1.0,0.025]; // the penumbra (v11.52): the tap square's radius in texels at the caster and its widening per metre of caster distance — 1.5 and 0.05 to v11.51; the 13 Sep audit called the soft edge the foreign half of an otherwise in-style shadow and the person (15 Sep) said harden it: both halved, unseen
 const SH_GLSL=s=>'if(uShP'+s+'.y>0.5){vec3 sp=pxp+fn*(uShP'+s+'.w*sign(dot(fn,uShL'+s+'.xyz)));vec4 sc=uShMat'+s+'*vec4(sp,1.0);'+ // the receiver stepped off its face along the light's side of it (no acne on a facet edge-on to the light)
   'float ef=smoothstep(0.0,0.07,min(min(sc.x,1.0-sc.x),min(sc.y,1.0-sc.y)));if(ef>0.0&&sc.z<1.0){float z=sc.z-uShP'+s+'.z;float fd=mix(300.0,35.0,wd);'+
-  'float dm=max(z-shDepth(texture2D(uShMap'+s+',sc.xy)),0.0)*uShL'+s+'.w;float rr=uShP'+s+'.x*(1.5+0.05*dm);vec2 o1=vec2(rr,0.4*rr),o2=vec2(-0.4*rr,rr);'+
+  'float dm=max(z-shDepth(texture2D(uShMap'+s+',sc.xy)),0.0)*uShL'+s+'.w;float rr=uShP'+s+'.x*('+SHM_PEN[0].toFixed(2)+'+'+SHM_PEN[1].toFixed(3)+'*dm);vec2 o1=vec2(rr,0.4*rr),o2=vec2(-0.4*rr,rr);'+
   'float u=uPix>0.5?4.0*shTap(uShMap'+s+',sc.xy,z,fd):shTap(uShMap'+s+',sc.xy+o1,z,fd)+shTap(uShMap'+s+',sc.xy-o1,z,fd)+shTap(uShMap'+s+',sc.xy+o2,z,fd)+shTap(uShMap'+s+',sc.xy-o2,z,fd);'+ // pixel light (v11.38): one hard tap at the snapped point
   'sh=min(sh,1.0-0.25*u*ef);}}';
 const LIGHT_GLSL=LIGHT_FX?'\n#ifdef USE_FOG\n{float dep=uTint.x-vFogPos.y;if(uSunW.w>0.002){vec3 fn=normalize(cross(dFdx(vFogPos),dFdy(vFogPos)));float wd=clamp(dep*0.7-0.2,0.0,1.0);'+ // 0 in air and at the surface itself (a raft's pad at -0.45 barely), full 1.7 m under

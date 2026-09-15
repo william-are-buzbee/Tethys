@@ -339,3 +339,5 @@ it in the effects list (`FX_LIST`/`FX_DEF` in effects.js, twelve entries today, 
 place and the world seen without it — the deep and the night are where it matters. One entry, one default, one gate on the
 intensity. Night brightness itself is **not** in question — the person settled that on 13 Sep ("perfectly fine"); this is about
 seeing what the light is doing, not about making the dark lighter.
+
+**Answered 15 Sep 2026:** yes — put `plight` on the effects list. And the 13 Sep audit's other four findings are all to be built: the shadow map freed when `shadows` is off, no rain from a clear sky when `clouds` is off, the shimmer sprite replaced with something in the style, the soft shadow edge hardened. Built as v11.52 the same day: `own light` on the list, the map freed, rain under clouds, the penumbra halved (`SHM_PEN`); the shimmer sprite had gone in v11.43.

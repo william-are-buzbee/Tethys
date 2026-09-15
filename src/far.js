@@ -158,6 +158,7 @@ const FAR_IMP=[
   {f:FLORA_BY_ID.button,geo:farRaftGeo([0.56,0.82,0.78]),stride:2,r:1.1}, // the buttons' fleets, green-blue
   {f:FLORA_BY_ID.tidetree,geo:farTreeGeo(),stride:2}
 ];
+for(const sp of FAR_IMP)sp.f.card=true; // v11.52: a card species keeps an instanced mesh per cell (chunks.js makeInstanced) — its cards take over per cell at FLORA_FAR; every other species is pooled
 const impCache=new Array(NCELL*NCELL).fill(null);
 // a generator (v11.12), like bigsGen: a cell's impostors are hundreds of sample() calls and were one step of a region's build
 function* impostorsGen(i,j){

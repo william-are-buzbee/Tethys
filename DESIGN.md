@@ -283,8 +283,9 @@ below; *v11.51: the underside reads the frame through each facet — `refrMark`,
 physical 48°) the fixed colour `(0.22,0.46,0.56)`, emissive `(0.16,0.34,0.42)·(0.35+0.65·uDf)` and the refracted glint
 `T = refract(-V, -N, 1.33)`, `pow(dot(T,L),40)`, alpha 0.62; outside it the surface is a total-internal-reflection
 mirror of the water below: no diffuse, emissive `fogColor·0.9` (the veil at the camera), alpha 0.74. So the underwater
-horizon is one colour whether the eye lands on the surface, the far floor or the dome. Knobs: the window band
-`0.25/0.65` (raise both to shrink the bright cone; the old look is `snell = 1`), the mirror's `0.9`.
+horizon is one colour whether the eye lands on the surface, the far floor or the dome. Knobs: the mirror's `0.9`. *v11.52: the Snell
+window (v11.43–v11.49, the `snell window` row) is struck — the person: it looks bad — so the underside is v11.50's translucent facet (`WIN_T`, `WIN_LO`,
+`WIN_HI`) with v11.51's refraction, and the cloud march is no longer compiled into the surface.*
 
 **The camera at the surface (`player.js`).** *v11.42: the camera is no longer held clear of the water — `CAM_CLEAR` and the target's nudge are gone; it rests on the line if the player puts it there, and the view is half air, half water, because the fog is decided per fragment (below, The two-segment fog). `camAbove` flips `CAM_FLIP` 0.4 past the wave with `CAM_DWELL` and drives only the light's crossfade, the sound and the water's own things. The paragraph as written describes v11.6–v11.41.* `player.camAbove` is which side of the water the camera is on. The camera
 target is nudged to stay ≥0.5 clear of the wave on its side, and flips only when its natural spot is >0.9 past the
@@ -1547,6 +1548,15 @@ surface air for finback)? Any persistence, or is a clean cold start the point?
 
 ## Performance and the quality tier
 
+**v11.52 (15 Sep 2026): the draw count was the frame, and the flora is pooled per species.** Measured in the app's browser at the
+person's forest spot (147, −3, −443), the loop driven by hand with a `gl.finish()` timed after each render, A/B interleaved: 434 draws, `render`
+3.5 ms of a 5.4 ms frame (8 µs a draw here, 13 in their browser — their `render` 5.8 of 7.3), the GPU idle 0.5 ms after the last draw. All cell
+flora −1.2 ms CPU and GPU (268 draws); 2.4M triangles of reef animals −0.3; a quarter of the pixels −0.4; the fragment terms (caustics, both
+shadow maps, shafts, refraction) nothing. So: **one `InstancedMesh` per species across every loaded cell** (chunks.js "the flora pools", `POOLS`;
+card and padded species and the glow clouds stay per cell) — 434 → 231 draws, 5.4 → 4.6 ms, the world shadow re-render 2.5–4.3 → 2.0–2.5. The
+pool draws every loaded cell's instances (tris 4.7M → 8.8M; the GPU has it), a block per cell, the tail moved down on unload, `updateRange`
+uploads. `test/pool.js` checks it; `pools` on the readout counts them. The draw census that remains: far layer 71, creatures 49, cell terrain 14.
+
 **Where the frame goes, measured on the 4060 at the weed forest (330, 0), 13 Sep 2026.** The readout's `work` pair is the
 frame's own cost and the worst frame in the last quarter second (main.js, v11.32.1); `ms` and `fps` are the vsync interval and say
 nothing about headroom on a capped display.
@@ -1634,7 +1644,11 @@ A seeded rng is only half of it: whatever the placement *reads* must not depend 
 places reads the ground through the cell’s own grid (`hOut`, `sample()` past the edge) or through `sample()`, never `groundAt` — which
 answers from a neighbour’s grid when that neighbour is loaded and from `sample()` when it is not. `placeCliffs` read `groundAt` until
 v11.31.3 and so laid different ledges depending on the order the player arrived from; the check is in the CHANGELOG for that version
-(load a cell alone and again with its four neighbours up, and compare).
+(load a cell alone and again with its four neighbours up, and compare). v11.52 found two more by
+the same test (test/pool.js: a cell's pooled blocks alone, first and last): `clearOf` asked the 3×3 contact query, so a plant near a cell line stood or
+not by whether the neighbour was loaded — it asks the cell's own hash alone now (`solidPush(…, own)`); and `placeBigSolids` registered a neighbour's
+reaching structures only while that neighbour was unloaded — always now, so the own hash is complete. The rule: a cell's placement reads its own
+grid, `sample()`, and its own solids, which hold its rock, its plants and every structure that reaches it; never a neighbour's load state.
 
 ## Hooks for things not built yet
 

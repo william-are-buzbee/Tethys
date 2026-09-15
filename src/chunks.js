@@ -22,7 +22,7 @@ function underCanopy(x,z,y){return canopyW(x,z)*canopyFade(y)>0.5;} // v11.32: t
 function makeChunk(i,j){
   const x0=i*CELL-HALF,z0=j*CELL-HALF,hg=new Float32Array(GR*GR),fg=new Float32Array(GR*GR*NF);
   return {i:i,j:j,k:ckey(i,j),x0:x0,z0:z0,cx:x0+CELL/2,cz:z0+CELL/2,hg:hg,fg:fg,landN:0,deepN:0,minH:0,maxH:-1e9,group:new THREE.Group(),creatures:[],schools:[],eggs:[],meshes:[],plumes:[],lightSrc:[],solids:[],hash:makeHash(),solidR:0,sphere:null,terrain:null,shBig:[], // terrain, shBig (v11.30): the ground's mesh and the structures' shadow proxies, casters into the world's map (scene.js updateShadowS)
-    flora:[],near:true,ac:new Float32Array(16), // ac: the swaying flora's height summed in a 4×4 grid of the cell — the forest's sound (audio.js) // flora: the instanced meshes hidden once the cell is past FLORA_FAR (v11.12, cullChunks); near: whether they are drawn now
+    pooled:[],flora:[],near:true,ac:new Float32Array(16), // pooled (v11.52): the species pools this cell has written a block into (poolAdd); taken out on unload // ac: the swaying flora's height summed in a 4×4 grid of the cell — the forest's sound (audio.js) // flora: the instanced meshes hidden once the cell is past FLORA_FAR (v11.12, cullChunks); near: whether they are drawn now
     h:function(x,z){let fx=clamp((x-x0)/STEP,0,CH_RES-0.001),fz=clamp((z-z0)/STEP,0,CH_RES-0.001);const ix=Math.floor(fx),iz=Math.floor(fz),tx=fx-ix,tz=fz-iz;const a=hg[iz*GR+ix],b=hg[iz*GR+ix+1],c=hg[(iz+1)*GR+ix],d=hg[(iz+1)*GR+ix+1];return a+(b-a)*tx+(c-a)*tz+(a-b-c+d)*tx*tz;},
     f:function(x,z){const ix=clamp(Math.round((x-x0)/STEP),0,CH_RES),iz=clamp(Math.round((z-z0)/STEP),0,CH_RES);return fg.subarray((iz*GR+ix)*NF,(iz*GR+ix+1)*NF);}, // the conditions at the nearest vertex
     w:function(env,x,z){return envW(env,this.h(x,z),this.slope(x,z),this.f(x,z));}, // a species' tolerance here
@@ -94,7 +94,8 @@ function* buildTerrain(ch){
   tg.setAttribute('color',new THREE.BufferAttribute(tc,3));if(!Q.phong)tg.computeVertexNormals();tg.computeBoundingSphere();
   const m=shadowCaster(new THREE.Mesh(tg,TERRAIN_MAT),TERRAIN_MAT);ch.group.add(m);ch.meshes.push(m);ch.terrain=m; // a caster into the world's map when FX.ground (v11.30)
 }
-function makeInstanced(ch,rng,geo,mat,tints,list,dip,vars){
+function makeInstanced(ch,rng,geo,mat,tints,list,dip,vars,f){
+  if(f&&!dip&&mat!==GLOW&&!f.card){poolAdd(poolFor(f,geo,mat,vars,!!mat.sway),ch,rng,tints,list,mat);return null;} // v11.52: one mesh per species across the loaded cells (the pools, below); a card species (far.js FAR_IMP), a padded one (aDip, physics.js) and the glow clouds keep a mesh per cell
   const cur=!!mat.sway; // a sway material reads aCur: the current at every instance's base (scene.js LEAN)
   if(dip||vars||cur)geo=geo.clone(); // per-cell instance attributes need the cell's own copy (disposed with the cell)
   if(dip)geo.setAttribute('aDip',new THREE.InstancedBufferAttribute(new Float32Array(list.length),1)); // rafts: a per-instance dip the pads sink by under a body (physics.js updatePads)
@@ -106,6 +107,51 @@ function makeInstanced(ch,rng,geo,mat,tints,list,dip,vars){
   for(let i=0;i<list.length;i++){im.setMatrixAt(i,list[i].m);const tc=list[i].tint||tints[Math.floor(rng()*tints.length)];col.setRGB(tc[0]*(0.85+rng()*0.25),tc[1]*(0.85+rng()*0.25),tc[2]*(0.85+rng()*0.25));im.setColorAt(i,col);}
   im.instanceMatrix.needsUpdate=true;if(im.instanceColor)im.instanceColor.needsUpdate=true;ch.group.add(im);ch.meshes.push(im);if(mat!==GLOW){ch.flora.push(im);shadowCaster(im,mat,ch.sphere);}return im; // the glow clouds stay lit at any range (and cast nothing); everything else hides past FLORA_FAR (cullChunks) and casts into the world's map (v11.30)
 }
+// ---------- the flora pools (v11.52): one instanced mesh per species across every loaded cell ----------
+// Measured 15 Sep 2026 in the app's browser at the forest's edge (147,-3,-443), the loop driven by hand with a gl.finish after each render: of 430
+// draws 268 were cell flora at one InstancedMesh per species per cell, the frame was the CPU submitting them (8 µs a draw here, 13 in the
+// person's browser: their render 5.8 ms of a 7.3 ms frame) and the GPU idled half a millisecond after the last one; hiding 2.4M triangles of
+// reef animals saved 0.3 ms, a quarter of the pixels 0.4, the caustics, the shadows' taps, the shafts and the refraction nothing. So the draw
+// count is the frame, and it scales as species × visible cells (DESIGN Performance, 13 Sep). Now a species without a card or a pad draws
+// once for all loaded cells: a cell writes its instances into the species' pool as one block (the same rng, the same matrices, tints and
+// per-instance attributes as the per-cell mesh had) and takes them out on unload by moving the tail down; only the written range is
+// uploaded (updateRange). The pool draws everything loaded — the per-instance collapse past FLORA_FAR (scene.js FAR_CUT) does what the
+// per-cell hide did for the small things, and the rock never hid — so a cell behind the camera costs its vertices, which the GPU has to spare.
+// The card species (FAR_IMP: the stipe, bladder, buttons, tidetree; `f.card`) keep a mesh per cell because their cards take over per cell,
+// the rafts keep aDip per cell (physics.js updatePads), the glow clouds their GLOW mesh. A pool grows by doubling into a fresh geometry
+// clone (the old one disposed, so no GL buffer is left behind); it casts into the world's shadow map whole (scene.js updateShadowS) with a
+// bounds sphere that covers the island and never camS's box 500 km up.
+const POOLS=new Map(),poolGroup=new THREE.Group();scene.add(poolGroup); // entry → pool
+const POOL_SPHERE=new THREE.Sphere(new THREE.Vector3(0,0,0),HALF*2+2000);
+function poolFor(f,geo,mat,vars,cur){let P=POOLS.get(f);if(P)return P;P={f:f,src:geo,mat:mat,vars:!!vars,cur:cur,cap:0,n:0,blocks:[],geo:null,im:null};poolAlloc(P,Math.max(64,Math.round((f.per||60)*Q.flora*12)));POOLS.set(f,P);return P;}
+function poolAlloc(P,cap){ // the pool's mesh at capacity cap, what is written carried over; the old geometry disposed
+  const old=P.im,g=P.src.clone();
+  if(P.vars)g.setAttribute('aVar',new THREE.InstancedBufferAttribute(new Float32Array(cap),1));
+  if(P.cur){g.setAttribute('aCur',new THREE.InstancedBufferAttribute(new Float32Array(cap*2),2));g.setAttribute('aTide',new THREE.InstancedBufferAttribute(new Float32Array(cap*2),2));}
+  const im=new THREE.InstancedMesh(g,P.mat,cap);im.frustumCulled=false;im.instanceColor=new THREE.InstancedBufferAttribute(new Float32Array(cap*3),3);
+  if(old){const n=P.n;im.instanceMatrix.array.set(old.instanceMatrix.array.subarray(0,n*16));im.instanceColor.array.set(old.instanceColor.array.subarray(0,n*3));
+    if(P.vars)g.attributes.aVar.array.set(old.geometry.attributes.aVar.array.subarray(0,n));if(P.cur){g.attributes.aCur.array.set(old.geometry.attributes.aCur.array.subarray(0,n*2));g.attributes.aTide.array.set(old.geometry.attributes.aTide.array.subarray(0,n*2));}
+    poolGroup.remove(old);old.geometry.dispose();old.dispose();}
+  im.count=P.n;P.geo=g;P.im=im;P.cap=cap;shadowCaster(im,P.mat,POOL_SPHERE);poolGroup.add(im);
+}
+function poolTouch(P,s,c){ // the range [s,s+c) uploaded at the next draw, joined to a range still pending
+  const up=(a,sz)=>{const r=a.updateRange;if(r.count>0){const lo=Math.min(r.offset,s*sz),hi=Math.max(r.offset+r.count,(s+c)*sz);r.offset=lo;r.count=hi-lo;}else{r.offset=s*sz;r.count=c*sz;}a.needsUpdate=true;};
+  up(P.im.instanceMatrix,16);up(P.im.instanceColor,3);if(P.vars)up(P.geo.attributes.aVar,1);if(P.cur){up(P.geo.attributes.aCur,2);up(P.geo.attributes.aTide,2);}
+}
+function poolAdd(P,ch,rng,tints,list,mat){ // the cell's instances as one block at the pool's end (the rng in makeInstanced's order: the tint's pick, then three jitters)
+  if(P.n+list.length>P.cap)poolAlloc(P,Math.max(P.cap*2,P.n+list.length));
+  const s=P.n,M=P.im.instanceMatrix.array,C=P.im.instanceColor.array,V=P.vars?P.geo.attributes.aVar.array:null,A=P.cur?P.geo.attributes.aCur.array:null,B=P.cur?P.geo.attributes.aTide.array:null;
+  for(let i=0;i<list.length;i++){const p=list[i],k=s+i;M.set(p.m.elements,k*16);const tc=p.tint||tints[Math.floor(rng()*tints.length)];C[k*3]=tc[0]*(0.85+rng()*0.25);C[k*3+1]=tc[1]*(0.85+rng()*0.25);C[k*3+2]=tc[2]*(0.85+rng()*0.25);if(V)V[k]=p.v;
+    if(A){if(p.y>0.5||mat.land){A[k*2]=A[k*2+1]=B[k*2]=B[k*2+1]=0;continue;}steadyOf(ch,p.x,p.z,p.y+8,CURV);A[k*2]=CURV.x;A[k*2+1]=CURV.z;tidalAt(p.x,p.z,CURV);B[k*2]=CURV.x;B[k*2+1]=CURV.z;}} // nothing on land (the tussock) leans to the water
+  P.n+=list.length;P.im.count=P.n;P.blocks.push({ch:ch,start:s,count:list.length});ch.pooled.push(P);poolTouch(P,s,list.length);
+}
+function poolRemove(P,ch){ // the cell's block out: the tail moved down over it, the blocks after it re-based
+  const bi=P.blocks.findIndex(b=>b.ch===ch);if(bi<0)return;const b=P.blocks[bi],e=b.start+b.count,n=P.n;
+  if(e<n){const mv=(a,sz)=>a.copyWithin(b.start*sz,e*sz,n*sz);mv(P.im.instanceMatrix.array,16);mv(P.im.instanceColor.array,3);if(P.vars)mv(P.geo.attributes.aVar.array,1);if(P.cur){mv(P.geo.attributes.aCur.array,2);mv(P.geo.attributes.aTide.array,2);}
+    for(let i=bi+1;i<P.blocks.length;i++)P.blocks[i].start-=b.count;}
+  P.blocks.splice(bi,1);P.n-=b.count;P.im.count=P.n;if(e<n)poolTouch(P,b.start,P.n-b.start);
+}
+function poolStats(){let draws=0,inst=0;for(const P of POOLS.values()){if(P.n>0)draws++;inst+=P.n;}return {pools:POOLS.size,draws:draws,inst:inst};} // the readout (main.js)
 function cellCanopy(ch){return Math.max(canopyW(ch.cx,ch.cz),canopyW(ch.x0,ch.z0),canopyW(ch.x0+CELL,ch.z0),canopyW(ch.x0,ch.z0+CELL),canopyW(ch.x0+CELL,ch.z0+CELL));}
 // a generator (v11.12): turf is 1200 tries a cell and the strap 2400, an envW and an fbm each; a yield every 200 keeps a step under the budget (the rng is untouched by a yield)
 function* placeFloraType(ch,rng,f){
@@ -147,7 +193,7 @@ function* placeFloraType(ch,rng,f){
     list.push({m:d.matrix.clone(),x:x,y:y,z:z,sc:sy,v:f.vars?Math.floor(rng()*f.vars.length):0,tint:f.photo?pigment(f.y==='surface'?0:h,f.line):null});
   }
   if(!list.length)return;
-  const im=makeInstanced(ch,rng,f.geo,f.mat,f.tints,list,!!f.pads,!!f.vars),soft=!!(f.mat&&f.mat.sway&&!f.mat.land);
+  const im=makeInstanced(ch,rng,f.geo,f.mat,f.tints,list,!!f.pads,!!f.vars,f),soft=!!(f.mat&&f.mat.sway&&!f.mat.land);
   if(soft&&f.y!=='surface'){const ac=ch.ac,H=f.top||3;for(const p of list){if(p.y>0.5)continue;ac[clamp(Math.floor((p.z-ch.z0)*4/CELL),0,3)*4+clamp(Math.floor((p.x-ch.x0)*4/CELL),0,3)]+=H*p.sc;}} // the forest's sound: its height, by bucket (audio.js)
   if(f.col||f.pads||f.vars)for(let i=0;i<list.length;i++){const p=list[i],fv=f.vars?f.vars[p.v]:f;if(fv.col||fv.pads)addFloraSolids(ch,fv,p.m,p.x,p.y,p.z,fv.pads?{im:im,idx:i,dip:0,dv:0,load:0,live:false}:null,soft);}
   else if(f.lumps)for(const p of list)addLumps(ch,f.lumps,p.m,1); // a kit as per-cell flora: every lump its own twelve-plane rock
@@ -163,10 +209,12 @@ function placeBigSolids(ch){
   const c=new THREE.Color();byGeo.forEach((L,g)=>{const im=new THREE.InstancedMesh(g,MATROCKB,L.length);im.layers.set(1);shadowCaster(im,MATROCKB,ch.sphere);
     for(let i=0;i<L.length;i++){im.setMatrixAt(i,L[i].m);c.setRGB(L[i].col[0],L[i].col[1],L[i].col[2]);im.setColorAt(i,c);} // the colour is never seen; it keeps the depth program the warm-up compiled (instancingColor is in its key)
     im.instanceMatrix.needsUpdate=true;if(im.instanceColor)im.instanceColor.needsUpdate=true;ch.group.add(im);ch.meshes.push(im);ch.shBig.push(im);});
-  // v11.22: the neighbours' structures that reach into this cell, registered here too — so the clearance test sees them before the
-  // neighbour is loaded (a structure may reach a cell past its owner). A lump ends up in two hashes near a cell line; a push from
-  // two copies of one rock is the push from one
-  for(let dj=-1;dj<=1;dj++)for(let di=-1;di<=1;di++){if(!di&&!dj)continue;const i=ch.i+di,j=ch.j+dj;if(i<0||j<0||i>=NCELL||j>=NCELL||chunkGrid[i*NCELL+j])continue;
+  // v11.22: the neighbours' structures that reach into this cell, registered here too, so the clearance test sees them (a structure may
+  // reach a cell past its owner). A lump ends up in two hashes near a cell line; a push from two copies of one rock is the push from one.
+  // v11.52: registered whether or not the neighbour is loaded — it was skipped for a loaded one and left to the 3×3 contact query, so what a
+  // cell's placement saw depended on arrival order (test/pool.js: a tube placed in a structure's foot on a revisit); clearOf reads the
+  // cell's own hash alone now (solidPush own), and this makes that hash complete
+  for(let dj=-1;dj<=1;dj++)for(let di=-1;di<=1;di++){if(!di&&!dj)continue;const i=ch.i+di,j=ch.j+dj;if(i<0||j<0||i>=NCELL||j>=NCELL)continue;
     for(const s of bigsFor(i,j)){const e=s.m.elements,sc=len3(e[4],e[5],e[6]),R=(s.f.foot||1)*sc*1.3;
       if(e[12]+R<ch.x0||e[12]-R>ch.x0+CELL||e[14]+R<ch.z0||e[14]-R>ch.z0+CELL)continue;addLumps(ch,s.f.lumps,s.m,s.rs);}}
 }
@@ -176,8 +224,8 @@ function placeBigSolids(ch){
 const CLR_V=new THREE.Vector3();
 function clearOf(ch,x,y,z,f,sc,sy){
   const H=(f.top||1)*sy,pad=clamp(0.25+0.12*H,0.3,1.4);
-  CLR_V.set(x,y+pad,z);if(solidPush(CLR_V,pad,null,ch,true))return false;
-  if(H>3){CLR_V.set(x,y+H*0.5,z);if(solidPush(CLR_V,pad*0.8,null,ch,true))return false;}
+  CLR_V.set(x,y+pad,z);if(solidPush(CLR_V,pad,null,ch,true,true))return false; // the cell's own hash only (v11.52): a plant 2 cm from the cell line was placed or not by whether the neighbour was loaded
+  if(H>3){CLR_V.set(x,y+H*0.5,z);if(solidPush(CLR_V,pad*0.8,null,ch,true,true))return false;}
   return true;
 }
 // ---------- the ground rule ----------
@@ -231,7 +279,7 @@ function placeCliffs(ch,rng){
     addLumps(ch,f.lumps,d.matrix,sc*0.9);
     list.push({m:d.matrix.clone()});
   }
-  if(list.length)makeInstanced(ch,rng,f.geo,f.mat,f.tints,list);
+  if(list.length)makeInstanced(ch,rng,f.geo,f.mat,f.tints,list,false,false,f);
 }
 function addLight(ch,x,y,z,color,intensity,distance){const s={x:x,y:y,z:z,color:color,intensity:intensity,distance:distance,d:0};ch.lightSrc.push(s);lightSources.push(s);}
 function addPlume(ch,tops,n,size){
@@ -334,7 +382,7 @@ function* genChunk(i,j){
 }
 function loadChunkNow(i,j){if(chunks.has(ckey(i,j)))return;const g=genChunk(i,j);while(!g.next().done){}}
 function unloadChunk(ch){
-  scene.remove(ch.group);
+  scene.remove(ch.group);for(const P of ch.pooled)poolRemove(P,ch);ch.pooled.length=0; // the cell's blocks out of the species pools (v11.52)
   for(const m of ch.meshes){if(m.geometry&&!FLORA.some(f=>f.geo===m.geometry||(f.glow&&f.glow.geo===m.geometry)))m.geometry.dispose();if(m.isInstancedMesh)m.dispose();if(m.isPoints&&m.material)m.material.dispose();}
   for(const s of ch.lightSrc){const k=lightSources.indexOf(s);if(k>=0)lightSources.splice(k,1);}
   ecoWriteBack(ch); // the living go back into the ledger (v11.26); the dead stay dead

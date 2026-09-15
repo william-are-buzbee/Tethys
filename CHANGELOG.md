@@ -3586,3 +3586,51 @@ The person on v11.50, with two stills (the meadow from 3 m, the open sky from 14
 **Built** (atmosphere.js `REFR_*`, `refrMark`, `refrTex`; scene.js `ripGLSL`; player.js `finishPlayer`; effects.js): the underside reads the frame *through* each facet. An empty mesh at renderOrder 0.5 in the opaque pass (`refrMark`) copies the drawing buffer to a texture (`copyFramebufferToTexture`, one blit, only with the camera under water and the switch on) after the sky, the far layer, the terrain, the flora and the creatures have drawn; the surface, later in the transparent pass, is opaque from below now and mixes that copy in by the v11.50 window share (`winT`), sampled at its own pixel moved by the *differential* refraction — the eye refracted into the air through the facet minus the eye refracted through the mean surface, projected by the focal lengths (`uRefrRes`) — so the image sits where it sits (no Snell cone, no snowglobe) and each facet moves it by what its own tilt adds, more toward the rim as the real window does. The ripple layer tilts the facet further (`ripSlopeR`: the caustic's rings alone — with the capillary trains the sky from 17 m was an interlace of 4–8 px stripes, their shift more than their wavelength; seen and struck), share `REFR_RIP` 0.35. The shift is capped at `REFR_MAX` 0.05 of the screen's height; five taps `REFR_BLUR` 1.5 px wide, ×2.5 by 120 m. The player's own body goes to renderOrder 1 while it is under water (`P.ro`), drawn after the copy and before the surface — it occludes by depth and is never in what the surface samples (the first cut sampled it: the dark head smeared into the sky, seen); in the air, or crossing, it is in the copy and refracted like the land. The window's band `WIN_LO`/`WIN_HI` 0.05–0.8 → 0.35–0.8: full to 37° off the facet, gone by 70°, a soft rim outside the physical 49°. The switch is `refraction` on the effects list (`FX.refract`, on) with a `wobble` slider (`FX.refrK` 0–3, a multiplier on `REFR_K`); off, the underside is v11.50's plain blend. The stub gained `getDrawingBufferSize`, `copyFramebufferToTexture` and `RGBFormat` (the copy is RGB: the drawing buffer has no alpha and a copy may not ask for a component the framebuffer lacks).
 
 **Seen** (the app's browser at 1280×720; `test/render/v511_up14.png`, `v511_oblique.png`, `v511_oblique_off.png`): from 14 m straight up the clouds' edges are sawtoothed facet by facet and move with the swell; at 40° elevation the window's clouds give way to the mirror's veil over a soft band; the body's edges are clean against the sky; the slider at 3 is a mess of stepped edges, at 0 the v11.50 look; no GL error, the frame's cost in the pane unchanged within its noise. `node build.js --test` green on both tiers. **Unseen, ask in this order:** (1) the wobble in motion at 1600×900 on the 4060, and whether 1 on the slider is the right amount (the physical differential; 0.5–0.7 may read calmer); (2) the frame time under water on the readout — the copy is a full-screen blit every frame below the line; (3) a fish, a raptor or a drifter between the eye and the surface — a creature stays in the copy and can fringe by up to 45 px, narrow while the cap is; (4) the crossing: the body in the air seen from just under, refracted through the surface; (5) rain from below, unchanged, over the refracted sky; (6) the window's new rim at 70° — whether it reads as water or as the snowglobe's edge come back.
+
+## v11.52 — the performance pass: the flora pooled per species, the Snell window struck, the placement made deterministic (15 Sep 2026)
+
+The person's readouts (15 Sep, four spots at 1600×900 on the 4060, Brave): the forest at 3 m under was over budget — `work 7.3/9.7 ms`,
+117 fps, `render 5.78 ms`, 447 draws, 4.7M tris — and everywhere the worst frame was the average plus the world shadow map's re-render
+(3.0–3.8 ms). Their call: a performance pass before any of the look questions; the Snell window out ("it looks bad"); the shadow map freed
+when off.
+
+**Measured first**, in the app's browser at their forest spot (147, −3, −443) with the loop driven by hand and a `gl.finish()` timed after
+every render, interleaved A/B so the other sessions' panes on the same GPU cancel out. The frame is the CPU submitting draws: 434 draws,
+`render` 3.5 ms of a 5.4 ms frame here (8 µs a draw; 13 µs in their browser), and the GPU idle half a millisecond after the last one.
+Hiding all cell flora: −1.2 ms CPU, −1.2 GPU, 268 draws. Hiding the reef's sessile animals (2.4M of the 4.7M triangles): −0.3. A quarter of
+the pixels: −0.4; 2.25× the pixels: 0. Caustics, both shadow maps' taps, the shafts, the refraction's blit, the sky, the surface: nothing
+measurable each. Hiding small species per cell by distance: −0.6 at best. The draw census: cell flora 268, the far layer 71, creatures 49
+(16 of them the shadow pass), cell terrain 14, the rest 20. So the lever is the one DESIGN named on 13 Sep: the flora at one `InstancedMesh`
+per species per cell.
+
+**Built.**
+- **The flora pools** (chunks.js "the flora pools": `POOLS`, `poolFor`, `poolAlloc`, `poolAdd`, `poolRemove`, `poolStats`). Every species
+  without a card (far.js `FAR_IMP`, marked `f.card`) or a pad draws once for all loaded cells: a cell writes its instances as one block into
+  the species' pool — the same rng order, matrices, tints, `aVar`, `aCur`, `aTide` as the per-cell mesh had — and `unloadChunk` takes the
+  block out by moving the tail down; only the written range uploads (`updateRange`). The pool draws everything loaded: the per-instance
+  collapse past `FLORA_FAR` does what the per-cell hide did, a cell behind the camera costs its vertices (tris 4.7M → 8.8M at the spot; the
+  GPU had it to spare). A pool grows by doubling into a fresh geometry clone with the old disposed. The world's shadow pass casts the pools
+  whole (a bounds sphere the size of the island, so camS's box never sees them). The stipe, bladder, buttons and tidetree keep a mesh per cell
+  (their cards take over per cell), the rafts keep `aDip`, the glow clouds their mesh. `pools` on the readout is the count drawing.
+  **Same spot after: 231 draws (434), frame 4.6 ms (5.4), `render`+finish 3.2 (4.0), the shadow re-render 2.0–2.5 (2.5–4.3) — on my pane; on
+  theirs at 13 µs a draw the render should fall by ~2.8 ms.** `test/pool.js` (in `--test`) checks the bookkeeping.
+- **The placement is deterministic again** (found by that test, two causes). (1) `clearOf` asked the 3×3 contact query, so a plant 2 cm
+  inside a cell line stood or not by whether the neighbour was loaded (the wisp, 301 against 306 in one cell). It asks the cell's own hash
+  alone now (`solidPush(…, own)`). (2) Since v11.22 `placeBigSolids` registered a neighbour's reaching structures into the cell *only while
+  that neighbour was unloaded*, leaving the loaded case to the same 3×3 query — so a revisit with the neighbours up put tubes in a
+  structure's foot. Registered always now; the cell's own hash is complete. A cell's blocks are byte-identical loaded alone, first or last.
+- **The Snell window struck** (atmosphere.js): the `snell window` row, `uSnell`, the branch and the cloud march's strings and uniforms
+  are gone from the surface shader; the underside is v11.50's translucent facet with v11.51's refraction. DESIGN The surface.
+- **The creatures' shadow map freed when `shadows` is off** (scene.js `updateShadow`; 16 MB, 67 sharp) — the 13 Sep audit's first item.
+- **No rain from a clear sky**: rain, its rings and the window's matting want `clouds` on too (atmosphere.js `updateRain`, `surfaceU.uRain`).
+- **The player's own light on the effects list**: `own light` (`FX.plight`, on) gates `plight`'s intensity — POLISH.md Raised 13 Sep, the
+  person's yes of 15 Sep.
+- **The penumbra halved** (scene.js `SHM_PEN` [1.0, 0.025]; was 1.5 and 0.05 a metre): the audit called the soft edge the foreign half of an
+  in-style shadow; the person said harden it. The shimmer sprite the audit named went in v11.43 already.
+
+**Seen** (the app's browser, 1600×900): the forest at the spot draws as before with the pools — stipes, blades, the ground layer, the
+reef animals; the surface from below compiles and draws; no console error. `node build.js --test` green on both tiers with `test/pool.js`.
+**Unseen, ask in this order:** (1) the readout at the same four spots — `draws` and `work` are the numbers, `pools` the count; (2) a cell line
+while swimming across it slowly: a species' whole pool re-uploads a range when a cell loads or goes, which should be invisible; (3) the
+world's shadows with `world shadows` on — the pools cast whole now, so a kelp behind you casts ahead as before; (4) the shadow edge at half
+the penumbra; (5) `own light` off in the deep and at night.
