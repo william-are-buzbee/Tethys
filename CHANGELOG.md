@@ -3502,3 +3502,30 @@ share with them. `node build.js --test` green on both tiers, with the three test
 veil or the abyssal at 62, 55 and 50 with the body in frame on the 4060 — the point of the tuner; (2) whether 50 on a fast turn is
 uncomfortable; (3) first person at a wider field than third (there is no body in frame to be a ruler, and awareness matters more); (4) the
 number to bake into `CAM_K`, and whether the arm goes with it.
+
+## v11.49 — the sky through the window: the clouds in, the sun's little circles out (14 Sep 2026)
+
+The person's audit ask: looking up through the surface — "strange flickers of light in little circles" (bin them), "I can't see the
+skybox, even if it's clearly got clouds above", and what does the code want you to see. **What it wanted (v11.43–v11.48):** inside Snell's
+window the eye refracted through each *facet* into the reduced sky `skyLite` — the gradient, the aureole, the sun's disc and its glare, the
+moon, and the deck's *mean shade* (`1−0.35·cover`) standing in for clouds it did not draw ("no cloud noise", WATER.md B, for cost); outside
+the window the mirror of the water in the reflected direction; the person's soft 15–50° band blending the two. The sky sphere itself is hidden
+under water beyond `SKY_NEAR` and the underside is opaque, so the dome's clouds could never show through. **The circles** were the sun's disc
+and its `pow(cs,300)` glare read through every facet: each facet's refraction lands the disc somewhere else, so a scatter of facets each showed
+a small bright circle, and they flickered on and off as the facets turned. Both were the design, and both were wrong to look at.
+
+**Built.** The cumulus march, the scud and the cirrus were inline in `SKY_FS`; they are strings now (`SKY_NOISE_GLSL`, `CLOUD_GLSL`:
+`cloudDeck(d, zen, hor)` and `cirrusA(d)`, atmosphere.js) that the dome and the surface's window both compile. The window reads
+`skyLite2(Tw, 1, 0)` — the reduced sky *without* the disc and sharp glare (`dsc`, scene.js) — then the cirrus and the deck along the refracted
+eye, per facet, where the refraction is valid (`wk`; past the critical angle the fallback horizon direction takes no clouds — with them the soft
+band was a wall of pale cloud smudges, seen), and the sun once: the disc's glow (`pow 300` and `pow 40`) along the eye refracted through the
+*mean* surface (`vNup`), under the deck's cover, so it is one soft blob overhead that swims with the swell instead of a circle per facet.
+`SURF_MAT` binds the sky's own uniform objects for the clouds (`uCloudH`, `uCam`, `uWind`, `uLum`…). Cost: the deck's march on the window's
+fragments (`Q.cloud` slices × two 4-octave noises) — the same work the dome does in air, which is not drawn under water.
+
+**Seen** (`test/render/v49b_*.png`): from 6 m under looking up — the cumulus through the window, broken along the facets' edges as it should
+be, the cirrus, the sun one blob, no circles; from 3 m under toward the sun at 40° — the window's rim, the mirror facets below it clean.
+`node build.js --test` green on both tiers. **Unseen, ask in this order:** (1) the render ms from under the surface looking up at noon with the
+deck overhead (the march is on the water's fragments now); (2) the sun's blob — too big, too soft? (`pow 40 × 0.25` is the knob); (3) the moon
+through the window at night — the same treatment, its disc off per facet and one `pow 400` blob from the mean surface, unseen; (4) a shower
+from below with the clouds in.
