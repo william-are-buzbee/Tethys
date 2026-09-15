@@ -7,7 +7,7 @@ const fs=require('fs'),path=require('path');
 const ROOT=path.join(__dirname,'..');
 const ORDER=fs.readFileSync(path.join(ROOT,'src','order.txt'),'utf8').split('\n').map(s=>s.trim()).filter(s=>s&&s[0]!=='#');
 let js=ORDER.map(n=>fs.readFileSync(path.join(ROOT,'src',n+'.js'),'utf8')).join('\n');
-js+='\nglobal.__pool={POOLS,poolStats,chunks,ckey,cellOf,loadChunkNow,unloadChunk,worldClear,FLORA,FAR_IMP,player,Q,NCELL};';
+js+='\nglobal.__pool={POOLS,poolStats,poolCull,chunks,ckey,cellOf,loadChunkNow,unloadChunk,worldClear,FLORA,FAR_IMP,player,Q,NCELL};';
 const tmp=path.join(require('os').tmpdir(),'tethys_pool.js');
 fs.writeFileSync(tmp,'(function(){"use strict";\n'+js+'\n})();');
 process.env.PICK='0';
@@ -16,7 +16,8 @@ const X=global.__pool;let fails=0;
 function ok(c,msg){console.log((c?'  ok   ':'  FAIL ')+msg);if(!c)fails++;}
 function check(label){ // the invariants over every pool
   let bad=[];for(const [f,P] of X.POOLS){let n=0,prev=0;for(const b of P.blocks){if(b.start!==prev)bad.push(f.id+': block at '+b.start+' expected '+prev);if(!X.chunks.has(b.ch.k))bad.push(f.id+': block of an unloaded cell');prev=b.start+b.count;n+=b.count;}
-    if(n!==P.n||P.im.count!==P.n)bad.push(f.id+': counts '+n+' '+P.n+' '+P.im.count);if(P.n>P.cap)bad.push(f.id+': over capacity');
+    let nv=0,seenHidden=false;for(const b of P.blocks){if(b.vis){if(seenHidden)bad.push(f.id+': a seen block after a hidden one');nv+=b.count;}else seenHidden=true;}
+    if(n!==P.n||P.im.count!==P.nVis||nv!==P.nVis)bad.push(f.id+': counts '+n+' '+P.n+' vis '+nv+' '+P.nVis+' '+P.im.count);if(P.n>P.cap)bad.push(f.id+': over capacity');
     const M=P.im.instanceMatrix.array;for(let i=0;i<P.n*16;i++)if(M[i]!==M[i])bad.push(f.id+': NaN');
     if(P.f.card)bad.push(f.id+': a card species pooled');}
   ok(bad.length===0,label+': '+X.POOLS.size+' pools, '+JSON.stringify(X.poolStats())+(bad.length?' — '+bad.slice(0,4).join('; '):''));}
@@ -48,6 +49,15 @@ X.loadChunkNow(ci,cj);const mid3=X.chunks.get(X.ckey(ci,cj));let sameA=0,diffA=0
 // a cell alone against the same cell in a 3×3: the placement must not read the neighbours (DESIGN Determinism). A difference only in aCur (the lean
 // to the current, read through steadyOf) is the current's field reading a neighbour's grid — cosmetic; a matrix difference is a placement that read one.
 ok(diffs.every(d=>!d.slice(d.indexOf('(')+1,-1).split(',').some(k=>k==='m'||k==='v')),'loaded alone, its blocks match: '+sameA+' same, '+diffA+' different'+(diffs.length?' — '+diffs.join(' '):''));
+// the partition by sight (v11.52.1): every cell seen, then the middle hidden, then a corner, then all back — the seen blocks first, the data intact
+X.worldClear();for(const [i,j] of cells)X.loadChunkNow(i,j);const all=[...X.chunks.values()];for(const ch of all){ch.group.visible=true;ch.near=true;}X.poolCull();
+const snap=()=>{const L=[];for(const ch of all)for(const P of ch.pooled)L.push([P.f,ch,blockOf(P.f,ch)]);return L;};const s0=snap();
+check('every cell in view');ok([...X.POOLS.values()].every(P=>P.nVis===P.n),'every block seen: nVis = n');
+const m5=X.chunks.get(X.ckey(ci,cj));m5.group.visible=false;X.poolCull();check('the middle cell out of view');
+ok([...X.POOLS.values()].every(P=>P.blocks.every(b=>(b.ch!==m5)===b.vis)),'only the middle cell\'s blocks hidden, and they sit last');
+ok(s0.every(([f,ch,b])=>same(b,blockOf(f,ch))),'every block\'s data intact after the moves');
+const c5=all.find(ch=>ch!==m5);c5.near=false;X.poolCull();check('a corner cell past FLORA_FAR too');ok(s0.every(([f,ch,b])=>same(b,blockOf(f,ch))),'intact again');
+m5.group.visible=true;c5.near=true;X.poolCull();check('all back in view');ok([...X.POOLS.values()].every(P=>P.nVis===P.n)&&s0.every(([f,ch,b])=>same(b,blockOf(f,ch))),'all seen again, data intact');
 // growth: a 5×5 forces some pools past their first capacity (12 cells' worth); nothing lost on the way
 const caps=new Map();for(const P of X.POOLS.values())caps.set(P.f,P.cap);
 X.worldClear();for(let dj=-2;dj<=2;dj++)for(let di=-2;di<=2;di++){const i=ci+di,j=cj+dj;if(i>=0&&j>=0&&i<X.NCELL&&j<X.NCELL)X.loadChunkNow(i,j);}

@@ -3634,3 +3634,23 @@ reef animals; the surface from below compiles and draws; no console error. `node
 while swimming across it slowly: a species' whole pool re-uploads a range when a cell loads or goes, which should be invisible; (3) the
 world's shadows with `world shadows` on — the pools cast whole now, so a kelp behind you casts ahead as before; (4) the shadow edge at half
 the penumbra; (5) `own light` off in the deep and at night.
+
+## v11.52.1 — the pools partitioned by sight: the CPU's saving kept, the GPU's load put back (15 Sep 2026)
+
+The person's readouts on v11.52 at the same four spots: `work` halved as promised (7.3 → 4.1 in the forest, `render` 5.8 → 2.7) and the vsync
+interval rose — 9.3 ms in the forest against 8.7, 8.6 looking up, **16.1 in the air over the forest (64 fps)**, 9.3 on the title screen. A pool
+drew every loaded cell's instances, behind the camera and all: tris 4.7M → 8.5–9.6M, and their GPU had no room for the doubled vertices at
+their resolution. My pane's `gl.finish()` had said the GPU was idle: a hidden tab never presents, so it under-reads the GPU, and the numbers I
+took from it were the CPU's. The person's vsync is the truth; the CPU numbers stand.
+
+**Built** (chunks.js `poolMove`, `poolCull`, `P.nVis`, `b.vis`): each pool's arrays are partitioned — the blocks of the cells in view
+(`ch.group.visible && ch.near`, cullChunks' own verdict) first, the rest after, and `im.count` is the seen total. When a cell comes into or out of
+view its block moves to the boundary: a memmove of the span between the two blocks and one ranged upload, a few times a second at most; a
+full turn at the forest spot cost nothing measurable (4.3 ms a frame against 4.0 still), the cull itself 2 µs. The world's shadow pass sets every
+pool's count to its whole (a kelp behind you casts ahead) and back. `test/pool.js` checks the partition: the seen blocks first, their total the
+count, every block's data intact through the moves.
+
+**Seen** (the app's browser, the loop driven by hand): the forest spot draws 4.66M triangles with 263 draws (v11.52: 8.8M and 231; v11.51:
+4.7M and 434); the air spot 4.66M and 208 (v11.52: 9.6M). The forest by day, facing both ways. **Unseen, ask in this order:** (1) the same four
+readouts — the interval should be back at 8.3 with `work` where v11.52 put it; (2) a slow turn in the forest with the readout open, for a hitch
+when a cell's block moves; (3) `world shadows` on: a kelp behind the camera casting ahead as before.

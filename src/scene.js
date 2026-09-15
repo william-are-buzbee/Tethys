@@ -546,13 +546,13 @@ function updateShadowS(dt,force){ // after updateShadow (shadowFrame has run); f
   const st=force||FX.statics,gr=force||FX.ground;shsVis.length=0;
   for(const ch of chunks.values()){if(!cellInBox(ch,SHS_C,SHS_R))continue;shsVis.push(ch,ch.group.visible);ch.group.visible=true;
     if(st){for(const m of ch.flora)m.castShadow=true;for(const m of ch.shBig)m.castShadow=true;}if(gr&&ch.terrain)ch.terrain.castShadow=true;}
-  if(st)for(const P of POOLS.values())P.im.castShadow=true; // the species pools (v11.52, chunks.js): every loaded cell's small flora and rock at once
+  if(st)for(const P of POOLS.values()){P.im.castShadow=true;P.im.count=P.n;} // the species pools (v11.52, chunks.js): every loaded cell's small flora and rock at once — the blocks out of sight too (v11.52.1), a kelp behind you casts ahead
   if(st)for(const m of LMK.meshes){const q=m.position;if(Math.abs(q.x-cx)<SHS_R+SHM_D&&Math.abs(q.z-cz)<SHS_R+SHM_D)m.castShadow=true;}
   const en=renderer.shadowMap.enabled,rt=renderer.getRenderTarget();renderer.shadowMap.enabled=true;
   try{renderer.setRenderTarget(shsRT);renderer.render(scene,camS);}catch(e){console.warn('world shadows: '+e.message);}
   renderer.setRenderTarget(rt);renderer.shadowMap.enabled=en;
   for(let i=0;i<shsVis.length;i+=2){const ch=shsVis[i];ch.group.visible=shsVis[i+1];for(const m of ch.flora)m.castShadow=false;for(const m of ch.shBig)m.castShadow=false;if(ch.terrain)ch.terrain.castShadow=false;}
-  for(const m of LMK.meshes)m.castShadow=false;for(const P of POOLS.values())P.im.castShadow=false;shsVis.length=0;
+  for(const m of LMK.meshes)m.castShadow=false;for(const P of POOLS.values()){P.im.castShadow=false;P.im.count=P.nVis;}shsVis.length=0;
   shMapSU.value=sunS.shadow.map?sunS.shadow.map.texture:null;SHS_P[1]=sunS.shadow.map?1:0;
   shsDirty=false;shsT=SHS_GAP;shsN++;shsMs=performance.now()-t0;
 }

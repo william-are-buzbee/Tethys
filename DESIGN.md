@@ -1556,6 +1556,9 @@ shadow maps, shafts, refraction) nothing. So: **one `InstancedMesh` per species 
 card and padded species and the glow clouds stay per cell) — 434 → 231 draws, 5.4 → 4.6 ms, the world shadow re-render 2.5–4.3 → 2.0–2.5. The
 pool draws every loaded cell's instances (tris 4.7M → 8.8M; the GPU has it), a block per cell, the tail moved down on unload, `updateRange`
 uploads. `test/pool.js` checks it; `pools` on the readout counts them. The draw census that remains: far layer 71, creatures 49, cell terrain 14.
+*v11.52.1: the pool is partitioned by sight — the blocks of the cells cullChunks sees come first and `im.count` is their total (`poolCull`, `poolMove`), so the
+GPU draws what it drew per cell (4.7M tris at the spot, not 8.8M); the person's vsync had risen on v11.52 (16 ms in the air) where the pane's
+`gl.finish()` in a hidden tab, which never presents, had read the GPU as idle. The world's shadow pass draws every block.*
 
 **Where the frame goes, measured on the 4060 at the weed forest (330, 0), 13 Sep 2026.** The readout's `work` pair is the
 frame's own cost and the worst frame in the last quarter second (main.js, v11.32.1); `ms` and `fps` are the vsync interval and say
