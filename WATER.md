@@ -48,7 +48,7 @@ the bottom right of screenshots 3 and 4 is either this or item 5 — to confirm 
 half-vector aligns, so the sun on the water is a scatter of white triangles, not glitter. The rest of the low-poly look survives flat
 facets; the glitter path does not, because glitter is sub-facet by nature (ripple slopes of a few degrees over centimetres).
 
-**6. Snell's window is a constant colour.** *v11.43 built the refracted sky; v11.49 the clouds through it and the sun once, not per facet.* Inside the window the underside is `(0.22,0.46,0.56)·snell` diffuse plus a fixed emissive
+**6. Snell's window is a constant colour.** *v11.43 built the refracted sky; v11.49 the clouds through it and the sun once, not per facet; v11.50 the window a switch, off — the underside translucent over the dome by default, the person's call.* Inside the window the underside is `(0.22,0.46,0.56)·snell` diffuse plus a fixed emissive
 `× uWin`; the sky sphere is hidden under water (`sky.visible = above`). The physical window — the whole sky compressed into a 97° cone,
 the horizon's bright band at the rim, the sun's disc smeared by each facet, clouds and a sunset if there is one — is not there; the sun's
 presence is stood in for by a 90 m additive sprite 1.5 m over the surface (`sunMesh`, `SHIM_A`) and a `pow(…,40)` glint. At dusk the

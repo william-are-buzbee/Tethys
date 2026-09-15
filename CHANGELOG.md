@@ -3529,3 +3529,28 @@ be, the cirrus, the sun one blob, no circles; from 3 m under toward the sun at 4
 deck overhead (the march is on the water's fragments now); (2) the sun's blob — too big, too soft? (`pow 40 × 0.25` is the knob); (3) the moon
 through the window at night — the same treatment, its disc off per facet and one `pow 400` blob from the mean surface, unseen; (4) a shower
 from below with the clouds in.
+
+## v11.50 — the sky through the surface, plainly: the underside translucent, the dome drawn under water; Snell's window a switch (14 Sep 2026)
+
+The person on v11.49's window, with two stills from 14 m and 3 m: "super weird … like a snowglobe is above everything. I just want to be
+able to look up and actually kinda see what's going on above me, like how it would work normally … look up and see the same [things] you see
+when you're above the water, but through a shader." The physical window — Snell's cone with the sky compressed inside a bright rim and the
+mirror outside — is right and reads wrong at this resolution and this poly count; the rim is a hard circle and the outside a flat pale wall.
+
+**Built** (atmosphere.js `SURF_MAT`, `WIN_T`, `WIN_LO`, `WIN_HI`; effects.js `snell`). The sky dome is drawn under water too (`sky.visible`
+always; its own discard keeps it above the water plane, so from 14 m down it shows from half a degree up). The underside is **translucent by
+the facet's angle to the eye**: alpha `1 − winT`, `winT = smoothstep(WIN_LO, WIN_HI, cv) × WIN_T × the water's transmittance to the fragment
+× (1 − 0.3·rain) × (1 − foam)` — 0.7 of the pixel is the sky straight up, nothing by 87° from the facet's normal, and the water's own
+extinction to the fragment applied to the sky's share since the dome is not fogged — over the mirror's colour (the veil in the reflected
+direction, as before), each facet its own share so the surface still moves. No critical angle, no compressed rim: the sky, the clouds, the sun's
+own disc, the moon, the stars, a shore or a kelp top or a breaching body in the air, all through the surface as they are, tinted by the water
+and cut by the facets. **The physical window (v11.43–v11.49) is the `snell window` row on the effects list** (`FX.snell`, `uSnell`), off by
+default; its cloud march runs only with it on. v11.49's shared cloud strings stay for it.
+
+**Seen** (`test/render/v50b_*.png`): 14 m under looking straight up — the cumulus and the sun through a blue tint with faint facet columns;
+3 m under toward the sun at 40° — the sun, the cirrus, the facets thickening to the mirror at grazing; 1.5 m under in the forest looking a
+little up — the kelp tops in the air and the sky, the near surface teal. `node build.js --test` green on both tiers. **Unseen, ask in this
+order:** (1) whether it now reads as "through a shader" in play, and `WIN_T` (0.7) — more sky or more water; (2) the line while surfacing:
+things in the air are seen through the surface now, which v11.42.1 made opaque to stop a flicker at the line — the angle band should keep
+it smooth, but look; (3) night: the stars and the moon through the surface; (4) the render ms looking up — the dome's march runs under
+water now instead of the window's (about the same).
