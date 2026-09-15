@@ -3474,3 +3474,31 @@ camera again (`tethys.cam` at (281, −11.5, 58)); the words white. `node build.
 the medium for a frame); (2) whether a title screen from a death spot (mid-fight, blood in the water) reads as intended, or whether death should
 wait for the respawn; (3) the halo at .45 over sand; (4) whether the caldera shot should come back anywhere (a first boot after a wipe is the
 sea shot; the table is there for more).
+
+## v11.48 — the camera's field on the readout: fov, first-person fov, the arm (14 Sep 2026)
+
+The person's question: Subnautica's reaper is longer than a blue whale, and on a flat screen it felt like a shark your size while in VR it
+felt like what it was; the difference was put down to the field of view. Ours was 62° vertical, ~94° across at 16:9 — Subnautica's default
+— with a third-person camera 6.5–7.5 m behind a 3 m body. A wide field renders every animal at about half its true angular size (the screen
+subtends ~50° of the eye's field at a desk) and the eye reads the screen as a window; in a headset the rendered angle is the real one. The
+person asked for a way to try the field without a build.
+
+**Built.** `CAM_K` (scene.js): `fov` (third person, 62), `fovFP` (first person, 62), `arm` (metres added to the clade's `cam`, 0). The camera
+is made from it, `applyCam` (player.js) sets the field by mode — every frame from `finishPlayer`, on `f`, and from the tuner — and the
+third-person spot adds the arm. `CAM_TUNE` (main.js) on the readout: ←→ fov by 2° (30–110), pgdn-pgup fovFP, ↓↑ arm by 0.5 m (−4 to +8);
+Backspace resets them with the fog's and the audio's; a fourth readout line `cam  fov 62°  fovFP 62°  arm +0.0m  (94° across)`. Every letter
+was taken, so the arrows and page keys: input.js prevents their default while the readout is open (they scroll the page), and the bestiary's
+arrows stand down then (a/d w/x still step). No behaviour changes at the defaults.
+
+**The tests (v11.47.2's break).** `test/physics.js`, `test/combat.js` and `test/live.js` never start a game: they measure the world the title
+screen loads, which was the peak's shallows until v11.47.2 moved the title screen's camera to the sea shot off the north-east coast. Since then
+physics and combat threw on a null cell at the origin and live found no clutch and no hunt in open water — v11.47.2's entry says the build was
+green; it was not, on either tier. Fixed in the tests, not the game: each puts the player at the peak and loads its cells (`peak()` in the
+physics and combat exports, `__peak` in live) before measuring, which is what the old boot did for them.
+
+**Seen** (the app's browser, 800×450): the readout's cam line; six ArrowLefts from 62 to 50 with the arm at +2 — the finback keeps its framing,
+the weed field compresses toward it, `(79° across)`; `f` took `fovFP` 56 after three PageDowns; Backspace put all three back and the fog's
+share with them. `node build.js --test` green on both tiers, with the three tests running again. **Unseen, ask in this order:** (1) the
+veil or the abyssal at 62, 55 and 50 with the body in frame on the 4060 — the point of the tuner; (2) whether 50 on a fast turn is
+uncomfortable; (3) first person at a wider field than third (there is no body in frame to be a ruler, and awareness matters more); (4) the
+number to bake into `CAM_K`, and whether the arm goes with it.

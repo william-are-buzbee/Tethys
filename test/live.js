@@ -13,6 +13,7 @@ const ROOT=path.join(__dirname,'..');
 const ORDER=fs.readFileSync(path.join(ROOT,'src','order.txt'),'utf8').split('\n').map(s=>s.trim()).filter(s=>s&&s[0]!=='#');
 let js=ORDER.map(n=>fs.readFileSync(path.join(ROOT,'src',n+'.js'),'utf8')).join('\n');
 // the ecology clock, driven without waiting out 40 real minutes a game day: a slice of game hours, the model drained, the eggs aged
+js+='\nglobal.__peak=()=>{player.pos.set(0,dispY,0);cellsAround();};';
 js+='\nglobal.__day=(hours,step)=>{for(let h=0;h<hours;h+=step){clockH+=step;POP.acc=ECO_STEP;ecoTick(ECO_STEP);let g=0;while(POP.model&&g++<5000)ecoTick(0);updateEggs(step/CLOCK_RATE);}};';
 js+='\nglobal.__eggs=()=>{let ow=0,nan=0;for(let ei=0;ei<SPAWN.length;ei++){const W=POP.ow[ei];for(let c=0;c<ECO_CELLS;c++){if(W[c]!==W[c])nan++;ow+=W[c];}}'
   +'return {day:+(clockH/DAY_H).toFixed(2),laid:POP.laid,hatched:POP.hatched,eggs:eggs.length,recruits:POP.recruits,owed:+ow.toFixed(1),nan,cells:chunks.size,creatures:creatures.length};};';
@@ -29,7 +30,7 @@ process.env.PICK='1';
 require('./stub.js');
 require(tmp);
 let bad=[];
-__step(600); // the cells round the peak load and spawn
+__peak();__step(600); // the player at the peak and its cells loaded (v11.48: the title screen opens over the sea since v11.47.2, and this test never starts a game — it measures the menu's world), then the cells round it load and spawn
 console.log('boot          '+JSON.stringify(__eggs()));
 // ---- 1. the clutch ----
 let first=0;

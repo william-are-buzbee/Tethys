@@ -18,7 +18,8 @@ const CAM_DWELL=0.5,CAM_FLIP=0.4; // v11.42: CAM_CLEAR (0.35, the camera held cl
 // there for the shadow map — v11.23, so your own shadow is under you in first person; before, the body was hidden and three's depth
 // pass skips a hidden object) and its wake and arms still act on the world.
 const FP_AHEAD=0.35;
-function toggleFP(){const P=player;P.fp=!P.fp;if(P.g)ghostBody(P.g,P.fp);hintEl.textContent=P.fp?'first person':'third person';hintEl.style.opacity=1;setTimeout(()=>{hintEl.style.opacity=0;},1500);} // the camera's clearance from the water on its side (> the near plane), and the least time between its side changing
+function applyCam(){const f=mode==='play'&&player.fp?CAM_K.fovFP:CAM_K.fov;if(camera.fov===f)return;camera.fov=f;camera.updateProjectionMatrix();if(mode==='menu')layoutMenu();} // v11.48: the field by mode (CAM_K, scene.js); cheap when nothing changed, so every frame may ask
+function toggleFP(){const P=player;P.fp=!P.fp;if(P.g)ghostBody(P.g,P.fp);applyCam();hintEl.textContent=P.fp?'first person':'third person';hintEl.style.opacity=1;setTimeout(()=>{hintEl.style.opacity=0;},1500);} // the camera's clearance from the water on its side (> the near plane), and the least time between its side changing
 
 function hurtPlayer(dmg,from){
   const P=player;if(P.dead||mode!=='play')return;if(P.withdrawn)return;
@@ -157,7 +158,7 @@ function finishPlayer(dt,near){
   stepRigs(P,near,dt);
   P.pulse=Math.max(0,P.pulse-dt*2);
   if(P.fp){const nose=(P.b&&P.b.F?P.b.F.nose*P.g.scale.x:C.size)+FP_AHEAD;T2.copy(P.pos).addScaledVector(fwd,nose);}
-  else{T2.copy(P.pos).addScaledVector(fwd,-C.cam).addScaledVector(UP,1.4);
+  else{T2.copy(P.pos).addScaledVector(fwd,-(C.cam+CAM_K.arm)).addScaledVector(UP,1.4); // v11.48: CAM_K.arm from the readout's tuner
   const ch=groundAt(T2.x,T2.z)+1.0;if(T2.y<ch)T2.y=ch;}
   // camAbove is which side the camera's natural spot is on, with hysteresis: it flips CAM_FLIP past the wave and never within CAM_DWELL of
   // the last flip (a wave passing the spot is not a reason to change the light). Since v11.42 it drives only the light's crossfade, the sound
@@ -166,7 +167,7 @@ function finishPlayer(dt,near){
   const cw=waveH(T2.x,T2.z);P.camFlipT=Math.max(0,(P.camFlipT||0)-dt);
   if(P.camAbove){if(T2.y<cw-CAM_FLIP&&P.camFlipT<=0){P.camAbove=false;P.camFlipT=CAM_DWELL;}}
   else{if(T2.y>cw+CAM_FLIP&&P.camFlipT<=0){P.camAbove=true;P.camFlipT=CAM_DWELL;}}
-  if(P.fp)camera.position.copy(T2);else{solidPush(T2,0.6,null,null,true);camera.position.lerp(T2,1-Math.exp(-8*dt));}
+  applyCam();if(P.fp)camera.position.copy(T2);else{solidPush(T2,0.6,null,null,true);camera.position.lerp(T2,1-Math.exp(-8*dt));}
   if(P.hurtT>0){camera.position.x+=rnd(-1,1)*P.hurtT*0.3;camera.position.y+=rnd(-1,1)*P.hurtT*0.3;}
   if(P.fp)T2.copy(camera.position).add(fwd);else T2.copy(P.pos).addScaledVector(fwd,3);camera.lookAt(T2);
   plight.position.copy(P.pos).add(V3(0,1,0));

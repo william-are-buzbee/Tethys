@@ -34,7 +34,12 @@ const scene=new THREE.Scene();
 scene.fog=new THREE.FogExp2(0x1a7591,SEA_FOG.dens);
 scene.background=scene.fog.color;
 const FAR=Q.far;
-const camera=new THREE.PerspectiveCamera(62,innerWidth/innerHeight,0.2,FAR);
+// The camera's numbers (v11.48, the person's ask after the Subnautica-VR scale question): fov is the vertical field in degrees in third person,
+// fovFP in first person, arm is added to the clade's cam distance in third person (m). Tunable live from the readout (main.js CAM_TUNE:
+// arrows and pgup-pgdn) so the big animals can be looked at at 62, 55 and 50 with the body in frame; bake a chosen number in here.
+// 62 vertical is ~94° horizontal at 16:9 — Subnautica's default, the one that made a 55 m reaper feel like a shark your size on a flat screen.
+const CAM_K={fov:62,fovFP:62,arm:0};const CAM_DEF=Object.assign({},CAM_K);
+const camera=new THREE.PerspectiveCamera(CAM_K.fov,innerWidth/innerHeight,0.2,FAR);
 
 // ---------- fog: by distance, two populations of light, the water's colour where the light comes from ----------
 // three's fog reads view-space depth (-z), not distance, so the same object is less fogged at the edge of the screen than

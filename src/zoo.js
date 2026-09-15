@@ -67,6 +67,7 @@ addEventListener('keydown',e=>{
   if(mode==='menu'&&e.code==='KeyZ'){zooEnter();return;}
   if(mode!=='zoo')return;
   if(e.code==='KeyZ'||e.code==='Escape')zooLeave();
+  else if(showStats&&/^Arrow/.test(e.code))return; // v11.48: the readout's camera tuner has the arrows; a/d w/x still step
   else if(e.code==='ArrowRight'||e.code==='KeyD')zooShow(zoo.i+1);
   else if(e.code==='ArrowLeft'||e.code==='KeyA')zooShow(zoo.i-1);
   else if(e.code==='ArrowUp'||e.code==='KeyW'){e.preventDefault();zoo.v=(zoo.v+1)%PAL_VARIANTS.length;zooShow(zoo.i);}
