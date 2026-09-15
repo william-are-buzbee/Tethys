@@ -4,11 +4,20 @@
 // first); a file can be imported; options opens the effects list (effects.js) over the caldera; the creator opens the lab as the player's
 // (lab.js lab.player: only what has been seen). Esc in play with the pointer free saves and returns here; z and l still open the bestiary and
 // the lab from here (dev tools). choose() is the bare start the tests drive (anim, combat, physics): the body as the clade, the cells, play.
-const menu={page:'main',confirm:null,busy:false};
+const menu={page:'main',confirm:null,busy:false,rise:0,wakeAt:0,idle:false}; // rise: the wall-clock ms at which the column comes up; wakeAt: the wall-clock ms the mouse last moved on the menu (the wall clock, not dt: a throttled loop — the app's pane — still idles at the right time)
+const MENU_RISE=3200,MENU_RISE_BACK=1200,MENU_IDLE=12000; // ms after boot (the black fade clears at ~2.2 s) and after a return from play before the column rises; ms still before the menu fades away (v11.47.1)
+function menuRise(ms){menu.rise=performance.now()+ms;mlistEl.classList.remove('up');menuWake();}
+function menuWake(){menu.wakeAt=performance.now();if(menu.idle){menu.idle=false;menuEl.classList.remove('idle');}}
+function updateMenu(){ // the column's rise and the idle fade (main.js, every frame)
+  if(mode!=='menu')return;const now=performance.now();
+  if(menu.rise&&now>=menu.rise){menu.rise=0;mlistEl.classList.add('up');}
+  if(!menu.idle&&now-menu.wakeAt>MENU_IDLE&&!fxOpen&&!menu.busy){menu.idle=true;menuEl.classList.add('idle');}
+}
+addEventListener('mousemove',()=>{if(mode==='menu')menuWake();});addEventListener('touchstart',()=>{if(mode==='menu')menuWake();},{passive:true});addEventListener('keydown',()=>{if(mode==='menu')menuWake();});
 const mlistEl=document.getElementById('mlist'),msavesEl=document.getElementById('msaves'),mslotsEl=document.getElementById('mslots'),mcreatorEl=document.getElementById('mcreator'),mnoteEl=document.getElementById('mnote');
 function layoutMenu(){const portrait=innerWidth<innerHeight*0.95;camera.position.set(0,dispY+0.6,portrait?12:10);camera.lookAt(0,dispY-0.2,0);} // the camera as it was over the three clades (v11.13.1 numbers): the peak's shallows
-layoutMenu();
-function menuPage(p){menu.page=p;menu.confirm=null;mlistEl.style.display=p==='main'?'':'none';msavesEl.classList.toggle('on',p==='saves');if(p==='saves')menuSlots();} // 'main' | 'saves' | 'none' (the bestiary and the lab)
+layoutMenu();menuRise(MENU_RISE);
+function menuPage(p){menu.page=p;menu.confirm=null;mlistEl.style.display=p==='main'?'':'none';msavesEl.classList.toggle('on',p==='saves');if(p==='saves')menuSlots();menuWake();} // 'main' | 'saves' | 'none' (the bestiary and the lab)
 function menuRefresh(){mcreatorEl.style.display=PROFILE.creator?'':'none';saveRefresh(()=>{if(menu.page==='saves')menuSlots();});} // the profile and the slots read again (boot, main.js; the creator granted)
 function menuNote(s){mnoteEl.textContent=s;mnoteEl.style.opacity=s?1:0;if(s)setTimeout(()=>{if(mnoteEl.textContent===s)mnoteEl.style.opacity=0;},3000);}
 function fmtAgo(ms){const s=(Date.now()-ms)/1000;return s<90?'just now':s<5400?Math.round(s/60)+' min ago':s<172800?Math.round(s/3600)+' h ago':Math.round(s/86400)+' days ago';}
@@ -32,7 +41,7 @@ function choose(c,pos,yaw,pitch,hp){ // into play as clade c (an index or the cl
 }
 function toMenu(){ // play to the menu (esc with the pointer free): the game saved, the world cleared, the peak's cells back under the menu's camera
   if(mode!=='play')return;saveNow();curSave=null;unlock();
-  menuGo(()=>{playerDrop();mode='menu';worldClear();player.pos.set(0,dispY,0);player.vel.set(0,0,0);cellsAround();layoutMenu();snapMed=true;menuEl.classList.remove('gone');menuPage('main');hintEl.style.opacity=0;menuRefresh();});
+  menuGo(()=>{playerDrop();mode='menu';worldClear();player.pos.set(0,dispY,0);player.vel.set(0,0,0);cellsAround();layoutMenu();snapMed=true;menuEl.classList.remove('gone');menuPage('main');menuRise(MENU_RISE_BACK);hintEl.style.opacity=0;menuRefresh();});
 }
 document.getElementById('mnew').addEventListener('click',()=>{if(mode==='menu'&&menu.page==='main')menuGo(()=>{startNew(CLADES[1]);});}); // the finback until the creator is the start (DIRECTION: the smallest body the creator allows)
 document.getElementById('mcont').addEventListener('click',()=>{if(mode==='menu')menuPage('saves');});

@@ -1448,14 +1448,20 @@ far LOD), `setLOD`, steering, one `updateX` per role, `updateCreatures()`.
   s toggles a cruising speed, drag turns, wheel zooms, z or escape returns; touch: drag turns, a tap on an edge steps. The menu's
   column is hidden meanwhile and restored on return (`menuPage`, v11.47; the menu shows no creatures since then).
 - **The menu and the saves (v11.47, `menu.js`, `save.js`, shell.html `#mlist` `#msaves`):** the caldera under the menu's camera
-  (`layoutMenu`, the v11.13.1 numbers), the title, and a column — `new game` (`startNew`: the world cleared, `ecoReset`, `t=0`, the finback
+  (`layoutMenu`, the v11.13.1 numbers), the title, and a column in the centre of the screen in a soft dark halo (the words sit on white sand;
+  v11.47.1) that rises over 1.6 s a second after the fade clears (`MENU_RISE` 3200 ms from boot, `MENU_RISE_BACK` 1200 after play, `#mlist.up`),
+  the whole menu fading away after `MENU_IDLE` 12 s without the mouse moving and back on the first move (`#menu.idle`, `updateMenu`, the wall
+  clock so a throttled loop still idles on time) — `new game` (`startNew`: the world cleared, `ecoReset`, `t=0`, the finback
   at the peak, a new slot `game N` written at once), `continue` (the slots newest first: name, clade, time played, when; click loads
   `startFrom`; `export` a .json; `delete` asks `sure?` once; `import a file`), `options` (the effects list), `creator` (the lab as the player's,
   once `PROFILE.creator` — opening the lab at all grants it, or `#creator`). Esc in play with the pointer free saves and returns (`toMenu`; with
   the pointer locked the browser keeps the first esc, so twice). A save record: the player (clade, pos, yaw, pitch, hp), `t`, and the ledger's
   `n/k/ke/cd/ow`, `done`, `last`, the tally — the loaded cells counted as `ecoTick` counts them (`popRows`); ~110 KB. Stored in IndexedDB
   (`tethys`/`kv`; localStorage, then memory, as fallbacks; callbacks not promises so the headless tests can drive it; `navigator.storage.persist`
-  asked for). Written every `SAVE_EVERY` 30 s of play (`updateSave`), on esc to the menu, on `visibilitychange`/`pagehide`. Loading: every cell
+  asked for). Written every `SAVE_EVERY` 30 s of play (`updateSave`), on esc to the menu, when the pointer lock is released (the first esc
+  from locked play, v11.47.1), on `visibilitychange`/`pagehide` — and on `pagehide`/`beforeunload` a synchronous shadow copy to
+  localStorage (`saveShadow`, `tethys.last`), since IndexedDB's put may not finish before the page goes; `saveRefresh` moves it into the
+  store at the next boot. Loading: every cell
   out (`worldClear`), `popLoad` (a save from another roster starts fresh with a warning), `playerBody`, `cellsAround` (the 3×3, boot uses it too).
   The profile (`PROFILE`, one record): the creator's key; `seen` — species, clades, cores, part `kind:style` for anything drawn within `SEEN_R`
   30 m in play (`seeSpec`) and the player's own clade; the creator's saved creatures. Nothing is written before the stored profile is read

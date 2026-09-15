@@ -3412,3 +3412,34 @@ at a low sun the water is darker still); (2) esc twice from locked play — does
 believably where you left it (the creatures near you are re-drawn from the ledger, not restored one by one); (4) the creator's gate from a
 real game — is 30 m the right "seen", and should the player's own parts count; (5) export/import round trip through a real file; (6) delete's
 two-click confirm; (7) whether the profile (what has been seen) should be per save instead of per person.
+
+## v11.47.1 — the menu's column centred, rising, idling; the save that was not there (14 Sep 2026)
+
+The person on v11.47: "looks awesome … good job"; move the words to the centre of the screen, have them slowly come up after a second, or stay
+invisible until the mouse moves; and "does the game actually move the camera to the last area you saved from? It did not do that last time I
+checked" — open to ideas.
+
+**The column** (shell.html `#mlist`, menu.js `updateMenu`). Centred on the screen (`margin:auto` in the menu's flex column, so a little above true
+centre under the title) in a soft dark halo — a radial ellipse the column's own size in the fx panel's dark (`rgba(3,8,15)` .62 → .38 at 45 % → 0 at
+72 %), because the centre of the screen is white sand at noon and the words alone were unreadable there (seen, the first cut). It rises: opacity
+0 → 1 and 16 px up over 1.6 s, `MENU_RISE` 3200 ms after boot (the black fade clears at ~2.2 s, so a second after) and `MENU_RISE_BACK` 1200 ms
+after a return from play. Both of the person's ideas, since the caldera is the thing to look at: after `MENU_IDLE` 12 s without the mouse moving
+(or a key or a touch) the whole menu — title, column, the continue page — fades over 2.2 s and the caldera is alone; the first move brings it back
+(`menuWake`; `#menu.idle`). Not while the effects list is open. The idle clock is the wall clock, not summed dt: a throttled loop (the app's pane
+runs a frame a second or so) would otherwise take a quarter hour to idle — which is how the first cut failed to, seen. The continue page's rows
+are brighter (.8) with the same halo, and the list itself sits on the fx panel's translucent dark (`#mslots`), since the rows run wider than the halo's dense core (seen).
+
+**The save that was not there** (save.js). Continue does restore the place: verified across a full page reload — the finback put at (300, 60) on
+the shelf with yaw 1.2, the page reloaded, continue → the same spot and heading, the camera behind, the weed forest in view (`test/render` not
+written; seen in the pane). The headless roundtrip proved the same in v11.47. What the person most likely met was a save that had never been
+written: in v11.47 the first esc from locked play only released the pointer (the browser keeps that esc), and a close or reload right after it
+lost everything since the last 30 s autosave; and IndexedDB's put on `pagehide` is not guaranteed to finish. Two hooks: the pointer lock's release
+in play saves (`pointerlockchange`), and the page's exit (`pagehide`, `beforeunload`) writes the record synchronously to localStorage as well
+(`saveShadow`, `tethys.last`, ~110 KB, ~2 ms), which `saveRefresh` moves into the store at the next boot — the shadow is the latest state of that
+slot by construction, nothing later can exist. Not built: a pause page on the first esc; the person's call (HANDOFF).
+
+**Seen** (the app's browser): the column centred in its halo, all four words readable over the sand at noon; the rise (mid-transition, blurred);
+the idle fade — the caldera alone at 14 s — and the wake on a mouse move; the continue page in the halo; continue after a reload at the saved
+spot. `node build.js --test` green on both tiers after the last source change (the shell's CSS is not in the bundle). **Unseen, ask in this
+order:** (1) the halo's weight at 1600×900 — too much of a panel, or right; (2) the rise's timing against the boot fade on the 4060 (the pane's
+timing is not the PC's); (3) the idle fade's 12 s — too soon while reading the continue list?; (4) the shadow save after a real close and reopen.

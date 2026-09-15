@@ -69,7 +69,7 @@ function loop(now){
   readTouch();
   // the streaming gets what the rest of the last frame left of Q.target (v11.12): a 3 ms frame leaves 4.5 for the cells, a 6 ms frame 2 (the floor)
   const g0=performance.now();manageChunks(Math.min(Q.budgetMs,Math.max(2,Q.target-(frameMs-genMs))));manageFar(mode==='menu'&&t<2.4?14:Q.farMs);genMs=performance.now()-g0; // the far layer streams in behind the fade (black until ~2.2 s), then in the gaps (v11.12: 14 ms all through the menu had its creatures stuttering for the first second)
-  updateZoo(dt);updateLab(dt);if(mode==='play')updatePlayer(dt);
+  updateMenu(dt);updateZoo(dt);updateLab(dt);if(mode==='play')updatePlayer(dt); // updateMenu (v11.47.1): the column's rise and the idle fade
   const p0=performance.now();
   updateSchools(dt);updateCreatures(dt);if(mode==='play')finishPlayer(dt,bodies); // bodies, contact, arms, then the camera
   updateEggs(dt);ecoTick(dt);updateSave(dt); // the clutches hatch; the world's ledger (v11.26): the model every few seconds, the births owed; the autosave clock (save.js, v11.47)

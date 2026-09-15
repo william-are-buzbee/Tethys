@@ -25,14 +25,20 @@ canvas{display:block;outline:none;touch-action:none}
 #menu.gone{opacity:0;pointer-events:none}
 #menu.gone .mi,#menu.gone .slot{pointer-events:none} /* v11.13.1: a child's pointer-events:auto beats the parent's none — the invisible picks were taking every click below the title */
 #title{text-align:center;padding-top:8vh;font-size:20px;letter-spacing:.6em;text-indent:.6em;font-weight:300;color:rgba(215,225,232,.8)}
-/* the menu (v11.47): a column of words under the title — new game, continue, options, the creator once it is yours; continue is a list of the save files */
-#mlist{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:26px;padding-top:10vh} /* under the title, over the water — the sand below is too bright for the words (seen, v11.47) */
-.mi{pointer-events:auto;cursor:pointer;font-size:15px;font-weight:300;letter-spacing:.4em;text-indent:.4em;color:rgba(205,217,225,.7);transition:color .4s;text-shadow:0 0 7px rgba(0,0,0,.9),0 1px 2px rgba(0,0,0,.9)}
+/* the menu (v11.47): a column of words — new game, continue, options, the creator once it is yours; continue is a list of the save files */
+/* v11.47.1 (the person's ask): the column in the centre of the screen, rising in over 1.6 s a second after the fade has cleared (menu.js sets .up), and
+   the whole menu fading away after MENU_IDLE seconds without the mouse moving (.idle on #menu), back on the first move — the caldera alone meanwhile */
+#mlist{margin:auto;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px;padding:44px 120px;opacity:0;transform:translateY(16px);transition:opacity 1.6s,transform 1.6s;background:radial-gradient(ellipse at center,rgba(3,8,15,.62) 0%,rgba(3,8,15,.38) 45%,rgba(3,8,15,0) 72%)} /* the halo: the words sit on the white sand in the centre; the fx panel's dark, as a soft ellipse the column's own size */
+#mlist.up{opacity:1;transform:none}
+#title,#msaves{transition:opacity 2.2s}
+#menu.idle #title,#menu.idle #mlist,#menu.idle #msaves{opacity:0;transition:opacity 2.2s}
+#menu.idle .mi,#menu.idle .slot{pointer-events:none}
+.mi{pointer-events:auto;cursor:pointer;font-size:15px;font-weight:300;letter-spacing:.4em;text-indent:.4em;color:rgba(205,217,225,.72);transition:color .4s;text-shadow:0 0 8px rgba(0,0,0,.95),0 0 3px rgba(0,0,0,.9),0 1px 2px rgba(0,0,0,.95)}
 .mi:hover{color:rgba(240,245,248,.98)}
-#msaves{display:none;flex:1;flex-direction:column;align-items:center;justify-content:flex-start;gap:22px;padding:8vh 20px 0}
+#msaves{display:none;margin:auto;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:40px 90px;background:radial-gradient(ellipse at center,rgba(3,8,15,.62) 0%,rgba(3,8,15,.38) 45%,rgba(3,8,15,0) 72%)}
 #msaves.on{display:flex}
-#mslots{display:flex;flex-direction:column;gap:10px;max-height:52vh;overflow-y:auto;pointer-events:auto;scrollbar-width:thin;scrollbar-color:rgba(200,215,225,.25) transparent}
-.slot{display:flex;align-items:baseline;gap:22px;padding:6px 14px;cursor:pointer;font-size:12px;letter-spacing:.18em;color:rgba(200,212,220,.6);text-shadow:0 0 6px rgba(0,0,0,.8);transition:color .3s;font-variant-numeric:tabular-nums;white-space:nowrap}
+#mslots{display:flex;flex-direction:column;gap:6px;max-height:52vh;overflow-y:auto;pointer-events:auto;background:rgba(3,8,15,.6);padding:10px 16px;scrollbar-width:thin;scrollbar-color:rgba(200,215,225,.25) transparent}
+.slot{display:flex;align-items:baseline;gap:22px;padding:6px 14px;cursor:pointer;font-size:12px;letter-spacing:.18em;color:rgba(205,217,225,.8);text-shadow:0 0 6px rgba(0,0,0,.8);transition:color .3s;font-variant-numeric:tabular-nums;white-space:nowrap}
 .slot:hover{color:rgba(240,245,248,.95)}
 .slot b{font-weight:300;font-size:14px;letter-spacing:.3em;min-width:9em}
 .slot span{opacity:.75;min-width:5em}

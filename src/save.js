@@ -69,7 +69,12 @@ function saveRecord(){ // the game as it stands, as a record for the store
 }
 function saveNow(){if(!curSave||mode!=='play'||player.dead||!player.clade)return false;const rec=saveRecord();curSave.played=rec.played;curSave.playT=rec.playT;storePut(rec);if(profileDirty)profileSave();saveT=SAVE_EVERY;return true;}
 function updateSave(dt){if(mode!=='play'||!curSave)return;playT+=dt;saveT-=dt;if(saveT<=0)saveNow();}
-function saveRefresh(cb){storeAll(rs=>{saveList=rs.filter(r=>r&&r.kind==='save'&&r.pop).sort((a,b)=>(b.played||b.made||0)-(a.played||a.made||0));if(cb)cb();});}
+function saveRefresh(cb){ // the slots read again; first, a shadow the page left on its way out (saveShadow) goes into the store — it is the latest state of that slot, nothing later can exist
+  let sh=null;try{const ls=window.localStorage,s=ls&&ls.getItem('tethys.last');if(s){ls.removeItem('tethys.last');sh=JSON.parse(s);}}catch(e){}
+  const go=()=>storeAll(rs=>{saveList=rs.filter(r=>r&&r.kind==='save'&&r.pop).sort((a,b)=>(b.played||b.made||0)-(a.played||a.made||0));if(cb)cb();});
+  if(sh&&sh.kind==='save'&&sh.pop&&typeof sh.id==='string')storePut(sh,go);else go();
+}
+function saveShadow(){if(!curSave||mode!=='play'||player.dead||!player.clade)return;try{const ls=window.localStorage;if(ls)ls.setItem('tethys.last',JSON.stringify(saveRecord()));}catch(e){}} // the page going away (v11.47.1): IndexedDB's put may not finish before it does, localStorage's write is synchronous and does; read back by saveRefresh at the next boot
 function saveName(){let n=0;for(const r of saveList){const m=/^game (\d+)$/.exec(r.name||'');if(m&&+m[1]>n)n=+m[1];}return 'game '+(n+1);}
 function saveImport(txt,cb){ // a file back in (menu.js): checked as far as the shape goes, given a new id if its own is taken, stored
   let r=null;try{r=JSON.parse(txt);}catch(e){}
@@ -103,4 +108,5 @@ function startFrom(rec){ // continue a slot (menu.js): the clock and the ledger 
   choose(C,p,rec.yaw,rec.pitch,rec.hp);
 }
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')saveNow();});
-addEventListener('pagehide',()=>{saveNow();});
+addEventListener('pagehide',()=>{saveNow();saveShadow();});addEventListener('beforeunload',()=>{saveShadow();});
+document.addEventListener('pointerlockchange',()=>{if(mode==='play'&&!document.pointerLockElement)saveNow();}); // the first esc from locked play frees the pointer (the browser keeps that esc): save there, so a close right after it loses nothing (v11.47.1)
