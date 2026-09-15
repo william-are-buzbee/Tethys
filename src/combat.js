@@ -126,8 +126,8 @@ function wound(o,dmg,by,at,kind){
     if(held&&by&&by!==player){const s=GRIP[by.hold&&by.hold.K?by.hold.kind:'jaw'].shake;P.vel.x+=rnd(-s,s);P.vel.y+=rnd(-s,s)*0.5;P.vel.z+=rnd(-s,s);}}
   else{if(!o.alive)return;if(o.def.hp>=1e8){if(by&&by!==player)by.bored++;bloodBurst(at,2,cladeOf(o));return;}
     o.hp-=imm;o.bleed=(o.bleed||0)+bl;o.lastHurt=t;o.woundL=worldToLocal(o,at,o.woundL||[0,0,0]);
-    if(o.hp<=0){bloodBurst(at,10+dmg*0.6,cladeOf(o));kill(o,by);return;}}
-  bloodBurst(at,4+dmg*0.4,cladeOf(o));
+    if(o.hp<=0){bloodBurst(at,10+dmg*0.6,cladeOf(o));hitFx(o,by,at,dmg*1.5);kill(o,by);return;}} // the kill leaves the most scraps (fx.js, v11.53)
+  bloodBurst(at,4+dmg*0.4,cladeOf(o));hitFx(o,by,at,dmg); // the flinch, the flush, the debris (fx.js, v11.53)
   if(o!==player)thump(clamp(0.15+dmg*0.01,0.15,0.5),110,45,at,0.9,0.05);
 }
 // bleeding, once a frame: a wound loses hp for the seconds after and closes; the wounded leave a trickle in the water
@@ -194,8 +194,8 @@ function playerTarget(dead){const P=player;T3.set(0,0,1).applyQuaternion(P.g.qua
 // the bite (click): forage is eaten whole (heals); a carcass is eaten at (heals); anything else is wounded — a tear if it is held, with
 // the arms closing on it for a moment as before; a bite on what holds you loosens its grip
 function playerBite(){
-  const P=player;if(mode!=='play'||P.dead||P.withdrawn||P.biteCD>0)return;P.biteCD=0.5;thump(0.35,120,50,null,1.6,0.03);P.pulse=Math.max(P.pulse,0.6);
-  const best=P.hold?P.hold.b:playerTarget(true);if(!best)return;const d=best.def;T3.set(0,0,1).applyQuaternion(P.g.quaternion);
+  const P=player;if(mode!=='play'||P.dead||P.withdrawn||P.biteCD>0)return;P.biteCD=0.5;thump(0.35,120,50,null,1.6,0.03);P.pulse=Math.max(P.pulse,0.6);P.snapT=0.1;
+  const best=P.hold?P.hold.b:playerTarget(true);if(!best)return;const d=best.def;P.nudgeT=0.15;(P.nudgeD||(P.nudgeD=V3())).copy(best.pos).sub(P.pos).normalize(); // the camera nudged toward the bite (v11.53)T3.set(0,0,1).applyQuaternion(P.g.quaternion);
   if(best.dead){const m=Math.min(best.flesh,P.clade.size*0.5);best.flesh-=m;P.hp=Math.min(P.maxhp,P.hp+m*6);bloodBurst(best.pos,5,cladeOf(best),0.5);return;} // a carcass: a mouthful
   if(d.edible&&massOf(best)<=WHOLE_P*P.mass){bloodBurst(best.pos,4,cladeOf(best));kill(best,player,true);P.hp=Math.min(P.maxhp,P.hp+d.food);return;} // eaten whole (v11.26: no respawn; the ledger is debited)
   if(P.b.rigs&&!P.hold){P.grab=best;P.grabT=0.6;} // the arms close on what you bite

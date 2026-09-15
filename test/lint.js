@@ -2,6 +2,7 @@
 // one file and defined in another is only checked when that line runs. The smoke test covers the main paths; this
 // covers the rest: it parses the bundle, tracks scopes, and reports
 //   - every identifier that is not declared anywhere it can see (a typo, a rename missed in another file) -> exit 1
+//   - every name declared twice at the top level (two files, one scope: the later silently replaces the earlier) -> exit 1
 //   - top-level names no other line references (dead code, or a hook kept on purpose) -> informational
 // Needs acorn, vendored as test/acorn.js (v11.33: this said "not vendored" long after it was).
 const fs=require('fs'),path=require('path');
@@ -58,7 +59,7 @@ function declare(n,fnScope,blockScope){
     const s={names:new Set(),parent:blockScope};scopeOf.set(n,s);
     if(n.type==='FunctionExpression'&&n.id)s.names.add(n.id.name);
     for(const p of n.params)for(const nm of patternNames(p,[]))s.names.add(nm);
-    if(n.type==='FunctionDeclaration')fnScope.names.add(n.id.name);
+    if(n.type==='FunctionDeclaration'){if(fnScope===top&&fnScope.names.has(n.id.name))dups.push(n.id.name);fnScope.names.add(n.id.name);} // declared twice at the top level (v11.53): the later file's wins silently — fx.js's updateFX lost to effects.js's
     for(const c of children(n))if(c!==n.id)declare(c,s,s);
     return;
   }
@@ -70,11 +71,12 @@ function declare(n,fnScope,blockScope){
   }
   if(n.type==='VariableDeclaration'){
     const target=n.kind==='var'?fnScope:blockScope;
-    for(const d of n.declarations)for(const nm of patternNames(d.id,[]))target.names.add(nm);
+    for(const d of n.declarations)for(const nm of patternNames(d.id,[])){if(target===top&&target.names.has(nm))dups.push(nm);target.names.add(nm);}
   }
   if(n.type==='ClassDeclaration'&&n.id)blockScope.names.add(n.id.name);
   for(const c of children(n))declare(c,fnScope,blockScope);
 }
+const dups=[];
 const top={names:new Set(),parent:null};scopeOf.set(ast,top);
 for(const c of children(ast))declare(c,top,top);
 
@@ -119,5 +121,6 @@ for(const c of children(ast))resolve(c,top,ast,'body');
 // ---- report ----
 const unused=[...top.names].filter(n=>!used.has(n)).sort();
 if(unused.length)console.log('lint: top-level names nothing references: '+unused.join(' '));
+if(dups.length){console.error('lint: DECLARED TWICE at the top level (one scope — the later file wins): '+dups.join(' '));process.exit(1);}
 if(undeclared.length){console.error('lint: UNDECLARED\n  '+undeclared.join('\n  '));process.exit(1);}
 console.log('lint: ok ('+top.names.size+' top-level names, '+files.length+' files)');

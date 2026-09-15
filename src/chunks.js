@@ -21,7 +21,7 @@ function underCanopy(x,z,y){return canopyW(x,z)*canopyFade(y)>0.5;} // v11.32: t
 
 function makeChunk(i,j){
   const x0=i*CELL-HALF,z0=j*CELL-HALF,hg=new Float32Array(GR*GR),fg=new Float32Array(GR*GR*NF);
-  return {i:i,j:j,k:ckey(i,j),x0:x0,z0:z0,cx:x0+CELL/2,cz:z0+CELL/2,hg:hg,fg:fg,landN:0,deepN:0,minH:0,maxH:-1e9,group:new THREE.Group(),creatures:[],schools:[],eggs:[],meshes:[],plumes:[],lightSrc:[],solids:[],hash:makeHash(),solidR:0,sphere:null,terrain:null,shBig:[], // terrain, shBig (v11.30): the ground's mesh and the structures' shadow proxies, casters into the world's map (scene.js updateShadowS)
+  return {i:i,j:j,k:ckey(i,j),x0:x0,z0:z0,cx:x0+CELL/2,cz:z0+CELL/2,hg:hg,fg:fg,landN:0,deepN:0,minH:0,maxH:-1e9,group:new THREE.Group(),creatures:[],schools:[],eggs:[],meshes:[],plumes:[],lightSrc:[],solids:[],seeps:[],hash:makeHash(),solidR:0,sphere:null,terrain:null,shBig:[], // terrain, shBig (v11.30): the ground's mesh and the structures' shadow proxies, casters into the world's map (scene.js updateShadowS)
     pooled:[],flora:[],near:true,ac:new Float32Array(16), // pooled (v11.52): the species pools this cell has written a block into (poolAdd); taken out on unload // ac: the swaying flora's height summed in a 4×4 grid of the cell — the forest's sound (audio.js) // flora: the instanced meshes hidden once the cell is past FLORA_FAR (v11.12, cullChunks); near: whether they are drawn now
     h:function(x,z){let fx=clamp((x-x0)/STEP,0,CH_RES-0.001),fz=clamp((z-z0)/STEP,0,CH_RES-0.001);const ix=Math.floor(fx),iz=Math.floor(fz),tx=fx-ix,tz=fz-iz;const a=hg[iz*GR+ix],b=hg[iz*GR+ix+1],c=hg[(iz+1)*GR+ix],d=hg[(iz+1)*GR+ix+1];return a+(b-a)*tx+(c-a)*tz+(a-b-c+d)*tx*tz;},
     f:function(x,z){const ix=clamp(Math.round((x-x0)/STEP),0,CH_RES),iz=clamp(Math.round((z-z0)/STEP),0,CH_RES);return fg.subarray((iz*GR+ix)*NF,(iz*GR+ix+1)*NF);}, // the conditions at the nearest vertex
@@ -216,6 +216,7 @@ function* placeFloraType(ch,rng,f){
   if(f.col||f.pads||f.vars)for(let i=0;i<list.length;i++){const p=list[i],fv=f.vars?f.vars[p.v]:f;if(fv.col||fv.pads)addFloraSolids(ch,fv,p.m,p.x,p.y,p.z,fv.pads?{im:im,idx:i,dip:0,dv:0,load:0,live:false}:null,soft);}
   else if(f.lumps)for(const p of list)addLumps(ch,f.lumps,p.m,1); // a kit as per-cell flora: every lump its own twelve-plane rock
   if(f.glow)makeInstanced(ch,rng,f.glow.geo,GLOW,f.glow.tints,list);
+  if(f.id==='seep')for(const p of list){if(ch.seeps.length>=8)break;ch.seeps.push(V3(p.x,p.y+(f.top||2)*p.sc*0.9,p.z));} // the seeps' tops: bubbles (fx.js, v11.53)
   if(f.vent){list.sort((a,b)=>b.sc-a.sc);const tops=list.slice(0,4).map(p=>V3(p.x,p.y+11*p.sc,p.z));if(tops.length){addPlume(ch,tops,300);addLight(ch,tops[0].x,tops[0].y+2,tops[0].z,0xff6a22,1.6,70);}}
 }
 function placeBigSolids(ch){

@@ -3656,3 +3656,38 @@ readouts — the interval should be back at 8.3 with `work` where v11.52 put it;
 when a cell's block moves; (3) `world shadows` on: a kelp behind the camera casting ahead as before.
 
 **Seen by the person (15 Sep 2026, four readouts on the 4060 at 1920×1080):** 120 fps and 8.3–8.4 ms everywhere. The forest at 11 m under: `work 4.1/4.5 ms`, 231 draws, 4.79M tris (v11.51: 7.3/9.7, 447, 4.7M); looking up from 11 m: 4.2/4.8, 143 draws, 2.8M; the air over the forest: 4.1/4.6, 203 draws, 4.0M; the shadow re-render 2.3–2.4 ms. Their first readouts were of the v11.52 build (11M tris with four cells in view), not this one.
+
+## v11.53 — POLISH pass B, the body: silt, bubbles and scraps; the ring; squash and stretch, banking, the stun shown; the flinch, the snap, the debris at a bite (15 Sep 2026)
+
+The person: "I'd love for you to do it if you [have context]". POLISH.md's pass B as decided on 9 Sep (items 12–14, 16, 19–21, 23, 25, 26; 24 off by
+default), less what had been built since under other names — the blood at a bite is v11.31's cloud, the breach's foam patch and bubble puff are
+v11.46's residue.
+
+**Built.**
+- **fx.js** (new; after combat in the order): one pooled point system for the water answering a body — the snow's kind of points (squares, the
+  player's light, alpha by distance), one draw. **Silt** in the floor's own colour (`terrainColor` through `sample()`) where a body moves on the
+  floor — the player walking or flopping, a jet fired within reach of the sand, a crawler going, a trap striking out of it — sinking at 0.15 m/s
+  and settling; **bubbles** from the seeps (a cell keeps its seep tops, `ch.seeps`; each seep within 110 m lets one go every 0.35–0.8 s; they
+  rise at 0.9 m/s with a wobble, grow, and end at the water); **scraps** at a bite in the prey's own vertex colour, tumbling (the size flickers),
+  sinking, gone in three seconds. `FXK` holds the kinds' numbers; `debris` on the effects list (on). `fxStats()` for the tests; the combat test
+  checks the bites leave scraps and nothing is NaN.
+- **The ring** (16): the breach's residue (player.js `splash`) has an annulus that runs out to four times the patch over three seconds and fades.
+- **Squash and stretch, banking, the stun shown** (19–21; fx.js `bodyPose`, `POSE_K`): after a body's own anim, the frame (compile returns
+  `frame` and `body` now) is scaled along +z by 1+s and across by 1−s/2, s from the acceleration and the strike, and rolled into a turn by the
+  yaw rate and the speed; stunned, it lists to one side while it sinks 0.3 m/s (creatures_ai.js). A rigged body rolls less (`bankRig`) and its
+  chains' rest positions are turned by the roll, so the arms and the tail lean with the hull. worldShapes reads g's scale, so contact is untouched.
+- **At a wound** (23–26; fx.js `hitFx` from combat.js `wound`, the kill included): the flinch — the chain points shoved along the bite, the tips
+  most, and a spin about +z damped over a second; the **flush** (24) — MAT_HIT, a pale emissive, for 0.15 s — `flush` on the effects list, off;
+  silt if the wound is within 2.2 m of the floor, scraps, the blood as before.
+- **The bite's snap** (25): the player's frame stretches for 0.1 s, the camera is nudged toward the bite for 0.15 s; on being hurt the field of view
+  kicks 2° for 0.2 s and the body gets a spin.
+- **Lint** checks for a name declared twice at the top level and fails — fx.js's first `updateFX` was silently replaced by effects.js's, and only
+  a look found it. The rule: one scope, every top-level name unique across the files.
+
+**Seen** (the app's browser, the loop driven by hand): silt in the sand's colour behind the finback walking on the flats by the peak; scraps
+at a bite on an eel in the forest; a column of bubbles rising from the seeps at the rim (1367, −450, 1607); the flinch's spin on the eel; the
+banking's number on turning bodies. **Unseen, ask in this order:** (1) the silt's amount and colour in play — too much behind a walking body,
+too little under a jet? (`FXK[0]`, the rates in `updateFXEmit`); (2) the banking's sign and size on the finback in a hard turn (`POSE_K.bank`;
+if it leans the wrong way, negate it) and whether a rigged ringmouth's arms follow the lean; (3) the squash on a jet and a strike (`sqMax`,
+`strike`); (4) a bite: the scraps, the flinch, the nudge and the snap together — too much? (5) the stun's list on a stunned hunter; (6) `flush`
+on, for a verdict; (7) the ring on a breach from above; (8) the seeps' bubbles at the rim by day.

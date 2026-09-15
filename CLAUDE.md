@@ -34,7 +34,7 @@ node serve.js            static server; open http://localhost:8080/dev.html (edi
 
 | test | checks | run |
 |---|---|---|
-| `test/lint.js` | undeclared (fails) and unused (informational) names across the bundle; acorn vendored as `test/acorn.js` | `node test/lint.js` |
+| `test/lint.js` | undeclared (fails), declared twice at the top level (fails, v11.53: one scope, the later file wins silently) and unused (informational) names across the bundle; acorn vendored as `test/acorn.js` | `node test/lint.js` |
 | `test/physics.js` | the collider hash against brute force, rocks, capsule push, chains, body contact, flow, cost per creature | `node test/physics.js` |
 | `test/anim.js` | tail rate and arm-tip jerk two minutes in through accelerate/cruise/turn/sprint/coast; fails on spin, shiver or fling | `node test/anim.js` (`T0=600`) |
 | `test/audio.js` | the audio graph against the stub's fake `AudioContext` (any NaN param throws), the space at five sites, tick cost | `node test/audio.js` |
@@ -106,6 +106,7 @@ test/              headless tests, the THREE stub, real geometry for previews, t
 | player.js | `CLADES`, movement in water / air / on land, camera, abilities, damage, ink, splashes |
 | atmosphere.js | the sea surface, the sky, rain, haze, light shafts, marine snow, fog and light by medium, HUD, compass |
 | combat.js | holds (a rope between a grip and a hit capsule), the struggle, bites, wounds that bleed, blood, the player's grab and bite |
+| fx.js | the body's effects (v11.53, POLISH pass B): the debris points (silt, bubbles, scraps) and their emitters, `bodyPose` (squash and stretch, banking, the stun), `hitFx` (the flinch, the flush, the debris at a wound) |
 | effects.js | the effects list (`e`): cosmetic systems switched live, saved in `localStorage['tethys.fx']` |
 | save.js | the save files (v11.47): slots in IndexedDB (localStorage, memory as fallbacks) with a .json export/import; the profile (what has been seen, the creator's key and its saved creatures); `startNew`/`startFrom`/`worldClear` |
 | menu.js zoo.js lab.js | the menu (new game, continue, options, the creator; esc from play); the bestiary (`#zoo`, `z`); the creature lab (`#lab`, `l`; `p` places the spec in the world; as the creator it offers only what has been seen) |
@@ -124,7 +125,7 @@ Docs, most upstream first. When a doc's Open list says a choice is the person's,
 | `DRIFTERS.md` | the fourth clade: bells, buttons, sailers (v11.16) |
 | `CREATOR.md` | the spec-compiled body plans and the lab (v11.10–11.25); the person's decisions at its end |
 | `PIXEL.md` | the de-res (14 Sep 2026, designed, not built): every surface in world/body-fixed texels at the pixel light's grain, one switch on `e`; the person's answers at its end (14 Sep) — ready to build |
-| `POLISH.md` | the low-budget effects survey: pass A built (v11.13, v11.23); passes B and C are next |
+| `POLISH.md` | the low-budget effects survey: pass A built (v11.13, v11.23), pass B (v11.53); pass C, the night, is next |
 | `AUDIO.md` | the sound's design (v11.14); every number was chosen blind |
 | `DESIGN.md` | **the reference**: one section per system with the owning file, the numbers, the knobs and the reasons |
 | `analysis_believability.md` | the 12 Sep analysis: how the world, flora, clades and spawning work, and where the believability is strong and thin |
@@ -193,7 +194,7 @@ Docs, most upstream first. When a doc's Open list says a choice is the person's,
   never land a bite. A day is 30 game hours in 40 real minutes; rates are per game day.
 - **An animation's beat is a `swimClock`, never `t*f(spd)`** — `t` is the session clock and `t*f` spins on every change of speed.
 - **Determinism, one scope, no libraries.** The bundle is one IIFE; any file may use any name from any file; `grep -n name src/*.js`
-  finds uses. No `OrbitControls`, no `BufferGeometryUtils`; parts.js has its own merge.
+  finds uses — and a top-level name must be unique across the files: a second declaration replaces the first without a word (lint fails on it since v11.53). No `OrbitControls`, no `BufferGeometryUtils`; parts.js has its own merge.
 - **Docs carry status.** "built, unseen" means reasoned without a look; a doc's head note says what a later pass struck. Struck
   features are removed from the game; a kit may stay for reference, marked so.
 - **Stale statements: fix when touched.** A comment, doc line or dead branch you meet while editing gets corrected in the same

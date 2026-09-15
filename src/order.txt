@@ -19,6 +19,7 @@ far
 player
 atmosphere
 combat
+fx
 effects
 save
 menu

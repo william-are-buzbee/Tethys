@@ -18,12 +18,12 @@ const CAM_DWELL=0.5,CAM_FLIP=0.4; // v11.42: CAM_CLEAR (0.35, the camera held cl
 // there for the shadow map — v11.23, so your own shadow is under you in first person; before, the body was hidden and three's depth
 // pass skips a hidden object) and its wake and arms still act on the world.
 const FP_AHEAD=0.35;
-function applyCam(){const f=mode==='play'&&player.fp?CAM_K.fovFP:CAM_K.fov;if(camera.fov===f)return;camera.fov=f;camera.updateProjectionMatrix();if(mode==='menu')layoutMenu();} // v11.48: the field by mode (CAM_K, scene.js); cheap when nothing changed, so every frame may ask
+function applyCam(){const f=(mode==='play'&&player.fp?CAM_K.fovFP:CAM_K.fov)+(player.fovKickT>0?2*player.fovKickT/0.2:0);if(camera.fov===f)return;camera.fov=f;camera.updateProjectionMatrix();if(mode==='menu')layoutMenu();} // v11.48: the field by mode (CAM_K, scene.js); cheap when nothing changed, so every frame may ask
 function toggleFP(){const P=player;P.fp=!P.fp;if(P.g)ghostBody(P.g,P.fp);applyCam();hintEl.textContent=P.fp?'first person':'third person';hintEl.style.opacity=1;setTimeout(()=>{hintEl.style.opacity=0;},1500);} // the camera's clearance from the water on its side (> the near plane), and the least time between its side changing
 
 function hurtPlayer(dmg,from){
   const P=player;if(P.dead||mode!=='play')return;if(P.withdrawn)return;
-  P.hp-=dmg;P.hurtT=0.7;P.lastHurt=t;hurtEl.style.opacity=1;setTimeout(()=>{hurtEl.style.opacity=0;},240);thump(0.6,80,30,from,0.5,0.1);
+  P.hp-=dmg;P.hurtT=0.7;P.lastHurt=t;P.fovKickT=0.2;P.rollV=(P.rollV||0)+rnd(-1,1)*2.5;hurtEl.style.opacity=1;setTimeout(()=>{hurtEl.style.opacity=0;},240);thump(0.6,80,30,from,0.5,0.1);
   if(from){T4.copy(P.pos).sub(from).normalize();P.vel.addScaledVector(T4,7);}
   if(P.hp<=0)die();
 }
@@ -58,21 +58,23 @@ function splash(pos,v){
   const mk=(dy,cr,cg,cb,ro)=>{const m=10,pa=new Float32Array((m+2)*3),idx=[],rr=[];for(let i=0;i<m;i++)rr.push(rnd(0.7,1.15));for(let i=0;i<=m;i++){const a=i/m*TAU,q=rr[i%m];pa[(i+1)*3]=Math.cos(a)*q;pa[(i+1)*3+1]=0;pa[(i+1)*3+2]=Math.sin(a)*q;if(i<m)idx.push(0,i+2,i+1);}
     const gg=new THREE.BufferGeometry();gg.setAttribute('position',new THREE.BufferAttribute(pa,3));gg.setIndex(idx);const mm=new THREE.Mesh(gg,new THREE.MeshBasicMaterial({color:new THREE.Color(cr*K.tint[0]*lit,cg*K.tint[1]*lit,cb*K.tint[2]*lit),transparent:true,opacity:0.8,depthWrite:false,side:THREE.DoubleSide}));
     mm.renderOrder=ro;mm.frustumCulled=false;mm.position.set(pos.x,y0+dy,pos.z);mm.scale.set(r0,1,r0);scene.add(mm);return mm;};
-  residues.push({up:mk(RES_UP,0.90,0.93,0.93,1.5),dn:mk(-RES_DN,0.70,0.74,0.74,-0.5),x:pos.x,z:pos.z,r0:r0,t:0});
+  const ring=(()=>{const m=12,pa=new Float32Array(m*2*3),idx=[];for(let i=0;i<m;i++){const a=i/m*TAU,q=rnd(0.9,1.08);pa[i*6]=Math.cos(a)*q;pa[i*6+2]=Math.sin(a)*q;pa[i*6+3]=Math.cos(a)*q*0.8;pa[i*6+5]=Math.sin(a)*q*0.8;const j=(i+1)%m;idx.push(i*2,j*2,i*2+1,j*2,j*2+1,i*2+1);} // the ring (v11.53, POLISH 16): an annulus that runs out from the patch and fades
+    const gg=new THREE.BufferGeometry();gg.setAttribute('position',new THREE.BufferAttribute(pa,3));gg.setIndex(idx);const mm=new THREE.Mesh(gg,new THREE.MeshBasicMaterial({color:new THREE.Color(0.92*K.tint[0]*lit,0.95*K.tint[1]*lit,0.95*K.tint[2]*lit),transparent:true,opacity:0.5,depthWrite:false,side:THREE.DoubleSide}));mm.renderOrder=1.5;mm.frustumCulled=false;mm.position.set(pos.x,y0+RES_UP+0.02,pos.z);mm.scale.set(r0,1,r0);scene.add(mm);return mm;})();
+  residues.push({up:mk(RES_UP,0.90,0.93,0.93,1.5),dn:mk(-RES_DN,0.70,0.74,0.74,-0.5),ring:ring,x:pos.x,z:pos.z,r0:r0,t:0});
   if(residues.length>RES_N)dropRes(residues.shift());
   const nb=20,ba=new Float32Array(nb*3),bv=new Float32Array(nb*3);for(let i=0;i<nb;i++){ba[i*3]=pos.x+rnd(-0.5,0.5);ba[i*3+1]=y0-rnd(0.3,1.8);ba[i*3+2]=pos.z+rnd(-0.5,0.5);bv[i*3]=rnd(-0.15,0.15);bv[i*3+1]=rnd(0.2,0.35);bv[i*3+2]=rnd(-0.15,0.15);}
   const bg=new THREE.BufferGeometry();bg.setAttribute('position',new THREE.BufferAttribute(ba,3));const bp=new THREE.Points(bg,new THREE.PointsMaterial({color:0xdde8ec,size:0.07,transparent:true,opacity:0.5,depthWrite:false}));bp.frustumCulled=false;bp.renderOrder=0;scene.add(bp);
   splashes.push({g:bg,pts:bp,vel:bv,t:0,n:nb,life:4.0,grav:0,cap:y0-0.05});
 }
 const residues=[],RES_N=16,RES_T=6.0,RES_UP=0.06,RES_DN=0.10; // the patches alive at once; a patch's life (s); the foam's height over the wave and the grey patch's depth under it (clear of the surface's depth either side)
-function dropRes(r){for(const m of [r.up,r.dn]){scene.remove(m);m.geometry.dispose();m.material.dispose();}}
+function dropRes(r){for(const m of [r.up,r.dn,r.ring]){if(!m)continue;scene.remove(m);m.geometry.dispose();m.material.dispose();}}
 function updateSplashes(dt){
   for(let i=splashes.length-1;i>=0;i--){const s=splashes[i];s.t+=dt;const a=s.g.attributes.position.array,life=s.life||1.1;
     for(let k=0;k<s.n;k++){if(s.grav)s.vel[k*3+1]-=GRAV*dt;a[k*3]+=s.vel[k*3]*dt;a[k*3+1]+=s.vel[k*3+1]*dt;a[k*3+2]+=s.vel[k*3+2]*dt;if(s.cap!==undefined&&a[k*3+1]>s.cap)a[k*3+1]=s.cap;} // the bubbles (grav 0) rise and stop at the water
     s.g.attributes.position.needsUpdate=true;s.pts.material.opacity=(s.grav?0.9:0.7)*(1-s.t/life);
     if(s.t>life){scene.remove(s.pts);s.g.dispose();s.pts.material.dispose();splashes.splice(i,1);}}
   for(let i=residues.length-1;i>=0;i--){const r=residues[i];r.t+=dt;const k=r.t/RES_T;if(k>=1){dropRes(r);residues.splice(i,1);continue;}
-    const y=waveH(r.x,r.z),sc=r.r0*(1+1.0*(1-Math.exp(-r.t/1.5))),op=0.6*(1-k)*(1-k);r.up.position.y=y+RES_UP;r.dn.position.y=y-RES_DN;r.up.scale.set(sc,1,sc);r.dn.scale.set(sc*1.2,1,sc*1.2);r.up.material.opacity=op;r.dn.material.opacity=op*0.7;} // the patch doubles over ~4 s and fades by the square, riding the wave
+    const y=waveH(r.x,r.z),sc=r.r0*(1+1.0*(1-Math.exp(-r.t/1.5))),op=0.6*(1-k)*(1-k);r.up.position.y=y+RES_UP;r.dn.position.y=y-RES_DN;r.up.scale.set(sc,1,sc);r.dn.scale.set(sc*1.2,1,sc*1.2);r.up.material.opacity=op;r.dn.material.opacity=op*0.7;if(r.ring){const rk=Math.min(1,r.t/3),rs=r.r0*(1+3.2*rk);r.ring.position.y=y+RES_UP+0.02;r.ring.scale.set(rs,1,rs);r.ring.material.opacity=0.5*(1-rk)*(1-rk);}} // the ring runs out to four times the patch over three seconds // the patch doubles over ~4 s and fades by the square, riding the wave
 }
 function updatePlayer(dt){
   const P=player,C=P.clade;
@@ -156,8 +158,9 @@ function finishPlayer(dt,near){
   P.g.position.copy(P.pos);P.spd=P.vel.length();
   {const ro=P.sub>0.95?1:0;if(P.ro!==ro){P.ro=ro;P.g.traverse(o=>{if(o.isMesh)o.renderOrder=ro;});}} // the body's place in the opaque pass (v11.51, atmosphere.js refrMark): under water it draws after the refraction's copy of the frame, so the surface never samples it and smears its edge into the sky; in the air, or crossing, it is in the copy and seen through the surface refracted like the land
   P.anim(t,P.spd,{jet:P.sprint&&C.jet,withdrawn:P.withdrawn,pulse:P.pulse,strike:P.hold?1:0}); // strike: the mouth stays open on what is held (the finback's ring blooms)
+  bodyPose(P,dt,P.yaw); // v11.53 (fx.js): squash and stretch, banking, the bite's snap — after the anim, before the rigs step
   stepRigs(P,near,dt);
-  P.pulse=Math.max(0,P.pulse-dt*2);
+  P.pulse=Math.max(0,P.pulse-dt*2);P.snapT=Math.max(0,(P.snapT||0)-dt);P.nudgeT=Math.max(0,(P.nudgeT||0)-dt);P.fovKickT=Math.max(0,(P.fovKickT||0)-dt); // v11.53 (fx.js): the bite's snap, the camera's nudge toward it, the hurt's fov kick; squash and stretch and banking
   if(P.fp){const nose=(P.b&&P.b.F?P.b.F.nose*P.g.scale.x:C.size)+FP_AHEAD;T2.copy(P.pos).addScaledVector(fwd,nose);}
   else{T2.copy(P.pos).addScaledVector(fwd,-(C.cam+CAM_K.arm)).addScaledVector(UP,1.4); // v11.48: CAM_K.arm from the readout's tuner
   const ch=groundAt(T2.x,T2.z)+1.0;if(T2.y<ch)T2.y=ch;}
@@ -168,7 +171,7 @@ function finishPlayer(dt,near){
   const cw=waveH(T2.x,T2.z);P.camFlipT=Math.max(0,(P.camFlipT||0)-dt);
   if(P.camAbove){if(T2.y<cw-CAM_FLIP&&P.camFlipT<=0){P.camAbove=false;P.camFlipT=CAM_DWELL;}}
   else{if(T2.y>cw+CAM_FLIP&&P.camFlipT<=0){P.camAbove=true;P.camFlipT=CAM_DWELL;}}
-  applyCam();if(P.fp)camera.position.copy(T2);else{solidPush(T2,0.6,null,null,true);camera.position.lerp(T2,1-Math.exp(-8*dt));}
+  applyCam();if(P.fp)camera.position.copy(T2);else{solidPush(T2,0.6,null,null,true);camera.position.lerp(T2,1-Math.exp(-8*dt));if(P.nudgeT>0&&P.nudgeD)camera.position.addScaledVector(P.nudgeD,P.nudgeT*2.0);}
   if(P.hurtT>0){camera.position.x+=rnd(-1,1)*P.hurtT*0.3;camera.position.y+=rnd(-1,1)*P.hurtT*0.3;}
   if(P.fp)T2.copy(camera.position).add(fwd);else T2.copy(P.pos).addScaledVector(fwd,3);camera.lookAt(T2);
   plight.position.copy(P.pos).add(V3(0,1,0));

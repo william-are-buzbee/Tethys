@@ -59,7 +59,7 @@ function warmShaders(){
   try{
     const g=new THREE.Group(),geo=new THREE.BufferGeometry();
     geo.setAttribute('position',new THREE.Float32BufferAttribute([0,0,0,0,0.01,0,0.01,0,0],3));geo.setAttribute('normal',new THREE.Float32BufferAttribute([0,1,0,0,1,0,0,1,0],3));geo.setAttribute('color',new THREE.Float32BufferAttribute([1,1,1,1,1,1,1,1,1],3));
-    for(const m of [MAT,MATBIG,MATLM,MATT,TERRAIN_MAT,MAT_HI,shM,new THREE.MeshLambertMaterial({color:0x06080a,transparent:true,opacity:0.9})])g.add(new THREE.Mesh(geo,m)); // the last is the ink cloud's; shM the light shafts' (v11.13)
+    for(const m of [MAT,MAT_HIT,MATBIG,MATLM,MATT,TERRAIN_MAT,MAT_HI,shM,new THREE.MeshLambertMaterial({color:0x06080a,transparent:true,opacity:0.9})])g.add(new THREE.Mesh(geo,m)); // the last is the ink cloud's; shM the light shafts' (v11.13)
     const c=new THREE.Color(1,1,1);
     for(const m of [MAT,MATROCK,MATROCKB,MATFAR,GLOW,MATV,MATG,MATB,MATR,MATW,MATS,MATM,MATGL,MATTR]){const ig=geo.clone();ig.setAttribute('aVar',new THREE.InstancedBufferAttribute(new Float32Array(1),1));ig.setAttribute('aDip',new THREE.InstancedBufferAttribute(new Float32Array(1),1));ig.setAttribute('aCur',new THREE.InstancedBufferAttribute(new Float32Array(2),2));ig.setAttribute('aTide',new THREE.InstancedBufferAttribute(new Float32Array(2),2));const im=new THREE.InstancedMesh(ig,m,1);im.setColorAt(0,c);g.add(im);}
     g.position.set(0,-1e5,0);scene.add(g);renderer.compile(scene,camera);
@@ -80,7 +80,7 @@ function loop(now){
   updateSchools(dt);updateCreatures(dt);if(mode==='play')finishPlayer(dt,bodies); // bodies, contact, arms, then the camera
   updateEggs(dt);ecoTick(dt);updateSave(dt); // the clutches hatch; the world's ledger (v11.26): the model every few seconds, the births owed; the autosave clock (save.js, v11.47)
   updatePads(dt);updateDisturbers(dt);if(FX.snow)updatePlankton(dt);physMs=performance.now()-p0;
-  updateWounds(dt);updateInks(dt);updateSplashes(dt);updateBlood(dt); // the wounds bleed and the blood drifts (combat.js, v11.31)
+  updateWounds(dt);updateInks(dt);updateSplashes(dt);updateBlood(dt);updateDebris(dt);updateFlush(dt); // the wounds bleed and the blood drifts (combat.js, v11.31)
   updateAtmosphere(dt);updateSurface();
   camera.updateMatrixWorld();updateFogCamera();cullChunks(dt);cullFar();assignLights();updateShadow();updateShadowS(dt);updateAudio(dt); // the shadow map's box and casters (v11.23): after everything has moved; the sound (v11.14) last, with the camera where it is
   updateHUD();updateCompass(dt);updateFX();

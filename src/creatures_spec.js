@@ -2681,7 +2681,7 @@ function compile(spec, s, pal, opt) {
       grip = {kind: cl === 'slowbloods' ? 'jaw' : cl === 'hingeshells' ? 'claws' : 'arms', at: [0, y, p.z + (p.style === 'plates' && p.where === 'probe' ? p.plen : 0)]};
   });
   if (grip && grip.kind === 'arms' && !rigs.length) grip.kind = 'jaw'; // a beak with no arms to hold with bites like a jaw
-  return {g: g, anim: anim, rigs: rigs, hit: spec.hit || hit, built: built, F: F, grip: grip, pat: pat};
+  return {g: g, anim: anim, rigs: rigs, hit: spec.hit || hit, built: built, F: F, grip: grip, pat: pat, frame: bf, body: body}; // frame, body (v11.53): the secondary motion scales and rolls the frame (fx.js bodyPose)
 }
 // A spec with every part's defaults filled and its styles resolved, without touching the given object.
 function fillSpec(spec) {

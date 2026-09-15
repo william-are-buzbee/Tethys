@@ -8,7 +8,7 @@ const fs=require('fs'),path=require('path');
 const ROOT=path.join(__dirname,'..');
 const ORDER=fs.readFileSync(path.join(ROOT,'src','order.txt'),'utf8').split('\n').map(s=>s.trim()).filter(s=>s&&s[0]!=='#');
 let js=ORDER.map(n=>fs.readFileSync(path.join(ROOT,'src',n+'.js'),'utf8')).join('\n');
-js+='\nglobal.__cb={peak(){player.pos.set(0,dispY,0);cellsAround();},groundAt,chunkGrid,cellOf,creatures,carcasses,player,DEFS,SPAWN,spawn,choose,V3,keys,holds,GRIP,startHold,releaseHold,playerGrab,playerBite,updateHolds,wound,get blLive(){return blLive;},updateBlood,updateWounds,updateCreatures,updatePlayer,finishPlayer,bodies,updateSchools,get mode(){return mode;},get t(){return t;},setT:(v)=>{t=v;},massOf,cladeOf,gripOf,localToWorld,removeCreature,ECO,setWander,bodyExt,reachOf,BITE_M,ability,CLADES};';
+js+='\nglobal.__cb={fxStats,peak(){player.pos.set(0,dispY,0);cellsAround();},groundAt,chunkGrid,cellOf,creatures,carcasses,player,DEFS,SPAWN,spawn,choose,V3,keys,holds,GRIP,startHold,releaseHold,playerGrab,playerBite,updateHolds,wound,get blLive(){return blLive;},updateBlood,updateWounds,updateCreatures,updatePlayer,finishPlayer,bodies,updateSchools,get mode(){return mode;},get t(){return t;},setT:(v)=>{t=v;},massOf,cladeOf,gripOf,localToWorld,removeCreature,ECO,setWander,bodyExt,reachOf,BITE_M,ability,CLADES};';
 const tmp=path.join(require('os').tmpdir(),'tethys_combat.js');
 fs.writeFileSync(tmp,'(function(){"use strict";\n'+js+'\n})();');
 process.env.PICK='0';
@@ -171,5 +171,6 @@ const groundY=-12;
 }
 let nanH=0;for(const h of X.holds)for(const v of [h.len,h.load,h.pull])if(!isFinite(v))nanH++;
 check(nanH===0,'no NaN in any hold');
+{const f=X.fxStats();console.log('  debris: '+JSON.stringify(f));check(f.nan===0,'no NaN in the debris');check(f.scraps+f.silt>0,'the bites left scraps or silt');}
 console.log(fails?'combat: '+fails+' FAILED':'combat: all ok');
 process.exit(fails?1:0);

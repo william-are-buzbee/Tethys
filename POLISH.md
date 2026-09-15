@@ -2,7 +2,7 @@
 
 A survey of the cheap systems that carry low-poly games — what each one is, why it works at this fidelity, what it would
 hook into here, and what it costs against the numbers in `AUDIT.md`. The ranked list is at the end, with the person's decisions;
-pass A is built as v11.13 (DESIGN, The light), B and C are not. Downstream of `PLANET.md` (no magic, no lamps, bioluminescence only as events) and of
+pass A is built as v11.13 (DESIGN, The light), B as v11.53 (15 Sep 2026; DESIGN, The body's effects; fx.js), C is not. Downstream of `PLANET.md` (no magic, no lamps, bioluminescence only as events) and of
 `DESIGN.md` Visibility (the fog is the look; everything here has to sit inside it).
 
 ## The budget, and the currency
@@ -288,8 +288,8 @@ until the person looks; the order inside a pass is the table's.
 believably based on appropriate water physics". 4. Blood at a bite yes, based on the size and volume of the creature. 5. The wake at
 night yes, for now. 6. A, then B, then C. 7. The flush (24) and the vignette (28) off by default.
 
-**Built: pass A as v11.13** — items 1, 2, 3, 4, 5, 7, 8, 9 (DESIGN, The light; CHANGELOG v11.13 for the unseen list). Next: pass B
-(12–14, 16, 19–21, 23, 25, 26; 24 off), then C (15).
+**Built: pass A as v11.13** — items 1, 2, 3, 4, 5, 7, 8, 9 (DESIGN, The light; CHANGELOG v11.13 for the unseen list). **Pass B as v11.53**
+(12–14, 16, 19–21, 23–26; 24 off by default; 22 not built — a mechanic, ask first): CHANGELOG v11.53, DESIGN The body's effects. Next: C (15).
 
 ## Questions (answered above; kept for the record)
 

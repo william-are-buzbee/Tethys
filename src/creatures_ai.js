@@ -40,7 +40,7 @@ function juvDef(kind){let j=JUV_DEF[kind];if(j)return j;const d=DEFS[kind],s=ECO
   if(d.radius)j.radius=d.radius*s;if(d.lunge)j.lunge=d.lunge*Math.sqrt(s);if(d.detect)j.detect=d.detect*s;if(d.clear!==undefined)j.clear=d.clear*s;if(d.food)j.food=Math.max(1,Math.round(d.food*s));return j;}
 function spawn(ch,kind,pos,rng,opt){
   const juv=!!(opt&&opt.juv),d=juv?juvDef(kind):DEFS[kind],b=d.build(),EK=ecoOf(kind);
-  const c={kind:kind,def:d,g:b.g,anim:b.anim,pos:pos.clone(),vel:V3(0,0,0),home:pos.clone(),hp:d.hp,state:'wander',t0:rng()*100,target:null,biteT:0,wanderT:0,wander:pos.clone(),alive:true,gone:false,stun:0,bored:0,cool:rng()*3,scanT:rng()*0.5,alarm:0,fleeT:0,lungeT:0,ramT:0,school:null,off:null,offT:0,chunk:ch,lod:-1,parts:null,lodMeshes:null,sub:1,wet:true,grounded:false,flopT:0,
+  const c={kind:kind,def:d,g:b.g,anim:b.anim,pos:pos.clone(),vel:V3(0,0,0),home:pos.clone(),hp:d.hp,state:'wander',t0:rng()*100,lastSpd:0,lastYaw:0,roll:0,rollV:0,sq:0,stunSide:rng()<0.5?-1:1,target:null,biteT:0,wanderT:0,wander:pos.clone(),alive:true,gone:false,stun:0,bored:0,cool:rng()*3,scanT:rng()*0.5,alarm:0,fleeT:0,lungeT:0,ramT:0,school:null,off:null,offT:0,chunk:ch,lod:-1,parts:null,lodMeshes:null,sub:1,wet:true,grounded:false,flopT:0,
     b:b,mass:bodyMass(d),bound:0,reach:0,shapesW:null,chainW:null,grab:null,holding:0,hold:null,held:0,bleed:0,cWith:null,d6:0,par:creatures.length&1, // hold: the hold it has on something, held: how many have hold of it, bleed: hp still to lose to its wounds (combat.js)
     st:{tell:0,strike:0,jet:false},tellT:0,strikeT:0,recoverT:0,burstT:rng()*2,face:null,bit:false,accT:0,threat:null,
     ent:opt&&opt.ent!==undefined?opt.ent:-1,hunger:EK.hunter?rng():0,starveT:0,hunt:0,feedT:0,feedAt:null,dead:false,flesh:0,deadT:0,scav:null,scavT:rng()*0.5,juv:juv?EK.grow*DAY_S*(0.8+0.4*rng()):0}; // ent: the ledger entry; hunger 0 fed..1 starving (ecology.js); juv: seconds until it grows up // st: what the anim reads (creatures_builders.js); the tell and the strike as clocks
@@ -191,7 +191,7 @@ const HUNT_SEEK=4,HUNT_HOME=1.5,HUNT_CAST=0.8;
 function hungerTick(c,dt){const K=ecoOf(c.kind);c.hunger=Math.min(1,c.hunger+dt/(K.cycle*DAY_S));if(c.hunger>=1){c.starveT+=dt;if(c.starveT>K.cycle*DAY_S*1.2){POP.starved+=1;kill(c,null);return true;}}return false;}
 function updateHunter(c,dt){
   const d=c.def;
-  if(c.stun>0){c.stun-=dt;c.vel.multiplyScalar(1-2*dt);return;}
+  if(c.stun>0){c.stun-=dt;c.vel.multiplyScalar(1-2*dt);c.pos.y-=0.3*dt;return;}
   if(hungerTick(c,dt))return;
   if(c.state==='feed'){const f=c.feedAt;c.feedT-=dt;if(!f||f.gone||f.flesh<=0||c.feedT<=0||c.hunger<=0){c.state='wander';c.feedAt=null;c.cool=d.cool||4;setWander(c);return;}
     const dist=c.pos.distanceTo(f.pos),at=reachOf(c,f);if(dist>at*0.9)seek(c,f.pos,d.speed*0.35,dt,1.5);else{c.vel.multiplyScalar(1-3*dt);eatAt(c,f,dt);}c.face=dist<at*1.5?f.pos:null;return;}
@@ -313,7 +313,7 @@ function updateLurker(c,dt){
     if(tg&&dist<reachOf(c,tg)&&c.biteT<=0){c.biteT=1;landBite(c,tg);if(c.state!=='feed')c.state='return';}if(c.lungeT<=0||!tg||(tg!==player&&!tg.alive)||(tg===player&&player.dead))c.state='return';}
   else if(c.state==='feed'){const f=c.feedAt;c.feedT-=dt;if(!f||f.gone||f.flesh<=0||c.feedT<=0){c.state='return';c.feedAt=null;return;}const dist=c.pos.distanceTo(f.pos);if(dist>reachOf(c,f)*0.8)seek(c,f.pos,3,dt,2);else{c.vel.multiplyScalar(1-3*dt);eatAt(c,f,dt);}}
   else{c.grab=null;if(!c.hold)c.target=null;seek(c,c.home,4,dt,2);if(c.pos.distanceTo(c.home)<0.8){c.state='sit';c.cool=3;c.pos.copy(c.home);}} // v11.31: what it has hold of comes home with it
-  if(c.stun>0){c.stun-=dt;c.vel.multiplyScalar(1-2*dt);}
+  if(c.stun>0){c.stun-=dt;c.vel.multiplyScalar(1-2*dt);c.pos.y-=0.3*dt;}
   if(c.state==='flee')c.state='return';
 }
 function updateJelly(c,dt){
@@ -386,7 +386,7 @@ function updateCreatures(dt0){
     // the action state the anim reads: the tell and the strike are set by the behaviours above and let go here
     const st=c.st;if(c.tellT<=0&&c.strikeT<=0){st.tell*=Math.exp(-4*dt);st.strike*=Math.exp(-7*dt);if(d.role==='ambush'&&c.state!=='lunge')st.strike*=Math.exp(-7*dt);}st.jet=c.state==='chase'&&d.jetter===true;
     const vis=dp<c.lodFar;c.g.visible=vis;
-    if(vis){visibleCreatures++;if(dp<SEEN_R&&mode==='play')seeSpec(c.kind);if(dp<c.lodNear){setLOD(c,0);c.anim(t+c.t0,Math.min(4,c.vel.length()/(d.size*0.5)),st);}else setLOD(c,1);} // seen within SEEN_R (save.js, v11.47): the creator's parts
+    if(vis){visibleCreatures++;if(dp<SEEN_R&&mode==='play')seeSpec(c.kind);if(dp<c.lodNear){setLOD(c,0);c.anim(t+c.t0,Math.min(4,c.vel.length()/(d.size*0.5)),st);T4.set(0,0,1).applyQuaternion(c.g.quaternion);bodyPose(c,dt,Math.atan2(T4.x,T4.z));}else setLOD(c,1);} // bodyPose (fx.js, v11.53): squash and stretch, banking, the stun's list // seen within SEEN_R (save.js, v11.47): the creator's parts
     if(d.role==='hunter'&&c.hp<d.hp&&!(c.bleed>0)&&t-(c.lastHurt||-1e9)>HUNT_REGEN_W)c.hp=Math.min(d.hp,c.hp+HUNT_REGEN*dt);
     if(vis&&dp<c.lodNear&&c.lod===0)simList.push(c);
     if(vis&&dp<90)near.push(c);

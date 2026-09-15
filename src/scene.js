@@ -598,6 +598,7 @@ function thinLight(sh,k){if(sh.defines&&sh.defines.DEPTH_PASS)return;const f=sh.
 const MAT=addTint(new THREE.MeshLambertMaterial({vertexColors:true}),'lam',true,undefined,undefined,'body'); // creatures, small flora (instanced: the plant class in the shader)
 const MATGHOST=new THREE.MeshBasicMaterial({colorWrite:false,depthWrite:false}); // the first-person body (v11.23, player.js): drawn as nothing, still cast into the shadow map
 function ghostBody(g,on){g.traverse(o=>{if(!o.isMesh)return;if(on){if(o.material!==MATGHOST){o.userData.mat0=o.material;o.material=MATGHOST;}}else if(o.userData.mat0){o.material=o.userData.mat0;o.userData.mat0=null;}});}
+const MAT_HIT=addTint(new THREE.MeshLambertMaterial({vertexColors:true,emissive:0x262626}),'lam',true,undefined,undefined,'body'); // the flush (fx.js flushBody, POLISH 24, v11.53): MAT with a pale emissive for FLUSH_T after a bite; off by default
 const MATBIG=addTint(new THREE.MeshLambertMaterial({vertexColors:true}),'lam',false,undefined,undefined,'body'); // big creatures' far LOD: the full ghost
 const MATLM=addTint(new THREE.MeshLambertMaterial({vertexColors:true}),'lam',false,undefined,'world','rock'); // the landmarks that are not rock (far.js): MATBIG's fog, the de-res on the world grid (v11.40; on MATBIG they took the bodies' texel)
 // The foot of a boulder (v11.13): the cell's rock sinks `sink` (0.35–0.45) of its scale into the ground (chunks.js settleOn), and the

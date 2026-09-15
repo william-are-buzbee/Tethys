@@ -18,6 +18,7 @@ holds the reasons, the numbers and what the person asked for. History and what h
 12. [The canopy](#the-canopy)
 13. [Creatures](#creatures) — roles, predators, LOD, spawning, what was removed
 14. [The player](#the-player)
+14a. [The body's effects](#the-bodys-effects) — silt, bubbles, scraps; squash and stretch, banking, the stun; the flinch, the flush, the snap
 15. [Performance and the quality tier](#performance-and-the-quality-tier)
 16. [HUD, readout, compass, text](#hud-readout-compass-text)
 17. [Determinism](#determinism)
@@ -1545,6 +1546,31 @@ airborne). Terrain: gentle slopes clamp you up, steep walls push you back horizo
 the pads; bodies and arms in `creatures_ai.js` after the creatures have moved, then `finishPlayer`: pose, arms, camera). Death = fade to black, respawn at the peak. The bite and the grab are [Combat](#combat) (v11.31): the bite gulps small forage (heals), eats
 at a carcass, or wounds; the grab (right mouse, r) holds. The player's food is arrow squid, needles and scuttlers, and what it kills. Open question, never answered: should clades differ in *what they can reach* (crevices for soft-arm,
 surface air for finback)? Any persistence, or is a clean cold start the point?
+
+## The body's effects
+
+**fx.js (v11.53, POLISH.md pass B).** The water answering a body and the body answering a hit, all from numbers the game already has.
+- **The debris**: one pooled `Points` (`FX_N` 720, 320 low) in the snow's material patch (atmosphere.js `pm`: a size and an alpha per point, the
+  player's light, squares), integrated the blood's way (the flow round bodies plus the current, `flowAt` + `CURV`). Kinds in `FXK`: **silt**
+  (sinks 0.15 m/s, settles on `groundAt`, 3–4.5 s, the floor's colour from `terrainColor` through `sample()`), **bubbles** (rise 0.9 m/s with
+  a wobble, grow, end at `waveH`, 6–9 s), **scraps** (sink 0.3, tumble as a size flicker, 2.5–3.5 s, the prey's vertex colour off its first
+  coloured mesh). Emitters (`updateFXEmit`, within `FX_R` 70 of the camera): the player grounded and moving under water (an accumulator,
+  3.5 points per metre), the flop (14), a jet within 2.6 m + 0.3·size of the floor (10 behind the body), a grounded creature moving, a trap
+  striking (8 + 2·size); the seeps (`ch.seeps`, up to 8 tops a cell from placeFloraType, within `FX_SEEP_R` 110: one bubble every 0.35–0.8 s
+  each). Nothing is emitted in the air. `debris` on the effects list. The blood stays combat.js's cloud, the breach's foam and bubbles player.js's.
+- **The ring** (player.js `splash`): an annulus on the residue, out to 4.2× the patch over 3 s, opacity 0.5·(1−k)².
+- **The secondary motion** (`bodyPose`, after a body's anim and before its rigs step; `POSE_K`): the compiled frame (`b.frame`) scaled
+  (1−s/2, 1−s/2, 1+s) with s = clamp(0.02·acceleration, −0.1, 0.14) + 0.12 on a strike + 0.15 on the player's bite, eased at 9/s; rolled about
+  +z by −0.09·yawRate·speed, capped 0.6 (0.35 rigged), eased at 4/s, plus the flinch's spin (`rollV`, damped 3/s); stunned, the roll goes to
+  ±1.0 (half rigged) and creatures_ai.js sinks the body 0.3 m/s. A rigged body's chains have their rest positions (`restL`, rewritten by the
+  anim each frame) turned by the roll for the rigs that ride the frame, so the skins meet the rolled hull. `worldShapes` reads g's scale, never
+  the frame's: contact is untouched.
+- **At a wound** (`hitFx` from combat.js `wound`, the kill too): the chain points shoved along the bite by clamp(0.25 + 0.02·dmg, 0.25, 0.8)
+  scaled to the tip; a roll impulse ±2·clamp(0.06·dmg, 0.3, 1); the flush (`flushBody`: MAT and MATBIG meshes swapped to `MAT_HIT`, emissive
+  0x262626, for `FLUSH_T` 0.15 s; `flush` on the list, off); silt within 2.2 m of the floor; 6 + 0.3·dmg scraps.
+- **The player's bite** (combat.js `playerBite`, player.js): `snapT` 0.1 s of stretch; `nudgeD`/`nudgeT` 0.15 s of camera toward the
+  bite (0.3 m at the start); on being hurt `fovKickT` 0.2 s of +2° (`applyCam`) and a roll impulse ±2.5.
+- Not built: 22 (limp rigs, corpses that lie — a mechanic; ask first), 15 (the night, pass C), 17–18 (the surface pass), 27 (never).
 
 ## Performance and the quality tier
 
