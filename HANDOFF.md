@@ -1,5 +1,8 @@
 # HANDOFF — tethys
 
+**Next (15 Sep 2026): the giant.** `ARCHIPELAGO.md` is the plan: the chain's numbers, the giant's record and the land term the kit lacks
+(step 2), then the horizon tier (3), then `NCELL` 240 with a sparse ledger (4). Start with step 2 and the identity check on `ISLANDS[0]`.
+
 **v11.61 (15 Sep 2026): the islands as records.** `ISLANDS` in world.js, `islandH()` the geology in an island's own frame, `sample()` the
 smooth max of every island in reach over the basement; ours is `ISLANDS[0]` and is proved bit-identical to v11.60.2 over the old square and
 the whole world (only `rel` beyond 8.5 km changed, meant: the floor's hills read as relief now). Nothing placed. Next: the giant's record

@@ -3985,3 +3985,9 @@ The person: "can you update the map?" `map.html` and `test/map.js` draw every re
 dashed ring at its reach, "built: <id>" — beside the yellow plan, so the two are never confused; the maps' picture is the live `sample()`
 already, so a record added to `ISLANDS` shows as terrain on the next refresh. Re-rendered `test/preview/map.png` and `map_plan.png` (the
 plan with the giant and the young shield). Seen in the pane.
+
+## v11.61.2 — ARCHIPELAGO.md (15 Sep 2026)
+
+The person is taking the giant to a new chat. The plan lived in this one: ARCHIPELAGO.md now carries the chain's numbers, the build order
+(the records built; the giant's land term, the horizon tier, the world at 240 cells, the road), the tools, and the person's answers.
+CLAUDE.md's doc table and HANDOFF point at it.
