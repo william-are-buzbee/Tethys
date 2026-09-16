@@ -1,5 +1,11 @@
 # HANDOFF — tethys
 
+**v11.61 (15 Sep 2026): the islands as records.** `ISLANDS` in world.js, `islandH()` the geology in an island's own frame, `sample()` the
+smooth max of every island in reach over the basement; ours is `ISLANDS[0]` and is proved bit-identical to v11.60.2 over the old square and
+the whole world (only `rel` beyond 8.5 km changed, meant: the floor's hills read as relief now). Nothing placed. Next: the giant's record
+south-west, which needs the kit's missing term — land above the water (a shield to a summit, gullies, a shore, flows); then the horizon
+tier; then the world grown to 240 cells. The person's layout comes from map.html as JSON.
+
 **v11.59–11.60 (15 Sep 2026): the maps.** `node test/map.js` draws the world (bands, hillshade, contours, the old square, the sill, planned
 islands via `PLAN`) to `test/preview/map.png`; `map.html` is the same map interactive — islands added, dragged, resized, the sizes and
 distances derived, exported as the `PLAN` string or JSON. The person is using it to place the archipelago; the next build waits on their

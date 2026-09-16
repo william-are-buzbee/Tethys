@@ -141,7 +141,9 @@ Docs, most upstream first. When a doc's Open list says a choice is the person's,
 ## Architecture
 
 - **The world is a function.** `sample(x,z,out)` in world.js is the single source of truth: the ground and the nine condition
-  fields (`FI`: sub, flow, expo, nut, turb, young, heat, shel, rel), analytic geology plus fbm. No biome ids anywhere. Species and
+  fields (`FI`: sub, flow, expo, nut, turb, young, heat, shel, rel), analytic geology plus fbm. No biome ids anywhere. Since v11.61 the
+  islands are records (`ISLANDS`, `islandH` in the island's frame) summed by smooth max over the basement (`BASIN`, `SILL`); `ISLANDS[0]` is
+  ours and must stay bit-identical — check any change to `islandH` or `sample` against the last commit's world.js over the old square. Species and
   structures carry `env` envelopes; `envW(env,h,slope,f)` is 0..1. Landmarks: the pit and the chimney are fixed by the geology, the
   rest searched on the terrain at load (`findSpot`, seed 4242, fixed sequence — add new ones at the end).
 - **Cells.** 120×120 cells of 215 m (`CELL`, `NCELL`, the world ±`HALF` 12.9 km; v11.58 — the island's own square is the middle 16, the rest the basin floor at −1100 and the sill across the north-east corner). A loaded cell is a 49×49 grid, a terrain mesh, its flora as a

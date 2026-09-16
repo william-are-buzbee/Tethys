@@ -31,7 +31,11 @@ truth. Everything (cell grids, the far terrain, landmark search, structure and f
 it. `CELL=215, NCELL=120, HALF=12900` (v11.58; 16 and 1720 to v11.57 — the island's own square is the middle 16 cells and is untouched to the bit, verified over 185,761 samples). The geology it encodes is PLANET.md's Geology section (the caldera and its rim, the
 shield profile, the terraces as rings, the collapse scarp and fan, the dike ridges, the rift arms with the pit crater and the
 fissure, the flank cone); its parameters are the constants at the top of world.js (`WIND_A`, `CUR_A`, `RIFT_A`, `COLL`,
-`DIKE`, `RIM_R`, `VENT`, `ISLE`, `PIT`, `FLANK_*`). **The lower flank** (v11.28): beyond the apron's toe (`FLANK_R` 1560, wavy) the floor
+`DIKE`, `RIM_R`, `VENT`, `ISLE`, `PIT`, `FLANK_*`) — and since v11.61 those constants are one record, `ISLANDS[0]`: an island is a record
+(place, turn, radial scale, noise offset, the profile as steps, the terraces, the rim, the collapse, the dikes, the rifts, the fissure, the pit, the cone,
+the lower flank, its reach), `islandH()` is the geology in the island's own frame, and `sample()` takes the smooth max of every island in reach over
+the basement with the highest island's conditions (the saddle between two is the max of both). Proved bit-identical for ours over the old square
+and the whole world; the archipelago is more records. **The lower flank** (v11.28): beyond the apron's toe (`FLANK_R` 1560, wavy) the floor
 does not fall into a void but goes on down the seamount's flank — the slope ramps with no crease from the apron's 5.7° to 16.7° over 250 m
 (`FLANK_S0`, `FLANK_W`), eases to 12.4° between 600 and 2600 m beyond the toe (`FLANK_S1`, `FLANK_A/B`), ribbed ±15% by sector — −320 at the
 old square's edge on an axis, ~−580 at a corner. **The basin and the sill** (v11.58, PLANET The basin; world.js `BASIN`, `SILL`, `smax` in util.js):

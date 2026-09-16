@@ -3949,3 +3949,32 @@ The person asked how to teleport. `tp(x,z,y)` in the browser's console (F12): th
 there (10 by default; a negative y is a depth), still, the camera with it, the cells round it loaded at once; returns where it put you and
 the ground. Works from tethys.html (the bundle is an IIFE, so nothing else is reachable) and dev.html. The map's stat line gives x,z under
 the mouse. Not a feature: nothing saves or reads it. Smoke and lint green; unseen in play.
+
+## v11.61 — the islands as records: sample() sums islands over the basement (15 Sep 2026)
+
+The first step of the chain (the person: "can we begin work on creating the second island — what will we need to do first?"). Nothing is
+placed yet; this is the refactor every later step stands on, done alone so it can be proved harmless.
+
+- **`ISLANDS`** (world.js): an island is a record — where it stands (`x`, `z`), how it is turned (`rot`), its radial scale (`sc`), a noise
+  offset (`ns`, so a second island does not repeat the first's pattern), and every number its geology had as a file constant: the shield's
+  profile as steps (`h0`, `prof`), the terraces (`terr`), the rim and the lagoon (`rimR`, `rimW`, `lagH`), the collapse (`coll`), the dikes
+  (`dike`), the rift arms (`rifts`), the fissure (`vent`), the pit (`pit`), the flank cone (`isle`), the lower flank (`flank`), and `reach`,
+  past which it is not computed (its flank is 340 m under the floor's lowest there, and smax is exact past its knee). `ISLANDS[0]` is our
+  island, built from the old constants, which stay as they were for the readers that name them (the tide's stream, the fumarole, the pit's
+  cairns and rim flora, the landmarks).
+- **`islandH(R,x,z,o)`** is the old body of `sample()` in the island's own frame — a record's parameters in place of the constants, the same
+  operations in the same order — and hands back the intermediates the conditions read. **`sample()`** takes the smooth max of every island
+  in reach over the basement, the highest island's conditions where it stands (a volcano on another's flank: the saddles are the max of the
+  two, the fields the nearer's), and the basin's alone in open water. Two scratch objects, nothing allocated per sample.
+- **Proved**: against v11.60.2's `sample()` over the old square (185,761 samples: the ground and all nine fields identical to the bit) and
+  the whole 25.8 km world at 50 m (266,256 samples: the ground and eight fields identical; `rel` differs beyond 8.5 km, see below).
+  `sample()` is 0.6 µs in open water now (0.9 before: an island out of reach is not computed), 0.8 on the island as before.
+- **The one change, meant**: relief (`rel`) on the basin floor and the sill. To v11.60 the island's smooth profile (−290, the shield without
+  its flank) leaked across the whole basin as the "smooth" ground, so every hill of the floor and every summit of the sill had relief 0. Past
+  an island's reach the smooth ground is the basement's now, and the hills and the ridge's knobs read as relief. No envelope reads `rel`
+  (flora.js names it, nothing sets it), so nothing placed moves. The lower flank inside reach still has the old leak (rel 0 from the
+  apron's toe down, since v11.28) — the island's own `hSmooth` stops at the profile; left as it was, to be fixed with the person's knowledge
+  since it is inside the island.
+
+**Seen**: nothing to see — the world is the same. **Next**: the giant's record south-west (the person's layout from map.html), which needs
+the kit's one missing term, land above the water: a shield rising to a summit with gullies, its shore, its flows.
