@@ -8,7 +8,7 @@
 // the floor goes on down the seamount's flank toward the plate (v11.28; to v11.27 a cliff into a void at -810). There are no biomes: sample(x,z) returns the ground height and the physical CONDITIONS
 // at a point (substrate, current, wave exposure, food, turbidity, the age of the rock, heat, shelter, relief), and every
 // species — sessile or swimming — has a tolerance envelope over those (envW). Nothing downstream reads a label.
-const CELL=215,NCELL=120,HALF=CELL*NCELL/2; // v11.58: 16 cells (3.4 km) to v11.57; 120 (25.8 km) puts the sill's crest 13 km out. Must divide by 4 (far.js regions)
+const CELL=215,NCELL=240,HALF=CELL*NCELL/2; // v11.65 (ARCHIPELAGO step 4): 240 cells, 51.6 km — the giant whole (its centre 15.4 km out, its foot to 29) and the sill's crest with 23 km of the ocean's flank beyond it; 120 (25.8 km) from v11.58, 16 (3.4 km) to v11.57. Must divide by 4 (far.js regions)
 // the geology's parameters: angles are radians from +x toward +z
 const WIND_A=3.49,CUR_A=2.3; // the directions the wind (so the waves) and the ocean current travel toward: the waves strike the old flank (0.35), the current the north-east flank (5.44), the lee is the collapse's side
 const RIFT_A=[2.6,5.6]; // the two rift arms
@@ -28,11 +28,12 @@ const PIT=[Math.cos(2.6)*470,Math.sin(2.6)*470]; // a pit crater on rift arm 0
 // chemocline, so the water under the saddles never leaves the basin (Cariaco, the Black Sea: the chemocline sits below the sill). The
 // ridge runs across the current's axis with its main gap on it (SILL.a is CUR_A reversed): the inflow through the gap is what strikes
 // the north-east flank, so the upwelling (upW) is the gap's. Beyond the crest the outer flank goes on down toward the plate — the
-// ordinary ocean, whose deep is oxic; the game's chemocline is the basin's and is wrong there, and the clamp keeps the player within
-// 5 km of the crest. The seamount effect (the island's share of nut and the current's wake) fades out over BASIN.fade of rw.
+// ordinary ocean, whose deep is oxic; the game's chemocline is the basin's and is wrong there (open: since v11.65 the world reaches 23 km
+// past the crest, where the outer flank goes on down the ridge's own 12° to the plate at SILL.plate — PLANET's ~-3800 — and lies flat; to
+// v11.64 the clamp kept the player within 5 km of the crest and the flank stopped at the sill's window). The seamount effect (the island's share of nut and the current's wake) fades out over BASIN.fade of rw.
 // Nothing inside r 2400 changes: the flank there is above -600, the floor under -1040, and smax is exact past its knee.
 const BASIN={h:-1100,hill:60,knee:200,fade:[3000,6000]}; // the floor; the hills' amplitude; the apron's blend band; where the island's upwelling fades, in rw
-const SILL={a:CUR_A+Math.PI,d:13000,crest:-410,gap:-430,summit:260,slope:0.21,wobble:450,w:150}; // the ridge's normal (from the island toward the crest: the current's source), the crest's distance, its height, the saddles', the summits' rise, the flanks (tan 12°), the crest's wander, its rounding
+const SILL={a:CUR_A+Math.PI,d:13000,crest:-410,gap:-430,summit:260,slope:0.21,wobble:450,w:150,plate:-3800}; // plate (v11.65): the ocean floor beyond the ridge, where the outer flank ends // the ridge's normal (from the island toward the crest: the current's source), the crest's distance, its height, the saddles', the summits' rise, the flanks (tan 12°), the crest's wander, its rounding
 const SILL_C=Math.cos(SILL.a),SILL_S=Math.sin(SILL.a);
 // the condition fields, by index in sample().f
 const FI={sub:0,flow:1,expo:2,nut:3,turb:4,young:5,heat:6,shel:7,rel:8},NF=9;
@@ -342,9 +343,9 @@ function sample(x,z,out){
   let isl=1,gapF=0,summitK=0;
   if(rNear>2400){const bx=x*SILL_C+z*SILL_S,bt=z*SILL_C-x*SILL_S; // across the ridge (+ toward the crest) and along it
     let base=BASIN.h+BASIN.hill*(fbm(x*0.0007+23,z*0.0007+71,3)-0.5)*2,baseS=BASIN.h;
-    if(Math.abs(bx-SILL.d)<7000){const s=bx-SILL.d-SILL.wobble*(fbm(bt*0.00035+9,3.7,3)-0.5)*2,knob=fbm(bt*0.0007+41,7.1,3),gapK=smooth(1100,350,Math.abs(bt));
+    if(bx-SILL.d>-7000){const s=bx-SILL.d-SILL.wobble*(fbm(bt*0.00035+9,3.7,3)-0.5)*2,knob=fbm(bt*0.0007+41,7.1,3),gapK=smooth(1100,350,Math.abs(bt)); // the ridge's window is one-sided since v11.65: 7 km on the basin's side, open beyond the crest (the world reaches 23 km past it)
       const kn=Math.pow(smooth(0.4,0.75,knob),1.2)*(1-gapK),hc=lerp(SILL.crest+SILL.summit*kn-(SILL.crest-SILL.gap)*smooth(0.45,0.3,knob),SILL.gap,gapK); // the crest along the ridge: summits where the knob noise is high, saddles at the sill where it is low, the gap on the axis
-      const prof=SILL.slope*(Math.sqrt(s*s+SILL.w*SILL.w)-SILL.w),ridge=hc-prof*(1+0.15*(fbm(bt*0.0012+5,s*0.0012+8,2)-0.5)*2),ridgeS=SILL.crest-prof,out=s>0?0.3*s:0; // the flanks either side of a rounded crest; past the crest the floor falls away under the outer flank
+      const prof=SILL.slope*(Math.sqrt(s*s+SILL.w*SILL.w)-SILL.w),ridge=hc-prof*(1+0.15*(fbm(bt*0.0012+5,s*0.0012+8,2)-0.5)*2),ridgeS=SILL.crest-prof,out=s>0?Math.min(0.3*s,BASIN.h-SILL.plate):0; // out floors at the plate (v11.65); the ridge's flank then runs down at SILL.slope to meet it ~16 km past the crest // the flanks either side of a rounded crest; past the crest the floor falls away under the outer flank
       base=smax(base-out,ridge,BASIN.knee);baseS=smax(baseS-out,ridgeS,BASIN.knee);
       summitK=kn*smooth(-650,-450,ridge)*smooth(BASIN.knee,0,base-ridge);gapF=smooth(1300+0.3*Math.abs(s),250,Math.abs(bt))*smooth(3500,0,Math.abs(s));} // bare rock on the summits' upper 200 m; the inflow's jet through the gap, spreading either side
     const fd=best?best.fade:BASIN.fade;isl=smooth(fd[1],fd[0],rw);h=smax(h,base,BASIN.knee);hSmooth=smax(hSmooth,baseS,BASIN.knee);} // the upwelling's fade is the island's (v11.62): ours BASIN.fade by name

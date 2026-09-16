@@ -4121,3 +4121,47 @@ ARCHIPELAGO step 3 (the person: "let's get onto the next step"): the giant shows
   where it used to dissolve, so the island's far terrain, the kelp cards and the surf read from 1.6 km (WATER.md P6's question: the hazy coast
   or the clear day); the giant under a shower and at dusk (the sun sets behind it: WIND_A puts the sunset over the collapse, west, and the giant
   is south-west); the sea line's band; the pass on the low tier (200 m grid); the person's 4060 at 1600×900.
+
+## v11.65 — the world grown to 240 cells, and the ledger's index (15 Sep 2026)
+
+ARCHIPELAGO step 4 (the person: "let's work on to step 4"): the world is 51.6 km a side, so the giant is whole — its centre, its summit and its
+western half inside the clamp — and the sill's crest has 23 km of ocean flank beyond it.
+
+- **`NCELL` 240** (world.js; 120 from v11.58, 16 to v11.57; `HALF` 25,800). Everything indexed by cell scales by itself: `chunkGrid`, the far
+  layer's caches and its 60×60 regions, the water and floor maps (`WM_N` 1440: ~65 MB of typed arrays, the doc's "fine, or window it" — left
+  fine, for a performance pass to window), the horizon mesh's extent (557² samples, still ~17k vertices: land only), the world map. Ours is
+  proved bit-identical over the old square and over every sample of the old 25.8 km world (267,289 at 50 m: the ground and all nine fields).
+- **The sill beyond its crest** (world.js `SILL.plate`): the ridge's window was 7 km either side of the crest, so 20 km out the floor would have
+  jumped back to −1100; the window is one-sided now (7 km on the basin's side, open beyond), the outer fall `out` floors at the plate (PLANET's
+  ~−3800), and the ridge's own flank runs down at its 12° to meet it ~16 km past the crest. Nothing inside the old world changes (its
+  corner is 5 km past the crest). Open, PLANET's own note: the deep beyond the sill is the ocean's and oxic, and the game's chemocline is the
+  basin's — wrong there, and now reachable.
+- **The ledger's index** (ecology.js `POP.cells`, `POP.kcells`, `ecoMark`, `ecoIndexAll`): the world is 57,600 cells and the basin's floor is most
+  of it, with two or three kinds living there. The tables stay dense (five per entry, 37 entries: ~43 MB of Float32, cheap to index), and every
+  loop of the model, the settle and the drift walks a per-entry list of the cells the entry has any capacity or count in (a per-kind union for
+  the take's cap), so the cost is the habitat's, not the map's. A cell joins its lists when its capacity is first known (`ecoCap`) or later turns
+  up above zero, never leaves (a stale member costs a skip), and a save loading rebuilds them (`save.js popLoad`). The breeding loop runs per
+  entry over its list now rather than per cell over every entry; the lists are in the order the cells were known, so the model's sums run in
+  a different order than v11.64's and its floats differ in the last places — the census prints the same numbers. The paper census is 57,600
+  cells at 32 a frame: ~30 s after boot (8 before), the loaded cells first as ever. A save from the 120-cell world fails the length check and
+  starts the world fresh with the warning it always had.
+- **The mist's integral rewritten** (scene.js `MIST_GLSL` `mistL`): `e·(1−exp(−k))/k` with `k = dy/H` overflowed float32 on the spray's 4 m layer
+  for any ray dropping more than ~90 m to the water — `exp(−k)` to infinity, `e` to zero, 0·∞ = NaN, the fragment black. Nothing stood 90 m over
+  the sea until the giant; from its summit the sea and the flank past the far plane were black to the horizon. The same integral as
+  `rho·(exp(−cy/H) − exp(−fy/H))/k`, both exponentials in (0,1], for every material that reads the chunk.
+- **The horizon tier from a height** (horizon.js): the sea disc and the pass reach `HZ_FAR` 250 km now (from 886 m the horizon is 106 km off
+  and the 80 km disc left the dome's dark underside showing between); the disc carries the water column the surface mesh shows through
+  (alpha `a = uBody + R − uBody·R` leaves 1−a of the pixel to the dark water beneath), its terms on a uniform (`HZ_SEA_U`) and tuned in the
+  pane against the surface's far end from 300 m up: with the column at 1 and the surface's own 0.85 ceiling the two match to three levels
+  of 255 (`HZ_LIGHT`). The octagon of the surface mesh's edge still reads faintly from a height: the rows of the swell stop there.
+- **Seen** (dev.html, the loop by hand): the world map at 51.6 km — the giant whole, the sill running across the north-east with the plate dark
+  beyond it; the giant's caldera floor from inside (flat sand at 730 m, its wall a mass of dark boulders — the rock kit's crags on a 70° face,
+  the person's to judge, and the rim's crest is rubble the camera clips into); from 70 m over the rim, the caldera across and the flank down to
+  the sea and the sea to the horizon toward our island (which is under it: two pixels of the isle's hill at 18 km); from 300 m over the giant's
+  shelf, the seam; the heap ~350 MB after the census (the ledger's tables and lists, the maps). The whole `--test` is 6 m 17 s now (the
+  census over 57,600 cells and the 40-day model on both tiers), green on both tiers.
+- **Unseen, ask in this order**: the ocean beyond the sill from the surface and at the plate (−3800 — the dark's chemistry is wrong there);
+  the north-east corner's far terrain from the crest; the census's 30 s on the person's machine (the ledger's readout `eco n/57600` climbs);
+  the summit at dusk and under a shower; a save made in the 240-cell world loading (the index rebuilt); the low tier at the summit.
+- **Not this pass**: the young shield's record (its centre at 30.8 km along the chain is 5 km past the new edge — the doc's arithmetic; the
+  next island wants a record and the horizon tier will show it from here whatever the world's size); the road (step 5).

@@ -1,9 +1,19 @@
 # HANDOFF — tethys
 
-**Next (15 Sep 2026): the world grown to hold the giant.** `ARCHIPELAGO.md` step 4: `NCELL` 240 (51.6 km) with the ledger's tables sparse
-(57,600 cells), the water and floor maps windowed or grown, the save scaled — which brings the giant's centre, its summit and its western half
-into the world. The person's open questions on the giant (the caldera, rivers, the reef, the greens above 60 m, the cliff's colour, the road)
-and on the air (the clear day, CHANGELOG v11.64) are unanswered; ask before building on them.
+**Next (15 Sep 2026): the person's answers, then the chain's next record.** The archipelago's four build steps are done; what waits is the
+person's: the giant's character (the caldera, the boulder field on its rim, rivers, the reef, the greens above 60 m, the cliff's colour —
+CHANGELOG v11.62 and v11.65), the air (the clear day, v11.64), the ocean beyond the sill (its chemistry is the basin's and wrong there, v11.65),
+and whether the young shield gets its record next (its centre is 5 km past the new edge; the horizon tier would show it from here). Step 5,
+the road across the crossing, is designed nowhere yet (DIRECTION). A performance pass is due: the heap is ~350 MB (the ledger's tables, the
+1440² water maps), the paper census takes 30 s after boot, `--test` runs 6 minutes.
+
+**v11.65 (15 Sep 2026): the world at 240 cells.** `NCELL` 240 (51.6 km): the giant is whole and reachable — its summit, its caldera, its
+western half — and the sill's crest has 23 km of ocean flank beyond it, floored at the plate (world.js `SILL.plate`, the ridge's window opened
+outward). The ledger walks per-entry lists of the cells a kind can live in (ecology.js `POP.cells`, `ecoMark`, `ecoIndexAll`; the tables stay
+dense; a save rebuilds the lists), so the model's cost is the habitat's, not the 57,600 cells'. The mist's integral no longer overflows for a
+ray dropping 90 m or more (scene.js `mistL`: from the summit the sea past the far plane was black). The horizon tier reaches 250 km and its sea
+disc carries the water column, tuned to the surface mesh's far end. Ours bit-identical over the old square and the old world. Seen from the
+caldera, the rim and 300 m over the shelf.
 
 **v11.64 (15 Sep 2026): the horizon tier.** The giant shows from our surface: with the camera in air a second pass draws the sky dome, a sea
 disc to 80 km and one coarse mesh of every island's land from `sample()` (horizon.js: `Q.hz` grid, the planet's curvature as d²/2R, the world's

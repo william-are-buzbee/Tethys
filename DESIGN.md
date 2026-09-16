@@ -28,7 +28,7 @@ holds the reasons, the numbers and what the person asked for. History and what h
 
 `world.js`: `sample(x,z) → {h,f}` is the analytic terrain and the **condition fields** at a point, and the single source of
 truth. Everything (cell grids, the far terrain, landmark search, structure and flora placement, spawns, the water map) reads
-it. `CELL=215, NCELL=120, HALF=12900` (v11.58; 16 and 1720 to v11.57 — the island's own square is the middle 16 cells and is untouched to the bit, verified over 185,761 samples). The geology it encodes is PLANET.md's Geology section (the caldera and its rim, the
+it. `CELL=215, NCELL=240, HALF=25800` (v11.65; 120 and 12900 from v11.58, 16 and 1720 to v11.57 — the island's own square is the middle 16 cells and is untouched to the bit, verified over 185,761 samples at every change; the whole 25.8 km world of v11.64 likewise at 50 m). The geology it encodes is PLANET.md's Geology section (the caldera and its rim, the
 shield profile, the terraces as rings, the collapse scarp and fan, the dike ridges, the rift arms with the pit crater and the
 fissure, the flank cone); its parameters are the constants at the top of world.js (`WIND_A`, `CUR_A`, `RIFT_A`, `COLL`,
 `DIKE`, `RIM_R`, `VENT`, `ISLE`, `PIT`, `FLANK_*`) — and since v11.61 those constants are one record, `ISLANDS[0]`: an island is a record
@@ -43,7 +43,7 @@ past r 2400 the flank meets an abyssal plain at −1100 (hills ±60 m at ~1.5 km
 inside the old square changes; the seamount effect (`nut`'s upwelling, the current's wake) fades to the basin's water over rw 3–6 km. The sill's
 nearest segment crosses the north-east corner: a ridge of drowned older shields with its normal the current's source, crest 13 km out (±450 m
 wander), summits to −150 (bare rock), saddles −410, the sill proper −430 (20 m over the chemocline), the main gap on the current's axis with
-the inflow's jet (`gapF`: flow 0.95, nut +0.35), flanks at 12° both sides, the outer flank going on down beyond the crest. The dark
+the inflow's jet (`gapF`: flow 0.95, nut +0.35), flanks at 12° both sides, the outer flank going on down beyond the crest to the plate (`SILL.plate` −3800, v11.65: the ridge's window is one-sided, open outward, and the ridge's own flank meets the plate ~16 km past the crest; the world reaches 23 km past it, and PLANET's note stands — the deep beyond the sill is the ocean's and oxic, the game's chemocline the basin's). The dark
 (ground < −450) is the pit, the basin and the ridge's lower flanks. **There are no biomes** (since v10): no ids, no names, no sector tables. The fan's hummocks are
 rounded mounds — `smooth(0.5, 0.68, fbm)` (v11.19.1; a tent's crease before, which everything settled on it clipped through).
 
@@ -934,12 +934,12 @@ get only the sun/hemi (the light pool is assigned by distance), so distant vents
   bigrocks (never needed far), the small floor flora.
 
 **The horizon tier** (v11.64, ARCHIPELAGO step 3; `horizon.js`). Above the water the frame is two passes: first a scene of its own — the sky
-dome (moved from the main scene while the camera is in air), a sea disc from `HZ_SEA0`·FAR (0.75) to `HZ_FAR` (80 km) about the camera, and one mesh
+dome (moved from the main scene while the camera is in air), a sea disc from `HZ_SEA0`·FAR (0.75) to `HZ_FAR` (250 km, v11.65: from 886 m the horizon is 106 km off) about the camera, and one mesh
 of every island's land sampled once from `sample()` at `Q.hz` metres (100 high, 200 low; a triangle stays if any corner is above `HZ_CUT`, −5) with
 `terrainColor`'s colours — through a camera from `HZ_NEAR` (20 m) to 80 km; then the main pass over it with the depth cleared. The planet's curvature
 is a vertex-shader drop of d²/2R from the camera's foot on both (`HZ_R` Earth's). The mesh is lit from the sky's uniforms (`HZ_LIGHT`: ambient by the
 normal's tilt between horizon and zenith, the sun by dayK) and fogged by the same `fogAir` as the world without the cut; the disc is the surface's
-topside rule at its far end. Built on the first frame above the water (~17k vertices, ~100 ms) and kept; three draws. Two rules it depends on:
+topside rule at its far end with the water column the surface's alpha leaves to what is beneath (v11.65, `HZ_SEA_U`, tuned against the surface mesh from 300 m: three levels apart). Built on the first frame above the water (~17k vertices, ~100 ms) and kept; three draws. Two rules it depends on:
 the main scene's `background` is nulled for the frame (three clears to it regardless of `autoClear`), and the near plane is short (near-plane
 clipping is by view depth). Under water the pass is skipped and the dome goes back. Seen (CHANGELOG v11.64): the giant on the horizon from open
 water, its foot in the haze; the seam where the disc meets the surface mesh's far end is a shade lighter, left.
@@ -1606,6 +1606,12 @@ debits. Nothing respawns. The unloaded cells run the model; the loaded cells run
 - **The rate to expect**: a cell of 26 flickers owes about half a recruit a game day, so one entry in one cell lays roughly every two
   game days; over the ~25 cells loaded round the player that is a clutch every 5–15 real minutes, more as the owed builds. The readout's
   `owed` is the number to watch: it climbs between clutches and drops when one is laid.
+
+**The index** (v11.65, ARCHIPELAGO step 4): the tables stay dense (five per entry over 57,600 cells) but every loop of the model, the settle and the
+drift walks `POP.cells[ei]`, the cells the entry has any capacity or count in (`POP.kcells[kind]` the union for the take's cap). `ecoMark` adds a
+cell when `ecoCap` first knows it or a later capacity is above zero; a cell never leaves; `ecoIndexAll` rebuilds the lists from the tables after
+a save loads. The breeding loop is per entry over its list. The cost is the habitat's: the basin's 43,000 new cells add two or three floor kinds'
+lists, not 37 entries' worth. The paper census (`ecoGen`, 32 cells a frame) takes ~30 s after boot over 57,600 cells.
 
 ## The player
 

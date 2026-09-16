@@ -1,6 +1,6 @@
 # ARCHIPELAGO.md — the chain (15 Sep 2026)
 
-Status: **steps 1–3 built** (v11.61 the islands as records; v11.62 the giant's record and the land term; v11.64 the horizon tier and a trade-wind air); steps 4–5 designed here, not built. The person's decisions are at the end.
+Status: **steps 1–4 built** (v11.61 the islands as records; v11.62 the giant's record and the land term; v11.64 the horizon tier and a trade-wind air; v11.65 the world at 240 cells with the ledger's index); step 5 designed nowhere yet. The person's decisions are at the end.
 Read PLANET.md first (the basin, the shield's rules) and DESIGN.md World shape; the maps are `map.html` and `node test/map.js`.
 
 ## What it is
@@ -57,7 +57,10 @@ the flank cone's hill shows.
    drop of d²/2R (R Earth's, 6371 km — PLANET says 1 g and nothing else); the air's haze (`AIR.dens`, 15–30 km) fades it; the sea
    surface must reach the horizon (the audit of 14 Sep, WATER.md Part 3, has the edge it meets). Under water nothing changes: the fog
    reaches 260 m, the next island is a thing you cross open water toward.
-4. **The world grown to hold it**: `NCELL` 240 (51.6 km; must divide by 4) holds the giant and the young shield, not the seamount.
+4. **The world grown to hold it** — built v11.65: `NCELL` 240 (51.6 km) holds the giant whole; the young shield's centre at 30.8 km is 5 km past
+   the edge (the arithmetic below was off), so it is a record for the horizon tier to show, not a place to reach; the ledger's tables stay dense
+   and its loops walk per-entry lists (ecology.js `POP.cells`); the sill's outer flank goes to the plate (`SILL.plate`). As designed: `NCELL` 240
+   (51.6 km; must divide by 4) holds the giant and the young shield, not the seamount.
    The ledger's arrays (`ECO_CELLS`) and the save scale linearly (57,600 cells: ~40 MB of Float32 tables — make them sparse, most cells
    have no capacity for most kinds); the census and the model are already in pieces; the far layer already streams; the water map is
    `NCELL·6` texels (1440² — fine, or window it); float32 on the GPU is 4 mm at 50 km, the ceiling before camera-relative rendering.

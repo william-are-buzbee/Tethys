@@ -68,6 +68,7 @@ function popLoad(p){ // the ledger from a record; a save from another roster (SP
   POP.done.set(D.done);POP.last=+p.last||0;const T=Array.isArray(p.tally)?p.tally:[];[POP.births,POP.deaths,POP.kills,POP.starved,POP.eaten,POP.recruits,POP.laid,POP.hatched]=[0,1,2,3,4,5,6,7].map(i=>+T[i]||0);
   let all=true;for(let c=0;c<ECO_CELLS;c++)if(!POP.done[c]){all=false;break;}if(all)POP.gen=null; // the paper census was done in the saved game; the settle after it is boot's, not a load's
   for(let ei=0;ei<SPAWN.length;ei++){const N=POP.n[ei];for(let c=0;c<ECO_CELLS;c++)if(!(N[c]>=0))N[c]=0;} // a hand-edited file: nothing negative or NaN into the model
+  ecoIndexAll(); // the ledger's index from the loaded tables (v11.65)
   return true;
 }
 function saveRecord(){ // the game as it stands, as a record for the store
