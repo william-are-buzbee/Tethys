@@ -116,6 +116,10 @@ canvas{display:block;outline:none;touch-action:none}
 #fx .row.sl{padding:2px 0 6px 12px;cursor:default;opacity:.7}#fx .row.sl span{font-size:11px}#fx .row.sl input{flex:1;margin:0 8px;height:2px;accent-color:rgba(200,215,225,.8);cursor:pointer}
 #fx .row.off b{opacity:.35}
 #fx .row.off span{opacity:.55}
+#wmap{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;background:rgba(3,8,15,.8);z-index:4;cursor:default} /* the world map (v11.63, worldmap.js): a dev tool on n */
+#wmap.on{display:flex}
+#wmapc{cursor:crosshair;box-shadow:0 0 30px rgba(0,0,0,.8);image-rendering:auto}
+#wmapl{margin-top:10px;font-size:12px;letter-spacing:.22em;color:rgba(215,228,235,.72);text-shadow:0 0 6px rgba(0,0,0,.9);font-variant-numeric:tabular-nums;white-space:nowrap}
 #fxnote{font-size:11px;letter-spacing:.2em;opacity:.45;margin-top:10px;text-align:center}
 #stats{position:fixed;top:10px;left:12px;display:none;font:11px/1.5 Menlo,Consolas,monospace;color:rgba(225,235,240,.92);background:rgba(0,0,0,.55);padding:4px 8px;border-radius:3px;white-space:pre;pointer-events:none}
 </style>
@@ -141,6 +145,7 @@ canvas{display:block;outline:none;touch-action:none}
 <div id="fx"><div id="fxhd">effects</div><div id="fxlist"></div><div id="fxnote">e to close</div></div>
 <div id="zoo"><div id="zooname"></div><div id="zooline"></div><div id="zoohint"></div></div>
 <div id="lab"><div id="labpanel"></div><div id="labcap"></div></div>
+<div id="wmap"><canvas id="wmapc"></canvas><div id="wmapl"></div></div>
 <div id="fade" class="layer"></div>
 <div id="stats"></div>
 <!--SCRIPTS-->

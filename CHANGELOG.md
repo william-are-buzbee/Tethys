@@ -4040,7 +4040,8 @@ bit-identical; do not grow the world or build the horizon tier). The giant exist
   patches, bare: the greens stop at h 60); the world's edge at 643 m looking at the summit (the fine cell's ridge in front, then the apron's
   coarse ridges whitened to nothing by the air's haze — step 3's business). Performance at 1280×720, the loop by hand: the shore 4.3 ms of
   work, 126 draws, 3.0 M tris, 1174 creatures loaded (the shelf's spawns); the valley 0.8 ms, 56 draws, 0.7 M tris. Tests green on both
-  tiers; the census still ok (the giant's shelf adds capacity).
+  tiers; the census still ok — the world's total capacity went from 14,268 to 51,385 (the giant's shelf inside the world holds 3.6× the old
+  world's life: flicker 1,062 → 11,073), while the boot counts at the peak are unchanged (850 on low, 1,379 on high).
 - **Unseen, ask in this order**: the shore at high water and at night; the caldera and the summit (past the edge until step 4 — the map has
   them); the flows' ridges from the ground (8 m on a 900 m flank; on the map they are the faint radial lines on the rift sides); the lee coast's
   plain and its gullies; the person's 4060 at 1600×900 on the shore, where the creature count is the cost.
@@ -4049,3 +4050,31 @@ bit-identical; do not grow the world or build the horizon tier). The giant exist
   tussock and scrub stop at `h` 60 by their envelopes, so the giant's slopes are bare rock above that, and the rain says the windward flank
   should be green to the cloud base at 650; whether the cliff face wants a rock colour of its own; the crossing's road; the layout (this is the
   table's — the map's json may differ).
+
+## v11.63 — the world map in the game, and tp() names the clamp (15 Sep 2026)
+
+The person, after teleporting to the wrong side of the world: a world map in the game. A dev tool beside `tp()`, not a thing the animal carries
+(PLANET's rule: no names, no magic; the game's own text stays minimal) — so it draws the dev's picture, not a player's chart.
+
+- **`src/worldmap.js`** (`n` in play or the menu; esc or `n` closes; with the readout open `n` stays the fog tuner's): the whole world from
+  `sample()` with `test/map.js`'s bands, hillshade and contours (the sea, −60, −150, the chemocline, −800, −1000; the two tables kept in step by
+  hand), the island records' reach and land rings, the clamp, the old square, the loaded cells as faint squares, the landmarks as dots, the player
+  as a dot with the way it faces; under the picture the cursor's x, z and the ground there, and your own place; a scale bar. The wheel zooms
+  about the cursor (300 m to the world and a quarter), a drag pans, a click goes there (`tp`) and closes; opened in play it centres on you. The
+  world's picture is `WMAP_N`² (512) samples made once on first opening (~0.3 s, a stall a dev tool may have); zoomed in past 60% of the world
+  the window is re-sampled at `WMAP_Z`² (320) once the view has rested `WMAP_REST` ms, so the island's square reads at its own scale instead of
+  as 66 px of the world. The pointer is released while it is open and taken back when it closes, as the effects list does; a click on the game's
+  canvas closes it. The shell gains `#wmap` (a canvas and a line, dark behind); main.js calls `updateWMap(dt)` after `updateFX()` so the dot
+  moves and the cells follow. Nothing in the game reads it and nothing is saved.
+- **`tp()`** clamps its point to the world (±`HALF`−25) itself and says so: `outside the world (±12875): held at 12875, 9200, y -1081 (ground
+  -1091)` — before, it reported the ground at a place the player never arrived at, and the player's clamp moved them silently next frame (the
+  person, teleporting to 15400, 9200: the giant is at −15400; the point they typed was the east edge's abyssal floor).
+- **Seen** (dev.html in the app's browser, the loop live): the map over the play at the peak — the world whole with the giant in the south-west
+  corner and the sill across the north-east, the 3×3 loaded cells round the peak, the landmarks, the yellow dot; eight wheel steps over the
+  giant's shore re-sampled the window at 4.3 km across (the gullies, the shelf's contours); a click on the windward shore put the player at
+  (−9061, 11514) on the strand and closed the map; `tp(15400, 9200)` answered with the clamp. Tests green on both tiers; the low tier's
+  `test/live.js` sat at 0 kills twice in 60 s inside `--test` (2, 4, 2, 2 over four runs of v11.61.2; 0–4 over ten runs since, mean 1.6; the boot
+  counts at the peak are the same 850, so the difference is the dice, not the density): the threshold is one kill on a count that low, and a
+  0 is the test's flakiness, not this change — the test wants a longer play or a floor of its own some day.
+- **Unseen**: the map on the menu (the same code path, the camera at the peak); a drag; a phone (mouse events only — no touch, by design for
+  a dev tool).

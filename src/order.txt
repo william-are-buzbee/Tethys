@@ -21,6 +21,7 @@ atmosphere
 combat
 fx
 effects
+worldmap
 save
 menu
 zoo

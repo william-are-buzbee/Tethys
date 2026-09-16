@@ -5,6 +5,11 @@ far plane with the planet's curvature and the air's haze, so the giant shows fro
 which brings the giant's centre, its summit and its western half into the world. The person's open questions on the giant (the caldera, rivers,
 the reef, the greens above 60 m, the cliff's colour, the road) are in CHANGELOG v11.62 and ARCHIPELAGO; ask before building on them.
 
+**v11.63 (15 Sep 2026): the world map in the game.** `n` in play or the menu opens the world from `sample()` (worldmap.js: the maps' bands and
+contours, the islands' rings, the clamp, the loaded cells, the landmarks, you and your facing; wheel zooms and re-samples the window, drag pans,
+a click teleports and closes). A dev tool beside `tp()`, which now clamps its point to the world and says so. Seen over the play; the menu path
+not looked at.
+
 **v11.62 (15 Sep 2026): the giant's record and the land term.** `ISLANDS[1]` is the giant at (−15400, 9200): 14 km of land to 900 m with a summit
 caldera, rain gullies on the windward flank to graded floors, the last flows down the rift zones, a wave-cut cliff where the surf strikes, a 1 km
 shelf with the 12 m terraces, a 12° flank to the floor at ~13.8 km — its foot reaches ours (the saddle −927 at 4.5 km from our centre). The kit

@@ -85,7 +85,7 @@ function loop(now){
   updateWounds(dt);updateStates(dt);updateInks(dt);updateSplashes(dt);updateBlood(dt);updateDebris(dt);updateFlush(dt); // the wounds bleed and the blood drifts (combat.js, v11.31)
   updateAtmosphere(dt);updateSurface();
   camera.updateMatrixWorld();updateFogCamera();cullChunks(dt);cullFar();assignLights();updateShadow();updateShadowS(dt);updateAudio(dt); // the shadow map's box and casters (v11.23): after everything has moved; the sound (v11.14) last, with the camera where it is
-  updateCompass(dt);updateFX(); // no health bar since v11.55: the body shows the damage (COMBAT.md §5)
+  updateCompass(dt);updateFX();updateWMap(dt); // no health bar since v11.55: the body shows the damage (COMBAT.md §5)
   const r0=performance.now();renderer.render(scene,camera);renderMs=performance.now()-r0;
   if(!warmed){warmed=true;warmShaders();} // the first frame, behind the fade
   updateStats(dt);frameMs=performance.now()-f0;
@@ -94,5 +94,5 @@ setTimeout(()=>{fadeEl.style.opacity=0;},400);
 // tp(x,z,y) from the browser's console (v11.60.2): the player put at x,z (east +, south +), y above the ground there (10 by default; a depth
 // is a negative absolute y), still, the camera with it, the cells round it loaded now. The bundle is one IIFE, so this is the one way in
 // from tethys.html; the map's stat line gives x,z in km under the mouse. A dev tool, not a feature: nothing saves it, nothing reads it.
-window.tp=function(x,z,y){if(mode!=='play'||!player.clade)return 'start a game first';const g=groundAt(x,z),py=y===undefined?g+10:y<0?y:g+y;player.pos.set(x,py,z);player.vel.set(0,0,0);player.hold=null;camera.position.copy(player.pos).add(V3(-6,3,-6));cellsAround();return 'at '+x.toFixed(0)+', '+z.toFixed(0)+', y '+py.toFixed(0)+' (ground '+g.toFixed(0)+')';};
+window.tp=function(x,z,y){if(mode!=='play'||!player.clade)return 'start a game first';const L=HALF-25,cx=clamp(x,-L,L),cz=clamp(z,-L,L),held=cx!==x||cz!==z;x=cx;z=cz;const g=groundAt(x,z),py=y===undefined?g+10:y<0?y:g+y;player.pos.set(x,py,z);player.vel.set(0,0,0);player.hold=null;camera.position.copy(player.pos).add(V3(-6,3,-6));cellsAround();return (held?'outside the world (±'+L+'): held at ':'at ')+x.toFixed(0)+', '+z.toFixed(0)+', y '+py.toFixed(0)+' (ground '+g.toFixed(0)+')';};
 requestAnimationFrame(loop);
