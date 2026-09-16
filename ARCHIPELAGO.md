@@ -1,6 +1,6 @@
 # ARCHIPELAGO.md — the chain (15 Sep 2026)
 
-Status: **steps 1–2 built** (v11.61 the islands as records; v11.62 the giant's record and the land term); steps 3–5 designed here, not built. The person's decisions are at the end.
+Status: **steps 1–3 built** (v11.61 the islands as records; v11.62 the giant's record and the land term; v11.64 the horizon tier and a trade-wind air); steps 4–5 designed here, not built. The person's decisions are at the end.
 Read PLANET.md first (the basin, the shield's rules) and DESIGN.md World shape; the maps are `map.html` and `node test/map.js`.
 
 ## What it is
@@ -49,7 +49,9 @@ the flank cone's hill shows.
    numbers, the terraces stay 12 m (eustatic). The conditions: `expo` and `nut` read the global wind and current as now; the lagoon and
    the passes follow the record. The giant's own noise offset `ns` so its pattern is not ours scaled. Land already exists in the game
    (the rim, the isle's hill, a player that flops onto it — player.js): the giant's slopes are the same medium, larger.
-3. **The horizon tier** (so the giant shows from the surface). One coarse mesh of the whole chain at ~200 m grid from `sample()`, built
+3. **The horizon tier** — built v11.64 (horizon.js: a second pass under the main one rather than a raised far plane; the world's own air fog,
+   made a trade-wind day since the 1 km haze could show nothing — the boundary-layer mist is the physics, and "AIR.dens 15–30 km" below was
+   wrong about what AIR was; the sea disc meets the surface mesh's far end a shade lighter). As designed (so the giant shows from the surface): One coarse mesh of the whole chain at ~200 m grid from `sample()`, built
    once, drawn only when the camera is above the water, past the far plane (`Q.far` 1600/1000 — raise the far plane above water, or a
    second pass; the horizon mesh stands alone out there so depth precision is not a problem); the planet's curvature as a vertex-shader
    drop of d²/2R (R Earth's, 6371 km — PLANET says 1 g and nothing else); the air's haze (`AIR.dens`, 15–30 km) fades it; the sea

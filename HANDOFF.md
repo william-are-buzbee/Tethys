@@ -1,9 +1,16 @@
 # HANDOFF — tethys
 
-**Next (15 Sep 2026): the horizon tier.** `ARCHIPELAGO.md` step 3: one coarse mesh of the chain from `sample()`, drawn above the water past the
-far plane with the planet's curvature and the air's haze, so the giant shows from our surface; then step 4, `NCELL` 240 with a sparse ledger,
-which brings the giant's centre, its summit and its western half into the world. The person's open questions on the giant (the caldera, rivers,
-the reef, the greens above 60 m, the cliff's colour, the road) are in CHANGELOG v11.62 and ARCHIPELAGO; ask before building on them.
+**Next (15 Sep 2026): the world grown to hold the giant.** `ARCHIPELAGO.md` step 4: `NCELL` 240 (51.6 km) with the ledger's tables sparse
+(57,600 cells), the water and floor maps windowed or grown, the save scaled — which brings the giant's centre, its summit and its western half
+into the world. The person's open questions on the giant (the caldera, rivers, the reef, the greens above 60 m, the cliff's colour, the road)
+and on the air (the clear day, CHANGELOG v11.64) are unanswered; ask before building on them.
+
+**v11.64 (15 Sep 2026): the horizon tier.** The giant shows from our surface: with the camera in air a second pass draws the sky dome, a sea
+disc to 80 km and one coarse mesh of every island's land from `sample()` (horizon.js: `Q.hz` grid, the planet's curvature as d²/2R, the world's
+own air fog without the far cut) and the main pass draws over it with the depth cleared. The air is a trade-wind day now (world.js `AIR`:
+visibility ~30 km, the boundary-layer mist doing the physics; to v11.63 a 1 km "hazy coast", the numbers kept by name) and the far cut is
+lifted for air, so the world's far terrain keeps 58% of its contrast at the far plane where it used to dissolve — a look change the person has
+not judged. Seen from open water at 3 and 15 m, from 40 m over the peak and from the world's edge.
 
 **v11.63 (15 Sep 2026): the world map in the game.** `n` in play or the menu opens the world from `sample()` (worldmap.js: the maps' bands and
 contours, the islands' rings, the clamp, the loaded cells, the landmarks, you and your facing; wheel zooms and re-samples the window, drag pans,

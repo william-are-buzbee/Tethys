@@ -18,6 +18,7 @@ ecology
 far
 player
 atmosphere
+horizon
 combat
 fx
 effects

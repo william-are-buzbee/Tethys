@@ -677,6 +677,12 @@ the bounded veil (no foreign colour on the horizon), daylight and sun in the vei
 is a real integral of daylight along the ray (the bounded sample is a one-point stand-in); the `WATER` table for the
 deep biomes still mixes tint with darkness.
 
+**The air since v11.64** (world.js `AIR`): dens 0.0009, share 0.35, far 0.00003 — a trade-wind day. The near population is the look (35% of the
+contrast gone by 2 km), the far term clear air (130 km), and the distance's physics is the boundary layer the fog integrates (`HAZE.dens` 1.7e-4 over
+70 m: Koschmieder's 23 km at the water), so a far island's foot is lost in the layer while its summit floats above it. The far cut (`FOG_CUT`) applies
+under water only; in air a fragment keeps its contrast to the far plane (58%) and the horizon tier continues past it. To v11.63: 0.0024 / 0.6 / 0.0018,
+"a hazy coast" of ~1 km, 47% at 300 m — the person's approved look, kept by name in world.js for going back (WATER.md P6).
+
 ## The light
 
 Built v11.13 from `POLISH.md` (pass A; the person's answers are recorded there). The rule that shaped it: fill is nearly free here and
@@ -926,6 +932,17 @@ get only the sun/hemi (the light pool is assigned by distance), so distant vents
   drops the stipe and bladder cards (`im.reach`) by `min(TIDE,0)` so their tops and pads never stand in the air at low water (v11.2). The bladder
   card is 1.4 wide — from 800 units a thinner line aliases; widen before removing. Not in the far layer: ledges and
   bigrocks (never needed far), the small floor flora.
+
+**The horizon tier** (v11.64, ARCHIPELAGO step 3; `horizon.js`). Above the water the frame is two passes: first a scene of its own — the sky
+dome (moved from the main scene while the camera is in air), a sea disc from `HZ_SEA0`·FAR (0.75) to `HZ_FAR` (80 km) about the camera, and one mesh
+of every island's land sampled once from `sample()` at `Q.hz` metres (100 high, 200 low; a triangle stays if any corner is above `HZ_CUT`, −5) with
+`terrainColor`'s colours — through a camera from `HZ_NEAR` (20 m) to 80 km; then the main pass over it with the depth cleared. The planet's curvature
+is a vertex-shader drop of d²/2R from the camera's foot on both (`HZ_R` Earth's). The mesh is lit from the sky's uniforms (`HZ_LIGHT`: ambient by the
+normal's tilt between horizon and zenith, the sun by dayK) and fogged by the same `fogAir` as the world without the cut; the disc is the surface's
+topside rule at its far end. Built on the first frame above the water (~17k vertices, ~100 ms) and kept; three draws. Two rules it depends on:
+the main scene's `background` is nulled for the frame (three clears to it regardless of `autoClear`), and the near plane is short (near-plane
+clipping is by view depth). Under water the pass is skipped and the dome goes back. Seen (CHANGELOG v11.64): the giant on the horizon from open
+water, its foot in the haze; the seam where the disc meets the surface mesh's far end is a shade lighter, left.
 
 ## Flora and materials
 

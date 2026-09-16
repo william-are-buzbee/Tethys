@@ -110,6 +110,7 @@ test/              headless tests, the THREE stub, real geometry for previews, t
 | fx.js | the body's effects (v11.53, POLISH pass B): the debris points (silt, bubbles, scraps) and their emitters, `bodyPose` (squash and stretch, banking, the stun), `hitFx` (the flinch, the flush, the debris at a wound) |
 | effects.js | the effects list (`e`): cosmetic systems switched live, saved in `localStorage['tethys.fx']` |
 | worldmap.js | the world map (`n`, v11.63): a dev tool beside `tp()` — the world from `sample()` with the maps' bands and contours, the islands' rings, the loaded cells, the player; wheel zooms and re-samples, drag pans, a click teleports |
+| horizon.js | the horizon tier (v11.64): above the water a second pass before the main one — the sky dome, a sea disc to 80 km, one mesh of every island's land from `sample()` at `Q.hz` metres, the planet's curvature in the vertex shader, the world's air fog without the cut; `renderFrame()` is the frame's render |
 | save.js | the save files (v11.47): slots in IndexedDB (localStorage, memory as fallbacks) with a .json export/import; the profile (what has been seen, the creator's key and its saved creatures); `startNew`/`startFrom`/`worldClear`; `slotDeath` (v11.55: the animal's death written to the slot, the menu) |
 | menu.js zoo.js lab.js | the menu (new game, continue, options, the creator; esc from play); the bestiary (`#zoo`, `z`); the creature lab (`#lab`, `l`; `p` places the spec in the world; as the creator it offers only what has been seen) |
 | bench.js | the sound bench (`#bench`, `b`): every sound rendered to a wav and posted to serve.js for `test/spectro.js` to draw |
@@ -126,7 +127,7 @@ Docs, most upstream first. When a doc's Open list says a choice is the person's,
 | `CLADES.md` | the three clade signatures as built (v11.8–11.9.1) and the raptor family |
 | `DRIFTERS.md` | the fourth clade: bells, buttons, sailers (v11.16) |
 | `CREATOR.md` | the spec-compiled body plans and the lab (v11.10–11.25); the person's decisions at its end |
-| `ARCHIPELAGO.md` | the chain (15 Sep 2026): the islands as records (built v11.61), the giant's record and its land term (built v11.62), the horizon tier, the world grown to 240 cells, the person's answers — read before building any second island |
+| `ARCHIPELAGO.md` | the chain (15 Sep 2026): the islands as records (built v11.61), the giant's record and its land term (built v11.62), the horizon tier (built v11.64), the world grown to 240 cells, the person's answers — read before building any second island |
 | `PIXEL.md` | the de-res (14 Sep 2026, designed, not built): every surface in world/body-fixed texels at the pixel light's grain, one switch on `e`; the person's answers at its end (14 Sep) — ready to build |
 | `POLISH.md` | the low-budget effects survey: pass A built (v11.13, v11.23), pass B (v11.53); pass C, the night, is next |
 | `COMBAT.md` | injury as states, not numbers (15 Sep 2026): gape, hold, edge against covering; wounds as spec edits; the per-clade kill, escape and chemistry; pass 1 built v11.54 (the edge and the covering), pass 2 v11.55 (the states, no hit points), pass 4 v11.56 (the trail, the miss, the poison), pass 3 v11.57 (the wound as a spec edit) — built in full; §7 the matrix's findings; §9 the person's answers |
@@ -155,7 +156,7 @@ Docs, most upstream first. When a doc's Open list says a choice is the person's,
   structures' collision → cliffs → rock → the other flora (each asks `clearOf` against the hash) → landmarks → creatures.
 - **Near and far.** far.js builds every big structure, coarse terrain in 4×4-cell regions, the apron to 2000 past the edge, impostor
   cards and the water/floor maps once and keeps them. Cells draw fine terrain and small flora on top; far vertices under loaded
-  cells are pushed down; impostors switch off while a cell is loaded within `FLORA_FAR` (450). `bigsFor(i,j)` is cached so near
+  cells are pushed down; impostors switch off while a cell is loaded within `FLORA_FAR` (450). Past the far plane, above the water, the horizon tier (horizon.js, v11.64) draws every island's land from one coarse mesh and the sea to 80 km in a pass under the main one; under water the far plane is still the end. `bigsFor(i,j)` is cached so near
   collision and far drawing agree. Structures and per-cell flora sit on the ground by one rule, `settleOn` (chunks.js).
 - **Flora.** `FLORA` entries with per-cell tries, envelopes, placement flags; a per-entry rng so order moves nothing; photosynthetic
   entries tinted by `pigment(h,line)`; `species()` packs three variants into one geometry chosen per instance in the shader.
@@ -259,6 +260,8 @@ Docs, most upstream first. When a doc's Open list says a choice is the person's,
   The static map re-renders only when the sun turns, the camera drifts 20 m, a cell loads or a switch flips.
 - The stub's `setTimeout` runs immediately; `location.hash` comes from `TIER`.
 - In the sandbox a second writer once edited `src/` mid-session; build from a clean copy and say so.
+- Three clears the colour buffer to `scene.background` whatever `renderer.autoClear` says (r128's WebGLBackground forces it): a pass drawn before the main one is wiped unless the main scene's background is nulled for that frame (horizon.js `renderFrame`). And near-plane clipping is by view depth, not distance: a near plane at the far plane cuts a dome and anything off-axis to a 32° cone.
+- The air's fog (`AIR`) is a trade-wind day since v11.64 and the far cut applies only under water; the horizon pass draws what lies past the far plane, so a change to the far plane, the dome or the surface's far edge has a second consumer.
 
 ## Dev tools in the game
 

@@ -240,7 +240,7 @@ crest and should be the column's colour — the veil along the refracted ray, as
   height (PLANET's "the ripple layer lives only in the light", for distance), faded by the phase's screen-space rate (`fwidth`) so it never
   aliases — the 46 m swell is half a pixel a wavelength by 1 km from 15 m. Second.
 - **P5 — sub-facet glitter (F)** for the sun's side; and **P4 — the near slab**: the back face from air as the column's veil. Small, later.
-- **P6 — the air.** `AIR.dens` 0.003 (63% at 333 m) is "a hazy coast" chosen so the world's edge merged into the sky. With P1 the sea ends in
+- **P6 — the air** (made in v11.64 for the horizon tier: `AIR` is a trade-wind day, dens 0.0009 / share 0.35 / far 0.00003, the far cut lifted in air; the hazy coast's numbers are kept by name in world.js and the look is the person's to judge — CHANGELOG v11.64). `AIR.dens` 0.003 (63% at 333 m) is "a hazy coast" chosen so the world's edge merged into the sky. With P1 the sea ends in
   the sky whatever the density, so the day could be clearer (0.0012–0.0015: visibility ~1 km, the far kelp readable at 800 m) without
   exposing an edge; the island's far terrain at the far plane would then show its cut against the sky and needs the same P1 convergence,
   which it gets. The person's call — the haze is part of the look.

@@ -86,7 +86,7 @@ function loop(now){
   updateAtmosphere(dt);updateSurface();
   camera.updateMatrixWorld();updateFogCamera();cullChunks(dt);cullFar();assignLights();updateShadow();updateShadowS(dt);updateAudio(dt); // the shadow map's box and casters (v11.23): after everything has moved; the sound (v11.14) last, with the camera where it is
   updateCompass(dt);updateFX();updateWMap(dt); // no health bar since v11.55: the body shows the damage (COMBAT.md §5)
-  const r0=performance.now();renderer.render(scene,camera);renderMs=performance.now()-r0;
+  const r0=performance.now();renderFrame();renderMs=performance.now()-r0; // v11.64: the horizon pass first when the camera is in air (horizon.js), then the world
   if(!warmed){warmed=true;warmShaders();} // the first frame, behind the fade
   updateStats(dt);frameMs=performance.now()-f0;
 }

@@ -4078,3 +4078,46 @@ The person, after teleporting to the wrong side of the world: a world map in the
   0 is the test's flakiness, not this change — the test wants a longer play or a floor of its own some day.
 - **Unseen**: the map on the menu (the same code path, the camera at the peak); a drag; a phone (mouse events only — no touch, by design for
   a dev tool).
+
+## v11.64 — the horizon tier, and a trade-wind air (15 Sep 2026)
+
+ARCHIPELAGO step 3 (the person: "let's get onto the next step"): the giant shows from our surface. Two things had to change, not one.
+
+- **The air.** The world's fog in air was "a hazy coast" (world.js `AIR`: dens 0.0024, share 0.6, far 0.0018 — 47% contrast at 300 m, 4% at
+  1 km), chosen in v6 so the far plane merged into the sky, and the far cut (`FOG_CUT`, scene.js) made every fragment the sky by 1440 m. No
+  island 18 km off can exist under that. WATER.md P6 had already named the change as the person's call; the giant needs it, so it is made
+  and can be undone by name: `AIR` is a trade-wind day now — dens 0.0009, share 0.35, far 0.00003. The near population is the look (35% of
+  the contrast gone by 2 km, a light general haze), the far term is clear air (130 km), and the physics of the distance is the boundary layer
+  the fog already integrates along every ray (`HAZE.dens` 1.7e-4 over 70 m: Koschmieder's 23 km at the water): from the water the giant's foot
+  at 18 km is lost in the layer (~3%) while a ray to its summit climbs out of it (~30%) — the peak floating on the haze, as a far island
+  looks. A shower still thickens it (`applyFog`). The far cut is lifted for the air part from above (scene.js `fogAir(...,1.0)` in the camera-
+  above branch): a fragment in air keeps its haze contrast to the far plane instead of dissolving, since the horizon tier continues past it.
+  Under water nothing changes.
+- **The pass** (`src/horizon.js`): with the camera in air, a second scene is drawn first — the sky dome (moved there from the main scene while
+  above; back when under), a sea disc from `HZ_SEA0`·FAR to `HZ_FAR` (80 km) about the camera, and one mesh of every island's land and shore
+  sampled once from `sample()` at `Q.hz` metres (100 high, 200 low; a triangle is kept if any corner is above `HZ_CUT`, −5, so every shore quad
+  stays and the disc covers the rest) — through a camera from `HZ_NEAR` (20 m) to 80 km; then the main pass over it with the depth cleared, so
+  everything nearer than the far plane is the world as it was and everything beyond is this. The planet's curvature is a vertex-shader drop of
+  d²/2R from the camera's foot on both the disc and the mesh (`HZ_R` Earth's: PLANET says 1 g and nothing else) — the giant's shore at 18 km
+  sits 25 m under the sea's curve from the water and shows from 40 m. The mesh is lit by the sky's own uniforms (`HZ_LIGHT`: the zenith and
+  horizon as the ambient by the normal's tilt, the sun's colour by dayK) and fogged by the world's `fogAir` without the cut; the disc is the
+  surface's topside rule at its far end (the Fresnel weight on the mean normal, the sky reflected, a body under it). Built on the first frame
+  above the water (16,753 vertices, 32,768 triangles, ~100 ms behind the boot's fade) and kept; three draws a frame. The extent is the
+  world's square with its apron and every record's land with a 3 km margin.
+- **Two things that bit**: near-plane clipping is by view depth, not distance, so a near plane at the far plane cut the dome and anything
+  off-axis to a 32° cone (hence `HZ_NEAR` 20 m and the overdraw); and three clears to a scene's `background` colour whatever `autoClear` says
+  (WebGLBackground forces it), so the main pass wiped the horizon pass every frame until its background was handed to the horizon scene for
+  the duration. Both are in CLAUDE.md's list now. Also: the boundary-layer mist is already the sea-salt haze, so a far term of 0.00012 on top of
+  it (the first cut) left 0.35% at 18 km — the giant drawn and invisible.
+- **Seen** (dev.html in the app's browser, the loop by hand, frames through the sink): from open water 3 km south-west of our island at 3 m,
+  the giant on the horizon — a broad pale shield 2.6° high, centred, its foot in the haze; from 15 m the same with its gullied flank readable;
+  from 40 m over the peak it stands over the rim (from the peak at 3 m it is behind the rim's islets and trees, which is where it should be);
+  from the giant's shore looking at ours, nothing (our rim is under the horizon from 4 m; the isle's hill at 10 km is two pixels); from the
+  world's edge at 680 m the flank goes on past the apron to the caldera's rim; open water north, a clean line. Known and left: a faint lighter
+  band under the line where the sea disc meets the surface mesh's far end (the two topside rules differ a shade); small dark marks on the line at
+  the far plane, which are the drifters' fleets on the surface, hidden until now by the old haze. Cost at 1280×720: the pass is 3 draws and
+  ~33k triangles; render 4.4 ms over the peak with 157 draws in all, 0.9 ms in open water. Tests green on both tiers.
+- **Unseen, ask in this order**: the clearer air over the whole island by day — the far mesh at the far plane now keeps 58% of its contrast
+  where it used to dissolve, so the island's far terrain, the kelp cards and the surf read from 1.6 km (WATER.md P6's question: the hazy coast
+  or the clear day); the giant under a shower and at dusk (the sun sets behind it: WIND_A puts the sunset over the collapse, west, and the giant
+  is south-west); the sea line's band; the pass on the low tier (200 m grid); the person's 4060 at 1600×900.
