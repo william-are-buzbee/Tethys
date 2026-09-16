@@ -3909,3 +3909,15 @@ regions' streaming under real motion; teleports here were 10 km); (3) the basin 
 (`test/census.js`: the abyssal's world capacity is 144 now, its combs 54, and it declines 14.6 → 5.9 over 40 days on paper — a deep
 resident with nothing to eat on the basin's slopes; the envelope or the comb's is the fix, and the person's call);
 (5) the chemocline over the outer flank beyond the crest, where the deep should be oxic and the game's band still browns it.
+
+## v11.59 — the world as a map: test/map.js (15 Sep 2026)
+
+The person, after swimming from the peak to the floor at −1038 and seeing the abyssals and the chemocline ("great"): before a huge distant
+island, a world map, "to get a grip of the size of everything". A headless tool like the previews, not in `--test`: `node test/map.js`
+samples the world into `test/preview/map.png` — depth bands (land, the shallows, the lit slope, the twilight, the dark under the chemocline,
+the deep, the floor) with a hillshade, contours at 0, −60, −150, −450, −800 and −1000, the island's old square, the clamp, the region grid,
+the landmarks, the sill's crest and gap, the current and the wind, a scale bar; `SPAN`, `CX`, `CZ`, `W` for a window (`SPAN=4400` the island
+close), and `PLAN="x,z,landR,footR;…"` draws planned islands as two rings (the land, the foot on the floor), also beyond the square — the
+function is analytic, so the map can show where the world would grow before it does. It prints the areas: 0.06 km² of land, 637 km² under
+the chemocline, 532 km² of floor in the 666 km² square. `test/preview/map_plan.png` is a 50 km window with an 8 km island 17.5 km to the
+south-west along the rift axis as a first proposal. **Seen**: the three maps. Nothing in the game changed.
