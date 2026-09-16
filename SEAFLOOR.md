@@ -1,8 +1,8 @@
 # SEAFLOOR.md — the chain's diversity and its underwater ground (15 Sep 2026)
 
 Status: **designed, not built.** A discussion of 15 Sep 2026 recorded as it stood: what an archipelago this size can honestly differ in from
-island to island (§1–3), and the underwater formations a hotspot chain with a 6–9 m tide, iron and a chemocline at −450 would produce (§4).
-The person agreed to all of §4 ("all of that", 15 Sep 2026); the one code-shaped question (§5, the range term) is theirs and open. Above
+island to island (§1–3), the underwater formations a hotspot chain with a 6–9 m tide, iron and a chemocline at −450 would produce (§4), and what the physics puts on the surface (§5).
+The person agreed to all of §4 ("all of that", 15 Sep 2026); the one code-shaped question (§6, the range term) is theirs and open. Above
 water is another doc for another day. Read PLANET.md first, then ARCHIPELAGO.md (the chain's numbers: ours 1–2 Myr old and sinking, the giant
 18 km south-west and younger, the young shield 36 km and active, the sill the drowned oldest end). The rule stands: nothing here has a name
 or a biome; every item is a mechanism the geology already has, and every species still places itself by envelope over the fields.
@@ -101,7 +101,49 @@ Every item has a mechanism and a job for the life. Struck things (arches, the ma
 Each is a habitat none of the others provide and each falls out of a field or an island record that exists. Blue holes and the extra pits are
 the cheapest surprises for a swimmer. (Agreed in full by the person, 15 Sep 2026.)
 
-## 5. Open: the range term
+## 5. The surface (15 Sep 2026, to come back to)
+
+The surface has the button and the sailer (DRIFTERS.md); the raft was struck for its look, not its logic. Nothing here is painted on: each
+is a thing the physics puts on the water. The person: "there are so many good ones there we should come back to eventually."
+
+Volcanic (the young shield is active, so these are certain):
+
+- **Pumice rafts.** An eruption at or near the surface floats pumice for months; rafts run kilometres long, drift with the wind, break into
+  streaks, strand on windward shores as a line at the high-tide mark and sink as they waterlog (Tonga 2019 crossed the south-west Pacific).
+  They carry settlers (encrusters, small brooders): how sessile life crosses between islands. The biggest honest thing missing.
+- **Discoloured water.** Over a vent or a fresh flow the water goes milky yellow-brown with iron and sulfur, a plume the current draws out.
+- **Gas at the surface.** Shallow seeps bubble; a lava entry steams. Both at the young shield's shore.
+
+Weather and current:
+
+- **Wind rows.** Wind over water sets up counter-rotating cells (Langmuir) that gather foam, weed scraps and drifters into lines parallel to
+  the wind, tens of metres apart — why the fleets are lines, not clouds. A surface term aligned to `WIND_A`.
+- **Slicks.** Blooms and internal waves flatten the ripple in glassy bands among the chop. Nearly free in the surface shader.
+- **Fronts.** The lagoon's ebb meeting the sea, the giant's river water meeting salt: a sharp line of colour and foam with debris along it;
+  below, a haze layer at the halocline.
+- **Blooms.** After an upwelling the water goes green or rust with plankton for days: patchy surface colour by `nut` and a clock. At night
+  the wake lights up — bioluminescence as an event, which PLANET allows.
+- **Wrack.** Storms tear blades and bladders off; they float tattered for days, then sink. The raft's honest replacement: a thing after
+  weather, not a fixed species.
+
+The life:
+
+- **The neuston set completed.** On Earth the button and the sailer travel with two predators: a snail on a raft of mucus bubbles that eats
+  sailers (Janthina) and a slug under the film that eats man o' war and stores their stings (Glaucus). Same clade set, same prey: a
+  bubble-raft ringmouth grazer that hunts sailers is non-arbitrary by construction.
+- **Floating carcasses.** A dead big animal bloats with gas, floats for days with scavengers under it and hunters round it, then sinks. The
+  most dramatic surface event available; the model already has carcasses.
+- **Basking.** Slowbloods are ectotherms: a flat one lying at the surface in the sun to warm (sunfish, turtles, marine iguanas). A behaviour.
+- **Floating egg masses** of ringmouths and drifters after a spawning; clutches exist.
+- **Drift logs.** Once tidewood and scrub exist, storms put trunks in the water: a log with encrusters and a crab is the other way land life
+  crosses.
+- **Dead sailers on the strand** (DRIFTERS.md, open).
+
+Ranked: pumice rafts, wind rows and slicks, the carcass, the bubble-raft hunter, the bloom. **The person's:** the largest thing on any
+ocean's surface is what feeds from the air (birds over a bait ball mark the fish from kilometres off); PLANET leaves the glider hook and
+"a launcher?" open. Whether anything flies is a clade decision, not a surface one.
+
+## 6. Open: the range term
 
 Tolerance envelopes cannot express an endemic. A brooder's range is history, not conditions: where it evolved and how far it has crawled since.
 That wants a range term on a species — a circle round the island it belongs to, or a dispersal radius from a founding cell — the first thing

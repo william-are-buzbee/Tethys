@@ -3,7 +3,7 @@
 **v11.65.1 (15 Sep 2026): SEAFLOOR.md.** The chain's diversity and its underwater ground, recorded from a discussion and agreed by the person:
 what can differ per island (brooders, ecotypes by exposure, the progression rule, colour by rock age, the sill relict) and the formations to build
 (lava tubes, the terrace notch, tidal channels with ebb deltas, a canyon per island, the giant's slide blocks first; then pillows, dikes, talus,
-blue holes, the guyot, more pits, diffuse vents, iron crusts, sand waves). Nothing built. Open and the person's: the range term for endemics (§5).
+blue holes, the guyot, more pits, diffuse vents, iron crusts, sand waves). Nothing built. §5 the surface (pumice rafts, wind rows and slicks, floating carcasses, the neuston's predators, blooms, wrack), to come back to. Open and the person's: the range term for endemics (§6).
 
 **Next (15 Sep 2026): the person's answers, then the chain's next record.** The archipelago's four build steps are done; what waits is the
 person's: the giant's character (the caldera, the boulder field on its rim, rivers, the reef, the greens above 60 m, the cliff's colour —

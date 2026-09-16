@@ -4174,3 +4174,10 @@ endemism at the chain's level, not the island's, except brooders; ecotypes by `e
 notch, tidal channels and ebb deltas, blue holes, the guyot, more pits, diffuse vents, iron crusts, the giant's slide lobe, canyons, sand
 waves in the saddle — ranked by ecology per unit of work. The person agreed to all of the formations ("all of that"). Open and theirs: a range
 term for endemics (§5), the one item that changes the code's shape. CLAUDE.md's doc table and HANDOFF point at it.
+
+## v11.65.2 — SEAFLOOR.md §5, the surface (15 Sep 2026)
+
+What the physics puts on the water, recorded to come back to: pumice rafts from the young shield, discoloured water and gas over vents,
+wind rows and slicks, fronts, blooms (the wake lit at night as an event), wrack after storms as the struck raft's honest form, the neuston's
+two predators (a bubble-raft grazer of sailers, a slug under the film), floating carcasses, basking slowbloods, egg masses, drift logs.
+Ranked. Flyers are a clade decision and the person's. The range term moves to §6.
