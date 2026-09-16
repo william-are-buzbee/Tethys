@@ -3978,3 +3978,10 @@ placed yet; this is the refactor every later step stands on, done alone so it ca
 
 **Seen**: nothing to see — the world is the same. **Next**: the giant's record south-west (the person's layout from map.html), which needs
 the kit's one missing term, land above the water: a shield rising to a summit with gullies, its shore, its flows.
+
+## v11.61.1 — the maps show the island records (15 Sep 2026)
+
+The person: "can you update the map?" `map.html` and `test/map.js` draw every record in `ISLANDS` as it stands in the game — its centre, a
+dashed ring at its reach, "built: <id>" — beside the yellow plan, so the two are never confused; the maps' picture is the live `sample()`
+already, so a record added to `ISLANDS` shows as terrain on the next refresh. Re-rendered `test/preview/map.png` and `map_plan.png` (the
+plan with the giant and the young shield). Seen in the pane.
