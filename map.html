@@ -7,8 +7,8 @@
 <style>
 html,body{margin:0;height:100%;background:#0b1020;color:#d8dcd0;font:13px/1.4 Georgia,serif;letter-spacing:.04em;overflow:hidden}
 #wrap{display:flex;height:100%}
-#cv{flex:1;cursor:grab;display:block}
-#side{width:330px;padding:12px 14px;overflow-y:auto;background:#0e1424;border-left:1px solid #22304a;box-sizing:border-box}
+#cv{flex:1;min-width:0;cursor:grab;display:block} /* min-width 0: a canvas's own width would otherwise push the sidebar off a narrow window */
+#side{width:330px;flex:none;padding:12px 14px;overflow-y:auto;background:#0e1424;border-left:1px solid #22304a;box-sizing:border-box}
 h1{font-size:14px;font-weight:normal;margin:0 0 8px;letter-spacing:.2em;text-transform:lowercase}
 h2{font-size:12px;font-weight:normal;margin:14px 0 4px;color:#9fb3c8;letter-spacing:.15em}
 label{display:block;margin:3px 0;color:#9fb3c8}
@@ -44,9 +44,9 @@ textarea{height:90px}
 <div class="row"><label>submarine slope (°)</label><input type="number" id="e_slope" step="1" min="3" max="30"></div>
 <div id="derived" class="small"></div>
 </div>
-<h2>export</h2>
+<h2>export / paste a plan here</h2>
 <button id="copyPlan">PLAN for test/map.js</button><button id="copyJson">json</button><button id="load">load json</button>
-<textarea id="out" spellcheck="false"></textarea>
+<textarea id="out" spellcheck="false" placeholder="paste a plan (json) here and press load; the buttons above fill this box for copying"></textarea>
 <div class="small">the plan autosaves in this browser. paste json above and press load to bring one back.</div>
 <h2>view</h2>
 <button id="fit">the world</button><button id="isl">the island</button><button id="all">everything planned</button>

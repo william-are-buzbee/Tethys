@@ -3937,3 +3937,8 @@ the land area, the distances to the other planned islands — and a proposed `NC
 whose foot reaches past it. Export: the `PLAN` string for `test/map.js`, or JSON (and load it back); the plan autosaves in
 `localStorage['tethys.map']`. **Seen**: the world and the island close, an island added and dragged to 7 km south-west with its rings and
 label, the tool's own numbers. Nothing in the game changed.
+
+## v11.60.1 — the map's sidebar on a narrow window (15 Sep 2026)
+
+The person saw no place to paste: the canvas's own width pushed the sidebar off the right edge of a narrow window (`min-width:0` on the
+canvas, `flex:none` on the sidebar). The paste box is labelled and has a placeholder now. Seen in the pane at 800 px.
