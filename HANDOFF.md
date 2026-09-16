@@ -1,5 +1,10 @@
 # HANDOFF — tethys
 
+**v11.65.1 (15 Sep 2026): SEAFLOOR.md.** The chain's diversity and its underwater ground, recorded from a discussion and agreed by the person:
+what can differ per island (brooders, ecotypes by exposure, the progression rule, colour by rock age, the sill relict) and the formations to build
+(lava tubes, the terrace notch, tidal channels with ebb deltas, a canyon per island, the giant's slide blocks first; then pillows, dikes, talus,
+blue holes, the guyot, more pits, diffuse vents, iron crusts, sand waves). Nothing built. Open and the person's: the range term for endemics (§5).
+
 **Next (15 Sep 2026): the person's answers, then the chain's next record.** The archipelago's four build steps are done; what waits is the
 person's: the giant's character (the caldera, the boulder field on its rim, rivers, the reef, the greens above 60 m, the cliff's colour —
 CHANGELOG v11.62 and v11.65), the air (the clear day, v11.64), the ocean beyond the sill (its chemistry is the basin's and wrong there, v11.65),

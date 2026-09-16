@@ -4165,3 +4165,12 @@ western half inside the clamp — and the sill's crest has 23 km of ocean flank 
   the summit at dusk and under a shower; a save made in the 240-cell world loading (the index rebuilt); the low tier at the summit.
 - **Not this pass**: the young shield's record (its centre at 30.8 km along the chain is 5 km past the new edge — the doc's arithmetic; the
   next island wants a record and the horizon tier will show it from here whatever the world's size); the road (step 5).
+
+## v11.65.1 — SEAFLOOR.md (15 Sep 2026)
+
+A discussion recorded, nothing built. SEAFLOOR.md carries what an archipelago this size can honestly differ in from island to island (marine
+endemism at the chain's level, not the island's, except brooders; ecotypes by `expo`; the progression rule for the young shield; colour by
+`young`; the sill relict) and the underwater formations the geology gives — lava tubes, pillow slopes, dike walls, talus aprons, the terrace
+notch, tidal channels and ebb deltas, blue holes, the guyot, more pits, diffuse vents, iron crusts, the giant's slide lobe, canyons, sand
+waves in the saddle — ranked by ecology per unit of work. The person agreed to all of the formations ("all of that"). Open and theirs: a range
+term for endemics (§5), the one item that changes the code's shape. CLAUDE.md's doc table and HANDOFF point at it.
