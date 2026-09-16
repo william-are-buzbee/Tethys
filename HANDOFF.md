@@ -1,13 +1,21 @@
 # HANDOFF — tethys
 
-**Next (15 Sep 2026): the giant.** `ARCHIPELAGO.md` is the plan: the chain's numbers, the giant's record and the land term the kit lacks
-(step 2), then the horizon tier (3), then `NCELL` 240 with a sparse ledger (4). Start with step 2 and the identity check on `ISLANDS[0]`.
+**Next (15 Sep 2026): the horizon tier.** `ARCHIPELAGO.md` step 3: one coarse mesh of the chain from `sample()`, drawn above the water past the
+far plane with the planet's curvature and the air's haze, so the giant shows from our surface; then step 4, `NCELL` 240 with a sparse ledger,
+which brings the giant's centre, its summit and its western half into the world. The person's open questions on the giant (the caldera, rivers,
+the reef, the greens above 60 m, the cliff's colour, the road) are in CHANGELOG v11.62 and ARCHIPELAGO; ask before building on them.
+
+**v11.62 (15 Sep 2026): the giant's record and the land term.** `ISLANDS[1]` is the giant at (−15400, 9200): 14 km of land to 900 m with a summit
+caldera, rain gullies on the windward flank to graded floors, the last flows down the rift zones, a wave-cut cliff where the surf strikes, a 1 km
+shelf with the 12 m terraces, a 12° flank to the floor at ~13.8 km — its foot reaches ours (the saddle −927 at 4.5 km from our centre). The kit
+gained `land` (world.js `islandH`) and lost its last hard-coded radii (`riftR`, the shelf edge from the terraces, `fade`, no lagoon without a rim).
+Ours is proved bit-identical over the old square; every change in the world lies inside the giant's reach. Its centre is 2.5 km past the world's
+edge until step 4: what stands in the world is its eastern flank from ~640 m down, the shore, the shelf and the saddle. Looked at from the
+shore, a valley and the edge (frames in the changelog); the summit and the caldera only on the map (`test/map.js`, `map.html`).
 
 **v11.61 (15 Sep 2026): the islands as records.** `ISLANDS` in world.js, `islandH()` the geology in an island's own frame, `sample()` the
 smooth max of every island in reach over the basement; ours is `ISLANDS[0]` and is proved bit-identical to v11.60.2 over the old square and
-the whole world (only `rel` beyond 8.5 km changed, meant: the floor's hills read as relief now). Nothing placed. Next: the giant's record
-south-west, which needs the kit's missing term — land above the water (a shield to a summit, gullies, a shore, flows); then the horizon
-tier; then the world grown to 240 cells. The person's layout comes from map.html as JSON.
+the whole world (only `rel` beyond 8.5 km changed, meant: the floor's hills read as relief now). Nothing placed.
 
 **v11.59–11.60 (15 Sep 2026): the maps.** `node test/map.js` draws the world (bands, hillshade, contours, the old square, the sill, planned
 islands via `PLAN`) to `test/preview/map.png`; `map.html` is the same map interactive — islands added, dragged, resized, the sizes and

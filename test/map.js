@@ -41,7 +41,7 @@ rect(-1720,-1720,1720,1720,YEL,4);label(px(-1720)+4,pz(-1720)-10,'the island\'s 
 // landmarks
 for(const k in Wd.LM){if(k==='all')continue;const p=Wd.LM[k];ring(p.x,p.z,Math.max(60,3*M),WHITE);label(px(p.x)+6,pz(p.z)-4,k+' '+Math.round(p.h),WHITE);}
 ring(Wd.ISLE.x,Wd.ISLE.z,120,WHITE);label(px(Wd.ISLE.x)+6,pz(Wd.ISLE.z)+6,'the isle',WHITE);
-for(const R of Wd.ISLANDS){ring(R.x,R.z,R.reach*R.sc,GREY,4);label(px(R.x)+8,pz(R.z)+16,'built: '+R.id,GREY);} // the game's island records (v11.61): the centre and the reach
+for(const R of Wd.ISLANDS){ring(R.x,R.z,R.reach*R.sc,GREY,4);if(R.land)ring(R.x,R.z,R.land.r*R.sc,GREY);label(px(R.x)+8,pz(R.z)+16,'built: '+R.id+(R.land?' +'+R.land.h:''),GREY);} // the game's island records (v11.61): the centre and the reach; the land's radius and summit (v11.62)
 // the sill's crest line and gap, if the basin is built
 if(Wd.SILL){const S=Wd.SILL,c=Math.cos(S.a),s=Math.sin(S.a);for(let t=-20000;t<=20000;t+=M){const x=c*S.d-s*t,z=s*S.d+c*t;if(Math.abs(x)<=SPAN/2+CX&&Math.abs(z)<=SPAN/2+CZ)dot(px(x),pz(z),RED);}
   const gx=c*S.d,gz=s*S.d;ring(gx,gz,700,RED,3);label(px(gx)-textW('the gap',1)/2,pz(gz)+12,'the gap',RED);label(px(c*(S.d+900)-s*4000),pz(s*(S.d+900)+c*4000),'the sill\'s crest '+S.crest,RED);}

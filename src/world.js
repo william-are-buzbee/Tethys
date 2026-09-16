@@ -1,4 +1,4 @@
-// world.js — the island: its geology as a terrain function, the condition fields, the wave function, landmark placement
+// world.js — the islands: their geology as a terrain function (records, v11.61; the land term, v11.62), the condition fields, the wave function, landmark placement
 // ---------- world shape ----------
 // A young oceanic shield volcano, almost drowned (PLANET.md, Geology), standing in a silled basin (v11.58, below). 120x120 cells,
 // the island's own square the middle 16. The summit is a caldera whose rim is the
@@ -218,10 +218,27 @@ function sectorW(a,c,hw,fade){let d=(a-c)%TAU;if(d<0)d+=TAU;if(d>Math.PI)d-=TAU;
 // basement (the basin and the sill), and the conditions from the island that stands highest there. ISLANDS[0] is our island, its record
 // the old constants exactly, so its ground and fields are the same doubles as v11.60's (test/ident-style check, CHANGELOG v11.61). A
 // second island gets its own record, its own noise offset (ns) and, for land above the water, terms this kit does not have yet.
+// v11.62 (ARCHIPELAGO step 2): the kit's last radii that were ours by constant are the record's now — riftR (the rift arms' radial extent), the
+// shelf edge (read off the terraces' band), the upwelling's fade (fade, in rw) — and a record without a rim has no lagoon; `land` is the term the
+// kit lacked, the subaerial shield (islandH, below). Ours carries its old numbers by name, so its doubles are v11.61's.
 const ISLANDS=[
   {id:'home',x:0,z:0,rot:0,sc:1,ns:0,h0:-14,prof:[[RIM_R+RIM_W*0.3,330,6],[330,700,40],[1000,1200,94],[1200,1600,40]],terr:{r0:700,r1:1000,n:8,step:12},
-   rimR:RIM_R,rimW:RIM_W,lagH:-22,coll:COLL,dike:DIKE,rifts:RIFT_A,vent:VENT,pit:PIT,isle:ISLE,flank:{r:FLANK_R,w:FLANK_W,s0:FLANK_S0,s1:FLANK_S1,a:FLANK_A,b:FLANK_B},reach:8500}
-]; // reach: past this radius (unwarped) the island is not computed — its flank is under -1500 there, 340 m under the floor's lowest, and smax is exact past its knee
+   rimR:RIM_R,rimW:RIM_W,lagH:-22,coll:COLL,dike:DIKE,rifts:RIFT_A,riftR:[280,340,1600,1300],vent:VENT,pit:PIT,isle:ISLE,flank:{r:FLANK_R,w:FLANK_W,s0:FLANK_S0,s1:FLANK_S1,a:FLANK_A,b:FLANK_B},fade:BASIN.fade,reach:8500},
+  // The giant (v11.62; ARCHIPELAGO's table, the person's plan of 15 Sep 2026): 18 km south-west along the chain at 2.6 rad, the member one step
+  // behind the hotspot — its shield just finished, so it is the biggest and now only loses. 14 km of land (r 7000, the coast wavy ±16% of that
+  // by the kit) rising to 900 m with a summit caldera 1.4 km across and 110 m deep; rain gullies down the windward flank (the wind is the
+  // world's: the flank facing 0.35 rad, the east-south-east, the side toward our world); its last flows down the two rift zones, which lie
+  // on the chain's axis (2.6 toward the young shield, 5.74 toward us); a wave-cut cliff of 40 m where the surf strikes, a plain to the sand in
+  // the lee; a shelf of 1 km to -60 (a mature island's: wave-cut, reef-built) with the eight 12 m terraces at its edge (eustatic, so the same
+  // steps as ours); the slope to -290 by 9.8 km and the flank at 12° (the table) to the floor at ~13.8 km, which reaches ours: a saddle. The
+  // current is the world's too, so its fed flank (5.44 rad) is the one toward us, and its upwelling fades from the apron's toe out. No collapse,
+  // dikes, vent, pit or cone: nothing decided them yet (the person's open questions, ARCHIPELAGO). In metres (sc 1: the noise keeps our grain);
+  // its own noise offset. Its centre is 2.5 km past the world's edge until step 4 (NCELL 240): what stands inside the world is its eastern
+  // flank from ~600 m down to the shore, the shelf and the saddle.
+  {id:'giant',x:-15400,z:9200,rot:0,sc:1,ns:500,h0:0,prof:[[7000,7300,8],[7300,8000,52],[8800,9300,94],[9300,9800,40]],terr:{r0:8000,r1:8800,n:8,step:12},
+   rifts:[2.6,5.74],riftR:[600,900,9800,8800],flank:{r:9800,w:250,s0:0.21,s1:0.21,a:600,b:2600},fade:[9800,12800],reach:16000,
+   land:{r:7000,h:900,cliff:40,cald:{r:700,d:110,w:40},gully:{n:36,lee:0.2},flows:{n:60,h:8,hw:0.5}}}
+]; // reach: past this radius (unwarped) the island is not computed — its flank is under -1500 there (the giant's -1390 at worst, with its ribs), 300 m or more under the floor's highest hill, and smax is exact past its knee
 const _islA={},_islB={}; // the islands' intermediates for the fields: the winner's and a spare, reused (nothing allocates per sample)
 // the island's ground in its own frame (lx,lz local, scaled) and the intermediates the conditions read, into `o`
 function islandH(R,x,z,o){
@@ -230,7 +247,7 @@ function islandH(R,x,z,o){
   const aw=a+0.32*angNoise(a,1.6,11+ns)+0.22*(fbm(lx*0.0035+80+ns,lz*0.0035+20,3)-0.5)*2; // warped angle: wavy sectors
   const rw=r*(1+0.16*angNoise(aw,1.2,29+ns)); // warped radius: wavy contours
   let awn=aw%TAU;if(awn<0)awn+=TAU;
-  const ca=Math.cos(a),sa=Math.sin(a);
+  const ag=R.rot?a+R.rot:a,ca=Math.cos(ag),sa=Math.sin(ag); // the wind and the current are the world's, so they read the unrotated angle (v11.62; rot 0 on both records, the same doubles)
   const expoW=0.5-0.5*(ca*Math.cos(WIND_A)+sa*Math.sin(WIND_A)); // 1 on the shore the waves strike
   const upW=0.5-0.5*(ca*Math.cos(CUR_A)+sa*Math.sin(CUR_A)); // 1 on the flank the current strikes (upwelling); 0 in its wake
   const C=R.coll,collW=C?sectorW(awn,C.a,C.hw*(1+0.55*smooth(380,1000,rw)),0.14):0,cw=C?collW*smooth(300,350,rw)*smooth(1250,1000,rw):0;
@@ -260,7 +277,30 @@ function islandH(R,x,z,o){
     h+=cw*44*smooth(0.68,0.78,fn)*smooth(450,400,rw)*smooth(360,400,rw)*smooth(0.55,0.75,0.5+0.5*angNoise(aw,2.5,88+ns));} // blocks that break the surface: the highest mounds nearest the scarp
   // the rift arms: low broad ridges of younger flows from the summit out; the fissure at the deep end of arm 0 with mounds along it
   let young=cw*smooth(340,400,rw),heat=0;
-  if(R.rifts)for(let k=0;k<R.rifts.length;k++){const rwk=sectorW(awn,R.rifts[k],0.13,0.09)*smooth(280,340,rw)*smooth(1600,1300,rw);h+=8*rwk;young=Math.max(young,0.7*rwk);}
+  // ---- land (v11.62, ARCHIPELAGO step 2): the subaerial shield inside R.land.r, the term the kit lacked ----
+  // The shield's surface (PLANET, The shield: subaerial flows lie at 4-8°) rises from the shore to the summit at L.h as a mix of a cone and an
+  // S-curve, so the coastal plain and the summit are the gentle parts (4° at both ends, 9° mid-flank; 7.3° mean at 900 over 7000). Where the
+  // surf strikes (expoW) the coast is cut back to a cliff of L.cliff over the first 55 m inland (Molokai's, Kohala's, in small); in the lee a
+  // plain runs down to the sand. The rain is the trades' and falls on the windward flank, so the gullies are there: L.gully.n valleys round the
+  // island on their own angle (unevenly spaced, slowly bent), each cut from the interfluve surface toward a graded floor — L.h·tl^1.8, base level
+  // at the coast (a bay through the cliff), meeting the surface below the summit (amphitheatre heads) — with a rounded floor and the shield's
+  // old surface left flat between (the planezes of a dissected shield); how far each gets is the rain (1 windward, L.gully.lee in the lee) times
+  // its own draw, so a few are master valleys to the floor and most are gulches. The last flows ran down the rift zones (R.rifts: the chain's
+  // axis) and lie on the surface as ridges L.flows.h high — half the slots of a comb of L.flows.n round the island, within L.flows.hw of a rift,
+  // from the caldera's rim over the shore onto the shelf — and are fresh rock (young). A summit caldera (L.cald, the shield's normal end: Mauna
+  // Loa's, Kilauea's): a flat floor L.cald.d under the rim, its wall L.cald.w wide, the valley heads that reach the rim notched into it. The
+  // gullies go on h alone; hSmooth carries the surface less a third of the cut, so a valley floor reads as relief 0 and a planeze as a crest.
+  if(R.land){const L=R.land,u=rw/L.r;
+    if(u<1){const tl=1-u,S=tl*tl*(3-2*tl),ridge=L.h*(0.55*tl+0.45*S),cl=L.cliff*smooth(0.45,0.85,expoW)*smooth(0,0.008,tl);
+      let fh=0;const FL=L.flows;
+      if(FL&&R.rifts){let fw=0;for(const ra of R.rifts){const w=sectorW(awn,ra,FL.hw,FL.hw*0.6);if(w>fw)fw=w;}
+        if(fw>0){const fq=aw*FL.n/TAU,fi=Math.floor(fq),ft=1-Math.abs(2*(fq-fi)-1);if(hash(fi&255,77+ns)>0.45){const flow=fw*smooth(0.55,1,ft)*(0.7+0.3*fbm(lx*0.004+23+ns,lz*0.004+61,2));fh=FL.h*flow;young=Math.max(young,0.6*flow);}}}
+      const G=L.gully,av=a+0.12*angNoise(a,2.2,150+ns)+0.10*(fbm(lx*0.0012+31+ns,lz*0.0012+57,2)-0.5)*2,vq=av*G.n/TAU,vi=Math.floor(vq),tent=1-Math.abs(2*(vq-vi)-1);
+      const vw=smooth(0.3,1,tent),wet=lerp(G.lee,1,smooth(0.25,0.85,expoW)),draw=Math.min(1,wet*(0.45+0.9*hash(vi&255,150+ns))),top=ridge+cl+fh,deep=Math.max(0,top-L.h*Math.pow(tl,1.8))*draw;
+      let lnd=top-vw*deep,lndS=top-0.35*deep;
+      const K=L.cald;if(K){const ck=smooth(K.r+K.w,K.r-K.w,rw);if(ck>0){const tr=1-K.r/L.r,fl=L.h*(0.55*tr+0.45*tr*tr*(3-2*tr))-K.d;lnd=lerp(lnd,fl,ck);lndS=lerp(lndS,fl,ck);young=Math.max(young,0.5*ck);}}
+      h+=lnd;hSmooth+=lndS;}}
+  if(R.rifts){const RR=R.riftR;for(let k=0;k<R.rifts.length;k++){const rwk=sectorW(awn,R.rifts[k],0.13,0.09)*smooth(RR[0],RR[1],rw)*smooth(RR[2],RR[3],rw);h+=8*rwk;young=Math.max(young,0.7*rwk);}} // the arms' radial extent is the record's (v11.62)
   if(R.vent){const V=R.vent,vw=sectorW(awn,V.a,0.1,0.07)*smooth(V.r0-70,V.r0,rw)*smooth(V.r1+70,V.r1,rw);if(vw>0){heat=vw;h+=22*vw*Math.pow(fbm(lx*0.03+50+ns,lz*0.03+50,3),3)*1.6;young=Math.max(young,vw);}}
   // the lower flank beyond the apron (v11.28; PLANET, The shield), and the pit crater. To v11.27 the floor fell 520 m in 90-250 m here —
   // a cliff into "the void" at -810, the world's rocky wrapping (the person, 10 Sep: "an artificial border to wrap the world up in rocky
@@ -275,15 +315,16 @@ function islandH(R,x,z,o){
     h-=(F.s0*d0-(F.s0-F.s1)*d1)*(1+0.15*angNoise(aw,3.0,131+ns));}
   if(R.pit){const pd=Math.hypot(lx-R.pit[0],lz-R.pit[1]);if(pd<130)h-=520*smooth(100,40,pd);}
   // the caldera: a flat sandy floor at -22 inside a rim of land broken by passes (the passes run at -14: the lagoon's flushing)
-  const lag=smooth(R.rimR-R.rimW*0.4,R.rimR-R.rimW*1.6,rw);
-  if(lag>0)h=lerp(h,R.lagH+1.5*(fbm(lx*0.02+5+ns,lz*0.02+3,2)-0.5)*2,lag);
-  const rimA=smooth(0.3,0.62,0.5+0.5*angNoise(aw,2.4,77+ns)),rimK=smooth(R.rimR-R.rimW,R.rimR-R.rimW*0.3,rw)*smooth(R.rimR+R.rimW,R.rimR+R.rimW*0.3,rw);
-  if(rimK>0){h=lerp(h,2.5+3.5*(fbm(lx*0.02+5+ns,lz*0.02+3,2)-0.5)*2,rimK*rimA);h-=3*(1-rimA)*rimK;}
+  let lag=0,rimA=0,rimK=0;
+  if(R.rimR!==undefined){lag=smooth(R.rimR-R.rimW*0.4,R.rimR-R.rimW*1.6,rw); // a record without a rim has no lagoon and no passes (v11.62: the giant)
+    if(lag>0)h=lerp(h,R.lagH+1.5*(fbm(lx*0.02+5+ns,lz*0.02+3,2)-0.5)*2,lag);
+    rimA=smooth(0.3,0.62,0.5+0.5*angNoise(aw,2.4,77+ns));rimK=smooth(R.rimR-R.rimW,R.rimR-R.rimW*0.3,rw)*smooth(R.rimR+R.rimW,R.rimR+R.rimW*0.3,rw);
+    if(rimK>0){h=lerp(h,2.5+3.5*(fbm(lx*0.02+5+ns,lz*0.02+3,2)-0.5)*2,rimK*rimA);h-=3*(1-rimA)*rimK;}}
   // the island: a flank cone with a tidal flat of bars and pools and a hill behind it
   if(R.isle){const I=R.isle,id=Math.hypot(lx-I.x,lz-I.z);
     if(id<270){const dw=id*(1+0.3*(fbm(lx*0.008+7+ns,lz*0.008+3,3)-0.5)*2);const k=smooth(200,105,dw);
       if(k>0)h=lerp(h,-0.6+2.6*(fbm(lx*0.03+11+ns,lz*0.03+2,2)-0.5)*2,k)+40*smooth(88,18,dw)*(1+0.3*(fbm(lx*0.02+9+ns,lz*0.02+8,2)-0.5)*2);}}
-  o.h=h;o.hs=hSmooth;o.rw=rw;o.cw=cw;o.dkr=dkr;o.young=young;o.heat=heat;o.lag=lag;o.rimK=rimK;o.rimA=rimA;o.pass=(1-rimA)*rimK;o.shelfEdge=smooth(650,730,rw)*smooth(1150,950,rw);o.upW=upW;o.expoW=expoW;
+  o.h=h;o.hs=hSmooth;o.rw=rw;o.cw=cw;o.dkr=dkr;o.young=young;o.heat=heat;o.lag=lag;o.rimK=rimK;o.rimA=rimA;o.pass=(1-rimA)*rimK;o.shelfEdge=smooth(T.r0-50,T.r0+30,rw)*smooth(T.r1+150,T.r1-50,rw);o.upW=upW;o.expoW=expoW;
   return h;
 }
 // sample(x,z) → {h, f}: the ground and the conditions. `out` may be passed to reuse the field array.
@@ -306,7 +347,7 @@ function sample(x,z,out){
       const prof=SILL.slope*(Math.sqrt(s*s+SILL.w*SILL.w)-SILL.w),ridge=hc-prof*(1+0.15*(fbm(bt*0.0012+5,s*0.0012+8,2)-0.5)*2),ridgeS=SILL.crest-prof,out=s>0?0.3*s:0; // the flanks either side of a rounded crest; past the crest the floor falls away under the outer flank
       base=smax(base-out,ridge,BASIN.knee);baseS=smax(baseS-out,ridgeS,BASIN.knee);
       summitK=kn*smooth(-650,-450,ridge)*smooth(BASIN.knee,0,base-ridge);gapF=smooth(1300+0.3*Math.abs(s),250,Math.abs(bt))*smooth(3500,0,Math.abs(s));} // bare rock on the summits' upper 200 m; the inflow's jet through the gap, spreading either side
-    isl=smooth(BASIN.fade[1],BASIN.fade[0],rw);h=smax(h,base,BASIN.knee);hSmooth=smax(hSmooth,baseS,BASIN.knee);}
+    const fd=best?best.fade:BASIN.fade;isl=smooth(fd[1],fd[0],rw);h=smax(h,base,BASIN.knee);hSmooth=smax(hSmooth,baseS,BASIN.knee);} // the upwelling's fade is the island's (v11.62): ours BASIN.fade by name
   // ---- the conditions ----
   const f=out||new Float32Array(NF),light=smooth(-150,-10,h);
   const flow=clamp(Math.max((lerp(0.4,0.2+0.6*upW,isl)*(0.55+0.45*shelfEdge)+0.8*pass)*(1-0.85*lag),0.95*gapF),0,1); // v11.58: the wake fades to the basin's steady 0.4 past the island; the gap's jet is the strongest steady current there is

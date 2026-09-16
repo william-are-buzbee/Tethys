@@ -3991,3 +3991,61 @@ plan with the giant and the young shield). Seen in the pane.
 The person is taking the giant to a new chat. The plan lived in this one: ARCHIPELAGO.md now carries the chain's numbers, the build order
 (the records built; the giant's land term, the horizon tier, the world at 240 cells, the road), the tools, and the person's answers.
 CLAUDE.md's doc table and HANDOFF point at it.
+
+## v11.62 — the giant's record and the land term (15 Sep 2026)
+
+ARCHIPELAGO step 2 (the person: build the giant's island record and the land term the kit lacks; place it at the table's position; keep ours
+bit-identical; do not grow the world or build the horizon tier). The giant exists in `sample()` now, most of it past the world's edge.
+
+- **`land` in the record** (world.js `islandH`, the term the kit lacked): the subaerial shield inside `land.r`. The surface is a mix of a cone
+  and an S-curve from the shore to the summit `land.h` — 4° at the coast and at the summit, 9° mid-flank, 7.3° mean at 900 over 7000 (PLANET
+  puts subaerial flows at 4–8°). Where the surf strikes (`expoW`) the coast is a wave-cut cliff of `land.cliff` over the first 55 m inland; in
+  the lee a plain runs to the sand. The rain is the trades' and falls on the windward flank, so the gullies are there: `land.gully.n` valleys on
+  their own angle (unevenly spaced, slowly bent), each cut from the interfluve surface toward a graded floor (`h·t^1.8`: base level at the
+  coast, a bay through the cliff; meeting the surface below the summit, an amphitheatre head), a rounded floor with the shield's old surface
+  left flat between (the planezes of a dissected shield); how far each gets is the rain (1 windward, `land.gully.lee` in the lee) times a
+  per-valley draw, so a few are master valleys to the floor and most are gulches. The last flows ran down the rift zones and lie on the surface
+  as ridges `land.flows.h` high — half the slots of a comb of `land.flows.n` within `land.flows.hw` of a rift, from the caldera's rim over the
+  shore onto the shelf, fresh rock (`young`). A summit caldera `land.cald`: a flat floor `d` under the rim, its wall `w` wide, the valley heads
+  that reach the rim notched into it. The gullies go on `h` alone; `hSmooth` carries the surface less a third of the cut, so a valley floor
+  reads as relief 0 and a planeze as a crest.
+- **The kit's last constants are the record's**: `riftR` (the rift arms' radial extent; ours `[280,340,1600,1300]` by name), the shelf edge
+  read off the terraces' band (`T.r0−50..+30`, `T.r1+150..−50`: ours 650/730/1150/950 exactly), the upwelling's fade `fade` in rw (ours
+  `BASIN.fade`), a record without `rimR` has no lagoon and no passes, and the wind and the current read the unrotated angle (`rot` is 0 on both
+  records, so the same doubles).
+- **The giant** (`ISLANDS[1]`): at (−15400, 9200), 18 km south-west on the chain's axis. In metres (`sc` 1 — the doc's "radii scale by sc, ~3×
+  ours" was for a scaled copy; with the record carrying its own radii the scale is unneeded and the noise keeps our grain), `ns` 500. Land
+  r 7000 (the coast wavy ±16% by the kit: the shore at 6.5 km on the windward side, 7.5 toward us), the summit 900 with a caldera (r 700,
+  110 m: the floor at 728 under a rim at ~870, so the highest ground is the rim, and the map's +880), the cliff 40, 36 gullies (windward
+  valleys 150 m deep near the coast and 270 mid-flank, the lee's 20–50), the flows on rifts 2.6 and 5.74 (the chain's axis: toward the young
+  shield and toward us), a 1 km shelf to −60, the terraces 8000–8800, the slope to −290 at 9.8 km, the flank at 12° (`s0=s1=0.21`, the table's)
+  to the floor at ~13.8 km, `reach` 16000 (−1390 at worst with the ribs, 300 under the floor's highest hill). No collapse, dikes, vent, pit or
+  cone: nothing decided them yet.
+- **The saddle**: the giant's foot reaches ours — −927 at 4.5 km from our centre on the line between (the doc's "about −1000"). The current
+  is the world's, so the giant's fed flank (`upW`, the source at 5.44) is the one toward us: `nut` 0.66 on its shelf there, 0.83 at the windward
+  shelf edge, 0.36 in its lee; `flow` 0.43 / 0.61 / 0.21.
+- **Proved**: ours is bit-identical over the old square (185,761 samples at 8 m: the ground and all nine fields, `Object.is`), and over the
+  whole world every difference lies inside the giant's reach (76,583 of 267,289 samples at 50 m differ, none outside the 16 km circle, the
+  nearest 3.7 km from our centre — the saddle). The scratch script loaded HEAD's world.js beside the new one, as v11.61's did.
+- **The maps**: `test/map.js` and `map.html` draw a built island's land ring and name its summit (`built: giant +900`). The world map's
+  stat line: land 37.5 km² (ours is ~0.4), the floor 385 of 666.
+- **The world's edge**: the giant's centre is 2.5 km past the edge (x −12900) until step 4; inside the world stand its eastern flank from
+  ~640 m down, the shore, the shelf and the saddle. The player's clamp holds at the edge; the apron carries the coarse terrain 2 km further
+  (to r ≈ 500 from its centre); nothing draws past the far plane.
+- **Seen** (dev.html in the app's browser; the loop driven by hand, each frame posted through serve.js — the other chat's server on 8080
+  predates the sink's png and took them as .txt): the shore toward us from the sea (a low green plain of olivine sand, tidal trees, boulders
+  and crags, the land rising behind into the haze) and from 25 m up; the windward cliff from offshore (a 40 m bluff with crags along its
+  crest — sand-coloured to its top, since the strand's colours run to 18 m before the rock, so it reads as a bank, not a sea cliff); a
+  windward valley from inside (the floor with boulders, the walls, the far wall rising) and from its ridge (a planeze with boulders and rust
+  patches, bare: the greens stop at h 60); the world's edge at 643 m looking at the summit (the fine cell's ridge in front, then the apron's
+  coarse ridges whitened to nothing by the air's haze — step 3's business). Performance at 1280×720, the loop by hand: the shore 4.3 ms of
+  work, 126 draws, 3.0 M tris, 1174 creatures loaded (the shelf's spawns); the valley 0.8 ms, 56 draws, 0.7 M tris. Tests green on both
+  tiers; the census still ok (the giant's shelf adds capacity).
+- **Unseen, ask in this order**: the shore at high water and at night; the caldera and the summit (past the edge until step 4 — the map has
+  them); the flows' ridges from the ground (8 m on a 900 m flank; on the map they are the faint radial lines on the rift sides); the lee coast's
+  plain and its gullies; the person's 4060 at 1600×900 on the shore, where the creature count is the cost.
+- **Open, asked 15 Sep** (ARCHIPELAGO's list): the caldera — keep, fill it (post-shield) or strike; rivers in the master valleys (nothing
+  carries water on land); the reef's amount (by envelope now: whatever the lime polyps' rule gives on a 1 km shelf); the greens above 60 m —
+  tussock and scrub stop at `h` 60 by their envelopes, so the giant's slopes are bare rock above that, and the rain says the windward flank
+  should be green to the cloud base at 650; whether the cliff face wants a rock colour of its own; the crossing's road; the layout (this is the
+  table's — the map's json may differ).

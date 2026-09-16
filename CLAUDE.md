@@ -125,7 +125,7 @@ Docs, most upstream first. When a doc's Open list says a choice is the person's,
 | `CLADES.md` | the three clade signatures as built (v11.8–11.9.1) and the raptor family |
 | `DRIFTERS.md` | the fourth clade: bells, buttons, sailers (v11.16) |
 | `CREATOR.md` | the spec-compiled body plans and the lab (v11.10–11.25); the person's decisions at its end |
-| `ARCHIPELAGO.md` | the chain (15 Sep 2026): the islands as records (built v11.61), the giant's record and its land term, the horizon tier, the world grown to 240 cells, the person's answers — read before building any second island |
+| `ARCHIPELAGO.md` | the chain (15 Sep 2026): the islands as records (built v11.61), the giant's record and its land term (built v11.62), the horizon tier, the world grown to 240 cells, the person's answers — read before building any second island |
 | `PIXEL.md` | the de-res (14 Sep 2026, designed, not built): every surface in world/body-fixed texels at the pixel light's grain, one switch on `e`; the person's answers at its end (14 Sep) — ready to build |
 | `POLISH.md` | the low-budget effects survey: pass A built (v11.13, v11.23), pass B (v11.53); pass C, the night, is next |
 | `COMBAT.md` | injury as states, not numbers (15 Sep 2026): gape, hold, edge against covering; wounds as spec edits; the per-clade kill, escape and chemistry; pass 1 built v11.54 (the edge and the covering), pass 2 v11.55 (the states, no hit points), pass 4 v11.56 (the trail, the miss, the poison), pass 3 v11.57 (the wound as a spec edit) — built in full; §7 the matrix's findings; §9 the person's answers |

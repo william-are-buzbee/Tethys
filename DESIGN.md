@@ -35,7 +35,7 @@ fissure, the flank cone); its parameters are the constants at the top of world.j
 (place, turn, radial scale, noise offset, the profile as steps, the terraces, the rim, the collapse, the dikes, the rifts, the fissure, the pit, the cone,
 the lower flank, its reach), `islandH()` is the geology in the island's own frame, and `sample()` takes the smooth max of every island in reach over
 the basement with the highest island's conditions (the saddle between two is the max of both). Proved bit-identical for ours over the old square
-and the whole world; the archipelago is more records. **The lower flank** (v11.28): beyond the apron's toe (`FLANK_R` 1560, wavy) the floor
+and the whole world; the archipelago is more records. **The land term** (v11.62, ARCHIPELAGO step 2): a record's `land` block is the subaerial shield inside `land.r` — the surface a mix of a cone and an S-curve to the summit `land.h` (4° at the shore and the summit, 9° mid-flank), a wave-cut cliff `land.cliff` where `expoW` is high, rain gullies `land.gully` (`n` valleys on their own angle, cut toward a graded floor `h·t^1.8`, the planezes flat between, the depth the rain — 1 windward, `lee` in the lee — times a per-valley draw), the last flows `land.flows` as low young ridges within `hw` of a rift, a summit caldera `land.cald`; `hSmooth` carries the surface less a third of the cut. The kit's last constants went into the record too: `riftR`, the shelf edge off the terraces' band, the upwelling's `fade`, no lagoon without `rimR`. **The giant** is `ISLANDS[1]` at (−15400, 9200): land r 7000 to 900 m with a caldera (r 700, 110 m), 36 gullies, flows on rifts 2.6 and 5.74, a 1 km shelf, the terraces 8000–8800, the flank at 12° to the floor at ~13.8 km, `reach` 16000; its foot reaches ours (the saddle −927 at 4.5 km from our centre); its centre is 2.5 km past the edge until `NCELL` grows (step 4). **The lower flank** (v11.28): beyond the apron's toe (`FLANK_R` 1560, wavy) the floor
 does not fall into a void but goes on down the seamount's flank — the slope ramps with no crease from the apron's 5.7° to 16.7° over 250 m
 (`FLANK_S0`, `FLANK_W`), eases to 12.4° between 600 and 2600 m beyond the toe (`FLANK_S1`, `FLANK_A/B`), ribbed ±15% by sector — −320 at the
 old square's edge on an axis, ~−580 at a corner. **The basin and the sill** (v11.58, PLANET The basin; world.js `BASIN`, `SILL`, `smax` in util.js):
@@ -212,6 +212,18 @@ there is a reason to flop ashore.
 Decided without asking (the person said "use your judgement" for the above-water layer; all easy to change): where the
 land is; that it is its own biome called "the strand"; ~1.2-unit waves; that a fish on land flops rather than dies;
 that land is a refuge from predators; the scuttler.
+
+**The giant's land** (v11.62, ARCHIPELAGO step 2; world.js `islandH`, the record's `land`). The first land above a few metres: the giant's
+shield rises from its shore to a summit at 900 by the `land` term (World shape, above) — a coastal plain of the same olivine sand and dry strand
+in the lee, a 40 m wave-cut cliff on the windward coast (its face is sand-coloured to the top: `terrainColor`'s ramp runs sand → dry → rock over
+−4..18 by height alone, so the cliff reads as a bluff — open), 36 rain gullies down the windward flank to floors graded to the sea (bays at
+their mouths, 150 m deep near the coast, 270 mid-flank; the lee's are 20–50), planezes of the old surface between, the last flows as 8 m ridges
+of young rock on the rift zones, and a summit caldera 1.4 km across and 110 m deep. Above 18 m the ground is `terrainColor`'s dark basalt with
+rust patches; the land flora is by the existing rules and stops where its envelopes stop (`tussock` and `scrub` at `h` 60), so the slopes above
+that are bare but for boulders and crags — the rain says the windward flank should be green to the cloud base (650); the person's call. The
+scuttler spawns by land area as anywhere. Only the eastern flank from ~640 m down is inside the world until `NCELL` grows (step 4); the
+player's clamp holds at the edge and the apron carries the coarse terrain 2 km further. Seen from the shore, a valley and the edge (CHANGELOG
+v11.62); the summit only on the map.
 
 ## The surface
 

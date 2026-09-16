@@ -1,6 +1,6 @@
 # ARCHIPELAGO.md — the chain (15 Sep 2026)
 
-Status: **step 1 built** (v11.61, the islands as records); steps 2–5 designed here, not built. The person's decisions are at the end.
+Status: **steps 1–2 built** (v11.61 the islands as records; v11.62 the giant's record and the land term); steps 3–5 designed here, not built. The person's decisions are at the end.
 Read PLANET.md first (the basin, the shield's rules) and DESIGN.md World shape; the maps are `map.html` and `node test/map.js`.
 
 ## What it is
@@ -37,7 +37,11 @@ the flank cone's hill shows.
    `sample()` takes the smooth max of every island in reach over the basement and the highest island's conditions. Ours is `ISLANDS[0]`
    and must stay bit-identical: check any change to `islandH`/`sample` against the last commit's world.js over the old square
    (185,761 samples, ground and all nine fields; the scratch script of 15 Sep did `git show HEAD:src/world.js` into a stub and compared).
-2. **The giant's record and the land term.** The kit has no land above a few metres. Add to the record a `land` block and to `islandH` a
+2. **The giant's record and the land term** — built v11.62: `land` in the record (world.js `islandH`: the shield's surface, the windward cliff,
+   the rain gullies to graded floors, the rift-zone flows, the caldera); the giant is `ISLANDS[1]` at the table's position, in metres with `sc` 1 —
+   the record carries its own radii, so the scaling below was not needed and the noise keeps our grain; a 1 km shelf puts its foot at ~13.8 km,
+   not 12, and the saddle at −927, 4.5 km from our centre; ours proved bit-identical; the centre is 2.5 km past the edge until step 4. As
+   designed: the kit had no land above a few metres. Add to the record a `land` block and to `islandH` a
    subaerial term inside the rim's radius: the shield rising at 5–8° to the summit (PLANET: pillow lava and hyaloclastite pile at 10–20°
    under water, subaerial flows at 4–8°), a caldera at the top if wanted, gullies cut by the rain on the windward side (the wind is `WIND_A`;
    the lee is dry), a shore that is basalt and olivine sand by the existing rules (chunks.js `terrainColor`, DESIGN Land), flows as low
@@ -70,3 +74,8 @@ same rings to a png), `tp(x,z,y)` in the game's console to go and look, `test/pr
 - Performance is theirs to troubleshoot in another chat; build first.
 - Open: the exact layout (map.html json, if it differs from the table); the giant's character in detail (caldera or not, how much
   reef, a river or two); whether the crossing gets its road in the same pass.
+- Asked 15 Sep 2026 with v11.62 in hand, open: the caldera (built, r 700, 110 m — keep, fill it as a post-shield volcano does, or strike);
+  rivers in the master valleys (nothing carries water on land); the reef's amount (by envelope: what the lime polyps' rule gives a 1 km shelf);
+  the greens above `h` 60 (tussock and scrub stop there by their envelopes, so the giant's slopes are bare rock above it; the rain says the
+  windward flank should be green to the cloud base at 650); whether the windward cliff's face wants a rock colour of its own (the strand's
+  colours run to 18 m by height, so it reads as a bluff); the road; the layout against the map's json.
