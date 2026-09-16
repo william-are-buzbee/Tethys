@@ -1,5 +1,10 @@
 # HANDOFF — tethys
 
+**v11.59–11.60 (15 Sep 2026): the maps.** `node test/map.js` draws the world (bands, hillshade, contours, the old square, the sill, planned
+islands via `PLAN`) to `test/preview/map.png`; `map.html` is the same map interactive — islands added, dragged, resized, the sizes and
+distances derived, exported as the `PLAN` string or JSON. The person is using it to place the archipelago; the next build waits on their
+plan (a huge distant island is the ask: island records in `sample()`, subaerial geology, the horizon tier, the world grown to hold it).
+
 **v11.58 (15 Sep 2026): the basin — the same island on a 26 km world.** The person's first step toward the archipelago: nothing but the
 island as it is, on a world you can swim out of until you hit the sill. `NCELL` 120 (25.8 km a side; the island's square is the middle 16,
 untouched to the bit — verified over every sample of the old square); past r 2400 the flank meets an abyssal plain at −1100 through a

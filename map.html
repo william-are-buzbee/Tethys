@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>tethys — the map</title>
+<!-- map.html (v11.60) — the world as an interactive map, a dev tool: the same sample() as the game (src/util.js + src/world.js loaded
+     as they are, so it is never stale), drawn to a canvas you can pan and zoom, with planned islands you can add, drag, resize and
+     export — the PLAN string for test/map.js, or JSON for a discussion. Open it from node serve.js (http://localhost:8080/map.html) or
+     straight from the file. The plan is kept in localStorage['tethys.map']. Nothing here touches the game. -->
+<style>
+html,body{margin:0;height:100%;background:#0b1020;color:#d8dcd0;font:13px/1.4 Georgia,serif;letter-spacing:.04em;overflow:hidden}
+#wrap{display:flex;height:100%}
+#cv{flex:1;cursor:grab;display:block}
+#side{width:330px;padding:12px 14px;overflow-y:auto;background:#0e1424;border-left:1px solid #22304a;box-sizing:border-box}
+h1{font-size:14px;font-weight:normal;margin:0 0 8px;letter-spacing:.2em;text-transform:lowercase}
+h2{font-size:12px;font-weight:normal;margin:14px 0 4px;color:#9fb3c8;letter-spacing:.15em}
+label{display:block;margin:3px 0;color:#9fb3c8}
+input[type=number],input[type=text],textarea,select{background:#0b1020;color:#e8e8dc;border:1px solid #2a3a56;padding:3px 5px;font:12px monospace;width:100%;box-sizing:border-box}
+input[type=number]{width:96px}
+.row{display:flex;gap:6px;align-items:center;margin:3px 0}
+.row label{flex:1;margin:0}
+button{background:#1b2740;color:#e8e8dc;border:1px solid #2f4468;padding:4px 9px;font:12px Georgia,serif;letter-spacing:.08em;cursor:pointer;margin:2px 2px 2px 0}
+button:hover{background:#26375a}
+.isl{padding:6px 8px;margin:4px 0;border:1px solid #22304a;cursor:pointer}
+.isl.sel{border-color:#f0d060;background:#141c30}
+.isl b{color:#f0d060;font-weight:normal}
+.small{color:#7f93a8;font-size:11px}
+textarea{height:90px}
+#stat{position:absolute;left:10px;bottom:8px;color:#cfd6c8;font:11px monospace;background:rgba(8,12,24,.6);padding:4px 8px;pointer-events:none}
+</style></head><body>
+<div id="wrap"><canvas id="cv"></canvas><div id="side">
+<h1>tethys — the map</h1>
+<div class="small">drag to pan, wheel to zoom. drag an island's centre to move it, its land ring to resize it. n adds an island where the mouse is, delete removes the selected one.</div>
+<h2>the world</h2>
+<div class="row"><label>cells a side (NCELL, ÷4)</label><input type="number" id="ncell" step="4" min="16" value="120"></div>
+<div class="row"><label>cell (m)</label><input type="number" id="cell" value="215" disabled></div>
+<div id="worldStat" class="small"></div>
+<h2>planned islands</h2>
+<div id="list"></div>
+<button id="add">add island</button><button id="del">delete</button>
+<div id="edit" style="display:none">
+<div class="row"><label>name</label><input type="text" id="e_name" style="width:150px"></div>
+<div class="row"><label>x (m, east +)</label><input type="number" id="e_x" step="100"></div>
+<div class="row"><label>z (m, south +)</label><input type="number" id="e_z" step="100"></div>
+<div class="row"><label>land radius (m)</label><input type="number" id="e_land" step="100" min="0"></div>
+<div class="row"><label>summit (m)</label><input type="number" id="e_sum" step="50" min="0"></div>
+<div class="row"><label>submarine slope (°)</label><input type="number" id="e_slope" step="1" min="3" max="30"></div>
+<div id="derived" class="small"></div>
+</div>
+<h2>export</h2>
+<button id="copyPlan">PLAN for test/map.js</button><button id="copyJson">json</button><button id="load">load json</button>
+<textarea id="out" spellcheck="false"></textarea>
+<div class="small">the plan autosaves in this browser. paste json above and press load to bring one back.</div>
+<h2>view</h2>
+<button id="fit">the world</button><button id="isl">the island</button><button id="all">everything planned</button>
+<div class="small" id="hint"></div>
+</div></div>
+<div id="stat"></div>
+<script>window.THREE={Vector3:class{constructor(x,y,z){this.x=x;this.y=y;this.z=z;}},Matrix4:class{},Quaternion:class{}};</script>
+<script src="src/util.js"></script>
+<script src="src/world.js"></script>
+<script>
+(function(){
+'use strict';
+const cv=document.getElementById('cv'),ctx=cv.getContext('2d'),side=document.getElementById('side');
+const $=id=>document.getElementById(id);
+const BASIN_H=typeof BASIN==='object'?BASIN.h:-1100,R_PLANET=6371000; // the basin floor for the foot; an Earth-sized planet for the horizon (PLANET: 1 g)
+// ---------- the view ----------
+let view={cx:0,cz:0,span:2*HALF*1.15}; // metres; span is the canvas's width in metres
+let W=800,H=600;
+function fit(){W=cv.clientWidth;H=cv.clientHeight;cv.width=W;cv.height=H;base=null;schedule();}
+const mpp=()=>view.span/W;
+const toPx=(x,z)=>[(x-view.cx)/mpp()+W/2,(z-view.cz)/mpp()+H/2];
+const toWorld=(px,py)=>[view.cx+(px-W/2)*mpp(),view.cz+(py-H/2)*mpp()];
+// ---------- the base picture: sample() into an ImageData, progressively ----------
+const BANDS=[[0,[0.55,0.52,0.40]],[-6,[0.62,0.78,0.72]],[-60,[0.30,0.62,0.66]],[-150,[0.18,0.42,0.56]],[-450,[0.12,0.26,0.44]],[-800,[0.10,0.17,0.30]],[-1100,[0.08,0.11,0.20]],[-3000,[0.04,0.05,0.10]]];
+function bandCol(h){if(h>=0)return h>4?[0.42,0.40,0.32]:BANDS[0][1];for(let k=1;k<BANDS.length;k++){if(h>=BANDS[k][0]){const a=BANDS[k-1][1],b=BANDS[k][1],t=(BANDS[k-1][0]-h)/(BANDS[k-1][0]-BANDS[k][0]);return [a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t];}}return BANDS[BANDS.length-1][1];}
+const CONT=[0,-60,-150,CHEMO,-800,-1000];
+let base=null,job=null; // base: {img (ImageData at the canvas size), view}
+function schedule(){if(job)clearTimeout(job.raf);job={step:0,raf:0,view:{...view}};job.raf=setTimeout(run,0);} // timers, not animation frames: a background pane never gets a frame, and the render must still finish there
+function run(){ // three passes: a quarter, a half, full resolution; each pass a few rows a frame
+  const J=job;if(!J)return;const scales=[4,2,1];
+  if(J.step>=scales.length){job=null;return;}
+  const sc=scales[J.step],w=Math.ceil(W/sc),h=Math.ceil(H/sc);
+  if(!J.hg||J.hgW!==w){J.hg=new Float32Array((w+2)*(h+2));J.hgW=w;J.row=0;J.f=new Float32Array(9);}
+  const M=J.view.span/W*sc,x0=J.view.cx-J.view.span/2,z0=J.view.cz-J.view.span/2*H/W;
+  const t0=performance.now();
+  while(J.row<h+2&&performance.now()-t0<12){const j=J.row;for(let i=0;i<w+2;i++)J.hg[j*(w+2)+i]=sample(x0+(i-0.5)*M,z0+(j-0.5)*M,J.f).h;J.row++;}
+  if(J.row>=h+2){ // shade and band this pass into the base image, scaled up
+    const img=ctx.createImageData(w,h),d=img.data,N=w+2,Hg=J.hg;
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++){const k=(y+1)*N+(x+1),hh=Hg[k];
+      const dzdx=(Hg[k+1]-Hg[k-1])/(2*M),dzdz=(Hg[k+N]-Hg[k-N])/(2*M),len=Math.sqrt(dzdx*dzdx+1+dzdz*dzdz),nd=(0.55*dzdx+0.35+0.55*dzdz)/len/0.75,sh=0.55+0.55*Math.max(0,Math.min(1.4,nd));
+      let c=bandCol(hh).map(v=>v*sh);const hr=Hg[k+1],hd=Hg[k+N];
+      for(const cvv of CONT){if((hh-cvv)*(hr-cvv)<0||(hh-cvv)*(hd-cvv)<0){const wgt=cvv===CHEMO?0.35:cvv===0?0.6:0.5;c=c.map(v=>v*(1-wgt)+(cvv===CHEMO?0.6:0.95)*wgt);if(cvv===CHEMO)c[0]+=0.15;}}
+      const o=(y*w+x)*4;d[o]=Math.min(255,c[0]*255);d[o+1]=Math.min(255,c[1]*255);d[o+2]=Math.min(255,c[2]*255);d[o+3]=255;}
+    const off=document.createElement('canvas');off.width=w;off.height=h;off.getContext('2d').putImageData(img,0,0);
+    base={cv:off,view:J.view,sc:sc};J.step++;J.hg=null;draw();}
+  J.raf=setTimeout(run,4); // a breath between pieces: the page stays responsive (and a screenshot can land) while the picture fills in
+}
+// ---------- the plan ----------
+let plan=[],sel=-1;
+const KEY='tethys.map';
+function load(){try{const s=localStorage.getItem(KEY);if(s){const o=JSON.parse(s);if(Array.isArray(o.plan))plan=o.plan;if(o.ncell)$('ncell').value=o.ncell;}}catch(e){}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify({plan:plan,ncell:+$('ncell').value}));}catch(e){}}
+const foot=I=>I.land+(I.summit-BASIN_H)*0+(-BASIN_H)/Math.tan(I.slope*Math.PI/180); // the foot on the basin floor: the land's edge plus the submarine flank's run
+function addIsland(x,z){plan.push({name:'island '+(plan.length+1),x:Math.round(x),z:Math.round(z),land:2500,summit:300,slope:12});sel=plan.length-1;save();list();draw();}
+function list(){const L=$('list');L.innerHTML='';plan.forEach((I,i)=>{const d=document.createElement('div');d.className='isl'+(i===sel?' sel':'');d.innerHTML='<b>'+esc(I.name)+'</b> — '+(I.land*2/1000).toFixed(1)+' km across, +'+I.summit+' m, foot '+(foot(I)*2/1000).toFixed(0)+' km';d.onclick=()=>{sel=i;list();draw();};L.appendChild(d);});
+  const E=$('edit');if(sel>=0&&plan[sel]){E.style.display='';const I=plan[sel];$('e_name').value=I.name;$('e_x').value=I.x;$('e_z').value=I.z;$('e_land').value=I.land;$('e_sum').value=I.summit;$('e_slope').value=I.slope;derived();}else E.style.display='none';
+  worldStat();output();}
+function esc(s){return String(s).replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));}
+function derived(){const I=plan[sel];if(!I)return;const d0=Math.hypot(I.x,I.z),F=foot(I);let s='foot radius '+(F/1000).toFixed(1)+' km (land + '+((-BASIN_H)/Math.tan(I.slope*Math.PI/180)/1000).toFixed(1)+' km of flank at '+I.slope+'°)<br>';
+  s+='from our island: '+(d0/1000).toFixed(1)+' km centre to centre; ';const gap=d0-F-5700;s+=gap>0?'open floor between the feet '+(gap/1000).toFixed(1)+' km':'the feet overlap by '+(-gap/1000).toFixed(1)+' km (a saddle: normal in a chain)';s+='<br>';
+  const drop=d0*d0/(2*R_PLANET),eye=2,hor=Math.sqrt(2*R_PLANET*eye)+Math.sqrt(2*R_PLANET*I.summit);const ang=Math.atan2(I.summit-drop,d0)*180/Math.PI;
+  s+='seen from our surface: the summit '+(ang>0?ang.toFixed(2)+'° above the horizon':'below the horizon')+' (curvature drops '+drop.toFixed(0)+' m at that distance); visible to '+(hor/1000).toFixed(0)+' km in clear air, the haze allows 15–30<br>';
+  const sw=d0/7/60;s+='the crossing at 7 m/s: '+sw.toFixed(0)+' min real; land area ~'+(Math.PI*I.land*I.land/1e6).toFixed(1)+' km²';
+  for(let j=0;j<plan.length;j++){if(j===sel)continue;const J=plan[j],d=Math.hypot(J.x-I.x,J.z-I.z);s+='<br>to '+esc(J.name)+': '+(d/1000).toFixed(1)+' km, feet '+((d-F-foot(J))>0?(d-F-foot(J))/1000>0?((d-F-foot(J))/1000).toFixed(1)+' km apart':'':'overlapping');}
+  $('derived').innerHTML=s;}
+function worldStat(){const n=+$('ncell').value||120,side=n*CELL;let out=(side/1000).toFixed(1)+' km a side, '+(n*n).toLocaleString()+' cells, ±'+(side/2/1000).toFixed(1)+' km';let outside=0;for(const I of plan){if(Math.abs(I.x)+foot(I)>side/2||Math.abs(I.z)+foot(I)>side/2)outside++;}if(outside)out+='<br>'+outside+' planned foot'+(outside>1?'s reach':' reaches')+' past this square';$('worldStat').innerHTML=out;}
+function output(){const P=plan.map(I=>[I.x,I.z,I.land,Math.round(foot(I))].join(',')).join(';');$('out').value=(outMode==='json')?JSON.stringify({ncell:+$('ncell').value,plan:plan},null,1):'PLAN="'+P+'" node test/map.js';}
+let outMode='plan';
+// ---------- drawing the overlay ----------
+function draw(){ctx.fillStyle='#0b1020';ctx.fillRect(0,0,W,H);
+  if(base){const b=base.view,s=mpp()/(b.span/W); // the base picture, re-placed for the current view while a fresh one renders
+    const [bx,by]=toPx(b.cx-b.span/2,b.cz-b.span/2*H/W);ctx.imageSmoothingEnabled=base.sc>1||s!==1;ctx.drawImage(base.cv,bx,by,W/s,H/s);}
+  ctx.lineWidth=1;ctx.font='11px monospace';
+  const n=+$('ncell').value||120,half=n*CELL/2;
+  if(view.span<40000&&n<=200){ctx.strokeStyle='rgba(120,140,170,0.18)';ctx.beginPath();for(let k=0;k<=n;k+=4){const v=-half+k*CELL;let a=toPx(v,-half),b=toPx(v,half);ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);a=toPx(-half,v);b=toPx(half,v);ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);}ctx.stroke();}
+  rect(-HALF+25,-HALF+25,HALF-25,HALF-25,'rgba(200,200,200,0.7)',[6,6]);text(-HALF+25,-HALF+25,'the world now, '+(2*HALF/1000).toFixed(1)+' km','rgba(200,200,200,0.9)',4,-6);
+  if(n*CELL/2!==HALF){rect(-half,-half,half,half,'rgba(240,220,120,0.8)',[10,6]);text(-half,-half,'proposed world, '+(n*CELL/1000).toFixed(1)+' km','#f0dc78',4,-6);}
+  rect(-1720,-1720,1720,1720,'#f0d060',[4,4]);
+  for(const k in LM){if(k==='all')continue;const p=LM[k];ring(p.x,p.z,Math.max(60,3*mpp()),'#f0f0e6');text(p.x,p.z,k+' '+Math.round(p.h),'#f0f0e6',7,-4);}
+  ring(ISLE.x,ISLE.z,120,'#f0f0e6');
+  if(typeof SILL==='object'){const c=Math.cos(SILL.a),s=Math.sin(SILL.a);ctx.strokeStyle='#f06e5a';ctx.beginPath();for(let t=-40000;t<=40000;t+=200){const p=toPx(c*SILL.d-s*t,s*SILL.d+c*t);if(t===-40000)ctx.moveTo(p[0],p[1]);else ctx.lineTo(p[0],p[1]);}ctx.stroke();ring(c*SILL.d,s*SILL.d,700,'#f06e5a',[3,3]);text(c*SILL.d,s*SILL.d,'the gap','#f06e5a',8,14);text(c*(SILL.d+900)-s*3500,s*(SILL.d+900)+c*3500,'the sill\'s crest '+SILL.crest,'#f06e5a',0,0);}
+  // the planned islands
+  plan.forEach((I,i)=>{const col=i===sel?'#ffe680':'#f0d060';ring(I.x,I.z,I.land,col);ring(I.x,I.z,foot(I),col,[5,5]);const p=toPx(I.x,I.z);ctx.fillStyle=col;ctx.beginPath();ctx.arc(p[0],p[1],4,0,7);ctx.fill();text(I.x,I.z,I.name+'  +'+I.summit+' m, '+(I.land*2/1000).toFixed(1)+' km across',col,8,-8);
+    if(i===sel){const a=Math.atan2(I.z,I.x);ctx.strokeStyle='rgba(255,230,128,0.5)';ctx.setLineDash([2,4]);ctx.beginPath();const q=toPx(0,0);ctx.moveTo(q[0],q[1]);ctx.lineTo(p[0],p[1]);ctx.stroke();ctx.setLineDash([]);text((I.x)/2,(I.z)/2,(Math.hypot(I.x,I.z)/1000).toFixed(1)+' km','rgba(255,230,128,0.9)',4,-4);}});
+  // arrows for the current and the wind, a scale bar
+  arrow(W-90,H-70,CUR_A,40,'#f0f0e6','current');arrow(W-90,H-30,WIND_A,40,'#c8dcff','wind');
+  const sb=view.span>=40000?10000:view.span>=12000?5000:view.span>=4000?1000:200,sbp=sb/mpp();ctx.strokeStyle='#f0f0e6';ctx.beginPath();ctx.moveTo(20,H-20);ctx.lineTo(20+sbp,H-20);ctx.moveTo(20,H-26);ctx.lineTo(20,H-14);ctx.moveTo(20+sbp,H-26);ctx.lineTo(20+sbp,H-14);ctx.stroke();ctx.fillStyle='#f0f0e6';ctx.fillText((sb/1000)+' km',24,H-28);
+}
+function rect(xa,za,xb,zb,col,dash){const a=toPx(xa,za),b=toPx(xb,zb);ctx.strokeStyle=col;ctx.setLineDash(dash||[]);ctx.strokeRect(a[0],a[1],b[0]-a[0],b[1]-a[1]);ctx.setLineDash([]);}
+function ring(x,z,r,col,dash){const p=toPx(x,z);ctx.strokeStyle=col;ctx.setLineDash(dash||[]);ctx.beginPath();ctx.arc(p[0],p[1],r/mpp(),0,7);ctx.stroke();ctx.setLineDash([]);}
+function text(x,z,s,col,dx,dy){const p=toPx(x,z);ctx.fillStyle='rgba(0,0,0,0.8)';ctx.fillText(s,p[0]+dx+1,p[1]+dy+1);ctx.fillStyle=col;ctx.fillText(s,p[0]+dx,p[1]+dy);}
+function arrow(x,y,a,len,col,name){const dx=Math.cos(a)*len,dy=Math.sin(a)*len;ctx.strokeStyle=col;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+dx,y+dy);for(const s of [-1,1]){ctx.moveTo(x+dx,y+dy);ctx.lineTo(x+dx-Math.cos(a+s*0.5)*8,y+dy-Math.sin(a+s*0.5)*8);}ctx.stroke();ctx.fillStyle=col;ctx.fillText(name,x+dx+6,y+dy+4);}
+// ---------- the mouse ----------
+let drag=null,mouse=[0,0];
+function hit(px,py){ // the selected island's centre or land ring first, then any island's
+  const order=sel>=0?[sel,...plan.map((_,i)=>i).filter(i=>i!==sel)]:plan.map((_,i)=>i);
+  for(const i of order){const I=plan[i],p=toPx(I.x,I.z),d=Math.hypot(px-p[0],py-p[1]),r=I.land/mpp();if(d<9)return {i:i,what:'centre'};if(Math.abs(d-r)<7)return {i:i,what:'land'};}return null;}
+cv.addEventListener('mousedown',e=>{const h=hit(e.offsetX,e.offsetY);if(h){sel=h.i;list();drag={what:h.what,i:h.i};}else drag={what:'pan',x:e.offsetX,y:e.offsetY,cx:view.cx,cz:view.cz};cv.style.cursor='grabbing';});
+addEventListener('mousemove',e=>{const r=cv.getBoundingClientRect(),px=e.clientX-r.left,py=e.clientY-r.top;mouse=[px,py];const w=toWorld(px,py);
+  $('stat').textContent=(w[0]/1000).toFixed(2)+', '+(w[1]/1000).toFixed(2)+' km   ground '+Math.round(sample(w[0],w[1]).h)+' m   '+(Math.hypot(w[0],w[1])/1000).toFixed(1)+' km from the peak';
+  if(!drag)return;
+  if(drag.what==='pan'){view.cx=drag.cx-(px-drag.x)*mpp();view.cz=drag.cz-(py-drag.y)*mpp();draw();}
+  else{const I=plan[drag.i];if(drag.what==='centre'){I.x=Math.round(w[0]/100)*100;I.z=Math.round(w[1]/100)*100;}else{I.land=Math.max(200,Math.round(Math.hypot(w[0]-I.x,w[1]-I.z)/100)*100);}list();draw();}});
+addEventListener('mouseup',()=>{if(drag&&drag.what==='pan')schedule();if(drag&&drag.what!=='pan')save();drag=null;cv.style.cursor='grab';});
+cv.addEventListener('wheel',e=>{e.preventDefault();const w=toWorld(e.offsetX,e.offsetY),k=Math.exp(e.deltaY*0.0012);view.span=Math.max(1500,Math.min(400000,view.span*k));const m=mpp();view.cx=w[0]-(e.offsetX-W/2)*m;view.cz=w[1]-(e.offsetY-H/2)*m;draw();clearTimeout(cv._wt);cv._wt=setTimeout(schedule,120);},{passive:false});
+addEventListener('keydown',e=>{if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;if(e.key==='n'){const w=toWorld(mouse[0],mouse[1]);addIsland(w[0],w[1]);}if((e.key==='Delete'||e.key==='Backspace')&&sel>=0){plan.splice(sel,1);sel=-1;save();list();draw();}});
+// ---------- the side ----------
+$('add').onclick=()=>addIsland(view.cx,view.cz);$('del').onclick=()=>{if(sel>=0){plan.splice(sel,1);sel=-1;save();list();draw();}};
+for(const [id,key] of [['e_name','name'],['e_x','x'],['e_z','z'],['e_land','land'],['e_sum','summit'],['e_slope','slope']])$(id).addEventListener('input',()=>{const I=plan[sel];if(!I)return;I[key]=key==='name'?$(id).value:+$(id).value;save();list();draw();});
+$('ncell').addEventListener('input',()=>{save();list();draw();});
+$('copyPlan').onclick=()=>{outMode='plan';output();$('out').select();try{navigator.clipboard.writeText($('out').value);}catch(e){}};
+$('copyJson').onclick=()=>{outMode='json';output();$('out').select();try{navigator.clipboard.writeText($('out').value);}catch(e){}};
+$('load').onclick=()=>{try{const o=JSON.parse($('out').value);if(Array.isArray(o.plan)){plan=o.plan.map(I=>({name:String(I.name||'island'),x:+I.x||0,z:+I.z||0,land:+I.land||2000,summit:+I.summit||200,slope:+I.slope||12}));if(o.ncell)$('ncell').value=o.ncell;sel=-1;save();list();draw();}}catch(e){$('hint').textContent='that was not the map\'s json';}};
+$('fit').onclick=()=>{view={cx:0,cz:0,span:2*HALF*1.15};draw();schedule();};
+$('isl').onclick=()=>{view={cx:0,cz:0,span:4400};draw();schedule();};
+$('all').onclick=()=>{let r=HALF;for(const I of plan)r=Math.max(r,Math.hypot(I.x,I.z)+foot(I));view={cx:0,cz:0,span:r*2.2};draw();schedule();};
+addEventListener('resize',fit);
+load();fit();list();
+})();
+</script>
+</body></html>

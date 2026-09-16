@@ -258,6 +258,7 @@ Docs, most upstream first. When a doc's Open list says a choice is the person's,
 
 ## Dev tools in the game
 
+- `map.html` (v11.60): the world as an interactive map with planned islands you drag, resize and export (the `PLAN` string for `test/map.js`, or JSON); loads src/util.js and src/world.js as they are, so it is never stale; `/map.html` on serve.js or from the file. Not part of the game.
 - URL: `#low` `#high` (tier), `#zoo` (bestiary), `#lab` or `#lab=<base64 spec>` (the lab), `#bench` (the sound bench; it arms the first click, since an audio context needs a gesture), `#creator` (grants the menu's creator word without opening the lab first).
 - The menu (v11.47): `new game` starts the finback in a new slot; `continue` lists the slots (the store is IndexedDB — clear it from the browser's site data to start clean; the tests use memory); esc in play with the pointer free (esc twice when locked) saves and returns to the menu. Death (v11.55) writes the cause to the slot and returns to the menu with it as the note; `continue` starts a new animal at the peak in the same world.
 - The effects list (`e`): `pixel light` (v11.38) is the caustic and the shadows in 30 cm blocks with hard edges, or smooth (the default); `texels` (v11.40–41, PIXEL.md) is every surface in texels with a pattern per cell — separate rows since v11.41.1 so either can be tried alone; `test/caustic.js` draws either light (`PIX=0`). A slider under a switch is a row in `FX_SLIDERS` and a number in `FX_DEF` (v11.38.1: caustics' `brightness`).

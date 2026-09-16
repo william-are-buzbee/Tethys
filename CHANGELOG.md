@@ -3921,3 +3921,19 @@ close), and `PLAN="x,z,landR,footR;…"` draws planned islands as two rings (the
 function is analytic, so the map can show where the world would grow before it does. It prints the areas: 0.06 km² of land, 637 km² under
 the chemocline, 532 km² of floor in the 666 km² square. `test/preview/map_plan.png` is a 50 km window with an 8 km island 17.5 km to the
 south-west along the rift axis as a first proposal. **Seen**: the three maps. Nothing in the game changed.
+
+## v11.60 — the interactive map: map.html (15 Sep 2026)
+
+The person, on the maps ("I absolutely love those"): one they can edit, proposing islands and changing their radius. `map.html` at the root,
+a dev tool beside dev.html and not part of the game: it loads `src/util.js` and `src/world.js` as they are under a three-class THREE stub,
+so its `sample()` is the game's and never stale; open it from `node serve.js` (`/map.html`) or from the file. The same picture as
+`test/map.js` (bands, hillshade, contours, the old square, the clamp, the regions, the landmarks, the sill) on a canvas you pan and zoom,
+rendered in three passes (a quarter, a half, full) a few rows at a time on timers — not animation frames, which a background pane never
+gets. Planned islands: `n` or the button adds one, drag the centre to move it, drag its land ring to resize it, fields for the name, the
+place, the land's radius, the summit and the submarine slope; the foot on the basin floor follows (land + 1100 m of flank at the slope);
+the sidebar derives what a decision needs — the distance from our island and the open floor or the saddle between the feet, the summit's
+height above the horizon from our surface with the curvature's drop, how far it is visible in clear air, the crossing in real minutes,
+the land area, the distances to the other planned islands — and a proposed `NCELL` draws the world square that would hold them and says
+whose foot reaches past it. Export: the `PLAN` string for `test/map.js`, or JSON (and load it back); the plan autosaves in
+`localStorage['tethys.map']`. **Seen**: the world and the island close, an island added and dragged to 7 km south-west with its rings and
+label, the tool's own numbers. Nothing in the game changed.
