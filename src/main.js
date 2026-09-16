@@ -91,4 +91,8 @@ function loop(now){
   updateStats(dt);frameMs=performance.now()-f0;
 }
 setTimeout(()=>{fadeEl.style.opacity=0;},400);
+// tp(x,z,y) from the browser's console (v11.60.2): the player put at x,z (east +, south +), y above the ground there (10 by default; a depth
+// is a negative absolute y), still, the camera with it, the cells round it loaded now. The bundle is one IIFE, so this is the one way in
+// from tethys.html; the map's stat line gives x,z in km under the mouse. A dev tool, not a feature: nothing saves it, nothing reads it.
+window.tp=function(x,z,y){if(mode!=='play'||!player.clade)return 'start a game first';const g=groundAt(x,z),py=y===undefined?g+10:y<0?y:g+y;player.pos.set(x,py,z);player.vel.set(0,0,0);player.hold=null;camera.position.copy(player.pos).add(V3(-6,3,-6));cellsAround();return 'at '+x.toFixed(0)+', '+z.toFixed(0)+', y '+py.toFixed(0)+' (ground '+g.toFixed(0)+')';};
 requestAnimationFrame(loop);

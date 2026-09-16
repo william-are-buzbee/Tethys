@@ -3942,3 +3942,10 @@ label, the tool's own numbers. Nothing in the game changed.
 
 The person saw no place to paste: the canvas's own width pushed the sidebar off the right edge of a narrow window (`min-width:0` on the
 canvas, `flex:none` on the sidebar). The paste box is labelled and has a placeholder now. Seen in the pane at 800 px.
+
+## v11.60.2 — tp(x,z,y) from the console (15 Sep 2026)
+
+The person asked how to teleport. `tp(x,z,y)` in the browser's console (F12): the player at x,z (east +, south +), y above the ground
+there (10 by default; a negative y is a depth), still, the camera with it, the cells round it loaded at once; returns where it put you and
+the ground. Works from tethys.html (the bundle is an IIFE, so nothing else is reachable) and dev.html. The map's stat line gives x,z under
+the mouse. Not a feature: nothing saves or reads it. Smoke and lint green; unseen in play.
