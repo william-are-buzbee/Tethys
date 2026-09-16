@@ -80,7 +80,7 @@ function loop(now){
   updateMenu(dt);updateZoo(dt);updateLab(dt);if(mode==='play')updatePlayer(dt); // updateMenu (v11.47.1): the column's rise and the idle fade
   const p0=performance.now();
   updateSchools(dt);updateCreatures(dt);if(mode==='play')finishPlayer(dt,bodies); // bodies, contact, arms, then the camera
-  updateEggs(dt);ecoTick(dt);updateSave(dt); // the clutches hatch; the world's ledger (v11.26): the model every few seconds, the births owed; the autosave clock (save.js, v11.47)
+  updateEggs(dt);updateSheds(dt);ecoTick(dt);updateSave(dt); // the clutches hatch; the cast carapaces rot (v11.66); the world's ledger (v11.26): the model every few seconds, the births owed; the autosave clock (save.js, v11.47)
   updatePads(dt);updateDisturbers(dt);if(FX.snow)updatePlankton(dt);physMs=performance.now()-p0;
   updateWounds(dt);updateStates(dt);updateInks(dt);updateSplashes(dt);updateBlood(dt);updateDebris(dt);updateFlush(dt); // the wounds bleed and the blood drifts (combat.js, v11.31)
   updateAtmosphere(dt);updateSurface();

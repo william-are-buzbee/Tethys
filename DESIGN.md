@@ -1476,6 +1476,29 @@ far LOD), `setLOD`, steering, one `updateX` per role, `updateCreatures()`.
   `lodFar = min(0.7·FAR, 120+40·size)` (a veil to 760, an abyssal to 720). Creatures beyond 360 units *and* beyond
   their `lodFar` aren't updated at all, so the big ones keep swimming while visible. A static far LOD of a 16-unit
   animal at 700 units is a smudge; if smudges bother them, drop the 40.
+- **The individual (v11.66, the hingeshell variety pass; creatures_ai.js, the section over `spawn`; every clade's infrastructure).** Two of a
+  kind were identical to v11.65. Every animal the ledger places (ent ≥ 0; the lab's placed spec, the fleets and the tests' bodies are plain)
+  draws from the cell's own stream: a **size** within `VARY.spread` ±0.15 of its kind's — an instance scale on the group over the shared geometry,
+  `scaledDef` chaining a def with the size-dependent numbers scaled (size, reach ×k, dmg ×k², speed/flee/lunge ×√k, detect/radius/clear ×k, food;
+  the routine the juvenile uses at `ECO.juv`), the hit capsules through the group's scale, the gape ×k; a **coat class** from the place's
+  chemistry (creatures_spec.js `coatClassAt(h, y, f, clade)`: sulfide below `CHEMO` or at `heat` > 0.3, lime on rock above −26 with `expo` >
+  0.35, rust on rock above −80, manganese on mud below −200, a `d` suffix at `young` > 0.4; `coatChem` shifts the kind's `PAL` preset in HSL by
+  `COAT_CLASSES`, on the keys `COAT_CHEM_KEYS[clade]` — the hingeshells' whole exoskeleton; the pale joints hold their lightness, the eyes and
+  mouths never move, PAL_FIXED as palVariant; `''` for a clade with no keys), a geometry per kind, age and class in `KIND_GEO` (`kind~@cls`;
+  buildKind swaps the preset for the build and puts it back); and, for a clade with `GRAMMAR.moult`, the **soft state**. `coatFor` takes the
+  fields as a fifth argument and applies the class to a drawn coat. Cost: none per spawn beyond the build (40 sickles 17 ms either way); the
+  cache held 18–29 class geometries over a tour of the island.
+- **The moult (v11.66, `MOULT`):** `frac` 0.05 of a moulting clade's placed adults start soft (never a boid); soft is `c.soft` — the `soft` class
+  (pale), `st.soft` 1 (the valves clamp), `b.cover` all skin, state `sit`, laid by `hideSpot` on the floor within `hide` 6 m where a solid stands
+  within 2 m; `updateSoft` hardens it after `soft` 0.5 days × mass^¼ out of sight (`harden`: a new adult spawned in its place, as `growUp`); a hard
+  adult's `moultT` runs `every` 20 days × mass^¼ × (0.5..1.5) and, out of sight, unheld and not feeding, `moult` replaces it with its soft twin and
+  drops its cast carapace (`dropShed`: a Mesh of `shedGeo(kind)` at the floor with the body's yaw, `keep` 0.85 of its scale, `shedT` 4 days,
+  `sheds`, `updateSheds`; the cell's `sheds` go with it). `findPrey` takes a soft body of any kind when the hunter's mass ≥ `prey` 0.5 × its
+  (`softPrey`). Old sheds as flora: `shedFlora` pushes an entry per moulting non-boid kind that spawns (`shed_<kind>`: `shedGeo` — the body in
+  the `shed` coat, valves clamped, rigs left out, flattened, lifted by its clearance; `MAT`, `tints` near white, `s` 0.77–0.89, `sink` 0.08,
+  `tilt`, `per` max(1, capacity × `shedPer` 0.5) with `rare` the fraction under one, `envs` the kind's SPAWN envelopes, `top` 0.6 size,
+  `maxSlope` 1). placeFloraType reads `envs` (the best of several, `envsW`) and `rare` for any entry.
+- **The stun** is every role's since v11.66 (updateCreatures, before the roles: the finback's blow, the ram's).
 - **Spawning:** from the ledger (v11.26, [The ecology](#the-ecology)): `spawnChunkCreatures` takes each entry's count from it and
   `placeKind` places it by kind in the entry's groups (`grp`); swimmers get proper water (floor under −5), not the surf; the strand's
   scuttles are an entry with `land`. Kills leave carcasses and nothing respawns; the ledger's births are laid as eggs.
@@ -1606,6 +1629,15 @@ debits. Nothing respawns. The unloaded cells run the model; the loaded cells run
 - **The rate to expect**: a cell of 26 flickers owes about half a recruit a game day, so one entry in one cell lays roughly every two
   game days; over the ~25 cells loaded round the player that is a clutch every 5–15 real minutes, more as the owed builds. The readout's
   `owed` is the number to watch: it climbs between clutches and drops when one is laid.
+
+**The fields in the table** (v11.66, the hingeshell variety pass): the hingeshells' `SPAWN` rows read `expo`, `rel`, `shel`, `flow`, `nut`, `young`,
+`heat`, `turb` and `grp` where the mechanism says, not the depth alone (creatures_defs.js, the comment over the table); the raptor family's hood,
+lash and ram spawn (the hood as an `ambush` at its own clearance, `placeKind` by role), and five new kinds (sifter, cinder, wedge, plough, relict —
+PLANET's roster). Envelopes are drawn against a per-region capacity table (K at 2×2 samples a cell, split ours / the giant / the sill / the basin):
+the giant's shelf is ~30× ours, so a world K is mostly the giant's. **The 120-day census is the rule** (`node test/census.js 120`; `--test` runs
+40 days, which never saw the abyssal collapsing 70 → 12 over the sill's flank and the far floor where no comb is within its reach — its band is the
+rim now, h −560..−380 with `nut` ≥ 0.25). A soft (moulting) body is prey to any hunter big enough, live only: the paper model knows nothing of it.
+The `mid` flag on a boid's def keeps its ribbons at their own depth (placeKind `openY` 10–50 m up, `updateSchools` ±12 m about home, 8 m off the floor).
 
 **The index** (v11.65, ARCHIPELAGO step 4): the tables stay dense (five per entry over 57,600 cells) but every loop of the model, the settle and the
 drift walks `POP.cells[ei]`, the cells the entry has any capacity or count in (`POP.kcells[kind]` the union for the take's cap). `ecoMark` adds a

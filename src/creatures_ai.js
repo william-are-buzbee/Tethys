@@ -35,23 +35,83 @@ const KIND_GEO={},SHARED_GEO=new Set();
 // A juvenile (v11.26): a recruit is born at ECO.juv of its kind's scale and grows up off screen (growUp). Its def is its kind's with the
 // size-dependent numbers scaled, chained to the adult's so every other read falls through; its geometry is cached apart (KIND_GEO 'kind~')
 const JUV_DEF={};
-function juvDef(kind){let j=JUV_DEF[kind];if(j)return j;const d=DEFS[kind],s=ECO.juv,sp=SPECS[kind];j=JUV_DEF[kind]=Object.create(d);
-  j.size=d.size*s;j.juv=true;j.build=()=>compile(sp,s*(sp.s||1));if(d.speed)j.speed=d.speed*Math.sqrt(s);if(d.flee)j.flee=d.flee*Math.sqrt(s);if(d.reach)j.reach=d.reach*s;if(d.dmg)j.dmg=d.dmg*s*s;
-  if(d.radius)j.radius=d.radius*s;if(d.lunge)j.lunge=d.lunge*Math.sqrt(s);if(d.detect)j.detect=d.detect*s;if(d.clear!==undefined)j.clear=d.clear*s;if(d.food)j.food=Math.max(1,Math.round(d.food*s));return j;}
+function juvDef(kind){let j=JUV_DEF[kind];if(j)return j;const d=DEFS[kind],s=ECO.juv,sp=SPECS[kind];j=JUV_DEF[kind]=scaledDef(d,s);j.juv=true;j.build=()=>compile(sp,s*(sp.s||1));return j;}
+// ---------- the individual (v11.66, the hingeshell variety pass — the infrastructure is every clade's) ----------
+// Two of a kind were identical to v11.65: one geometry per kind, one palette, the juvenile the only variation. Now every animal the ledger places
+// draws three things at its spawn, from the cell's own rng so a cell comes back the same: a size within VARY.spread of its kind's (an instance
+// scale on the group over the shared geometry — nothing is rebuilt; the hit capsules, the contact and the calculator's numbers follow through
+// scaledDef and the group's scale); a coat class from the place's chemistry (creatures_spec.js coatClassAt: rust, lime, sulfide, manganese, the
+// young rock's dark — PLANET's shell-colour rule), which is a geometry per kind and class in KIND_GEO since the palette is baked into the vertex
+// colours (buildKind: ~0.5 ms and a few thousand vertices a class, only the classes a kind is met in); and, for a clade that moults
+// (GRAMMAR.moult), whether it is in the soft state — pale, its valves clamped, laid against the nearest solid, still, and covered by skin instead
+// of plate so anything with an edge can open it (PLANET: the only time a hingeshell is edible; a hunter takes a soft body of any kind down to
+// MOULT.prey of its own mass, findPrey). A soft one hardens after MOULT.soft days × mass^¼ (a fresh adult in its place, out of sight, as a
+// juvenile grows up); a hard one carries a clock to its next moult (MOULT.every days × mass^¼) and, out of sight, is replaced by its soft twin with
+// its cast carapace left on the floor beside it (a mesh per shed, gone after MOULT.shedT days). Older sheds lie about as debris: a flora entry per
+// moulting kind (shedFlora: the body flattened in the shed coat, MAT, placed by the kind's own envelopes through chunks.js placeFloraType `envs`,
+// clearOf like any small flora, one pool draw per kind). The boids skip the soft state (a soft one in a swarm is eaten at once, and a ribbon's mean
+// would drag on it). Anything outside the ledger (ent −1: the lab's placed spec, the fleets, the tests' bodies) is built plain.
+const VARY={spread:0.15}; // ±: the adult size band as a fraction of the kind's size
+const MOULT={frac:0.05,soft:0.5,every:20,hide:6,prey:0.5,shedT:4,shedPer:0.5,keep:0.85}; // frac: the share of a moulting clade's placed adults that start soft; soft: game days soft at unit mass (× mass^¼); every: game days between moults at unit mass (× mass^¼); hide: m a soft one looks about for a solid to lie against; prey: a hunter takes a soft body of any kind while its own mass is at least this share of the body's; shedT: game days a cast carapace dropped in play lasts; shedPer: sheds placed per cell per unit of the kind's capacity; keep: a shed's scale against the animal's (it grew at the moult)
+function moults(kind){const sp=SPECS[kind],g=sp&&GRAMMAR[sp.clade];return !!(g&&g.moult);}
+// the kind built in a coat class: its PAL preset swapped for the shifted twin for the build and put back (the zoo's own trick for the variants)
+function buildKind(d,kind,cls){const sp=SPECS[kind],pk=sp&&typeof sp.coat==='string'?sp.coat:null;if(!cls||!pk||!PAL[pk])return d.build();const p0=PAL[pk];PAL[pk]=coatChem(p0,cls,sp.clade);try{return d.build();}finally{PAL[pk]=p0;}}
+// a def with the size-dependent numbers scaled by k (a juvenile at ECO.juv, an adult's band at VARY): chained to the kind's so every other read falls through
+function scaledDef(d,k){const j=Object.create(d),sq=Math.sqrt(k);j.size=d.size*k;if(d.speed)j.speed=d.speed*sq;if(d.flee)j.flee=d.flee*sq;if(d.reach)j.reach=d.reach*k;if(d.dmg)j.dmg=d.dmg*k*k;if(d.radius)j.radius=d.radius*k;if(d.lunge)j.lunge=d.lunge*sq;if(d.detect)j.detect=d.detect*k;if(d.clear!==undefined)j.clear=d.clear*k;if(d.food)j.food=Math.max(1,Math.round(d.food*k));return j;}
+// a soft body's place: on the floor within MOULT.hide of p, clear of solids at its own radius but with one within 2 m (a rock, a stalk, a structure's foot); failing that, the floor where it is
+function hideSpot(ch,p,rng,d){const r=d.size*0.5,cl=(d.clear!==undefined?d.clear:d.size*0.35)+0.05;
+  for(let k=0;k<12;k++){const a=rng()*TAU,dd=1+rng()*MOULT.hide,x=p.x+Math.cos(a)*dd,z=p.z+Math.sin(a)*dd,h=groundAt(x,z);if(h>-3)continue;
+    T1.set(x,h+cl,z);if(solidPush(T1,r,null,ch,true))continue;T2.set(x,h+cl,z);if(!solidPush(T2,r+2,null,ch,true))continue;p.set(x,h+cl,z);return true;}
+  p.y=groundAt(p.x,p.z)+cl;return false;}
+function softPrey(c,o){return bodyMass(c.def)>=MOULT.prey*bodyMass(o.def);} // whether c, a hunter, takes o, a soft body (findPrey)
+// the soft state's clock: hardened out of sight (a new adult in its place); true when c is gone
+function updateSoft(c,dt,dp){c.softT-=dt;if(c.softT>0)return false;if(dp>90||!c.g.visible){harden(c);return true;}c.softT=20;return false;}
+function harden(c){const a=spawn(c.chunk,c.kind,c.pos,Math.random,{ent:c.ent,soft:false});a.home.copy(c.home);removeCreature(c);return a;}
+// the moult itself, out of sight: the soft twin where the animal was, its cast carapace on the floor beside it
+function moult(c){const s=spawn(c.chunk,c.kind,c.pos,Math.random,{ent:c.ent,soft:true});s.home.copy(c.home);dropShed(c.chunk,c.kind,c.pos,c.g.quaternion,c.b.g.scale.x);removeCreature(c);return s;}
+const sheds=[]; // the cast carapaces dropped in play (a mesh each, MOULT.shedT days); the old ones are flora (shedFlora)
+function dropShed(ch,kind,pos,q,s){const geo=shedGeo(kind);if(!geo)return null;const m=new THREE.Mesh(geo,MAT);m.position.set(pos.x,groundAt(pos.x,pos.z),pos.z);T4.set(0,0,1).applyQuaternion(q);m.rotation.y=Math.atan2(T4.x,T4.z);m.scale.setScalar(s*MOULT.keep);scene.add(m);
+  const sh={mesh:m,chunk:ch,t:MOULT.shedT*DAY_S*(0.7+0.6*Math.random())};sheds.push(sh);ch.sheds.push(sh);return sh;}
+function removeShed(sh){scene.remove(sh.mesh);let k=sheds.indexOf(sh);if(k>=0)sheds.splice(k,1);k=sh.chunk.sheds.indexOf(sh);if(k>=0)sh.chunk.sheds.splice(k,1);}
+function updateSheds(dt){for(let i=sheds.length-1;i>=0;i--){const s=sheds[i];s.t-=dt;if(s.t<=0)removeShed(s);}}
+// the cast carapace of a kind: the body built in the shed coat with its valves clamped (st.soft) and flattened to one geometry, the rigs (whips,
+// lines: soft parts, not cuticle) left out, lifted so its underside sits at y 0 like any flora; null for a kind that does not moult or is glass
+const SHED_GEO={};
+function shedGeo(kind){if(kind in SHED_GEO)return SHED_GEO[kind];const sp=SPECS[kind],d=DEFS[kind];if(!sp||!d||sp.mat==='glass'||!moults(kind))return SHED_GEO[kind]=null;
+  const b=buildKind(d,kind,'shed');b.anim(0,0,{soft:1});const rigM=new Set();if(b.rigs)for(const r of b.rigs)rigM.add(r.mesh);
+  b.g.updateMatrixWorld(true);const pos=[],nor=[],col=[],v=new THREE.Vector3(),nm=new THREE.Matrix3(),lift=d.clear!==undefined?d.clear:d.size*0.35;
+  b.g.traverse(o=>{if(!o.isMesh||rigM.has(o)||!o.geometry.attributes.color||o.material.transparent||o.visible===false)return;nm.getNormalMatrix(o.matrixWorld);const pa=o.geometry.attributes.position,na=o.geometry.attributes.normal,ca=o.geometry.attributes.color;
+    for(let i=0;i<pa.count;i++){v.fromBufferAttribute(pa,i).applyMatrix4(o.matrixWorld);pos.push(v.x,v.y+lift,v.z);v.fromBufferAttribute(na,i).applyMatrix3(nm).normalize();nor.push(v.x,v.y,v.z);col.push(ca.getX(i),ca.getY(i),ca.getZ(i));}});
+  const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));geo.setAttribute('normal',new THREE.Float32BufferAttribute(nor,3));geo.setAttribute('color',new THREE.Float32BufferAttribute(col,3));patternOn(geo,b.pat);
+  b.g.traverse(o=>{if(o.geometry)o.geometry.dispose();});return SHED_GEO[kind]=geo;}
+// the old sheds as debris: one flora entry per moulting kind that the ledger places (not the strand's, which the surf would take), its density the
+// kind's capacity × MOULT.shedPer (under one a cell: one try at that chance, `rare`), placed by every envelope the kind spawns by (`envs`)
+function shedFlora(){const byKind={};SPAWN.forEach(e=>{if(e.land||!moults(e.kind)||DEFS[e.kind].role==='boid')return;const k=byKind[e.kind]||(byKind[e.kind]={n:0,envs:[]});k.n+=e.n;k.envs.push(e.env);});
+  for(const kind in byKind){const geo=shedGeo(kind);if(!geo)continue;const d=DEFS[kind],K=byKind[kind],dens=K.n*MOULT.shedPer;
+    const f={id:'shed_'+kind,shed:kind,geo:geo,mat:MAT,tints:[[1,1,1],[0.94,0.92,0.88],[0.9,0.9,0.86]],s:[MOULT.keep*0.9,MOULT.keep*1.05],sink:0.08,tilt:true,per:Math.max(1,Math.round(dens)),rare:Math.min(1,dens),envs:K.envs,top:d.size*0.6,maxSlope:1.0};
+    FLORA.push(f);FLORA_BY_ID[f.id]=f;}}
+shedFlora();
 function spawn(ch,kind,pos,rng,opt){
-  const juv=!!(opt&&opt.juv),d=juv?juvDef(kind):DEFS[kind],b=d.build(),EK=ecoOf(kind);
+  const juv=!!(opt&&opt.juv),D=juv?juvDef(kind):DEFS[kind],EK=ecoOf(kind),ent=opt&&opt.ent!==undefined?opt.ent:-1,vary=ent>=0&&kind!=='lab';
+  // the individual (v11.66, above): the size band, the coat class of the place, the soft state; plain outside the ledger
+  const k=vary?1+VARY.spread*(2*rng()-1):1,d=k!==1?scaledDef(D,k):D;
+  const soft=vary&&!juv&&moults(kind)&&D.role!=='boid'&&(opt&&opt.soft!==undefined?!!opt.soft:rng()<MOULT.frac);
+  const f=vary&&ch?ch.f(pos.x,pos.z):null,cls=soft?'soft':f&&SPECS[kind]?coatClassAt(ch.h(pos.x,pos.z),pos.y,f,SPECS[kind].clade):'';
+  const b=buildKind(D,kind,cls);if(k!==1){b.g.scale.multiplyScalar(k);b.gape*=k;}
   const c={kind:kind,def:d,g:b.g,anim:b.anim,pos:pos.clone(),vel:V3(0,0,0),home:pos.clone(),hp:d.hp,state:'wander',t0:rng()*100,lastSpd:0,lastYaw:0,roll:0,rollV:0,sq:0,stunSide:rng()<0.5?-1:1,target:null,biteT:0,wanderT:0,wander:pos.clone(),alive:true,gone:false,stun:0,bored:0,cool:rng()*3,scanT:rng()*0.5,alarm:0,fleeT:0,lungeT:0,ramT:0,school:null,off:null,offT:0,chunk:ch,lod:-1,parts:null,lodMeshes:null,sub:1,wet:true,grounded:false,flopT:0,
     b:b,mass:bodyMass(d),bound:0,reach:0,shapesW:null,chainW:null,grab:null,holding:0,hold:null,held:0,bleed:0,paraT:0,stungT:0,hurtN:0,armsLost:0,regrow:null,sickT:0,poison:0,poisT:rng()*2,lungeC:0,missN:0,speedK:1,turnK:1,live:null,lost:null,cWith:null,d6:0,par:creatures.length&1, // hold: the hold it has on something, held: how many have hold of it, bleed: hp still to lose to its wounds (combat.js)
     st:{tell:0,strike:0,jet:false},tellT:0,strikeT:0,recoverT:0,burstT:rng()*2,face:null,bit:false,accT:0,threat:null,
-    ent:opt&&opt.ent!==undefined?opt.ent:-1,hunger:EK.hunter?rng():0,starveT:0,hunt:0,feedT:0,feedAt:null,dead:false,flesh:0,deadT:0,scav:null,scavT:rng()*0.5,juv:juv?EK.grow*DAY_S*(0.8+0.4*rng()):0}; // ent: the ledger entry; hunger 0 fed..1 starving (ecology.js); juv: seconds until it grows up // st: what the anim reads (creatures_builders.js); the tell and the strike as clocks
-  b.g.position.copy(pos);scene.add(b.g);
+    ent:ent,hunger:EK.hunter?rng():0,starveT:0,hunt:0,feedT:0,feedAt:null,dead:false,flesh:0,deadT:0,scav:null,scavT:rng()*0.5,juv:juv?EK.grow*DAY_S*(0.8+0.4*rng()):0, // ent: the ledger entry; hunger 0 fed..1 starving (ecology.js); juv: seconds until it grows up // st: what the anim reads (creatures_builders.js); the tell and the strike as clocks
+    k:k,cls:cls,soft:soft,softT:soft?MOULT.soft*Math.pow(EK.mass,0.25)*DAY_S*(0.7+0.6*rng()):0,moultT:vary&&!soft&&!juv&&moults(kind)&&D.role!=='boid'?MOULT.every*Math.pow(EK.mass,0.25)*DAY_S*(0.5+rng()):0}; // the individual (v11.66): its size factor, its coat class, the soft state and its clocks
+  if(soft){c.b.cover=b.cover.map(()=>'skin');c.st.soft=1;c.state='sit';hideSpot(ch,c.pos,rng,d);c.home.copy(c.pos);}
+  b.g.position.copy(c.pos);scene.add(b.g);
   // far LOD: the whole creature flattened into one mesh per material, hidden until needed
   c.parts=b.g.children.slice();
   // the far pose (v11.18): the rigs posed by the creature's own idle anim and skinned at rest before the bake, so a far lurker's arms
   // lie as they will when simulated and a far sailer's lines hang straight — they held the build pose (armRing's 0.3 rad spread:
   // arms raised, lines splayed) until the near LOD switched them on, which read as floating and then falling
   if(b.anim)b.anim(0,0,c.st);if(b.rigs)for(const r of b.rigs)rigRest(r);
-  const gk=juv?kind+'~':kind,K=kind==='lab'?null:(KIND_GEO[gk]||(KIND_GEO[gk]={geos:[],lod:null}));
+  const gk=kind+(juv?'~':'')+(cls?'@'+cls:''),K=kind==='lab'?null:(KIND_GEO[gk]||(KIND_GEO[gk]={geos:[],lod:null})); // a geometry per kind, age and coat class (v11.66)
   if(K){const rigMeshes=new Set();if(b.rigs)for(const r of b.rigs)rigMeshes.add(r.mesh);let n=0;
     b.g.traverse(o=>{if(!o.isMesh||rigMeshes.has(o))return;const g=K.geos[n++];if(g){if(o.geometry!==g){o.geometry.dispose();o.geometry=g;}}else{K.geos[n-1]=o.geometry;SHARED_GEO.add(o.geometry);}});}
   if(K&&K.lod)c.lodMeshes=K.lod.map(e=>{const m=new THREE.Mesh(e.geo,e.mat);m.visible=false;return m;});
@@ -105,7 +165,7 @@ function wander(c,dt){c.wanderT-=dt;if(c.wanderT<=0||c.pos.distanceTo(c.wander)<
 function findPrey(c,R){
   const d=c.def;let best=null,bd=1e9;if(R===undefined)R=d.detect;
   if(d.prey.indexOf('player')>=0&&!player.dead&&player.inkT<=0&&(!d.preyClade||(player.clade&&player.clade.id===d.preyClade))){const dp=c.pos.distanceTo(player.pos);if(dp<R){best=player;bd=dp*0.7;}}
-  for(const o of creatures){if(!o.alive||o===c)continue;if(d.prey.indexOf(o.kind)<0)continue;const dd=c.pos.distanceTo(o.pos);if(dd<R&&dd<bd){bd=dd;best=o;}}
+  for(const o of creatures){if(!o.alive||o===c)continue;if(d.prey.indexOf(o.kind)<0&&!(o.soft&&softPrey(c,o)))continue;const dd=c.pos.distanceTo(o.pos);if(dd<R&&dd<bd){bd=dd;best=o;}} // a soft body of any kind is prey to a hunter big enough (v11.66, MOULT)
   return best;
 }
 // The kill (v11.26): the ledger is debited and nothing comes back. Eaten whole (the player's bite, a small prey in a big mouth) the
@@ -189,8 +249,7 @@ const HUNT_SEEK=4,HUNT_HOME=1.5,HUNT_CAST=0.8;
 function hungerTick(c,dt){const K=ecoOf(c.kind);c.hunger=Math.min(1,c.hunger+dt/(K.cycle*DAY_S));if(c.hunger>=1){c.starveT+=dt;if(c.starveT>K.cycle*DAY_S*1.2){POP.starved+=1;kill(c,null);return true;}}return false;}
 function updateHunter(c,dt){
   const d=c.def;
-  if(c.stun>0){c.stun-=dt;c.vel.multiplyScalar(1-2*dt);c.pos.y-=0.3*dt;return;}
-  if(hungerTick(c,dt))return;
+  if(hungerTick(c,dt))return; // the stun is every role's now, before the roles (updateCreatures, v11.66)
   if(c.state==='feed'){const f=c.feedAt;c.feedT-=dt;if(!f||f.gone||f.flesh<=0||c.feedT<=0||c.hunger<=0){c.state='wander';c.feedAt=null;c.cool=d.cool||4;setWander(c);return;}
     const dist=c.pos.distanceTo(f.pos),at=reachOf(c,f);if(dist>at*0.9)seek(c,f.pos,d.speed*0.35,dt,1.5);else{c.vel.multiplyScalar(1-3*dt);eatAt(c,f,dt);}c.face=dist<at*1.5?f.pos:null;return;}
   if(c.state==='flee'){c.grab=null;c.fleeT-=dt;if(c.fleeT<=0)c.state='wander';seekAway(c,player.pos,d.speed,dt);return;}
@@ -271,7 +330,7 @@ function updateSchools(dt){
   for(const s of schools){
     let n=0;T1.set(0,0,0);for(const c of s.members)if(c.alive){n++;T1.add(c.pos);}if(n)s.pos.copy(T1.multiplyScalar(1/n));
     s.t-=dt;
-    if(s.t<=0||s.pos.distanceTo(s.target)<3){s.t=rnd(5,12);const p=s.home.clone().add(V3(rnd(-30,30),0,rnd(-30,30)));const fh=groundAt(p.x,p.z);p.y=fh<CHEMO?clamp(s.home.y+rnd(-30,30),-400,-20):clamp(fh+rnd(1.5,8),fh+1.5,-3);s.target.copy(p);}
+    if(s.t<=0||s.pos.distanceTo(s.target)<3){s.t=rnd(5,12);const p=s.home.clone().add(V3(rnd(-30,30),0,rnd(-30,30)));const fh=groundAt(p.x,p.z),mid=s.members.length&&s.members[0].def.mid;p.y=fh<CHEMO?clamp(s.home.y+rnd(-30,30),-400,-20):mid?clamp(s.home.y+rnd(-12,12),fh+8,-8):clamp(fh+rnd(1.5,8),fh+1.5,-3);s.target.copy(p);} // mid (v11.66): a swarm of the water column keeps its own depth
     // threats: the player, and any hunter of the members' kind, scanned four times a second (every member reading every creature
     // was a thousand by a thousand a frame)
     s.scanT=(s.scanT||0)-dt;if(s.scanT<=0){s.scanT=0.25;let th=null,td=14;const kind=s.members.length?s.members[0].kind:'';
@@ -310,12 +369,11 @@ function updateCoil(c,dt){
 function updateLurker(c,dt){
   const d=c.def;if(hungerTick(c,dt))return;
   if(c.state==='sit'){c.vel.set(0,0,0);c.cool-=dt;c.scanT-=dt;if(c.scanT<=0){c.scanT=0.25;if(c.cool<=0&&c.hunger>ECO.hungry){const tg=findPrey(c,d.radius);if(tg){c.state='lunge';c.target=tg;c.lungeT=1.3;}}}}
-  else if(c.state==='lunge'){const tg=c.target,tp=tg===player?player.pos:tg?tg.pos:c.home,dist=c.pos.distanceTo(tp);c.lungeT-=dt;seek(c,tp,d.lunge,dt,6);c.biteT-=dt;c.grab=c.b.rigs&&tg&&dist<armReach(c,tg,1.6)?tg:null;if(d.hang)c.st.strike=1;
+  else if(c.state==='lunge'){const tg=c.target,tp=tg===player?player.pos:tg?tg.pos:c.home,dist=c.pos.distanceTo(tp);c.lungeT-=dt;seek(c,tp,d.lunge,dt,6);c.biteT-=dt;c.grab=c.b.rigs&&tg&&dist<armReach(c,tg,1.6)?tg:null;if(d.hang||d.strikeOnLunge)c.st.strike=1; // strikeOnLunge (v11.66): the hood's claws open on the way up
     if(c.lungeC>0){c.lungeC-=dt;c.vel.multiplyScalar(1-2*dt);if(c.lungeC<=0){c.lungeC=0;c.biteT=1;if(tg&&dist<reachOf(c,tg)*MISS.range&&dodged(tp,c.lungeP,c.lungeN)<missWin(tg,MISS.t))landBite(c,tg);else if(tg)missed(c,tg);if(c.state!=='feed')c.state='return';}} // the lunge's commit (v11.56)
     else if(tg&&dist<reachOf(c,tg)&&c.biteT<=0){c.lungeC=MISS.t;[c.lungeP,c.lungeN]=commitAt(c,tp,c.lungeP,c.lungeN);}if((c.lungeT<=0&&!(c.lungeC>0))||!tg||(tg!==player&&!tg.alive)||(tg===player&&player.dead)){c.state='return';c.lungeC=0;}}
   else if(c.state==='feed'){const f=c.feedAt;c.feedT-=dt;if(!f||f.gone||f.flesh<=0||c.feedT<=0){c.state='return';c.feedAt=null;return;}const dist=c.pos.distanceTo(f.pos);if(dist>reachOf(c,f)*0.8)seek(c,f.pos,3,dt,2);else{c.vel.multiplyScalar(1-3*dt);eatAt(c,f,dt);}}
   else{c.grab=null;if(!c.hold)c.target=null;seek(c,c.home,4,dt,2);if(c.pos.distanceTo(c.home)<0.8){c.state='sit';c.cool=3;c.pos.copy(c.home);}} // v11.31: what it has hold of comes home with it
-  if(c.stun>0){c.stun-=dt;c.vel.multiplyScalar(1-2*dt);c.pos.y-=0.3*dt;}
   if(c.state==='flee')c.state='return';
 }
 function updateJelly(c,dt){
@@ -346,6 +404,7 @@ function updateCreatures(dt0){
     const d=c.def,dp=c.pos.distanceTo(player.pos);
     if(!c.alive){if(c.dead&&!c.gone&&dp<400)updateCarcass(c,dt0,dp);continue;}
     if(c.juv>0){c.juv-=dt0;if(c.juv<=0){if(dp>90||!c.g.visible){growUp(c);continue;}c.juv=0.001;}} // grows up out of sight
+    if(c.soft){if(updateSoft(c,dt0,dp))continue;}else if(c.moultT>0){c.moultT-=dt0;if(c.moultT<=0){if((dp>90||!c.g.visible)&&!c.hold&&!c.held&&c.state!=='feed'){moult(c);continue;}c.moultT=30;}} // the moult (v11.66): hardens, or sheds, out of sight
     if(dp>360&&dp>c.lodFar){c.g.visible=false;continue;} // the big ones keep swimming as far as they are drawn
     // beyond 150 (past the near LOD of anything under 25 m) a creature moves every other frame with the two frames' time: the
     // roster tripled the population (v10.7) and most of it is small things far off in the fog
@@ -353,6 +412,8 @@ function updateCreatures(dt0){
     // the medium, as for the player: sub is the submerged fraction. Steering only works in the water.
     const R=d.size*0.4,sub=c.pos.y+R<TIDE-TIDE_A1-WAVE_AMP*2?1:clamp((waveH(c.pos.x,c.pos.z)-(c.pos.y-R))/(2*R),0,1),vx0=c.vel.x,vy0=c.vel.y,vz0=c.vel.z;c.sub=sub; // the wave is only read near the surface: a thousand creatures a frame
     if(c.paraT>0){c.vel.multiplyScalar(1-3*dt);c.pos.y-=0.2*dt;c.grab=null;} // paralysed (combat.js envenom, COMBAT.md §3b): no steering, sinking a little
+    else if(c.stun>0){c.stun-=dt;c.vel.multiplyScalar(1-2*dt);c.pos.y-=0.3*dt;c.grab=null;} // stunned (the finback's blow, the ram's — combat.js RAM, v11.66): every role, not the hunters' alone
+    else if(c.soft){c.vel.multiplyScalar(1-4*dt);} // soft (v11.66, MOULT): it lies where it hid and does nothing
     else switch(d.role){
       case 'boid':updateBoid(c,dt);break;
       case 'trap':updateTrap(c,dt);break;

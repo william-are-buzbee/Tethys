@@ -4181,3 +4181,105 @@ What the physics puts on the water, recorded to come back to: pumice rafts from 
 wind rows and slicks, fronts, blooms (the wake lit at night as an event), wrack after storms as the struck raft's honest form, the neuston's
 two predators (a bubble-raft grazer of sailers, a slug under the film), floating carcasses, basking slowbloods, egg masses, drift logs.
 Ranked. Flyers are a clade decision and the person's. The range term moves to §6.
+
+## v11.66 — the hingeshell variety pass (15 Sep 2026)
+
+The person's ask: the hingeshells significantly more varied in the world, above all the radiodont-like paddlers, every form from the clade's rules
+and every placement from the condition fields; the first of three passes (slowbloods and ringmouths follow), so the variation is infrastructure
+every clade shares and nothing is hingeshell-only code.
+
+- **The individual** (creatures_ai.js, the section over `spawn`). Every animal the ledger places draws three things at its spawn, from the cell's
+  own stream so a cell comes back the same: a size within `VARY.spread` ±15% of its kind's — an instance scale on the group over the shared geometry
+  (`scaledDef` chains a def with the size numbers scaled, the routine the juvenile used; the hit capsules, `reach`, the contact and the gape follow;
+  nothing is rebuilt: 40 sickle spawns 17 ms with the variation and without); a coat class from the place's chemistry (creatures_spec.js
+  `coatClassAt`, `coatChem`, `COAT_CHEM_KEYS`, `COAT_CLASSES`: rust on rock in the lit water, lime on the surf's shallow rock where the lime rind
+  grows, sulfide below the chemocline and at the vents, manganese on the mud below the light, and a `d` suffix darker on fresh rock — PLANET's
+  shell-colour rule and SEAFLOOR §2's `young`; the kind's `PAL` preset shifted, its pale joints and its eyes never; a geometry per kind and class
+  in `KIND_GEO` since the palette is in the vertex colours, 18–29 classes in the cache over a tour of the island at ~0.5 ms and a few thousand
+  vertices each; only the hingeshells' key list is filled, the other clades' rows wait for their passes and draw no class); and, for a clade that
+  moults (`GRAMMAR.moult`), whether it is in the soft state. `coatFor` reads the fields too. Nothing outside the ledger varies (ent −1: the
+  lab's placed spec, the fleets, the tests' bodies).
+- **The moult** (`MOULT`; PLANET's promised cost and story): a twentieth of a moulting clade's placed adults start soft — pale (the `soft` class,
+  the bleached coat of v11.8), valves clamped (`st.soft`, read by the valves part), laid against the nearest solid within 6 m (`hideSpot`),
+  still, and covered by skin instead of plate so any edge opens it (PLANET: the only time a hingeshell is edible; a hunter takes a soft body of
+  any kind while its own mass is at least `MOULT.prey` 0.5 of the body's — `findPrey`). It hardens after `MOULT.soft` 0.5 days × mass^¼ out of
+  sight (a fresh adult in its place, as a juvenile grows up); a hard adult carries a clock to its next moult (`MOULT.every` 20 days × mass^¼: a
+  scuttle every 15, a sickle every 66) and, out of sight and unheld, is replaced by its soft twin with its cast carapace on the floor beside it
+  (`dropShed`: a mesh, gone after `MOULT.shedT` 4 days; `updateSheds` in the frame). Old sheds lie about as debris: a flora entry per moulting
+  kind the ledger places (`shedFlora`: the body built in the `shed` coat with its valves clamped and flattened to one geometry, the eyes pale
+  cuticle, lifted so its underside sits on the floor, placed by the kind's own envelopes at `MOULT.shedPer` 0.5 of its capacity a cell, `MAT`,
+  `clearOf` like any small flora, one pool draw a kind — 15 entries; chunks.js placeFloraType gained `envs`, the best of several envelopes, and
+  `rare`, a chance under one for a thing rarer than one try a cell). Boids skip the soft state (a ribbon's mean would drag on one).
+- **The raptor family in the world** (the person's default: all five looks live, one each, placed by what the build implies; `ROSTER` loses their
+  `new`). The **hood** buried on the sand flats and the lagoon floor as an ambusher from below (`role:'ambush'`, `clear` 0.55; chunks.js
+  placeKind places the trap, the stone, the hook, the lurker and the hood by role now, `strikeOnLunge` opens its claws on the way up); the **lash**
+  on the ledges and the lips (`rel` ≥ 0.6 — rock standing above its surroundings; flat ground reads 0.5); the **ram** slow and big in the open
+  water over the upwelling flank, its `weapon:ram` a blow (combat.js `RAM`: a strike on what its mouth cannot take whole is a knock — the body
+  stunned 2.5 s, the player dazed 2 s, no hold, the ram off it 3 s; the stun is every role's now, handled before the roles in updateCreatures);
+  the **sickle** on the rockfall by `young` ≥ 0.35 and on the terraces' rock; the **hose** in the stipe's own band. COMBAT.md §7's finding
+  (the claws of the three get through no slowblood hide) is answered by **prey they can open**: the hood and the lash hunt the forage (flickers,
+  darters, needles, scuttles, rasps, the sifters), the ringmouths' skin (arrows, rasps, the soft-arm) and any hingeshell at its moult; the ram
+  hunts the swarms (sifters, flickers, darters, arrows) and never the player. The matrix's "no route" list is empty.
+- **Five forms by mechanism** (creatures_spec.js `SPECS`, written dense as the lab exports them and validated headless; the kit unchanged, its
+  unused combinations used; a `PAL` preset each): the **sifter** (0.6 m, the comb's small relative in the lit fed water — combs, flap rows, a
+  spine tail; a boid of the water column, `DEFS.mid` and placeKind/updateSchools keep its ribbons at their own depth, in eights where `nut` ≥
+  0.5 and `flow` ≥ 0.3; forage: the ram's, the arrows', the needles', the eels', the traps' and the lurkers' meal; tells stalked eyes + flap
+  rows); the **cinder** (1.2 m, the seep walker: the picker's cousin, plated where the picker is stilted, black in its own preset and blacker in
+  the sulfide class, forage, poison by its diet as built; on the vent field's mats, `heat` ≥ 0.25, where the basker eats it down, and thinly along
+  the chemocline's seep line round every island, the kind's reservoir; tells mouth under); the **wedge** (0.9 m, the scuttle's exposure ecotype:
+  a low wide shield, short paddle legs, valves twice as thick, on the rock the waves strike, `expo` ≥ 0.5 from −12 to +2; the crusher's and the
+  lurker's; the scuttle keeps off the surf now, `expo` ≤ 0.7; tells mouth under); the **plough** (1.6 m, the flats' deposit feeder that is not
+  the trap: feeding combs under the front, the mouth under, no weapon, on the sand the grazers pasture, `sub` ≤ 0.4 from −80 to −8; the ridge's
+  and the stone's by gape; tells stalked eyes + mouth under); the **relict** (4 m, SEAFLOOR §3's sill relict: the hose's line stranded on the
+  drowned summits as their island sank — larger, pale, its eyes small below the light and its comb large, the proboscis picking pickers off the
+  rock; `h` −450..−280 on `sub` ≥ 0.55 off fresh rock, which the world has only on the sill's summits, swept clean; tells stalked eyes + flap
+  rows). `rel` low could not place it, as the brief wanted: the summits read `rel` 1 because the smooth surface has no knobs.
+- **Spawning by the fields**: the hingeshell rows of `SPAWN` read `expo` (trap, scuttle, wedge), `rel` (lash), `shel` (hood), `flow` (hose,
+  sifter), `nut` (a second flicker entry where the water is fed, sifter, ram, comb), `young` (sickle, relict), `heat` (cinder), `grp` (sifter),
+  `sub` and `turb` where the mechanism says. Written against a per-region capacity table (a scratch tool over `envW` at 2×2 samples a cell,
+  the world split ours / the giant / the sill / the basin): the giant's shelf is ~30× ours, so every K is mostly the giant's; the young shield
+  has no record in the world, so its pillow slopes have no population yet. **The abyssal's envelope moved to the rim** (h −560..−380, `nut` ≥
+  0.25): the 120-day census at v11.65 already failed with it collapsing 70 → 12 — its band ran over the sill's flank and the basin's far floor,
+  where no comb lies within its 5×5 reach; `--test`'s 40-day run never sees it. Found and not fixed: the `seep` flora's `sub` 0.3–1 puts it
+  nowhere on our island's rim (mud, 0.15) since the basin; it grows only on the sill.
+- **The census, 120 days, before and after** (`node test/census.js 120`; K, the day-0 count, the day-120 count; the kinds whose numbers moved):
+
+  | kind | K before | day 0 | day 120 | K after | day 0 | day 120 |
+  |---|---|---|---|---|---|---|
+  | flicker | 35862 | 30482 | 22797 | 37637 | 31991 | 23199 |
+  | sifter | — | — | — | 28196 | 23967 | 19430 |
+  | picker | 24992 | 21243 | 14981 | 24985 | 21237 | 14784 |
+  | scuttle | 13866 | 11787 | 11773 | 13113 | 11146 | 11131 |
+  | lurker | 2186 | 734 | 602 | 2186 | 1185 | 1378 |
+  | wedge | — | — | — | 1572 | 1336 | 1300 |
+  | hook | 964 | 398 | 314 | 964 | 401 | 362 |
+  | cinder | — | — | — | 906 | 770 | 810 |
+  | eel | 861 | 453 | 342 | 861 | 582 | 612 |
+  | hose | 851 | 596 | 712 | 851 | 596 | 736 |
+  | comb | 519 | 441 | 450 | 339 | 288 | 291 |
+  | plough | — | — | — | 291 | 247 | 257 |
+  | sickle | 420 | 92 | 78 | 248 | 45 | 32 |
+  | ram | — | — | — | 228 | 159 | 199 |
+  | abyssal | 702 | 70 | 11.9 (a collapse: FAILED) | 131 | 21 | 8.8 |
+  | tread | 100 | 100 | — | 91 | 91 | — |
+  | relict | — | — | — | 84 | 59 | 74 |
+  | hood | — | — | — | 59 | 41 | 50 |
+  | lash | — | — | — | 40 | 28 | 36 |
+
+  The grazers and the flickers stand (3307 → 3347; 22797 → 23199); the new hunters' load is on the forage. The sickle's world number halved
+  by its own envelopes (the giant's terrace rock at `young` < 0.3 is less than its old band) — ours holds 11 sickles against 15.
+- **Seen** (dev.html in the app's browser, the loop driven by hand with the canvas posted through serve.js's sink; frames in
+  `test/render/v66_*.png`): a sickle at 0.90 of its size in the `d` coat on the rockfall at −180; a hose in the forest in the lime coat; a hood
+  buried on the lagoon's flats and a plough on the sand; a wedge on the surf's rock; a cinder black on the vent slope among the chimneys and their
+  bubbles; a relict pale over the sill's summit rock at −287; a swarm of sifters over the terrace; a ram in the manganese coat over the plain; a
+  lash rust-brown on the dike ridge with its whips out; a soft scuttle pale with its valves clamped on the shelf floor; a shed trap on the sand;
+  the bestiary's nine (hood, lash, ram, comb, sifter, relict, cinder, wedge, plough). Two things fixed on sight: the lime class at 0.45/0.78/0.5
+  read bleached (a soft one) and is toned to a cream cast; a shed's eyes were black beads and are pale cuticle now. Tests green on both tiers;
+  `test/combat.js` §15 covers the size band, the classes, a slowblood's preset untouched, the soft state's covering and a ridge opening a soft
+  sickle where it cannot open a hard one, the moult and the shed, the ram's blow; `test/live.js`: 8 kills in 60 s, 5% of the hunter role starving,
+  the hood at hunger 0.41 with prey 24 m off.
+- **Unseen, ask in this order**: the coat classes side by side on one kind (a scuttle rust on the rock beside one lime on the crest, and the
+  lime coat's paleness on the hose — the person's call); the soft state in play — does a pale sickle lying against a rock read as moulted or as
+  broken; the sheds' density (a shed trap a cell on the flats, the pickers' on the lower flank); a moult happening (out of sight only, so never
+  seen — a shed found where none was); the ram's blow on a swarm and the hood's lunge from the sand in play; the frame cost of the 15 shed
+  pools and the sifter swarms (~16 more boids a cell over the upwelling); the young shield (no record yet).

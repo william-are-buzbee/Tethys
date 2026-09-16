@@ -65,6 +65,7 @@ const LOSE={cool:4,meal:0.15,flee:12,floor:0.2,parts:{tail:1,fins:1}}; // pass 3
 const SMELL_R=90; // m: a hungry hunter takes a bleeding body it eats as its target this far off, past its detect — the wound you survived is what brings the next hunter
 const MISS={t:0.25,k:0.8,range:1.15,cool:1.5}; // the strike's miss rule: a hunter commits its bite t seconds out (the mouth opens: the tell), and it lands only if the prey has moved under k of its own width since and is still within range × reach; a miss costs cool × its bite cooldown. A striker's strike phase is its commit. k 0.8 (seen 15 Sep 2026, five trials each): a finback at sprint that turns across at the tell is missed 4 of 5 (at 1.0 it was caught 4 of 5); one that turns before the tell is missed every time at either
 const POISON={heat:0.45,deep:CHEMO+10,load:0.4,clear:3,min:0.35,t:45,slow:0.5}; // hingeshells feeding where the sulfur line lives (heat over this, or below the chemocline) carry its toxin: full after load game days there, clear again after clear days away; a body over min sickens whatever eats it or its carcass for t seconds at slow (unless immune: the abyssal on its combs) // a ringmouth drops a held arm (never its last keep), it regrows in regrow game days; the holder keeps the arm (a cooldown, a little of its hunger)
+const RAM={stun:2.5,cool:3,daze:2}; // the ram's blow (v11.66; COMBAT.md §2: `weapon:ram` is a blow, nothing through): a strike that lands on what the mouth cannot take whole is a knock, not a hold — the body stunned stun s (steering gone, sinking: creatures_ai.js), the player dazed daze s (the sting's slowness, no wound), the ram off it for cool s
 const HOLD_DRAG=3; // per second: how fast the two bodies' velocities are pulled together by the grip
 const PLAYER_GRIP={soft:1.2,fin:1.0,coil:0.6}; // the clades' grips: the jetter's arms are for this; the coilshell's are short
 const BLOOD_COL={ringmouths:[0.16,0.24,0.34],slowbloods:[0.32,0.03,0.03],hingeshells:[0.52,0.5,0.32],drifters:[0.6,0.6,0.6]}; // copper, iron, vanadium (PLANET)
@@ -106,6 +107,7 @@ function combatBite(a,b){
   else{if(!b.alive)return;if(b.def.hp>=1e8){a.bored++;return;}
     const sw=swallows(a,b);if(b.def.hp<=1||sw){kill(b,a,sw);dropTarget(a,6);return;}} // forage dies at the touch; a slowblood gulps what fits its gape (v11.55)
   if(!gripOf(a)){wound(b,dmgOf(a),a,null,'snap');return;}
+  if(edgeOf(a)==='ram'){wound(b,dmgOf(a),a,null,'snap');if(b===player)player.stungT=Math.max(player.stungT||0,RAM.daze);else b.stun=Math.max(b.stun||0,RAM.stun);dropTarget(a,RAM.cool);return;} // the blow (v11.66, RAM)
   if(a.hold){if(a.hold.b===b)return;releaseHold(a.hold);}
   startHold(a,b);
 }

@@ -98,7 +98,7 @@ function saveImport(txt,cb){ // a file back in (menu.js): checked as far as the 
 // ---------- the world in and out ----------
 function worldClear(){ // every cell out (the living written into the ledger), a cell mid-build dropped with what it had spawned, the lists emptied
   activeGen=null;activeKey=null;for(const ch of Array.from(chunks.values()))unloadChunk(ch);
-  for(const g of eggs.slice())removeEgg(g);for(const c of creatures)disposeCreature(c);creatures.length=0;carcasses.length=0;schools.length=0;
+  for(const g of eggs.slice())removeEgg(g);for(const s of sheds.slice())removeShed(s);for(const c of creatures)disposeCreature(c);creatures.length=0;carcasses.length=0;schools.length=0; // the sheds too (v11.66)
 }
 function cellsAround(){const ci=cellOf(player.pos.x),cj=cellOf(player.pos.z);for(let dj=-1;dj<=1;dj++)for(let di=-1;di<=1;di++){const i=ci+di,j=cj+dj;if(i>=0&&j>=0&&i<NCELL&&j<NCELL)loadChunkNow(i,j);}shadowDirty();} // the 3×3 round the player before the first frame (boot, a game starting, the menu); the rest streams
 function playerBody(C,pos,yaw,pitch){ // the player's body built and placed as the clade; the old one disposed

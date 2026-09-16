@@ -202,6 +202,9 @@ radial, stinging, eyeless; bells in the water, floats on the surface (the button
 - **Deep decision:** an exoskeleton that must be shed. Moulting is the clade's cost and its story: shed carapaces on
   the floor, dens in the massif and the pit, and a *soft* state after each moult — pale, hiding, and the only time a
   hingeshell is edible. Juveniles are soft; adults rarely unarmoured; some carry a mineral shell over the chitin too.
+  (Built v11.66, creatures_ai.js `MOULT`: the soft state — pale, valves clamped, laid against a solid, skin to any edge — a twentieth of the
+  placed adults and every adult on its own clock out of sight; the cast carapace beside it, and old sheds as debris by the kind's envelopes.
+  The dens are not built; the massif is struck.)
 - **Why they can be huge here:** exoskeleton scaling is a land problem; in water buoyancy carries the mass. The real
   aquatic limits are oxygen delivery and moulting, so hingeshells have a closed circulatory system (vertebrates and
   cephalopods evolved one independently; a third time is not a stretch), the atmosphere supplies the oxygen, and
@@ -354,6 +357,14 @@ water column).
 | **hose** | paddlers | small-prey hunter | kelp towers, bladders, the drop | 1.5 | opabinia: five stalked eyes; a flexible proboscis with a claw at its end that picks flickers off the stalks; flaps down the sides, a tail fan |
 | **sickle** | paddlers | player-size predator, burst | spires, rockfall, terraces, the arch | 5 | anomalocaris: a pair of jointed frontal claws, a ring mouth of plates, rows of lateral flaps, a tail fan; burst and coast, cannot corner; dark carapace, yellow joints. The insectoid the person asked for |
 | **comb** | paddlers | big filter feeder, the minor one | plain, lantern fields | 7 | tamisiocaris: the frontal appendages are combs; a slow flap wave down a long pale body; the abyssal's prey |
+| hood | paddlers | floor ambush from below | the sand flats, the lagoon floor | 5 | the raptor family's hood look (CLADES), placed v11.66: buried like the trap, it lunges up on legs and rear flaps with its claws open; eats the forage and any hingeshell at its moult |
+| lash | paddlers | small-prey hunter of the ledges | rock that stands above its surroundings, −80 to −8 | 3 | the lash look, placed v11.66: whips and crown eyes; the arrows', the needles' and the moulting hingeshells' hunter |
+| ram | paddlers | a blow on the swarms | the open water over the upwelling flank | 4 | the ram look, placed v11.66: slow and big; its ram is a blow that stuns a shoal, its mouthparts take what the blow leaves; never the player's hunter |
+| **sifter** | paddlers | small filter feeder, in swarms | the water column where the water is fed and moving | 0.6 | v11.66: the comb's small relative — frontal combs, flap rows, a spine tail; forage of the mid-water: the ram's, the arrows', the needles' |
+| **cinder** | walkers | the seep walker | the vent field's mats; the chemocline's seep line | 1.2 | v11.66: the picker's cousin, plated where the picker is stilted, black in the sulfide it lives in; poison to eat by its diet (COMBAT §3b); forage of the basker |
+| **wedge** | walkers | the surf zone's walker | the rock the waves strike, −12 to +2 | 0.9 | v11.66: the scuttle's exposure ecotype (SEAFLOOR §2): a low wide shield, short paddle legs, valves twice as thick; the crusher's and the lurker's |
+| **plough** | walkers | deposit feeder of the flats | the sand the grazers pasture, the lagoon's floor | 1.6 | v11.66: feeding combs under the front, the mouth under, no weapon — the burrower that is not the trap; the ridge's and the stone's by gape |
+| **relict** | paddlers | the sill relict | bare rock below the light off the fresh flows: the sill's drowned summits | 4 | v11.66 (SEAFLOOR §3): the hose's line stranded as its island sank — larger, pale, small-eyed, a large comb; its proboscis picks pickers off the rock |
 
 ### Drifters
 | jelly, deepbell, sailer, greatsailer | drifters | drift; the surface | the water column; the surface | 1.4–4.5 | `DRIFTERS.md` (v11.16) |

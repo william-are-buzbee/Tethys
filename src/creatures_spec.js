@@ -20,7 +20,7 @@ const GRAMMAR = {
     eye: 'a pale iris with a black pupil'
   },
   slowbloods: {cores: ['lathe', 'chain'], req: ['eyes:ring', 'mouth:tentacles', 'tail'], density: 1.06, shell: 1.6, eye: 'silver-grey'},
-  hingeshells: {cores: ['trunk', 'shield', 'bean', 'arches'], req: ['mouth'], density: 1.12, shell: 1.8, eye: 'black beads'},
+  hingeshells: {cores: ['trunk', 'shield', 'bean', 'arches'], req: ['mouth'], density: 1.12, shell: 1.8, eye: 'black beads', moult: true}, // moult (v11.66, PLANET): the clade sheds its exoskeleton — a soft state and a shed carapace (creatures_ai.js MOULT)
   // the drifters (DRIFTERS.md, v11.16; in the lab since v11.25): the ring kept radial and hung with stinging arms, no eyes, no mouth
   // parts — the bell pulses, the float sails; translucent (spec.mat 'glass')
   drifters: {cores: ['bell', 'float'], req: ['arms'], density: 1.01, shell: 1, eye: 'none'}
@@ -2192,7 +2192,7 @@ const PARTS = {
         anim: (t, spd, st) => {
           const tell = st.tell || 0,
             strike = st.strike || 0;
-          vv.set((p.o0 + p.o1 * Math.min(1, spd * 0.5)) * (1 - p.tc * tell - p.sc * strike) + p.tk * tell + p.sk * strike);
+          vv.set(st.soft ? 0 : (p.o0 + p.o1 * Math.min(1, spd * 0.5)) * (1 - p.tc * tell - p.sc * strike) + p.tk * tell + p.sk * strike); // st.soft (v11.66): clamped shut through the moult — the soft body hides inside (PLANET)
         },
         armour: V === 'small' ? 0.2 : V === 'clam' ? 0.1 : 0.4,
         mass: V === 'clam' ? p.R * p.R * p.R * 0.4 : F.w0 * F.h0 * 0.1 * (V === 'hood' ? H.l : V === 'placed' ? p.z0 - p.z1 : L) * 1.2,
@@ -3043,8 +3043,65 @@ const COAT_DIET = {
   floor: {hue: 25, sat: -0.05, note: 'a floor dweller: the colour of its floor, mottled'}
 };
 const COAT_BLOOD = {ringmouths: [172, 0.32], slowbloods: [14, 0.55], hingeshells: [58, 0.3], drifters: [200, 0.1]}; // the drifters: no blood pigment to speak of (translucent)
+// ---------- the coat by the place's chemistry (v11.66) ----------
+// PLANET, Cross-clade rules: shell colour is water chemistry, read by place — rust where dissolved iron meets oxygen on the basalt (rock in
+// the lit water), cream calcite on the reef (the lime rind's own ground: the shallows' rock where the surf strikes), black iron sulfide below
+// the chemocline and at the vents, manganese-dark on the plain (the mud below the light); and darker where the rock is fresh (SEAFLOOR §2: reading
+// `young` tints an island's life without an island id). A kind's PAL entry is its preset; the class shifts it. What shifts is by clade
+// (COAT_CHEM_KEYS): a hingeshell's whole exoskeleton mineralises, so every plate key moves; the other clades' rows are empty until their own
+// passes decide what their pigment does (a ringmouth's shell, a slowblood's plates are the candidates). Two more classes are states, not places:
+// `soft` (the moult: the whole animal pale, the bleached coat of v11.8) and `shed` (the cast carapace: dull, drying). The pale keys (joint, belly,
+// jaw) keep their lightness where the class darkens; eyes, pupils, mouths and claws never move (PAL_FIXED, as palVariant). coatClassAt reads the
+// class off the ground's height, the water's depth and the fields; creatures_ai.js spawn caches a geometry per kind and class.
+const COAT_CHEM_KEYS = {hingeshells: ['top', 'belly', 'flap', 'plate', 'leg', 'valve', 'rim', 'shell', 'comb', 'gut'], ringmouths: [], slowbloods: [], drifters: []};
+const COAT_CLASSES = {
+  rust: (c, k) => [lerp(c[0], 14, 0.6), lerp(c[1], 0.55, 0.5), c[2] * 0.95],
+  lime: (c, k) => [lerp(c[0], 40, 0.5), c[1] * 0.55, lerp(c[2], 0.72, 0.3)], // seen 15 Sep 2026 at 0.45/0.78/0.5: the hose in the forest read bleached, a soft one; toned to a cream cast
+  sulfide: (c, k) => [c[0], c[1] * 0.5, PAL_PALE[k] ? c[2] * 0.75 : c[2] * 0.5],
+  mn: (c, k) => [lerp(c[0], 30, 0.3), c[1] * 0.4, PAL_PALE[k] ? c[2] * 0.8 : c[2] * 0.6],
+  d: (c, k) => [c[0], c[1] * 0.9, PAL_PALE[k] ? c[2] * 0.9 : c[2] * 0.78], // the young suffix: fresh basalt, darker
+  soft: (c, k) => [c[0], c[1] * 0.35, lerp(c[2], 0.86, 0.7)],
+  shed: (c, k) => [c[0], c[1] * 0.6, PAL_PALE[k] ? c[2] * 0.9 : lerp(c[2], 0.7, 0.35)]
+};
+// the class at a place: h the ground's height, y the animal's depth, f the fields there. '' is the preset — and '' for a clade whose key
+// list is empty (nothing would move, and a class is a geometry in the cache)
+function coatClassAt(h, y, f, clade) {
+  if (clade && !(COAT_CHEM_KEYS[clade] || []).length) return '';
+  const sulf = y < CHEMO || f[FI.heat] > 0.3,
+    lime = h > -26 && f[FI.sub] > 0.55 && f[FI.expo] > 0.35,
+    rust = !lime && f[FI.sub] > 0.55 && h > -80,
+    mn = !sulf && h < -200 && f[FI.sub] < 0.35;
+  let cls = sulf ? 'sulfide' : lime ? 'lime' : rust ? 'rust' : mn ? 'mn' : '';
+  if (f[FI.young] > 0.4 && !sulf) cls += 'd';
+  return cls;
+}
+// the palette shifted by a class (a place's, or 'soft'/'shed'), for a clade; the same object back when nothing in it moves
+function coatChem(pal, cls, clade) {
+  if (!cls || !pal) return pal;
+  const state = cls === 'soft' || cls === 'shed',
+    keys = state ? Object.keys(pal) : COAT_CHEM_KEYS[clade] || [],
+    place = state ? null : COAT_CLASSES[cls.replace(/d$/, '')],
+    young = !state && /d$/.test(cls);
+  if (!state && !place && !young) return pal;
+  const out = Object.assign({}, pal);
+  let moved = false;
+  for (const k of keys) {
+    const c = pal[k];
+    if (!Array.isArray(c) || (PAL_FIXED[k] && cls !== 'shed')) continue; // a cast carapace's eyes are cuticle, pale as the rest (seen 15 Sep 2026: black beads on a shed trap read alive)
+    let h = rgb2hsl(c);
+    if (state) h = COAT_CLASSES[cls](h, k);
+    else {
+      if (place) h = place(h, k);
+      if (young) h = COAT_CLASSES.d(h, k);
+    }
+    out[k] = hsl2rgb(h[0], clamp(h[1], 0, 1), clamp(h[2], 0.02, 0.97));
+    moved = true;
+  }
+  return moved ? out : pal;
+}
 // A coat drawn for a clade at a depth on a diet: the palette keys the clade's builders read. rng: a seeded generator (mulberry(seed)).
-function coatFor(clade, depth, diet, rng) {
+// f (v11.66): the fields at the place — the chemistry class shifts the drawn coat as it shifts a preset (coatChem)
+function coatFor(clade, depth, diet, rng, f) {
   rng = rng || Math.random;
   let band = COAT_BAND[0];
   for (const b of COAT_BAND) if (depth <= b.h) band = b;
@@ -3100,6 +3157,14 @@ function coatFor(clade, depth, diet, rng) {
     line: hsl2rgb(232, 0.75, 0.72)
   };
   pal.note = band.name + '; ' + dt.note;
+  if (f) {
+    const cls = coatClassAt(depth, depth, f);
+    if (cls) {
+      const q = coatChem(pal, cls, clade);
+      q.note = pal.note + '; ' + cls;
+      return q;
+    }
+  }
   return pal;
 }
 
@@ -3918,6 +3983,18 @@ const SPECS = {
     hit: [{a: [0, 0, -5.2], b: [0, 0, 7.2], r: 1.15}],
     behaviour: {role: 'wander'}
   },
+  // ---------- v11.66: the hingeshell variety pass — five forms by mechanism (PLANET roster; CLADES, the tells) ----------
+  // Written as the lab exports them (dense, the person's rule for new code); every one validated and previewed headless (test/preview.js).
+  // paddlers: the comb's small relative in the lit, fed water — a filter-feeding swarmer the size of a forearm, its frontal combs sweeping; tells: stalked eyes, flap rows
+  sifter:{id:'sifter',clade:'hingeshells',size:0.6,s:1,coat:'sifter',core:{kind:'trunk',L:0.95,n:6,w0:0.3,w1:0.13,h0:0.24,h1:0.11,hw:0.3,hh:0.24,hl:0.3,beat:[2.6,1.3]},parts:[{kind:'eyes',style:'stalks',n:1},{kind:'mouth',style:'plates',where:'front'},{kind:'comb',n:3},{kind:'valves',style:'small'},{kind:'flaps',style:'sides',np:7,th:0.03},{kind:'weapon',style:'combs',n:3,seg:0.14,teeth:5,tl:0.1,w:0.8},{kind:'tailplate',style:'spine'}],behaviour:{role:'boid'}},
+  // walkers: the seep form — the picker's cousin on the diffuse vents' mats, plated where the picker is stilted, black by the sulfide it lives in, poison by its diet (combat.js POISON); tells: mouth under
+  cinder:{id:'cinder',clade:'hingeshells',size:1.2,s:1,coat:'cinder',core:{kind:'trunk',L:1.7,n:5,z0:0.75,w0:0.72,w1:0.5,h0:0.34,h1:0.24,hw:0.7,hh:0.34,hl:0.5,hz:0,beat:[2,1]},parts:[{kind:'eyes',style:'rows',n:3,rows:1,x:0.2,size:0.045},{kind:'comb',n:4},{kind:'mouth',style:'plates',where:'under'},{kind:'valves',style:'placed',th:0.06,o0:0.08,o1:0.15},{kind:'legs',style:'walk',n:4,x:0.4,y:-0.12,z:0.5,dz:-0.38,kx:0.42,ky:0.12,fx:0.7,fy:-0.42,wl:0.06,amp:0.25},{kind:'spines',n:3,r:0.05,h:0.16,z0:0.3,dz:-0.35,y0:0.2,x:0,rx:-1.3,col:'joint'}],behaviour:{role:'graze',floor:true}},
+  // walkers: the surf-zone walker — the scuttle's exposure ecotype (SEAFLOOR §2): a low wide shield, short paddle legs, valves twice as thick, wedged on the rock the waves strike; tells: mouth under
+  wedge:{id:'wedge',clade:'hingeshells',size:0.9,s:1,coat:'wedge',core:{kind:'shield',R:0.55,sx:1.4,sy:0.28,sz:1.25,y:0.14,z:0,ws:8,hs:4,hw:0.9,hh:0.12,hl:0.42,hy:0.12,hz:0.62,tw:0.5,th:0.1,tl:0.25,ty:0.1,tz:-0.78,beat:[3.5,3]},parts:[{kind:'eyes',style:'arc',n:7,x:0.5,r:0.22,y:0.2,z:0.62,arc:60,size:0.035,snap:false},{kind:'comb',y:0.04,z:0.82,n:5,w:0.5,len:0.16},{kind:'mouth',style:'plates',where:'under',y:0.0,z:0.45,R:0.14,snap:false},{kind:'valves',style:'placed',z0:0.5,z1:-0.62,w:1.5,y:0.28,th:0.14,o0:0.03,o1:0.06,tc:1},{kind:'legs',style:'rock',n:4,x:0.62,y:0.08,z:0.38,dz:-0.26,ll:0.34,wl:0.07,th:0.06,splay:36,yaw:7,amp:0.28,k0:0.2,sk:0.6}],hit:[{a:[0,0.14,-0.75],b:[0,0.14,0.5],r:0.32}],behaviour:{role:'graze',floor:true}},
+  // walkers: the flats' burrower that is not the trap — feeding combs under the front, no weapon, the mouth under, on the sand the grazers pasture; tells: stalked eyes, mouth under
+  plough:{id:'plough',clade:'hingeshells',size:1.6,s:1,coat:'plough',core:{kind:'trunk',L:2.5,n:6,z0:1.05,y:-0.18,w0:1.15,w1:0.75,h0:0.48,h1:0.32,hw:1.05,hh:0.44,hl:0.6,hy:-0.18,hz:0,beat:[1.5,0.8]},parts:[{kind:'eyes',style:'stalks',n:2,x:0.28,y:0.02,z:1.25,len:0.22,size:0.06,tilt:20,splay:25,snap:false},{kind:'comb',style:'teeth',n:10,x:0.42,y:-0.46,z:1.3,w:0.03,len:0.28,stag:0.04,rake:15},{kind:'mouth',style:'plates',where:'under',y:-0.4,z:1.1,R:0.16,snap:false},{kind:'valves',style:'placed',z0:1.2,z1:-1.35,w:1.2,y:0.04,th:0.06,o0:0.05,o1:0.06,tc:1},{kind:'legs',style:'placed',n:4,x:0.55,y:-0.38,z:0.7,dz:-0.45,kx:0.32,ky:0.06,kz:0,fx:0.55,fy:-0.24,fz:0.04,wl:0.07}],hit:[{a:[0,-0.18,-1.5],b:[0,-0.18,1.2],r:0.5}],behaviour:{role:'graze',floor:true}},
+  // paddlers: the sill relict (SEAFLOOR §3) — the hose's line stranded on the drowned summits as their island sank, larger, pale, its eyes small below the light and its comb large, the proboscis picking pickers off the rock; tells: stalked eyes, flap rows
+  relict:{id:'relict',clade:'hingeshells',size:4,s:1,coat:'relict',core:{kind:'trunk',L:7.0,n:8,w0:1.2,w1:0.5,h0:0.9,h1:0.4,hw:1.25,hh:0.9,hl:1.3,beat:[1.0,0.5]},parts:[{kind:'eyes',style:'stalks',n:1,x:0.38,len:0.28,size:0.11,tilt:15,splay:30},{kind:'mouth',style:'plates',where:'probe',plen:1.5,R:0.2},{kind:'comb',n:7,w:1.15,len:0.75},{kind:'valves',style:'back'},{kind:'flaps',style:'sides',np:11},{kind:'tailplate',style:'spine'}],behaviour:{role:'hunter'}},
   // drifters, bells: the pulser of the lit water (buildJelly) — colourless, eight arms hung loose that part round what swims through
   jelly: {
     id: 'jelly',

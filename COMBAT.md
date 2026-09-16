@@ -183,9 +183,12 @@ Where the numbers will be: `EDGE` (edge → coverings beaten, and whether a thra
 Every hunter placed at contact behind each of its prey, the player as all three clades: the covering under the hold, the edge's verdict, the
 gape by geometry. Findings, for the person:
 
-- **The ram** has no route through anything: a blow, by design (the stun).
+- **The ram** has no route through anything: a blow, by design (the stun). *v11.66: the blow is built (combat.js `RAM`) — a strike on what its
+  mouth cannot take whole stuns the body and takes no hold; it hunts the swarms and never the player.*
 - **The hood, the lash and the ram** hunt the grazer and the finback and their claws get through neither's hide: the hingeshell hunters of
   slowbloods have no kill in the kit. Either a lathe gets joints (the fins' roots as skin) or the person says they hold and never kill.
+  *Answered v11.66 by prey they can open: the forage, the ringmouths' skin, and any hingeshell at its moult (the soft state is skin to every
+  edge — creatures_ai.js `MOULT`); the slowbloods are off their lists. The lathe's joints stay for the slowblood pass to decide.*
 - **The abyssal's comb** (PLANET) is shell to a cutting edge: no route. Adapted (a crush), or the comb is not its meal. v11.56 made it immune
   to the comb's poison; the edge question stands.
 - **The stone's petals are `hold`**: a trap eats by gape alone, which is what an anglerfish does; its gape (0.80) is wider than the player.

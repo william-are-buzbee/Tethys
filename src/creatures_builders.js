@@ -40,6 +40,13 @@ const PAL={
   lash:{top:[0.30,0.26,0.20],belly:[0.52,0.48,0.38],flap:[0.42,0.38,0.30],joint:[0.84,0.80,0.52],eye:[0.05,0.05,0.05]},
   ram:{top:[0.26,0.24,0.20],belly:[0.46,0.44,0.36],flap:[0.36,0.34,0.28],joint:[0.78,0.74,0.46],eye:[0.05,0.05,0.05]},
   comb:{top:[0.74,0.72,0.62],belly:[0.86,0.84,0.76],flap:[0.62,0.60,0.50],joint:[0.80,0.76,0.50],comb:[0.52,0.50,0.40],eye:[0.08,0.08,0.08]},
+  // v11.66, the variety pass: presets the place's chemistry shifts (creatures_spec.js coatChem) — the sifter's a filter feeder's straw, the
+  // cinder's the sulfide black it always lives in, the wedge's the rust of the surf's rock, the plough's the sand's, the relict's the pale of a life below the light
+  sifter:{top:[0.70,0.68,0.54],belly:[0.84,0.82,0.70],flap:[0.60,0.58,0.46],joint:[0.80,0.76,0.48],comb:[0.56,0.52,0.40],eye:[0.06,0.06,0.06]},
+  cinder:{top:[0.12,0.11,0.11],belly:[0.24,0.22,0.20],leg:[0.10,0.10,0.10],joint:[0.50,0.48,0.36],eye:[0.05,0.05,0.05]},
+  wedge:{top:[0.32,0.20,0.15],belly:[0.52,0.42,0.34],leg:[0.24,0.16,0.12],joint:[0.66,0.58,0.40],eye:[0.06,0.06,0.06]},
+  plough:{top:[0.56,0.50,0.40],belly:[0.72,0.66,0.54],leg:[0.46,0.40,0.30],joint:[0.78,0.72,0.50],eye:[0.06,0.06,0.06]},
+  relict:{top:[0.78,0.76,0.70],belly:[0.86,0.84,0.78],flap:[0.70,0.70,0.64],joint:[0.80,0.76,0.60],eye:[0.06,0.06,0.06]},
   // the drifters (DRIFTERS.md; v11.25 palettes, the builders' fixed colours as keys): the bell colourless in the lit water, dark red
   // below the light (red is the first colour the water eats); the float blue-violet, sunscreen at the surface; the lines the float's
   jelly:{bell:[0.86,0.92,0.96],core:[0.78,0.86,0.94],arm:[0.86,0.92,0.96]},

@@ -309,3 +309,21 @@ The person (9 Sep): the sickle and the hose were still Anomalocaris and Opabinia
 choice (CHANGELOG v11.9.1 lists them), five looks in `RAPTORS` — keel (the sickle now), splay (the hose now), hood, lash, ram (bestiary).
 The Earth tells that no look repeats together: stalked eyes + claw pair + plate mouth under + flap rows + tail fan. Each look keeps two of
 the five at most. Open: which looks live in the world, and whether the niche wants two sizes of one look or one each of several.
+**Answered v11.66 (the person's default, to be overridden in chat): all five live, one each, placed by what the build implies** — the keel on the
+rockfall and the terraces, the splay in the weed forests, the hood buried on the sand flats and the lagoon floor as an ambusher from below, the
+lash on the ledges, the ram slow and big in the open water over the flank. Their prey is what their claws can open (COMBAT.md §7, answered).
+
+## The variety pass (built, v11.66 — seen in the pane)
+
+Two of a kind are no longer identical: a size band, a coat by the place's chemistry (rust, lime, sulfide, manganese, the young rock's dark —
+PLANET's shell-colour rule as a per-instance shift of the kind's preset) and the moult (the soft state, pale and clamped; the shed carapaces),
+all of it infrastructure the slowblood and ringmouth passes reuse (creatures_ai.js, the section over `spawn`; creatures_spec.js `coatChem`).
+Five forms by mechanism, each with its two Earth tells at most (stalked eyes, claw pair, plate mouth under, flap rows, tail fan):
+
+| form | family | mechanism | tells kept |
+|---|---|---|---|
+| sifter | paddlers | the comb's small relative: a filter-feeding swarmer of the lit, fed, moving water | stalked eyes, flap rows |
+| cinder | walkers | the seep form: the picker's cousin on the mats, plated, black, poison by its diet | mouth under |
+| wedge | walkers | the scuttle's exposure ecotype: low, wide, short-legged, heavy-valved on the surf's rock | mouth under |
+| plough | walkers | the flats' deposit feeder: feeding combs under the front, no weapon | stalked eyes, mouth under |
+| relict | paddlers | the sill relict: the hose's line larger and pale on the drowned summits below the light | stalked eyes, flap rows |

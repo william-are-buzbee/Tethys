@@ -8,7 +8,7 @@ const fs=require('fs'),path=require('path');
 const ROOT=path.join(__dirname,'..');
 const ORDER=fs.readFileSync(path.join(ROOT,'src','order.txt'),'utf8').split('\n').map(s=>s.trim()).filter(s=>s&&s[0]!=='#');
 let js=ORDER.map(n=>fs.readFileSync(path.join(ROOT,'src',n+'.js'),'utf8')).join('\n');
-js+='\nglobal.__cb={NCELL,fxStats,peak(){player.pos.set(0,dispY,0);cellsAround();},groundAt,chunkGrid,cellOf,creatures,carcasses,player,DEFS,SPAWN,spawn,choose,V3,keys,holds,GRIP,startHold,releaseHold,playerGrab,playerBite,updateHolds,wound,get blLive(){return blLive;},updateBlood,updateWounds,updateCreatures,updatePlayer,finishPlayer,bodies,updateSchools,get mode(){return mode;},get t(){return t;},setT:(v)=>{t=v;},massOf,cladeOf,gripOf,localToWorld,removeCreature,ECO,setWander,bodyExt,reachOf,BITE_M,ability,CLADES,EDGE,WHOLE,BLEED_T,WOUND_SLOW,STING,PIN,slowOf,envenom,SMELL_R,MISS,POISON,kill,sicken,findBleeding,AUTOTOMY,DAY_S,LOSE,updateStates,edgeOf,coverAt,thruOf,bodyPointNear,freshShapes,get bpIdx(){return bpIdx;},worldShapes};';
+js+='\nglobal.__cb={NCELL,fxStats,peak(){player.pos.set(0,dispY,0);cellsAround();},groundAt,chunkGrid,cellOf,creatures,carcasses,player,DEFS,SPAWN,spawn,choose,V3,keys,holds,GRIP,startHold,releaseHold,playerGrab,playerBite,updateHolds,wound,get blLive(){return blLive;},updateBlood,updateWounds,updateCreatures,updatePlayer,finishPlayer,bodies,updateSchools,get mode(){return mode;},get t(){return t;},setT:(v)=>{t=v;},massOf,cladeOf,gripOf,localToWorld,removeCreature,ECO,setWander,bodyExt,reachOf,BITE_M,ability,CLADES,EDGE,WHOLE,BLEED_T,WOUND_SLOW,STING,PIN,slowOf,envenom,SMELL_R,MISS,POISON,kill,sicken,findBleeding,AUTOTOMY,DAY_S,LOSE,updateStates,edgeOf,coverAt,thruOf,bodyPointNear,freshShapes,get bpIdx(){return bpIdx;},worldShapes,VARY,MOULT,KIND_GEO,coatClassAt,coatChem,PAL,sheds,moult,harden,findPrey,FI,RAM,chunkAt,mulberry};';
 const tmp=path.join(require('os').tmpdir(),'tethys_combat.js');
 fs.writeFileSync(tmp,'(function(){"use strict";\n'+js+'\n})();');
 process.env.PICK='0';
@@ -268,6 +268,46 @@ const groundY=-12;
   X.setT(X.t+X.AUTOTOMY.regrow*X.DAY_S*0.51);frame();
   check(!ch.gone&&P.armsLost===0&&P.live.parts.some(p=>p.kind==='arms'&&p.n===8)&&P.speedK===1,'and whole after them: eight arms, the speed back (speedK '+P.speedK.toFixed(2)+')');
   X.choose(1);clearAll();
+}
+// ---- 15. the individual (v11.66, the hingeshell variety pass): the size band, the coat by chemistry, the moult and the shed, the ram's blow ----
+{
+  clearAll();X.choose(1);P.pos.set(0,-30,30);P.vel.set(0,0,0);P.dead=false;const gy=X.groundAt(0,60);
+  // the size band: ledger sickles (ent 0) from seeded streams draw sizes within VARY.spread, the capsules and the reach following; a body outside the ledger is plain
+  const ks=[],ratio=[];for(let i=0;i<40;i++){const c=X.spawn(ch,'sickle',X.V3(0,gy+6,60),X.mulberry(1000+i),{ent:0});ks.push(c.k);ratio.push(X.bodyExt(c).hitN/c.k);if(c.def.reach!==X.DEFS.sickle.reach*c.k)ratio.push(NaN);X.removeCreature(c);}
+  const kmin=Math.min(...ks),kmax=Math.max(...ks),r0=ratio[0],rSame=ratio.every(r=>Math.abs(r-r0)<1e-6);
+  check(kmin>=1-X.VARY.spread&&kmax<=1+X.VARY.spread&&kmax-kmin>0.12,'forty ledger sickles span the size band ('+kmin.toFixed(2)+'..'+kmax.toFixed(2)+' of '+X.DEFS.sickle.size+' m; VARY.spread '+X.VARY.spread+')');
+  check(rSame,'and the hit capsules and the reach scale with the body (nose '+r0.toFixed(2)+' m per unit)');
+  const plain=X.spawn(ch,'sickle',X.V3(0,gy+6,60),X.mulberry(7),{ent:-1});check(plain.k===1&&!plain.cls&&!plain.soft,'a body outside the ledger is built plain');X.removeCreature(plain);
+  // the coat by chemistry: the class off the place, the preset shifted for it, the eyes never; a clade without keys gets no class
+  const f=(sub,expo,heat,young)=>{const a=new Float32Array(9);a[X.FI.sub]=sub;a[X.FI.expo]=expo;a[X.FI.heat]=heat;a[X.FI.young]=young;return a;};
+  const cl=[X.coatClassAt(-10,-8,f(0.9,0.6,0,0),'hingeshells'),X.coatClassAt(-40,-30,f(0.9,0,0,0),'hingeshells'),X.coatClassAt(-300,-280,f(0.15,0,0,0),'hingeshells'),X.coatClassAt(-250,-240,f(0.15,0,0.8,0),'hingeshells'),X.coatClassAt(-200,-180,f(0.7,0,0,0.9),'hingeshells'),X.coatClassAt(-40,-30,f(0.9,0,0,0),'slowbloods')];
+  check(cl.join(',')==='lime,rust,mn,sulfide,d,','the classes read off the place: the reef\'s rock lime, rock in the light rust, the deep mud manganese, the vents sulfide, fresh rock dark, and none for a clade without keys ('+cl.join(',')+')');
+  const p0=X.PAL.sickle,pr=X.coatChem(p0,'rust','hingeshells'),ps=X.coatChem(p0,'soft','hingeshells');
+  check(pr!==p0&&pr.top!==p0.top&&pr.flap!==p0.flap&&pr.eye===p0.eye&&pr.joint===p0.joint,'the rust class shifts the plates of the sickle\'s preset and leaves its eyes and its pale joints (the blood\'s colour, not the water\'s)');
+  const lum=c=>0.3*c[0]+0.59*c[1]+0.11*c[2];check(lum(ps.top)>lum(p0.top)*1.8,'the soft class is pale (top '+lum(p0.top).toFixed(2)+' → '+lum(ps.top).toFixed(2)+')');
+  check(X.coatChem(X.PAL.grazer,'rust','slowbloods')===X.PAL.grazer,'a slowblood\'s preset is untouched by a class (its pass decides)');
+  // the moult: a soft sickle is pale, clamped, on the floor, covered by skin; a ridge, whose cutting edge cannot get through the hard one's plate, opens the soft one
+  const hard=X.spawn(ch,'sickle',X.V3(0,gy+6,60),X.mulberry(3),{ent:0,soft:false}),soft=X.spawn(ch,'sickle',X.V3(6,gy+6,60),X.mulberry(3),{ent:0,soft:true});
+  check(!hard.soft&&hard.b.cover.every(c=>c==='plate')&&hard.moultT>0,'a hard sickle: plate all over, a clock to its next moult ('+(hard.moultT/X.DAY_S).toFixed(1)+' days)');
+  check(soft.soft&&soft.b.cover.every(c=>c==='skin')&&soft.st.soft===1&&soft.state==='sit'&&soft.cls==='soft'&&!!X.KIND_GEO['sickle@soft'],'a soft sickle: skin all over, its valves clamped (st.soft), sitting, built pale in its own cached geometry');
+  check(Math.abs(soft.pos.y-(X.groundAt(soft.pos.x,soft.pos.z)+X.DEFS.sickle.size*0.35*soft.k+0.05))<0.6,'and laid on the floor ('+(soft.pos.y-X.groundAt(soft.pos.x,soft.pos.z)).toFixed(2)+' m over it)');
+  const hd=put('hood',X.V3(soft.pos.x,soft.pos.y,soft.pos.z-8),'sit');hd.hunger=1;const seen=X.findPrey(hd,20);check(seen===soft,'a hungry hood, which hunts no sickle, takes the soft one as prey (MOULT.prey '+X.MOULT.prey+')');X.removeCreature(hd);
+  hard.pos.set(0,gy+6,60);hard.home.copy(hard.pos);hard.vel.set(0,0,0);hard.state='sit';hard.soft=true;hard.softT=1e9; // held still for the trial: the hard one sits like the soft one (its covering is what differs)
+  const r1=put('ridge',X.V3(0,gy+6,50),'chase',hard);let held1=-1,verdict1='';for(let i=0;i<60*12;i++){frame();if(r1.hold&&r1.hold.b===hard&&held1<0){held1=i;verdict1=r1.hold.thru;}if(!hard.alive||(held1>=0&&!r1.hold))break;}
+  check(held1>=0&&verdict1==='no'&&hard.alive,'a ridge holds the hard sickle on its plate and its cutting edge can do nothing there (verdict '+verdict1+'): it lives');
+  X.removeCreature(r1);hard.soft=false;
+  const r2=put('ridge',X.V3(6,gy+6,50),'chase',soft);let held2=-1,verdict2='',died2=-1;for(let i=0;i<60*14;i++){frame();if(r2.hold&&r2.hold.b===soft&&held2<0){held2=i;verdict2=r2.hold.thru;}if(!soft.alive){died2=i;break;}}
+  check(held2>=0&&verdict2==='yes'&&died2>0,'the same ridge holds the soft sickle on its skin (verdict '+verdict2+') and opens it ('+(died2>0?((died2-held2)*dt).toFixed(1)+' s after the hold':'alive')+')');
+  clearAll();
+  // the moult itself: the twin soft, the cast carapace on the floor beside it; hardened, an adult with a clock
+  const m0=X.spawn(ch,'sickle',X.V3(0,gy+6,60),X.mulberry(5),{ent:0,soft:false}),n0=X.sheds.length,tw=X.moult(m0);
+  check(tw.soft&&tw!==m0&&!m0.alive&&X.sheds.length===n0+1&&X.sheds[n0].mesh.geometry.attributes.position.count>1000,'the moult: the soft twin in its place, the shed dropped beside it ('+X.sheds[n0].mesh.geometry.attributes.position.count+' vertices, MOULT.shedT '+X.MOULT.shedT+' days)');
+  const ad=X.harden(tw);check(!ad.soft&&ad.b.cover.every(c=>c==='plate')&&ad.moultT>0&&!tw.alive,'hardened: a plated adult with a clock to its next moult');
+  X.removeCreature(ad);for(const s of X.sheds.slice())s.t=-1;
+  // the ram's blow: its strike on what its mouth cannot take whole is a knock — the body stunned, no hold, the ram off it
+  clearAll();const g=put('grazer',X.V3(0,gy+2,60),'wander'),rm=put('ram',X.V3(0,gy+2,40),'chase',g);let stunned=-1,heldR=false;for(let i=0;i<60*12;i++){frame();g.vel.set(0,0,0);g.threat=null;if(rm.hold)heldR=true;if(g.stun>0){stunned=i;break;}}
+  check(stunned>=0&&!heldR&&rm.target!==g,'the ram\'s blow stuns the grazer ('+(stunned>=0?(stunned*dt).toFixed(1):'-')+' s; RAM.stun '+X.RAM.stun+') and takes no hold');
+  clearAll();X.choose(1);
 }
 let nanH=0;for(const h of X.holds)for(const v of [h.len,h.load,h.pull])if(!isFinite(v))nanH++;
 check(nanH===0,'no NaN in any hold');

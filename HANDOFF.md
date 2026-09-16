@@ -1,5 +1,18 @@
 # HANDOFF — tethys
 
+**v11.66 (15 Sep 2026): the hingeshell variety pass.** The person's ask, the first of three (slowbloods and ringmouths follow on the same
+infrastructure). Every animal the ledger places now draws a size (±15%, an instance scale, `VARY`), a coat class from the place's chemistry
+(rust, lime, sulfide, manganese, the young rock's dark — a per-kind-and-class geometry, creatures_spec.js `coatChem`; only the hingeshells'
+keys are filled) and, for a moulting clade, the soft state (`MOULT`: pale, valves clamped, hidden against a solid, skin to every edge, a
+twentieth of the placed adults and every adult on its own clock out of sight; the cast carapace beside it, old sheds as flora by the kind's
+envelopes). The raptor family's five looks all live, one each, by the person's default (hood buried on the flats and the lagoon floor, lash on the
+ledges by `rel`, ram over the upwelling flank with a real blow, combat.js `RAM`); COMBAT §7 answered by prey they can open. Five new forms
+(sifter, cinder, wedge, plough, relict) from the kit, each with two Earth tells at most; the hingeshell envelopes read the fields. The 120-day
+census passes (it failed at v11.65 on the abyssal, whose band is the rim now). Seen in the pane at every site and in the bestiary (CHANGELOG
+v11.66, frames `test/render/v66_*.png`). **Ask first** whether the lime coat reads as calcite or as bleaching (the hose in the forest), then two
+coats of one kind side by side, then a soft sickle against a rock in play (moulted, or broken?), then the sheds' density on the flats. Next: the
+slowblood pass on the same infrastructure (fill `COAT_CHEM_KEYS.slowbloods`; the lathe's joints, COMBAT §7), then the ringmouths.
+
 **v11.65.1 (15 Sep 2026): SEAFLOOR.md.** The chain's diversity and its underwater ground, recorded from a discussion and agreed by the person:
 what can differ per island (brooders, ecotypes by exposure, the progression rule, colour by rock age, the sill relict) and the formations to build
 (lava tubes, the terrace notch, tidal channels with ebb deltas, a canyon per island, the giant's slide blocks first; then pillows, dikes, talus,
@@ -504,7 +517,7 @@ armour, placed weapons and eyes, hingeshell mouth parts, the lab from play, the 
 creatures should be specs (make in the lab, export, paste into `SPECS`), not hand builders.
 
 **v11.9.1: the raptor family.** The hingeshells were seen ("look great") but the sickle and the hose still read as Anomalocaris
-and Opabinia. `buildRaptor` + `RAPTORS`: five looks (keel = the sickle now, splay = the hose now, hood/lash/ram bestiary-only, unplaced).
+and Opabinia. `buildRaptor` + `RAPTORS`: five looks (keel = the sickle now, splay = the hose now, hood/lash/ram bestiary-only until v11.66 placed them).
 Unseen. Ask which looks go in the world; swap parts in `RAPTORS` in one line. The old `buildSickle`/`buildHose` are unreferenced and can go.
 
 **v11.9: the hingeshell pass.** The slowbloods were seen and approved ("Perfected it!"); the person asked for the hingeshells.

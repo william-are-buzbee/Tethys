@@ -22,7 +22,7 @@ function underCanopy(x,z,y){return canopyW(x,z)*canopyFade(y)>0.5;} // v11.32: t
 function makeChunk(i,j){
   const x0=i*CELL-HALF,z0=j*CELL-HALF,hg=new Float32Array(GR*GR),fg=new Float32Array(GR*GR*NF);
   return {i:i,j:j,k:ckey(i,j),x0:x0,z0:z0,cx:x0+CELL/2,cz:z0+CELL/2,hg:hg,fg:fg,landN:0,deepN:0,minH:0,maxH:-1e9,group:new THREE.Group(),creatures:[],schools:[],eggs:[],meshes:[],plumes:[],lightSrc:[],solids:[],seeps:[],hash:makeHash(),solidR:0,sphere:null,terrain:null,shBig:[], // terrain, shBig (v11.30): the ground's mesh and the structures' shadow proxies, casters into the world's map (scene.js updateShadowS)
-    pooled:[],flora:[],near:true,ac:new Float32Array(16), // pooled (v11.52): the species pools this cell has written a block into (poolAdd); taken out on unload // ac: the swaying flora's height summed in a 4×4 grid of the cell — the forest's sound (audio.js) // flora: the instanced meshes hidden once the cell is past FLORA_FAR (v11.12, cullChunks); near: whether they are drawn now
+    pooled:[],flora:[],near:true,ac:new Float32Array(16),sheds:[], // sheds (v11.66): the cast carapaces dropped in this cell in play (creatures_ai.js dropShed) // pooled (v11.52): the species pools this cell has written a block into (poolAdd); taken out on unload // ac: the swaying flora's height summed in a 4×4 grid of the cell — the forest's sound (audio.js) // flora: the instanced meshes hidden once the cell is past FLORA_FAR (v11.12, cullChunks); near: whether they are drawn now
     h:function(x,z){let fx=clamp((x-x0)/STEP,0,CH_RES-0.001),fz=clamp((z-z0)/STEP,0,CH_RES-0.001);const ix=Math.floor(fx),iz=Math.floor(fz),tx=fx-ix,tz=fz-iz;const a=hg[iz*GR+ix],b=hg[iz*GR+ix+1],c=hg[(iz+1)*GR+ix],d=hg[(iz+1)*GR+ix+1];return a+(b-a)*tx+(c-a)*tz+(a-b-c+d)*tx*tz;},
     f:function(x,z){const ix=clamp(Math.round((x-x0)/STEP),0,CH_RES),iz=clamp(Math.round((z-z0)/STEP),0,CH_RES);return fg.subarray((iz*GR+ix)*NF,(iz*GR+ix+1)*NF);}, // the conditions at the nearest vertex
     w:function(env,x,z){return envW(env,this.h(x,z),this.slope(x,z),this.f(x,z));}, // a species' tolerance here
@@ -185,7 +185,7 @@ function* placeFloraType(ch,rng,f){
   for(let n=0;n<tries;n++){
     if(n%200===199)yield;
     const x=ch.x0+rng()*CELL,z=ch.z0+rng()*CELL;
-    let p=(f.per||0)/maxN*(f.env?ch.w(f.env,x,z):1);
+    let p=(f.per||0)/maxN*(f.envs?envsW(ch,f.envs,x,z):f.env?ch.w(f.env,x,z):1);if(f.rare)p*=f.rare; // envs, rare (v11.66): the best of several envelopes (a shed lies where its kind lives), and a chance under one for a thing rarer than one try a cell
     if(f.rim){const pd=Math.hypot(x-PIT[0],z-PIT[1]);if(pd>98&&pd<150)p=Math.max(p,f.rim);}
     if(f.pocket)p*=0.1+smooth(0.6,0.72,fbm(x*f.pocket+53,z*f.pocket+29,2));
     if(cw>0.03)p=Math.max(p,canopyW(x,z)*f.canopyPer/maxN);
@@ -220,6 +220,7 @@ function* placeFloraType(ch,rng,f){
   if(f.id==='seep')for(const p of list){if(ch.seeps.length>=8)break;ch.seeps.push(V3(p.x,p.y+(f.top||2)*p.sc*0.9,p.z));} // the seeps' tops: bubbles (fx.js, v11.53)
   if(f.vent){list.sort((a,b)=>b.sc-a.sc);const tops=list.slice(0,4).map(p=>V3(p.x,p.y+11*p.sc,p.z));if(tops.length){addPlume(ch,tops,300);addLight(ch,tops[0].x,tops[0].y+2,tops[0].z,0xff6a22,1.6,70);}}
 }
+function envsW(ch,E,x,z){let w=0;for(const e of E){const v=ch.w(e,x,z);if(v>w)w=v;}return w;} // the best tolerance among several envelopes (v11.66)
 function placeBigSolids(ch){
   const byGeo=new Map();
   for(const s of bigsFor(ch.i,ch.j)){addLumps(ch,s.f.lumps,s.m,s.rs);let L=byGeo.get(s.f.geo);if(!L){L=[];byGeo.set(s.f.geo,L);}L.push(s);}
@@ -364,14 +365,14 @@ function* placeKind(ch,e,count,rng,opt){
   while(count>0){const g=e.grp?Math.min(e.grp,count):1;count-=g;
     const p=opt.at?opt.at.clone():kindPoint(ch,rng,e,opt.off);if(!p)break;if(opt.at)p.y=ch.h(p.x,p.z); // at: a hatch, at the clutch
     if(e.land){p.y+=0.5;spawn(ch,kind,p,rng,o);placed++;yield;continue;}
-    if(D.role==='boid'){p.y=clamp(p.y+1.5+rng()*5,p.y+1,-4);
+    if(D.role==='boid'){p.y=D.mid?openY(ch,p,rng,10,50):clamp(p.y+1.5+rng()*5,p.y+1,-4); // mid (v11.66): a swarm of the water column
       let s=null;if(opt.juv)for(const q of ch.schools){if(q.members.length&&q.members[0].kind===kind&&(!s||q.pos.distanceTo(p)<s.pos.distanceTo(p)))s=q;} // a recruit joins the nearest ribbon of its kind
       if(s&&s.pos.distanceTo(p)<60){for(let i=0;i<g;i++){const q=s.pos.clone().add(V3((rng()-0.5)*4,(rng()-0.5)*2,(rng()-0.5)*4));q.y=clamp(q.y,ch.h(q.x,q.z)+1,-4);const m=spawn(ch,kind,q,rng,o);m.school=s;s.members.push(m);placed++;yield;}}
       else{yield* makeSchool(ch,kind,p,g,rng,o);placed+=g;}}
     else if(e.grp){const sp=kind==='grazer'?16:kind==='arrow'?8:5;for(let i=0;i<g;i++){const q=p.clone().add(V3((rng()-0.5)*sp,0,(rng()-0.5)*sp)),h=ch.h(q.x,q.z);q.y=D.floor?h+1.5+rng()*1.5:clamp(h+1+rng()*4,h+1,-5);spawn(ch,kind,q,rng,o);placed++;yield;}}
-    else if(kind==='trap'||kind==='stone'){p.y+=(D.clear!==undefined?D.clear:D.size*0.35)+0.05;if(solidPush(p,1.5,null,ch))continue;const c=spawn(ch,kind,p,rng,o);c.state='sit';c.g.rotation.y=rng()*TAU;placed++;} // lying on its floor, any way round
-    else if(kind==='hook'){let ok=false;for(let tr=0;tr<6&&!ok;tr++){const q=chunkPoint(ch,rng,e.env);if(!q)break;p.copy(q);p.y=clamp(p.y+5+rng()*9,p.y+4,-6);ok=!solidPush(p,2.5,null,ch);}if(!ok)continue;const c=spawn(ch,'hook',p,rng,o);c.state='sit';c.g.rotation.y=rng()*TAU;placed++;} // hung up in the structure
-    else if(kind==='lurker'){let ok=false;for(let tr=0;tr<6&&!ok;tr++){const q=chunkPoint(ch,rng,e.env);if(!q)break;p.copy(q);p.y+=D.size*0.35+0.1;ok=!solidPush(p,2,null,ch);}if(!ok)continue;const c=spawn(ch,'lurker',p,rng,o);c.state='sit';c.g.rotation.y=rng()*TAU;placed++;}
+    else if(D.role==='trap'){p.y+=(D.clear!==undefined?D.clear:D.size*0.35)+0.05;if(solidPush(p,1.5,null,ch))continue;const c=spawn(ch,kind,p,rng,o);c.state='sit';c.g.rotation.y=rng()*TAU;placed++;} // the trap, the stone: lying on its floor, any way round (by role since v11.66)
+    else if(D.role==='ambush'&&D.hang){let ok=false;for(let tr=0;tr<6&&!ok;tr++){const q=chunkPoint(ch,rng,e.env);if(!q)break;p.copy(q);p.y=clamp(p.y+5+rng()*9,p.y+4,-6);ok=!solidPush(p,2.5,null,ch);}if(!ok)continue;const c=spawn(ch,kind,p,rng,o);c.state='sit';c.g.rotation.y=rng()*TAU;placed++;} // the hook: hung up in the structure
+    else if(D.role==='ambush'){let ok=false;for(let tr=0;tr<6&&!ok;tr++){const q=chunkPoint(ch,rng,e.env);if(!q)break;p.copy(q);p.y+=(D.clear!==undefined?D.clear:D.size*0.35)+0.1;ok=!solidPush(p,2,null,ch);}if(!ok)continue;const c=spawn(ch,kind,p,rng,o);c.state='sit';c.g.rotation.y=rng()*TAU;placed++;} // the lurker among rock, the hood under the sand (v11.66: by role, at its own clearance)
     else if(kind==='pall'){p.y=clamp(p.y+15+rng()*120,p.y+10,CHEMO-15);if(p.y>CHEMO-5)continue;spawn(ch,'pall',p,rng,o);placed++;} // in the dark, off the mud
     else if(D.floor){p.y+=D.size*0.35+0.3;spawn(ch,kind,p,rng,o);placed++;} // rasp, watcher, tread, picker, scuttle: on the floor
     else if(kind==='veil'){p.y=openY(ch,p,rng,30,110);spawn(ch,'veil',p,rng,o);placed++;}
@@ -407,6 +408,7 @@ function unloadChunk(ch){
   for(const s of ch.lightSrc){const k=lightSources.indexOf(s);if(k>=0)lightSources.splice(k,1);}
   ecoWriteBack(ch); // the living go back into the ledger (v11.26); the dead stay dead
   for(let i=ch.eggs.length-1;i>=0;i--)removeEgg(ch.eggs[i]); // the clutches go with the cell; the ledger keeps their count
+  for(let i=ch.sheds.length-1;i>=0;i--)removeShed(ch.sheds[i]); // and the sheds dropped in it (v11.66)
   for(const c of ch.creatures)disposeCreature(c);
   for(let i=creatures.length-1;i>=0;i--)if(creatures[i].gone)creatures.splice(i,1);
   for(let i=carcasses.length-1;i>=0;i--)if(carcasses[i].gone)carcasses.splice(i,1);
