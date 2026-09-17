@@ -1,5 +1,21 @@
 # HANDOFF — tethys
 
+**v11.67 (16 Sep 2026): the flora variety pass.** SEAFLOOR §2 built: the sessile life varies with the fields, not only with depth, and nothing
+reads an island. The three variants of an `eco` species are its exposure ecotypes now (grow.js `ecoK` from `expo` at the instance, the same rng
+draw; turf, wisp, chain, stipe, ladder, ribbon, bladder — a `species()` since this pass — and paddle read k as the kelps do: exposed short, thick,
+narrow, heavy at the holdfast; sheltered long, broad, thin); the place's chemistry stains every instance's tint (grow.js `tintBy`, `TINT_CHEM`:
+`young` rusts the animals and dulls the weeds, `heat` whitens, the lime rind's clear surf water creams the shells and never a blade; null where
+the fields are ordinary); the forest and the canopy keep off flows younger than a forest's growing time (`young ≤ 0.45` on stipe, ladder, ribbon,
+bladder, tidetree: the rift arms, the fan and the giant's flows read bare and encrusted); two habitat-only forms — the **paddle** (a thick-bladed
+runner of the greens on the surf over sand, `turb` ≥ 0.3 in the light: 5 ha on ours, 760 on the giant's windward shelf, the one plant that tells the
+islands apart) and the **darkrind** (the reds' crust at the light's floor on the sill's summits, which reach exactly −150 under the basin's
+clearest water; nowhere else). The high-current form was struck: the fishers own that ground. The forest at (330, 0) like for like in the pane:
+184 → 185 draws, 4.88 → 5.05 M triangles. Seen at eleven sites (CHANGELOG v11.67, frames `test/render/v67_*.png`). **Ask first** whether the
+ecotype reads in play — the surf coast's forest edge against the giant's east shelf — then whether the rust on the rift arm's sacs reads as
+chemistry or dirt, then the paddle on the giant's windward shelf. Two findings: creatures_spec.js `coatClassAt`'s `lime` lacks the clear-water
+term the flora's cream stain has (a hingeshell wears lime in the forest where the flora does not); and the giant's east shelf grows what our lee
+grows because its fields there are our lee's — its windward shelf and its flows are where the islands differ, by `turb` and `young`.
+
 **v11.66 (15 Sep 2026): the hingeshell variety pass.** The person's ask, the first of three (slowbloods and ringmouths follow on the same
 infrastructure). Every animal the ledger places now draws a size (±15%, an instance scale, `VARY`), a coat class from the place's chemistry
 (rust, lime, sulfide, manganese, the young rock's dark — a per-kind-and-class geometry, creatures_spec.js `coatChem`; only the hingeshells'

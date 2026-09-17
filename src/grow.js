@@ -17,6 +17,30 @@ const PIG={
 function pigment(h,line){const d=clamp(-h,0,150),T=PIG[line]||PIG.green;let c=T[T.length-1][1];
   for(let i=1;i<T.length;i++)if(d<=T[i][0]){const a=T[i-1],b=T[i],t=(d-a[0])/(b[0]-a[0]||1);c=[lerp(a[1][0],b[1][0],t),lerp(a[1][1],b[1][1],t),lerp(a[1][2],b[1][2],t)];break;}
   const v=1+(line==='red'?0.1:0.22)*smooth(25,8,d);return [c[0]*v,c[1]*v,c[2]*v];}
+// ---------- the ecotype by exposure (v11.67, SEAFLOOR §2) ----------
+// The variant index was a free per-instance channel: species() packs three, the cell drew one at random and nothing drove it. An `eco`
+// species draws it from the wave exposure at the instance instead — k 0 sheltered, 1 the middle, 2 exposed — and its builder reads k as the
+// kelps do (Macrocystis, Ecklonia, Saccharina: a surf coast grows the same lineage short, thick, narrow-bladed and heavy at the holdfast;
+// shelter grows it long, broad and thin, all blade). `expo` carries the wave base already (world.js: it fades out by −30), so below it a forest
+// is sheltered whatever its coast and the coasts differ where they should, in the top 25 m — which is where the giant's coasts and ours differ
+// in their fields. ECO_MIX jitters the thresholds so a coast is not a hard line; the draw is the one the cell made before, so no cell's stream
+// moves. A species with no reason to read the waves (a vent mat, a sac) keeps the random pick. The three stay one geometry: the cost is nothing.
+const ECO_LO=0.22,ECO_HI=0.5,ECO_MIX=0.24; // expo under ECO_LO sheltered, over ECO_HI exposed; each instance's thresholds wander ±ECO_MIX/2
+function ecoK(expo,u){const e=expo+(u-0.5)*ECO_MIX;return e<ECO_LO?0:e<ECO_HI?1:2;}
+// ---------- the tint by the place's chemistry (v11.67) ----------
+// tintBy(h,f,photo): PLANET's shell-colour rule read by the sessile life — a stain laid over the instance's tint (the pigment's, or the list's
+// pick) by the fields at its base: fresh basalt (`young`) puts dissolved iron in the water, so the animal forms go darker and rust (the
+// hingeshells' `d` and `rust` coat classes, creatures_spec.js coatClassAt) and the weeds dull (iron stains a blade); the vents' heat (`heat`)
+// whitens and yellows toward the sulfur mats; the surf's shallow rock where the lime rind lays its lime (h, sub, expo — the class `lime`)
+// creams. Each stain is a colour and a cover (its knob × the field, smoothed in from the field's ordinary range); several lay in order and
+// compose to one [r,g,b,cover] the cell mixes into the tint before the jitter. Where the fields are ordinary it returns null: the default look
+// is untouched, and it costs nothing there. The rock keeps the terrain's colour (never stained); a surface float has no ground chemistry.
+const TINT_CHEM={rust:[0.44,0.25,0.12],rustK:0.55,dull:[0.36,0.33,0.22],dullK:0.45,sulfur:[1.0,0.94,0.62],sulfurK:0.7,cream:[0.92,0.86,0.72],creamK:0.4}; // the stains and their cover at a field of 1
+function tintBy(h,f,photo){const yg=smooth(0.15,0.6,f[FI.young]),ht=smooth(0.1,0.5,f[FI.heat]),lm=photo?0:smooth(-30,-22,h)*smooth(0.45,0.65,f[FI.sub])*smooth(0.25,0.45,f[FI.expo])*smooth(0.62,0.42,f[FI.nut]); // lime: the shells' rule, never a blade's, and only in clear poor water (the forest's fed water at (330,0), nut 0.59, is not it; the coat class lacks this term — seen 16 Sep 2026: the stipes went yellow)
+  if(yg<0.02&&ht<0.02&&lm<0.02)return null;const T=TINT_CHEM;let r=0,g=0,b=0,keep=1;
+  const lay=(c,a)=>{if(a<=0)return;r=r*(1-a)+c[0]*a;g=g*(1-a)+c[1]*a;b=b*(1-a)+c[2]*a;keep*=1-a;};
+  lay(photo?T.dull:T.rust,yg*(photo?T.dullK:T.rustK));lay(T.sulfur,ht*T.sulfurK);lay(T.cream,lm*T.creamK);
+  const t=1-keep;if(t<0.01)return null;return [r/t,g/t,b/t,t];}
 // flowYaw(x,z): tidal current runs along the contours; a `flow` entry turns its plane (local x-y, normal z) across it, so a slope of
 // fans all facing the same way reads as current. Flat ground gets a slow noise field the whole flat agrees with.
 function flowYaw(x,z){const gx=(sample(x+2,z).h-sample(x-2,z).h)/4,gz=(sample(x,z+2).h-sample(x,z-2).h)/4;

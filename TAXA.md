@@ -82,7 +82,7 @@ signature carried into air: the tidewood is a jointed trunk with whorls at the n
 
 | split | what it bought | what it cost | species |
 |---|---|---|---|
-| **the runner** | one giant cell running along the sand with uprights at the nodes: sand, where a holdfast can't hold (Earth's proof: Caulerpa, a single cell metres long) | no height, ever | **strap** (blades at the nodes; the flats' and the lagoon's pasture), **grape** (bunches at the nodes) — both exist |
+| **the runner** | one giant cell running along the sand with uprights at the nodes: sand, where a holdfast can't hold (Earth's proof: Caulerpa, a single cell metres long) | no height, ever | **strap** (blades at the nodes; the flats' and the lagoon's pasture), **grape** (bunches at the nodes) — both exist; **paddle** (built v11.67: the runner's thick-bladed form for stirred water — a few broad short blades with a rind-thick cuticle that sheds sand and takes the scour, where the strap's thin blades are shaded and torn and the floaters' ropes snap; costs light per gram, so it holds only where `turb` is high in the light: the surf over sand — a scrap of ours, the giant's whole windward shelf) |
 | **the stiffened axis** | a jointed upright that stands in the surf and the tide band | two ways to stiffen, and each pays differently: | |
 | — with mineral | lime in the joints: grazer-proof, and its dead segments are the reef's white sand (Halimeda) | slow; only where lime is cheap: clear bright water | **chain** (exists) |
 | — with a stiff wall | a skin that survives drying and a wall that holds the axis up in air: the 9 m tide band, empty of every competitor twice a day, and then the land | it must stand in water half the day or on rain alone; it is dying back as the island sinks | **tidewood** (`tidetree`, exists: re-read as a jointed trunk with a whorl of short branches at each node and a brush at the top), **reed** (new: jointed leafless uprights 1–3 m in dense stands on the sheltered inner tide band — the swamp you swim through at high water), **scrub** (exists: the dwarf on rain, jointed and dark), **tussock** (exists: a tuft of small jointed shoots), and if the crater lake is agreed, **bogwood** (a dwarf tidewood in brown fresh water, knees out of the peat) |
@@ -115,6 +115,7 @@ is bright. The last photosynthesis before the dark (Earth's deepest weed: 268 m,
 |---|---|---|---|
 | **the lime rind** | mineral in the rind: grazer-proof and surf-proof, and in the surf it *cements the reef* — a real reef's crest is not polyps but calcified red crust, because the crest is dry twice a day and pounded the rest (Earth's proof: coralline algae) | slow; bright water only | **limerind** (new: pale pink paint on the rim's crest, the passes' walls, the skerries; the polyps' rubble binder), **sandball** (new: a lime rind that let go and rolls — rhodoliths; the flats and the lagoon floor) |
 | **the sheet** | a blade one cell thick, translucent: more light at less cost than a rind | eaten; the last blades | **redblade** (new: single dark translucent blades, −60 to −150, sparse) |
+| **the deep rind** (built v11.67) | the founder's paint pushed to where the light ends — all pigment, a plate a finger thick with a pale growing edge; the floor of the light is the water's, not a number: under the island's fed water the reds stop at −150, under the basin's sparse clear water (`nut` 0.12) they pay to −170 | a hand's width a century; nothing else photosynthetic to shade it, and nothing to eat but the relict pickers | **darkrind**: the sill's drowned summits, which reach exactly −150 (SEAFLOOR §3's relict among the weeds — stranded as its shield sank); no island flank has water clear enough |
 | **the epiphyte** (later) | growing on the floaters' stipes and the sacs: a free stand in the light | dies with its host | a rind on a stipe: the epibiont hook, first customer |
 
 ### What the three lines change on the map
@@ -122,6 +123,12 @@ is bright. The last photosynthesis before the dark (Earth's deepest weed: 268 m,
 - The slope gains its weeds: crust from −40 down the terraces to −150, redblade sparse on the top steps, limerind on the crest.
 - The lagoon reads as a green pasture (strap, grape, turf) with a reed margin at high water; the shelf as an olive-gold rope forest;
   the slope as red paint thinning out. Three lines, three looks, in the order they arrived.
+- **The same lineage varies with the place** (v11.67, SEAFLOOR §2): the greens' turf and chain and the floaters' wisp, stipe, ladder,
+  ribbon and bladder grow short, thick, narrow and heavy at the holdfast where the waves reach (`expo`), long, broad and thin in shelter —
+  the three variants of a species are its exposure ecotypes now (grow.js `ecoK`), so a surf coast and a lee read differently in the same
+  species. Fresh basalt (`young`) dulls a weed with its iron and rusts the animal forms; the tall floaters keep off flows younger than a
+  forest's growing time (the progression rule: the rift arms, the fan's fresh blocks and the giant's flows carry turf, rind and rust, no
+  forest). Neither is a species; both are why the giant's coasts and ours differ in their look from the same roster.
 
 ## The sessile animals — four lines, each with its splits
 

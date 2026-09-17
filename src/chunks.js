@@ -105,7 +105,7 @@ function makeInstanced(ch,rng,geo,mat,tints,list,dip,vars,f){
     for(let i=0;i<list.length;i++){const p=list[i];if(p.y>0.5||mat.land)continue;steadyOf(ch,p.x,p.z,p.y+8,CURV);a[i*2]=CURV.x;a[i*2+1]=CURV.z;tidalAt(p.x,p.z,CURV);b[i*2]=CURV.x;b[i*2+1]=CURV.z;} // nothing on land (the tussock) leans to the water
     geo.setAttribute('aCur',new THREE.InstancedBufferAttribute(a,2));geo.setAttribute('aTide',new THREE.InstancedBufferAttribute(b,2));} // the steady current and the tidal stream at full flood (world.js): the shader sums them with the tide's rate
   const im=new THREE.InstancedMesh(geo,mat,list.length);im.frustumCulled=false;const col=new THREE.Color();
-  for(let i=0;i<list.length;i++){im.setMatrixAt(i,list[i].m);const tc=list[i].tint||tints[Math.floor(rng()*tints.length)];col.setRGB(tc[0]*(0.85+rng()*0.25),tc[1]*(0.85+rng()*0.25),tc[2]*(0.85+rng()*0.25));im.setColorAt(i,col);}
+  for(let i=0;i<list.length;i++){im.setMatrixAt(i,list[i].m);let tc=list[i].tint||tints[Math.floor(rng()*tints.length)];const q=list[i].chem;if(q)tc=[lerp(tc[0],q[0],q[3]),lerp(tc[1],q[1],q[3]),lerp(tc[2],q[2],q[3])];col.setRGB(tc[0]*(0.85+rng()*0.25),tc[1]*(0.85+rng()*0.25),tc[2]*(0.85+rng()*0.25));im.setColorAt(i,col);} // chem (v11.67): the place's stain over the pick (grow.js tintBy), before the jitter
   im.instanceMatrix.needsUpdate=true;if(im.instanceColor)im.instanceColor.needsUpdate=true;ch.group.add(im);ch.meshes.push(im);if(mat!==GLOW){ch.flora.push(im);shadowCaster(im,mat,ch.sphere);}return im; // the glow clouds stay lit at any range (and cast nothing); everything else hides past FLORA_FAR (cullChunks) and casts into the world's map (v11.30)
 }
 // ---------- the flora pools (v11.52): one instanced mesh per species across every loaded cell ----------
@@ -142,7 +142,7 @@ function poolTouch(P,s,c){ // the range [s,s+c) uploaded at the next draw, joine
 function poolAdd(P,ch,rng,tints,list,mat){ // the cell's instances as one block at the pool's end (the rng in makeInstanced's order: the tint's pick, then three jitters)
   if(P.n+list.length>P.cap)poolAlloc(P,Math.max(P.cap*2,P.n+list.length));
   const s=P.n,M=P.im.instanceMatrix.array,C=P.im.instanceColor.array,V=P.vars?P.geo.attributes.aVar.array:null,A=P.cur?P.geo.attributes.aCur.array:null,B=P.cur?P.geo.attributes.aTide.array:null;
-  for(let i=0;i<list.length;i++){const p=list[i],k=s+i;M.set(p.m.elements,k*16);const tc=p.tint||tints[Math.floor(rng()*tints.length)];C[k*3]=tc[0]*(0.85+rng()*0.25);C[k*3+1]=tc[1]*(0.85+rng()*0.25);C[k*3+2]=tc[2]*(0.85+rng()*0.25);if(V)V[k]=p.v;
+  for(let i=0;i<list.length;i++){const p=list[i],k=s+i;M.set(p.m.elements,k*16);let tc=p.tint||tints[Math.floor(rng()*tints.length)];const q=p.chem;if(q)tc=[lerp(tc[0],q[0],q[3]),lerp(tc[1],q[1],q[3]),lerp(tc[2],q[2],q[3])];C[k*3]=tc[0]*(0.85+rng()*0.25);C[k*3+1]=tc[1]*(0.85+rng()*0.25);C[k*3+2]=tc[2]*(0.85+rng()*0.25);if(V)V[k]=p.v; // chem (v11.67): the place's stain over the pick (grow.js tintBy), before the jitter
     if(A){if(p.y>0.5||mat.land){A[k*2]=A[k*2+1]=B[k*2]=B[k*2+1]=0;continue;}steadyOf(ch,p.x,p.z,p.y+8,CURV);A[k*2]=CURV.x;A[k*2+1]=CURV.z;tidalAt(p.x,p.z,CURV);B[k*2]=CURV.x;B[k*2+1]=CURV.z;}} // nothing on land (the tussock) leans to the water
   P.n+=list.length;P.blocks.push({ch:ch,start:s,count:list.length,vis:false});ch.pooled.push(P);poolTouch(P,s,list.length); // hidden until poolCull sees its cell (this frame: cullChunks runs after the streaming)
 }
@@ -209,7 +209,8 @@ function* placeFloraType(ch,rng,f){
     if(!rock&&f.y!=='surface'&&f.y!=='mid'&&!clearOf(ch,x,y,z,f,sc,sy))continue; // v11.22: nothing stands inside rock (or inside an earlier rigid plant) — the collision hash is asked first
     const sx=f.sx?f.sx[0]+rng()*(f.sx[1]-f.sx[0]):1,sz=f.sx?f.sx[0]+rng()*(f.sx[1]-f.sx[0]):1;
     d.scale.set(sc*sx,sy,sc*sz);d.updateMatrix();
-    list.push({m:d.matrix.clone(),x:x,y:y,z:z,sc:sy,v:f.vars?Math.floor(rng()*f.vars.length):0,tint:f.photo?pigment(f.y==='surface'?0:h,f.line):null});
+    const fx=ch.f(x,z); // the conditions at the instance (v11.67): an `eco` species' variant is its exposure ecotype (grow.js ecoK — the same one draw the random pick made, so no cell's stream moves), and the place's chemistry stains the tint (tintBy; not the rock, not a surface float, not an entry with chem:false)
+    list.push({m:d.matrix.clone(),x:x,y:y,z:z,sc:sy,v:f.vars?(f.eco?ecoK(fx[FI.expo],rng()):Math.floor(rng()*f.vars.length)):0,tint:f.photo?pigment(f.y==='surface'?0:h,f.line):null,chem:rock||f.y==='surface'||f.chem===false?null:tintBy(h,fx,!!f.photo)});
   }
   if(!list.length)return;
   const im=makeInstanced(ch,rng,f.geo,f.mat,f.tints,list,!!f.pads,!!f.vars,f),soft=!!(f.mat&&f.mat.sway&&!f.mat.land);

@@ -1,6 +1,6 @@
 # SEAFLOOR.md — the chain's diversity and its underwater ground (15 Sep 2026)
 
-Status: **designed, not built.** A discussion of 15 Sep 2026 recorded as it stood: what an archipelago this size can honestly differ in from
+Status: **§2 built as v11.67 (16 Sep 2026: the flora variety pass — see the note at its head); §3–5 designed, not built.** A discussion of 15 Sep 2026 recorded as it stood: what an archipelago this size can honestly differ in from
 island to island (§1–3), the underwater formations a hotspot chain with a 6–9 m tide, iron and a chemocline at −450 would produce (§4), and what the physics puts on the surface (§5).
 The person agreed to all of §4 ("all of that", 15 Sep 2026); the one code-shaped question (§6, the range term) is theirs and open. Above
 water is another doc for another day. Read PLANET.md first, then ARCHIPELAGO.md (the chain's numbers: ours 1–2 Myr old and sinking, the giant
@@ -22,6 +22,16 @@ or a biome; every item is a mechanism the geology already has, and every species
   sill has deep relict ground. "This shore is all black rock and encrusters" reads long before a different crab does.
 
 ## 2. Flora
+
+**Built v11.67 (16 Sep 2026), the flora variety pass** (CHANGELOG v11.67; FLORA.md's placement rules carry the numbers): the ecotypes by
+exposure as the species' three variants driven by `expo` (grow.js `ecoK`; turf, wisp, chain, stipe, ladder, ribbon, bladder and paddle read
+it); the progression rule as `young ≤ 0.45` on the forest and the canopy — it applies to the fresh flows on the two reachable islands (the
+rift arms, the fan, the giant's rift flows), not to an island: the young shield is a record past the world's edge that nobody swims to; the
+colour by rock age as a stain over the tint (grow.js `tintBy`: `young` rusts the animals and dulls the weeds, `heat` whitens, lime creams
+the shells); and two habitat-only forms — **there are no rivers**, so the river-mouth weed became a turbidity form, the **paddle**, on the
+surf over sand where `turb` is high in the light (a scrap of ours, the giant's whole windward shelf), and the sill's low-light form the
+**darkrind**, the reds' crust at the light's floor on the drowned summits, which reach exactly −150 under the basin's clearest water. The
+high-current form was not built: the fishers own that ground already (FLORA.md, Open). What §2 leaves: the epiphytes.
 
 Real kelp systems have one canopy dominant per region, chosen by temperature, exposure and depth, with understory species under it: "one
 victor" is true locally and false across conditions, which is the envelope rule already. Visually identical coexisting species are common in

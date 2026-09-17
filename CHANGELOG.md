@@ -4283,3 +4283,83 @@ every clade shares and nothing is hingeshell-only code.
   broken; the sheds' density (a shed trap a cell on the flats, the pickers' on the lower flank); a moult happening (out of sight only, so never
   seen — a shed found where none was); the ram's blow on a swarm and the hood's lunge from the sand in play; the frame cost of the 15 shed
   pools and the sifter swarms (~16 more boids a cell over the upwelling); the young shield (no record yet).
+
+## v11.67 — the flora variety pass (16 Sep 2026)
+
+The person's ask (SEAFLOOR §2, agreed 15 Sep): the sessile life varying visibly with the conditions, not only with depth — the same weed short
+and thick on a surf coast and long and broad in shelter, the life on fresh basalt tinted by its chemistry, a few forms that live only where a
+condition is extreme, the forest absent from flows too young to have grown one. Every difference from a field of `sample(x,z).f` or from `h`;
+no biomes, no island ids, no names, so the giant's coasts and ours differ for free where their fields differ.
+
+- **The fields, measured first** (a scratch survey over `sample()`; the numbers the pass was tuned against). `young` in the light lies on
+  our two rift arms (0.7, at 2.6–2.8 and 5.6 rad, r 300–1000), the collapse fan (0.5–1, 3.4–4.4 rad, mostly below −60) and the giant's rift
+  flows (0.7; 300 ha between −20 and −60); `heat` only at −240..−280, so no weed ever meets it; `turb` ≥ 0.35 in the light is the surf over
+  sand — 81 quarter-hectare cells on ours, 1563 on the giant's windward shelf (`turb` 0.49 at (−14600, 2380), `sub` 0.36, `expo` 0.53); `expo`
+  fades out by −30, so it separates the coasts in the forest's top 25 m only ((282,103): 0.70; the lee (−328,−123): 0.04; the giant's east shelf
+  at −26: 0.06, its windward at −10: 0.64). The sill's highest point is exactly −150.0 at (24400, 4500): flat (slope 0.00), bare (`sub` 0.90),
+  in the basin's water (`nut` 0.12, `turb` 0), `rel` 1.0 — the summits stand above the smooth surface, as v11.66 found for the relict.
+- **Ecotypes by exposure** (grow.js `ecoK`, `ECO_LO` 0.22, `ECO_HI` 0.5, `ECO_MIX` 0.24; chunks.js placeFloraType reads `ch.f(x,z)` at the
+  instance). An `eco` entry's variant index is `ecoK(expo, u)` — 0 sheltered, 1 the middle, 2 exposed, the thresholds jittered ±0.12 per
+  instance — with the one rng draw the random pick made, so no cell's stream moves (`test/pool.js` green). The builders read k as the kelps do:
+  **turf** (n 4→6, length 0.42→0.24, wider, spread 0.4→0.75), **wisp** (6→8 blades, 1.15→0.6 m, splayed), **chain** (4→2 discs a run, thicker,
+  on a shorter stouter axis), **stipe** (the height is the water's, so the ecotype is the rest: stipe radius 0.05/0.13→0.08/0.19, holdfast
+  0.35→0.55, 8→6 nodes, blades 1.9→1.1 m and 0.5→0.3 wide, the canopy 6→4 blades 2.6→1.8 m), **ladder** (13→8 m, axis 0.08→0.12, blades
+  1.5→1.0 m and 0.44→0.28 wide, holdfast 0.25→0.38), **ribbon** (blade 12.5→6 m and 1.35→0.85 wide, stub 3→2 m and 0.09→0.14, holdfast
+  0.25→0.4), **bladder** (a `species()` now, `bladderB` — the last kept one-variant weed, `bladderGeo` and `vid0` gone: stalk 0.10/0.2→0.17/0.32,
+  5→3 floats, blades 3.0→1.7 m). The three stay one geometry; `top` is the tallest (sheltered) variant's, as species() always made it. Nothing
+  without a reason to read the waves changed (the sacs, the mats, the rinds, the crowns keep the random pick).
+- **Colour by rock age and chemistry** (grow.js `tintBy(h,f,photo)`, `TINT_CHEM`): a stain over the instance's tint — the pigment's or the
+  list's pick — by the fields at its base, composed to one `[r,g,b,cover]` and mixed in before the jitter (chunks.js `makeInstanced`,
+  `poolAdd`; the instance carries `chem`). Fresh basalt rusts and darkens the animal forms (rust [0.44,0.25,0.12], cover 0.55 × `young`
+  smoothed in over 0.15–0.6) and dulls the weeds (dull [0.36,0.33,0.22], 0.45 — iron on a blade); the vents' heat whitens and yellows toward
+  the sulfur mats (sulfur [1,0.94,0.62], 0.7 × `heat` over 0.1–0.5); the lime rind's water creams the shells (cream [0.92,0.86,0.72], 0.4 where
+  h > −22, `sub` > 0.65, `expo` > 0.45, `nut` < 0.42). Null where the fields are ordinary: the default look is untouched, at no cost. The rock
+  (the terrain's colour), a surface float and `chem:false` (the plume — its crown's iron-blood red is the thing to see — the chimney and the
+  limpet, black sulfide by PLANET) take none. **Fixed on sight:** the cream reached the weeds and the forest's stipes at (330, 0) went
+  yellow; the lime stain is the shells' rule now, never a blade's, and it wants the clear-water term (the forest's fed water, `nut` 0.59, is
+  not lime water). A finding for the coat classes: creatures_spec.js `coatClassAt`'s `lime` lacks that term, so a hingeshell in the forest wears
+  a lime coat where the flora does not cream. At present nothing but the mats and the sheds carries the heat stain: no weed lives at a vent's depth.
+- **The progression rule**: `young: [0, 0.45]` on stipe, ladder, ribbon, bladder and tidetree (a wood is decades; the reed and the tussock
+  keep the flows). Hectares of full tolerance over the world at 100 m: stipe ours 48 → 46, the giant 1120 → 1014; bladder 112 → 104 and
+  2972 → 2811; tidetree on the giant 591 → 543 (ours falls between the samples). The rift arm at (−720, 280), −52, `young` 0.70, reads bare —
+  boulders, rust beards, cups gone dun-rust, the rind — with the forest resuming on either side; the giant's flow at (−8558, 5250), −20,
+  the same beside its forest.
+- **Habitat-only forms, two of three.** **paddle** (flora.js `paddleB`, a green of the runner line — TAXA: a thick-bladed runner for stirred
+  water; a runner with three or four broad, short, thick box blades, 48 tris; `eco`; `turb` ≥ 0.3, h −26..−3, `sub` 0.05–0.62, 600 a cell):
+  5 ha on ours, 760 on the giant's windward shelf — the one sessile thing that tells the two islands apart at a glance, and the river-mouth
+  weed re-read, since there are no rivers (SEAFLOOR §2 says so now). **darkrind** (`darkrindB`, the reds' crust at the light's floor — TAXA:
+  the deep rind; one or two wide plates a finger thick, dark, on a wider paler disc that shows as the growing edge, 64 tris; h −172..−142
+  with a 6 m edge, `sub` ≥ 0.6, `nut` ≤ 0.2, `young` ≤ 0.3, 220 a cell): 85 ha along the sill's summits from (−9600, −25800) to (24800, 4800)
+  and on no island flank — the floor of the light is the water's, and the sill's top under the basin's clearest water reaches exactly −150.
+  Each is a pool that draws only where it has instances: neither draws at the forest. **The high-current form was struck** before it was
+  built: the fan, the nod, the bommie, the tube and the stilt already own the passes' rock (`flow` ≥ 0.3–0.6 on `sub` ≥ 0.5); a sixth fisher on
+  the same ground would be a draw call for a look the others give (FLORA.md, Open).
+- **The forest at (330, 0), before and after**, like for like: dev.html in the app's pane, the loop driven by hand with a `gl.finish()` after
+  each frame, 300 frames of streaming (25 cells), then 40 timed (the pane was hidden, so the live readout could not be used; the numbers are
+  this PC's, not the 4060's):
+
+  | | draws | triangles | frame avg | frame min | render | physics |
+  |---|---|---|---|---|---|---|
+  | v11.66 | 184 | 4.88 M | 9.5 ms | 7.0 | 4.4 | 3.7 |
+  | v11.67 | 185 | 5.05 M | 11.1 ms | 7.1 | 4.7 | 5.4 |
+
+  One more draw (the paddle's pool: our windward shallows are in reach), 3% more triangles (the sheltered variants are the long ones); the
+  physics share moved with the run's creature count (the minimum frame did not). With the pane visible before the change the live readout read
+  33.6 ms work / 19.7 render / 147 draws at 13 cells; after, at 59 cells, 34.9 / 20.7 / 134.
+- **Seen** (dev.html in the app's browser over `node serve.js`, the canvas posted through the sink; frames in `test/render/v67_*.png`): the
+  forest at (330, 0) before and after; the surf coast at (282, 103) — the forest's exposed edge, cones and limerind; the lee flats — strap
+  pasture and grape on sand; the rift arm — bare, rust, dun cups, no forest; the lagoon — the green pasture, sheltered variants; the vents —
+  mats, chimneys, plumes and limpets unstained; the sill's summit at −150 — the darkrind's plates on bare rock among vases, towers and glass
+  sacs; the giant's east shelf — a denser, longer-bladed forest than ours; the giant's windward shelf — paddles among the strap under the reef;
+  the giant's flow — bare beside its forest. The preview sheets (`FLORA=1 node test/preview.js turf wisp chain stipe ladder ribbon bladder
+  paddle darkrind`, `test/preview/flora_*.png`): the harness normalises every variant to its own extent, so the proportions show (the exposed
+  stipe's thick stalk and small canopy, the ribbon's short broad blade on a fat stub, the chain's two fat discs) and the sizes do not. Tests
+  green on both tiers (`test/pool.js`: 54 pools, the middle cell's blocks intact across the growth).
+- **A finding for ARCHIPELAGO**: the giant's east shelf grows what our lee grows, because its fields there are our lee's (`expo` 0.06,
+  `sub` 0.8, `nut` 0.59); its windward shelf and its flows differ from anything on ours, by `turb` and `young`. The fields differ enough
+  where the geology differs; a wholly different look per island would need a different geology, not a flora fix.
+- **Unseen, ask in this order**: the exposed forest edge against the sheltered one in play, side by side in one swim (the surf coast at
+  (282, 103) against the giant's east shelf at (−7800, 9200)) — does the ecotype read, or only the density; the rust stain on the sacs and
+  crowns of the rift arm at −52 — chemistry, or dirt; the paddle among the strap on the giant's windward shelf at 1600×900; the darkrind's
+  paler rim at play distance; the edge of the young bound where the forest stops at the arm's flank — a line, or a fade; the frame on the
+  4060 at (330, 0) (one draw and 3% triangles say nothing changed; the pane cannot say more).

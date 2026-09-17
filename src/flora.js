@@ -12,16 +12,10 @@
 const WSTEM = [0.72, 0.62, 0.45],
   WFLOAT = [1.06, 1.02, 0.8],
   WHOLD = [0.55, 0.48, 0.38];
-function turfB(rg) {
-  const P = [];
-  tuft(P, {n: 4, len: 0.32, w: 0.1, spread: 0.5, jit: 0.22}, rg, 0, 0, 0);
-  return {P: P};
-}
-function wispB(rg) {
-  const P = [];
-  tuft(P, {n: 7, len: 0.9, w: 0.06, spread: 0.8, jit: 0.25}, rg, 0, 0, 0);
-  return {P: P};
-}
+// the exposure ecotypes (v11.67, grow.js ecoK): an `eco` species' k is the wave exposure at the instance — 0 sheltered, 2 exposed — and its builder
+// reads it as the kelps do: exposed short, thick, narrow, splayed and heavy at the holdfast; sheltered long, broad, thin, all blade. ex=k/2 below.
+function turfB(rg,k){const P=[],ex=k/2;tuft(P,{n:4+k,len:lerp(0.42,0.24,ex),w:lerp(0.09,0.12,ex),spread:lerp(0.4,0.75,ex),jit:0.22},rg,0,0,0);return {P:P};} // a lawn: longer and looser in shelter, a dense short mat in the surf
+function wispB(rg,k){const P=[],ex=k/2;tuft(P,{n:6+k,len:lerp(1.15,0.6,ex),w:lerp(0.05,0.08,ex),spread:lerp(0.6,1.0,ex),jit:0.25},rg,0,0,0);return {P:P};} // the floaters' founder: tall and loose in shelter, low and splayed where the waves reach
 // strap: two-ranked blades from a runner along the sand — six wide short blades leaning out both ways, so a runner reads as a tuft
 // of pasture and not (as the v9.5 four tall narrow blades did, seen from a body length away) as three dark lines from a point
 function strapB(rg) {
@@ -38,27 +32,21 @@ function strapB(rg) {
   }
   return {P: P};
 }
-// chain: rigid runs of calcified discs, edge to edge (mineral where the rasps are)
-function chainB(rg) {
-  const P = [];
-  for (let b = 0; b < 2; b++) {
-    const N = axis(P, {segs: 2, len: 0.4, r0: 0.03, r1: 0.02, lean: 0.9, wander: 0.3, sides: 4, open: true, col: WSTEM}, rg),
-      t = N[N.length - 1];
-    let p = V3(t.x, t.y, t.z),
-      d = t.d.clone();
-    for (let k = 0; k < 3; k++) {
-      d.x += (rg() - 0.5) * 0.6;
-      d.z += (rg() - 0.5) * 0.6;
-      d.normalize();
-      p.add(d.clone().multiplyScalar(0.11));
-      const n = d.clone().cross(UP);
-      if (n.lengthSq() < 0.01) n.set(1, 0, 0);
-      P.push(part(G.cyl(0.11, 0.1, 0.03, 4), p.x, p.y, p.z, W, {dir: n}));
-      p.add(d.clone().multiplyScalar(0.1));
-    }
-  }
-  return {P: P};
-}
+// paddle (v11.67, SEAFLOOR §2's turbidity form): the runner line's answer to stirred water — surf over sand, where the strap's thin blades are
+// scoured and shaded and the floaters' ropes snap. A runner with a few broad, short, thick blades (a box, not a plane: a rind-thick cuticle
+// that sheds sand and takes the scour) leaning downstream, low. Costs light per gram, so it holds only where `turb` is high in the light: a
+// scrap of our windward shallows, five square kilometres of the giant's — the one sessile thing that tells the two islands apart at a glance.
+function paddleB(rg,k){const P=[part(G.box(0.05,0.03,1.0),0,0.015,0,WSTEM)],ex=k/2,n=3+(k%2);
+  for(let i=0;i<n;i++){const L=lerp(0.62,0.42,ex)*(0.85+rg()*0.3),w=lerp(0.34,0.28,ex),lean=(i%2?1:-1)*(0.55+rg()*0.35);
+    P.push(part(G.box(w,L,0.035),-Math.sin(lean)*L/2,Math.cos(lean)*L/2+0.02,-0.4+i*(0.8/(n-1)),W,{r:[0.3*(rg()-0.5),0.4*(rg()-0.5),lean],order:'YXZ'}));}
+  return {P:P};}
+// chain: rigid runs of calcified discs, edge to edge (mineral where the rasps are). eco (v11.67): short stout runs of thick discs in the surf, longer runs of thinner ones in shelter
+function chainB(rg,k){const P=[],ex=k/2,nd=4-k;
+  for(let b=0;b<2;b++){const N=axis(P,{segs:2,len:lerp(0.5,0.3,ex),r0:lerp(0.03,0.04,ex),r1:lerp(0.02,0.03,ex),lean:0.9,wander:0.3,sides:4,open:true,col:WSTEM},rg),t=N[N.length-1];
+    let p=V3(t.x,t.y,t.z),d=t.d.clone();const dr=lerp(0.1,0.13,ex),th=lerp(0.03,0.045,ex);
+    for(let q=0;q<nd;q++){d.x+=(rg()-0.5)*0.6;d.z+=(rg()-0.5)*0.6;d.normalize();p.add(d.clone().multiplyScalar(dr));const n=d.clone().cross(UP);if(n.lengthSq()<0.01)n.set(1,0,0);
+      P.push(part(G.cyl(dr*1.05,dr*0.95,th,4),p.x,p.y,p.z,W,{dir:n}));p.add(d.clone().multiplyScalar(dr*0.9));}}
+  return {P:P};}
 // grape: a runner with a bunch of spheres piled at every node (a weed can be one giant cell and still do this). The bunch lies on the
 // runner; v9.5 stood three beads on a half-metre stick at each node, which read as a row of tiny trees
 function grapeB(rg) {
@@ -86,48 +74,30 @@ function grapeB(rg) {
 // stipe: the tower kelp rebuilt — unit height, stretched to the surface by `reach` like the bladder, so everything is built flat and
 // thin (a float 0.03 thick here is 1 m at forty deep); a float at every other node, spiral blades, and at the top a whorl laid flat
 // under the surface: the canopy you swim under, never a stalk in the air
-function stipeB(rg, k) {
-  const P = [part(G.cyl(0.05, 0.13, 1, 5, true), 0, 0.5, 0, WSTEM), part(G.cone(0.35, 0.006, 5), 0, 0.003, 0, WHOLD)],
-    nn = 6 + k;
-  for (let i = 0; i < nn; i++) {
-    const y = 0.22 + i * (0.72 / nn),
-      sp = i * 2.4 + rg() * 0.6;
-    if (i % 2 === k % 2) P.push(part(G.sph(0.24, 4, 2), 0, y + 0.004, 0, WFLOAT, {s: [1, 0.03, 1]}));
-    for (let j = 0; j < 2; j++) {
-      const L = 1.4 + rg() * 0.8,
-        pg = G.plane(L, 0.42);
-      pg.rotateX(-HPI);
-      pg.translate(L / 2, 0, 0);
-      P.push(part(pg, 0, y, 0, W, {r: [0, sp + j * Math.PI + (rg() - 0.5) * 0.5, 0], order: 'YXZ'}));
-    }
-  }
-  P.push(part(G.sph(0.3, 5, 3), 0, 0.975, 0, WFLOAT, {s: [1, 0.04, 1]}));
-  for (let j = 0; j < 6; j++) {
-    const L = 2.0 + rg() * 0.8,
-      pg = G.plane(L, 0.5);
-    pg.rotateX(-HPI);
-    pg.translate(L / 2, 0, 0);
-    P.push(part(pg, 0, 0.985 + j * 0.002, 0, W, {r: [0, (j / 6) * TAU + rg() * 0.4, 0], order: 'YXZ'}));
-  }
-  return {P: P};
-}
-// ladder: two-ranked blades in one plane — a wall from the side, nothing edge-on
-function ladderB(rg, k) {
-  const P = [part(G.cyl(0.25, 0.32, 0.12, 5), 0, 0.06, 0, WHOLD)],
-    N = axis(P, {segs: 5, len: 8 + k * 2.5, r0: 0.09, r1: 0.04, wander: 0.15, lean: 0.25, col: WSTEM, open: true}, rg);
-  blades(P, N, {from: 0.12, to: 0.98, count: 16, len: 1.3, w: 0.36, droop: 0.5, spin: 'two', twist: rg() * TAU, taper: 0.7}, rg);
-  return {P: P};
-}
+// eco (v11.67): the height is the water's (`reach`), so the ecotype is in the rest — exposed: a thicker stipe on a wider holdfast, fewer nodes,
+// shorter narrower blades, a smaller canopy whorl; sheltered: thin, eight nodes of long broad blades, a six-blade canopy
+function stipeB(rg,k){const ex=k/2,P=[part(G.cyl(lerp(0.05,0.08,ex),lerp(0.13,0.19,ex),1,5,true),0,0.5,0,WSTEM),part(G.cone(lerp(0.35,0.55,ex),0.006,5),0,0.003,0,WHOLD)],nn=8-k,bl=lerp(1.9,1.1,ex),bw=lerp(0.5,0.3,ex);
+  for(let i=0;i<nn;i++){const y=0.22+i*(0.72/nn),sp=i*2.4+rg()*0.6;
+    if(i%2===k%2)P.push(part(G.sph(0.24,4,2),0,y+0.004,0,WFLOAT,{s:[1,0.03,1]}));
+    for(let j=0;j<2;j++){const L=bl+rg()*0.6,pg=G.plane(L,bw);pg.rotateX(-HPI);pg.translate(L/2,0,0);P.push(part(pg,0,y,0,W,{r:[0,sp+j*Math.PI+(rg()-0.5)*0.5,0],order:'YXZ'}));}}
+  P.push(part(G.sph(0.3,5,3),0,0.975,0,WFLOAT,{s:[1,0.04,1]}));
+  const nc=6-k,cl=lerp(2.6,1.8,ex),cw=lerp(0.55,0.4,ex);
+  for(let j=0;j<nc;j++){const L=cl+rg()*0.6,pg=G.plane(L,cw);pg.rotateX(-HPI);pg.translate(L/2,0,0);P.push(part(pg,0,0.985+j*0.002,0,W,{r:[0,j/nc*TAU+rg()*0.4,0],order:'YXZ'}));}
+  return {P:P};}
+// ladder: two-ranked blades in one plane — a wall from the side, nothing edge-on. eco (v11.67): 13 m of long broad blades on a thin axis in
+// shelter, 8 m of short narrow ones on a thick axis and a wide holdfast in the surf
+function ladderB(rg,k){const ex=k/2,P=[part(G.cyl(lerp(0.25,0.38,ex),lerp(0.32,0.46,ex),0.12,5),0,0.06,0,WHOLD)],
+    N=axis(P,{segs:5,len:lerp(13,8,ex),r0:lerp(0.08,0.12,ex),r1:lerp(0.035,0.06,ex),wander:0.15,lean:0.25,col:WSTEM,open:true},rg);
+  blades(P,N,{from:0.12,to:0.98,count:16,len:lerp(1.5,1.0,ex),w:lerp(0.44,0.28,ex),droop:0.5,spin:'two',twist:rg()*TAU,taper:0.7},rg);
+  return {P:P};}
 // ribbon: one wide blade on a stub, lifted by the float at its tip — it leaves the stub at ~60° and curves up to vertical under the
 // float (bladeAt's default start is level, which is right for a frond off a stipe and was wrong here: the blade lay along the floor)
-function ribbonB(rg, k) {
-  const P = [part(G.cyl(0.25, 0.32, 0.12, 5), 0, 0.06, 0, WHOLD)],
-    N = axis(P, {segs: 2, len: 2 + k * 0.5, r0: 0.1, r1: 0.06, lean: 0.3, col: WSTEM, open: true}, rg),
-    t = N[N.length - 1];
-  const e = bladeAt(P, t.x, t.y, t.z, 9 + k * 3.5, 1.1 + k * 0.2, rg() * TAU, -0.4, 5, W, 1.0 + rg() * 0.15);
-  P.push(part(G.sph(0.4, 5, 3), e.x, e.y + 0.2, e.z, WFLOAT));
-  return {P: P};
-}
+// eco (v11.67): a 12 m blade a metre and a third wide on a thin stub in shelter; 6 m, narrower, on a thick stub and a wide holdfast in the surf
+function ribbonB(rg,k){const ex=k/2,P=[part(G.cyl(lerp(0.25,0.4,ex),lerp(0.32,0.5,ex),0.12,5),0,0.06,0,WHOLD)],
+    N=axis(P,{segs:2,len:lerp(3,2,ex),r0:lerp(0.09,0.14,ex),r1:lerp(0.055,0.08,ex),lean:0.3,col:WSTEM,open:true},rg),t=N[N.length-1];
+  const e=bladeAt(P,t.x,t.y,t.z,lerp(12.5,6,ex),lerp(1.35,0.85,ex),rg()*TAU,-0.4,5,W,1.0+rg()*0.15);
+  P.push(part(G.sph(0.4,5,3),e.x,e.y+0.2,e.z,WFLOAT));
+  return {P:P};}
 // ---------- the drifters' floats (DRIFTERS.md): the button — a jelly that grew a pad to farm light ----------
 // A low disc float, a green-blue centre (the farmed green in its skin), a violet rim (sunscreen at the surface), a fringe of eight
 // short arms hanging beneath and eight shorter; in fleets where the eddies keep drifters. A disc of jelly takes no weight.
@@ -534,11 +504,7 @@ function ironB(rg, k) {
   return {P: P, col: [{e: [0, 0, 0, r, r * 0.45, r]}]};
 }
 // ---------- kept geometries (one variant each) ----------
-// vid0: a zero `vid` attribute so a kept geometry drawn with a variant-aware material shows its one variant
-function vid0(g) {
-  g.setAttribute('vid', new THREE.Float32BufferAttribute(new Float32Array(g.attributes.position.count), 1));
-  return g;
-}
+// (vid0, the zero `vid` for a kept geometry on a variant-aware material, went with the bladder's builder, v11.67: nothing kept is drawn that way now)
 function fanGeo() {
   return merge([part(G.cyl(0.08, 1.3, 2.4, 7), 0, 1.2, 0, W, {s: [1, 1, 0.16]}), part(G.cyl(0.1, 0.16, 0.6, 5), 0, 0.2, 0, [0.5, 0.4, 0.35])]);
 }
@@ -556,17 +522,15 @@ function chimneyGeo() {
 function limpetGeo() {
   return merge([part(G.cone(0.25, 0.32, 5), 0, 0.16, 0, W)]);
 }
-// unit-height stalk; instance y-scale stretches it from the floor to the surface, so parts that must stay thin are built nearly flat
-function bladderGeo() {
-  const P = [part(G.cyl(0.13, 0.24, 1, 6), 0, 0.5, 0, [0.4, 0.42, 0.2])];
-  for (let k = 0; k < 4; k++) {
-    const y = 0.64 + k * 0.11;
-    P.push(part(G.sph(0.5, 6, 5), 0, y, 0, [0.68, 0.72, 0.36], {s: [1, 0.014, 1]}));
-    P.push(part(G.box(2.4, 0.002, 0.55), 1.0, y - 0.04, 0, [0.45, 0.55, 0.25], {r: [0, k * 1.3, 0]}));
-    P.push(part(G.box(2.4, 0.002, 0.55), -1.0, y - 0.06, 0, [0.42, 0.52, 0.24], {r: [0, k * 1.3 + 1.6, 0]}));
-  }
-  return vid0(merge(P));
-}
+// the bladder: a unit-height stalk; instance y-scale stretches it from the floor to the surface, so parts that must stay thin are built nearly
+// flat. A species since v11.67 (it was the last kept one-variant weed, `bladderGeo` with vid0) so it can carry the exposure ecotype: exposed a
+// thick stalk with three floats and short blades, sheltered a thin one with five floats and long ones. Its own vertex colours, under the pigment
+function bladderB(rg,k){const ex=k/2,P=[part(G.cyl(lerp(0.10,0.17,ex),lerp(0.2,0.32,ex),1,6),0,0.5,0,[0.4,0.42,0.2])],nf=5-k,bl=lerp(3.0,1.7,ex),bw=lerp(0.55,0.42,ex);
+  for(let i=0;i<nf;i++){const y=0.6+i*(0.4/nf)+rg()*0.02,a=i*1.3+rg()*0.4;
+    P.push(part(G.sph(0.5,6,5),0,y,0,[0.68,0.72,0.36],{s:[1,0.014,1]}));
+    P.push(part(G.box(bl,0.002,bw),bl*0.42,y-0.04,0,[0.45,0.55,0.25],{r:[0,a,0]}));
+    P.push(part(G.box(bl,0.002,bw),-bl*0.42,y-0.06,0,[0.42,0.52,0.24],{r:[0,a+1.6,0]}));}
+  return {P:P};}
 // ---------- rock ----------
 // Every rock here is a dodecahedron (three's DodecahedronGeometry(1,0) figure, circumradius 1) because physics.js addRock
 // makes its exact twelve-plane collider. rockGeo draws that same figure with each pentagon split into five facets from a
@@ -974,7 +938,19 @@ function redbladeB(rg, k) {
   for (let i = 0; i < nb; i++) bladeAt(P, 0, 0.1, 0, 0.7 + rg() * 0.5 + k * 0.2, 0.28 + rg() * 0.1, rg() * TAU, 0.9, 3, W, 1.2);
   return {P: P};
 }
+// darkrind (v11.67, SEAFLOOR §2–3's sill relict among the weeds): the reds' crust at the light's floor. The floor of the light is the water's,
+// not a number: the island's flanks lie under fed water (plankton, `nut` ~0.5) and their reds stop at −150; the sill's summits stand in the
+// basin's sparse water (`nut` 0.12, the clearest in the world) and reach exactly −150, so a rind that pays there pays a little deeper — one or
+// two wide plates a finger thick, dark (all pigment for no light) with a pale growing edge, on bare rock swept clean. The one photosynthesis
+// that touches the drowned shields. Nothing on ours or the giant lies in water clear enough: the pool draws nowhere but the sill
+function darkrindB(rg,k){const P=[],n=1+(k%2);
+  for(let i=0;i<n;i++){const r=0.42+rg()*0.28,d=i?0.3+rg()*0.25:0,a=rg()*TAU,x=Math.cos(a)*d,z=Math.sin(a)*d;
+    P.push(part(G.cyl(r*1.1,r*1.02,0.016,8),x,0.008+i*0.012,z,[1.7,1.45,1.5],{r:[0,rg()*TAU,0]})); // the growing edge: a wider thinner disc under the plate, paler, showing as a rim
+    P.push(part(G.cyl(r*0.96,r*(0.82+rg()*0.12),0.028,8),x,0.03+i*0.012,z,W,{r:[0,rg()*TAU,0]}));}
+  return {P:P};}
 // per: instances per cell at full tolerance, times env's tolerance per try. y: 'floor' (default) | 'surface' | 'mid'.
+// eco (v11.67): the variant is the exposure ecotype (grow.js ecoK; the builder reads k 0 sheltered .. 2 exposed) instead of a random pick.
+// chem: false opts an entry out of the place's stain (grow.js tintBy) — the rock and the surface floats never take it.
 // photo: a weed — tinted by pigment(ground depth) per instance (grow.js). flow: turned across the current by flowYaw. band: [lo,hi] of
 // ground height the species stands in. vars: from species() — each variant's own col/pads; top: the tallest variant's highest
 // point, and anything that would stand into the air is shortened in y or skipped (rigid things, ladder, ribbon).
@@ -1047,12 +1023,16 @@ const VIVID = [
 const FLORA = [
   // weed
   // turf is the ground layer of the reef and, since v9.6, of the two forests (the strap there stood alone and read as dark sticks)
-  species('turf', {mat: MATG, photo: true, line: 'green', tints: GREENT, s: [0.7, 1.5], per: 1200, env: {h: [-42, -1], sub: [0.5, 1]}, field: 0.02}, turfB), // the greens' founder form and the reef's lawn; olive at its deep edge, then the floaters' wisp takes the ground
-  species('wisp', {mat: MATG, photo: true, line: 'float', tints: FLOATT, s: [0.4, 1.6], per: 420, env: {h: [-82, -16], sub: [0.3, 1]}, field: 0.02}, wispB), // the floaters' founder form, small and large: the forests' ground layer and their middle
+  // eco (v11.67): the ground layer and the forest read the waves (grow.js ecoK). young ≤ 0.45 on the forest and the canopy (v11.67, SEAFLOOR §2's
+  // progression rule): a flow decades old carries crusts, turfs and rust, not a forest — kelp settles new lava within years but a tall canopy takes
+  // longer than the rift arms, the fan's fresh blocks and the giant's flows have had; the turfs, the rinds and the rust forms keep their range
+  species('turf', {mat: MATG, photo: true, line: 'green', tints: GREENT, s: [0.7, 1.5], per: 1200, env: {h: [-42, -1], sub: [0.5, 1]}, field: 0.02, eco: true}, turfB), // the greens' founder form and the reef's lawn; olive at its deep edge, then the floaters' wisp takes the ground
+  species('wisp', {mat: MATG, photo: true, line: 'float', tints: FLOATT, s: [0.4, 1.6], per: 420, env: {h: [-82, -16], sub: [0.3, 1]}, field: 0.02, eco: true}, wispB), // the floaters' founder form, small and large: the forests' ground layer and their middle
   species('strap', {mat: MATG, photo: true, line: 'green', tints: GREENT, s: [0.6, 1.4], per: 2400, env: {h: [-42, -3], sub: [0.05, 0.45]}, field: 0.02}, strapB), // the flats' pasture only: dense, a lawn
+  species('paddle', {mat: MATG, photo: true, line: 'green', tints: GREENT, s: [0.7, 1.4], per: 600, env: {h: [-26, -3], turb: [0.3, 1], sub: [0.05, 0.62]}, field: 0.02, eco: true}, paddleB), // the turbidity form (v11.67): surf over sand — a scrap of our windward shallows, the giant's whole windward shelf
   species(
     'chain',
-    {mat: MATV, photo: true, line: 'green', tints: GREENT, s: [0.7, 1.6], tilt: true, per: 120, env: {h: [-28, -1], sub: [0.5, 1], expo: [0.3, 1]}},
+    {mat: MATV, photo: true, line: 'green', tints: GREENT, s: [0.7, 1.6], tilt: true, per: 120, env: {h: [-28, -1], sub: [0.5, 1], expo: [0.3, 1]}, eco: true},
     chainB
   ),
   species('grape', {mat: MATV, photo: true, line: 'green', tints: GREENT, s: [0.7, 1.6], per: 140, env: {h: [-40, -6], sub: [0.15, 0.6]}, field: 0.02}, grapeB),
@@ -1065,35 +1045,39 @@ const FLORA = [
       tints: FLOATT,
       reach: true,
       per: 900,
-      env: {h: [-54, -16], sub: [0.55, 1], nut: [0.45, 1], flow: [0.15, 0.85]},
-      field: 0.012
+      env: {h: [-54, -16], sub: [0.55, 1], nut: [0.45, 1], flow: [0.15, 0.85], young: [0, 0.45]},
+      field: 0.012,
+      eco: true
     },
     stipeB
   ),
   species(
     'ladder',
-    {mat: MATM, photo: true, line: 'float', tints: FLOATT, s: [0.7, 1.3], tilt: true, per: 130, env: {h: [-66, -16], sub: [0.5, 1], nut: [0.4, 1]}, field: 0.014},
+    {mat: MATM, photo: true, line: 'float', tints: FLOATT, s: [0.7, 1.3], tilt: true, per: 130, env: {h: [-66, -16], sub: [0.5, 1], nut: [0.4, 1], young: [0, 0.45]}, field: 0.014, eco: true},
     ladderB
   ),
   species(
     'ribbon',
-    {mat: MATM, photo: true, line: 'float', tints: FLOATT, s: [0.7, 1.3], per: 70, env: {h: [-78, -16], sub: [0.45, 1], nut: [0.35, 1]}, field: 0.014},
+    {mat: MATM, photo: true, line: 'float', tints: FLOATT, s: [0.7, 1.3], per: 70, env: {h: [-78, -16], sub: [0.45, 1], nut: [0.35, 1], young: [0, 0.45]}, field: 0.014, eco: true},
     ribbonB
   ),
-  {
-    id: 'bladder',
-    geo: bladderGeo(),
-    mat: MATB,
-    photo: true,
-    line: 'float',
-    tints: [
-      [0.62, 0.6, 0.3],
-      [0.66, 0.56, 0.28]
-    ],
-    reach: true,
-    per: 95,
-    env: {h: [-80, -30], sub: [0.45, 1], nut: [0.3, 1]}
-  },
+  species(
+    'bladder',
+    {
+      mat: MATB,
+      photo: true,
+      line: 'float',
+      tints: [
+        [0.62, 0.6, 0.3],
+        [0.66, 0.56, 0.28]
+      ],
+      reach: true,
+      per: 95,
+      env: {h: [-80, -30], sub: [0.45, 1], nut: [0.3, 1], young: [0, 0.45]},
+      eco: true
+    },
+    bladderB
+  ), // a species since v11.67 (three variants: the ecotype); its card is far.js FAR_IMP's, as before
   // (the raft, the floater that let go, was struck 9 Sep 2026: "looks terrible"; the surface's weed is gone — TAXA)
   species('stranded', {mat: MATVD, tints: [[0.72, 0.7, 0.9], [0.8, 0.7, 0.86], [0.66, 0.66, 0.78]], s: [0.8, 1.6], tilt: true, per: 26, env: {h: [0.4, 2.6], expo: [0.5, 1]}, minH: 0.4, field: 0.03}, strandedB), // a dead sailer on the windward strand (DRIFTERS: fleets strand where the wind drives them)
   // the drifters' floats: the button, in fleets (the sailers are creatures)
@@ -1193,7 +1177,7 @@ const FLORA = [
     },
     loopB
   ),
-  species('plume', {mat: MATV, tints: [[1, 1, 1], [0.96, 0.94, 0.92]], s: [0.7, 1.6], per: 110, env: {heat: [0.3, 1]}, field: 0.03, maxSlope: 1.4}, plumeB), // the vents
+  species('plume', {mat: MATV, tints: [[1, 1, 1], [0.96, 0.94, 0.92]], s: [0.7, 1.6], per: 110, env: {heat: [0.3, 1]}, field: 0.03, maxSlope: 1.4, chem: false}, plumeB), // the vents; chem:false (v11.67): the sulfur stain would wash the crown's iron-blood red, the thing to see
   species(
     'seep',
     {mat: MATV, tints: [[1, 1, 1], [0.9, 0.9, 0.92]], s: [0.8, 1.5], per: 70, env: {h: [-464, -444], sub: [0.3, 1]}, band: [-464, -444], field: 0.02, maxSlope: 1.4},
@@ -1268,6 +1252,7 @@ const FLORA = [
   species('limerind', {mat: MATV, photo: true, line: 'red', tints: [[0.8, 0.6, 0.62]], s: [0.7, 1.8], tilt: true, sx: [0.8, 1.3], per: 260, env: {h: [-26, 2.6], sub: [0.55, 1], expo: [0.35, 1]}, maxSlope: 1.6}, crustB),
   species('sandball', {mat: MATV, photo: true, line: 'red', tints: REDT, s: [0.7, 1.5], tilt: true, per: 90, env: {h: [-60, -8], sub: [0.05, 0.45]}, field: 0.02}, sandballB),
   species('redblade', {mat: MATM, photo: true, line: 'red', tints: REDT, s: [0.8, 1.6], per: 100, env: {h: [-150, -48], sub: [0.5, 1]}, field: 0.02}, redbladeB),
+  species('darkrind', {mat: MATV, photo: true, line: 'red', tints: REDT, s: [0.8, 2.0], tilt: true, sx: [0.8, 1.4], per: 220, env: {h: [-172, -142, 6], sub: [0.6, 1], nut: [0, 0.2], young: [0, 0.3]}, field: 0.02, maxSlope: 1.6}, darkrindB), // the reds at the light's floor in the clearest water (v11.67): the sill's summits, −150 and the twenty metres under it; nut ≤ 0.2 is the basin's water, and no island flank has it
   // rock (the four forms above; one placement rule, chunks.js settleOn; DESIGN Structures, "Where rock goes" — v11.19). The block:
   // the fan's boulder field and the rift arms' rubble (young), a scatter on bare rock that a block can rest on (sub; maxSlope 1.2:
   // nothing sits on a face), a few on sand and mud, and talus — blocks at the foot of a face (`face`: the ground rises 6 within 14),
@@ -1279,9 +1264,9 @@ const FLORA = [
   // the greens in air (TAXA): the tidal forest, the reed margin, the rain scrub — one line, jointed, relicts of a bigger island
   species(
     'tidetree',
-    {mat: MATTR, photo: true, line: 'green', tints: GREENT, s: [0.8, 1.3], air: true, per: 700, env: {h: [-3.5, 2.8], expo: [0, 0.75]}, field: 0.02, minH: -3.6, maxSlope: 0.5},
+    {mat: MATTR, photo: true, line: 'green', tints: GREENT, s: [0.8, 1.3], air: true, per: 700, env: {h: [-3.5, 2.8], expo: [0, 0.75], young: [0, 0.45]}, field: 0.02, minH: -3.6, maxSlope: 0.5},
     tidewoodB
-  ), // the tidewood: the tide band, out of the surf
+  ), // the tidewood: the tide band, out of the surf, and off the last flows (young, v11.67: a wood is decades; the reed and the tussock keep the flows)
   species(
     'reed',
     {mat: MATGL, photo: true, line: 'green', tints: GREENT, s: [0.7, 1.4], air: true, per: 900, env: {h: [-5.5, 1.6], expo: [0, 0.4]}, field: 0.02, maxSlope: 0.6},
@@ -1305,7 +1290,8 @@ const FLORA = [
     tilt: true,
     per: 44,
     env: {heat: [0.45, 1]},
-    vent: true
+    vent: true,
+    chem: false // v11.67: a chimney is black sulfide, not the mats' sulfur
   },
   {
     id: 'limpet',
@@ -1317,7 +1303,8 @@ const FLORA = [
     ],
     s: [0.7, 1.8],
     per: 260,
-    env: {heat: [0.3, 1]}
+    env: {heat: [0.3, 1]},
+    chem: false // v11.67: a vent grazer's shell is black sulfide (PLANET), never the mats' yellow
   },
   // structures (big: drawn by the far layer for the whole world, placed by far.js bigsFor; a cell registers only their collision)
   // heaps and sheets are the slide's (v11.19): young ≥ 0.8 is the fan where its debris is thick — the rift arms (0.7) and the fan's

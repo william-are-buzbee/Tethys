@@ -971,10 +971,27 @@ disposed with it) and the vertex shader collapses the other two variants to the 
 `VAR_COLLAPSE`/`VAR_BRANCH` in scene.js: in the sway materials the collapse comes *first*, so a collapsed vertex skips
 the disturbance loop — two thirds of the vertices are collapsed and the loop is the cost). One draw call per species;
 **the readout's tris figure counts the collapsed triangles too**, so flora shows ~3× its drawn count — the ms is the
-number to read. Kept one-variant geometries drawn with a variant-aware material get a zero `vid` (`vid0`: bladder,
-whip, tussock). Materials: `MATV` (Lambert, double-sided, the collapse) for rigid variant species; `MATS` (the stipe,
+number to read. (Kept one-variant geometries on a variant-aware material carried a zero `vid`, `vid0`, until v11.67, when the bladder — the
+last of them — became a species; nothing is drawn that way now.) Materials: `MATV` (Lambert, double-sided, the collapse) for rigid variant species; `MATS` (the stipe,
 unit height stretched to the surface like the bladder), `MATM` (mid-height weed: ladder, ribbon) join `MATG MATB MATR
 MATR2 MATW`; `MATK` is gone with the kelp.
+
+**The place in the species (v11.67, the flora variety pass; SEAFLOOR §2, FLORA.md's placement rules).** Three things read the fields at the
+instance's base (`ch.f(x,z)` in `placeFloraType`, the same nearest-vertex conditions the envelope reads), and none costs a draw. *The
+ecotype:* an `eco` entry's variant index is drawn from `expo` instead of at random (grow.js `ecoK`: sheltered under `ECO_LO` 0.22, exposed over
+`ECO_HI` 0.5, the thresholds jittered ±`ECO_MIX` 0.24/2 per instance, the one rng draw the random pick made so no cell's stream moves), and the
+builder reads k 0..2 as sheltered..exposed — turf, wisp, chain, stipe, ladder, ribbon, bladder (a `species()` since v11.67, `bladderB`; it was the
+last kept one-variant weed) and paddle. Since `expo` fades out by −30 (World shape), the coasts differ in the forest's top 25 m only. *The
+stain:* grow.js `tintBy(h,f,photo)` composes up to three stains (`TINT_CHEM`: rust [0.44,0.25,0.12] on the animals and dull [0.36,0.33,0.22]
+on the weeds by `young` smoothed in over 0.15–0.6, cover 0.55 / 0.45; sulfur [1,0.94,0.62] by `heat` over 0.1–0.5, cover 0.7; cream
+[0.92,0.86,0.72] on the shells where h > −22, `sub` > 0.65, `expo` > 0.45 and `nut` < 0.42 — the lime rind's water, and the coat class's rule
+plus the clear-water term it lacks — cover 0.4, never on a weed) into one `[r,g,b,cover]` the cell lerps the tint toward before the ±jitter
+(`makeInstanced`, `poolAdd`); null where the fields are ordinary. The rock, a surface float and an entry with `chem:false` (plume, chimney,
+limpet) take none. *The progression rule:* stipe, ladder, ribbon, bladder and tidetree carry `young: [0, 0.45]`, so the rift arms (0.7),
+the fan (0.5–1) and the giant's flows (0.7) read bare and encrusted between two forests. Two habitat-only species: **paddle** (a green of
+the runner line, `turb` ≥ 0.3 in the light on sand to mixed ground, 600 a cell: 5 ha on ours, 760 on the giant's windward shelf) and
+**darkrind** (the reds' crust at −172..−142 on bare rock in water with `nut` ≤ 0.2: 85 ha on the sill's summits, none on an island). The
+forest at (330, 0), like for like in the app's pane with the loop driven by hand (25 cells): 184 → 185 draws, 4.88 → 5.05 M triangles.
 
 **The table.** Per species: `per` (instances per cell at full tolerance) and `env` (World shape, envelopes; v10 — the per-biome counts are gone), scale range, tilt, sink, `field`, `rim`,
 `y: 'floor'|'surface'|'mid'`, `ys`, `reach`, `glow`, `vent`, `maxSlope`, `minH`, `canopyPer`, `pocket`, `big`, and

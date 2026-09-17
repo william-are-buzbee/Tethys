@@ -190,6 +190,21 @@ with species per biome capped at eight — measured, not assumed.
 - **Three strata** — what both reference images have and the density table only has by accident: a **ground** layer
   (turf, strap, mats, wisps: thousands a cell), a **middle** (0.5–2 m cups, burrs, loops, lilies, chains: hundreds) and
   **emergents** (tubes, towers, stipes, fans: tens). Every biome gets all three, or it reads as a lawn with props.
+- **`eco`: the variant is the exposure ecotype** (v11.67, SEAFLOOR §2). An `eco` species draws its variant from the wave exposure at the
+  instance (grow.js `ecoK`: `expo` under `ECO_LO` 0.22 sheltered, over `ECO_HI` 0.5 exposed, the thresholds jittered ±`ECO_MIX`/2 so a coast
+  is no hard line) and its builder reads k as the kelps do — exposed short, thick, narrow-bladed, splayed and heavy at the holdfast;
+  sheltered long, broad, thin, all blade. `expo` carries the wave base (it fades out by −30), so below it every forest is sheltered and the
+  coasts differ in their top 25 m, which is where the giant's coasts and ours differ in their fields. turf, wisp, chain, stipe, ladder,
+  ribbon, bladder and paddle read it; a form with no reason to (a mat, a sac, a rind) keeps the random pick. One geometry still: no cost.
+- **The stain of the place** (v11.67, grow.js `tintBy`, `TINT_CHEM`): PLANET's shell-colour rule read by the sessile life — a colour laid
+  over the instance's tint by the fields at its base. Fresh basalt (`young`) rusts and darkens the animal forms (cover 0.55 at the field's
+  full) and dulls the weeds with its iron (0.45); the vents' heat whitens and yellows toward the sulfur mats (0.7; the plume's iron-red
+  crown, the chimney and the limpet opt out, `chem:false`); the surf's shallow rock in clear poor water, where the lime rind lays its lime,
+  creams the shells (0.4; never a blade). Where the fields are ordinary the stain is null and the look is the one before.
+- **The progression rule** (v11.67, SEAFLOOR §2): the forest and the canopy — stipe, ladder, ribbon, bladder, and the tidewood — carry
+  `young ≤ 0.45`. A flow decades old has crusts, turfs and rust, not a forest: kelp settles new lava within years, but a tall canopy takes
+  longer than the rift arms, the fan's fresh blocks (`young` 0.5–1) and the giant's rift flows (0.7) have had. The turfs, the rinds and the
+  rust forms keep their range, so a fresh flow reads bare, dark and encrusted between two forests, on either island.
 - **Epibionts** (later): small things on big things — beards on tubes, crusts on towers, cones on a stipe's holdfast, a
   loop twined round a stalk — placed from the emergent instance's matrix. Both images are full of it; it is the
   cheapest "lived-in" there is.
@@ -239,6 +254,7 @@ the trait that wins its spot. Earth appears there only as the proof.
 | species | bauplan | where | size | what it is | why it wins |
 |---|---|---|---|---|---|
 | **strap** (grass on 2 replaced) | blades | 2 only (v9.6: it stood alone in the forests and read as three dark lines from a point; turf is the forests' ground layer now) | 0.5–1.5 | six wide short blades leaning both ways from a runner along the sand, olive, a lawn at 2400 a cell | **a weed with stolons, not a returned land plant** (there is no land flora to return from); grows as fast as the herds eat it, which is why there are herds |
+| **paddle** (built v11.67) | blades (boxes) | surf over sand: `turb` ≥ 0.3 in the light, `sub` sand to mixed, −26..−3 — a scrap of our windward shallows, the giant's whole windward shelf (760 ha to our 5) | 0.4–0.7 | a runner with three or four broad, short, thick blades leaning downstream; 600 a cell; reads the waves (`eco`) | the runner line's answer to stirred water: a rind-thick cuticle that sheds sand and takes the scour where the strap's thin blades are shaded and torn and the floaters' ropes snap; costs light per gram, so it holds only where the water is dirty (SEAFLOOR §2's turbidity form: there are no rivers, so the surf over sand is where `turb` is high in the light) |
 | grape, star | | 2 | | as above | |
 | **sandball** | disc/mound | 2 | 0.1–0.3 | pink calcified balls the tide rolls, alive on every side | rolling mineral weed is real (rhodoliths) and odd. Low priority |
 | pen (whip re-read) | axis + blades | 2, 10 | 1–4 | a polyp pen: a stalk in the sand with a feathered blade; the whip is its stiff cousin | keep the whip, add the feather |
@@ -256,6 +272,7 @@ the trait that wins its spot. Earth appears there only as the proof.
 |---|---|---|---|---|---|
 | **crust** | mound (flat) | 5, 6, 7 top steps, ledges | 0.3–1 wide | red-purple paint: flat discs a hand thick stuck to rock | the deepest photosynthesis is red and encrusting; grazer-proof mineral |
 | **redblade** | blades | 7 top step, 5 top, 3 deep | 0.3–1 | single dark-red translucent blades, sparse | the last blades, catching what blue is left (Earth's deepest weed: 268 m) |
+| **darkrind** (built v11.67) | mound (flat) | the sill's drowned summits: −172..−142 on bare rock (`sub` ≥ 0.6) in the basin's sparse water (`nut` ≤ 0.2), off fresh rock — 85 ha on the ridge, none on any island flank | 0.8–1.5 wide | one or two wide plates a finger thick, dark, a paler growing edge; 220 a cell, in patches | the reds' crust at the light's floor: the floor of the light is the water's, and the sill's summits reach exactly −150 under the clearest water in the world, so a rind that pays there pays twenty metres deeper than under the islands' fed water (TAXA, the deep rind; SEAFLOOR §3's relict among the weeds). Nothing draws it but the sill |
 | **lily** | axis + branch crown | 7, 5 ledges, 6, 14 slabs, 10 sparse | 0.5–2 | a crown on a jointed stalk, arms opened across the flow, an eye ring on the crown, in fields | a crown in a current is a net that costs nothing to hold; and it watches |
 | **tower** (moved) | axis + tuft | 7, 5 feet | 8–15 | the tall spiny polyp tower, **dull** (ivory, grey, dun), rigid, in the calm | stands where nothing pushes it; colour without light is waste |
 | **vase** (sponge rebuilt v9.6), **barrel** | cup | 7, 6, 4, 10, 14 | 1.5–4.5 | the tall vase: a lathe with a waist, a flared lip and a dark hollow (tall / paired with a fused bud / a squat urn), in field-clustered gardens at 70 a cell — the kept sponge was a cylinder with a black lid at 230 a cell, "vases stapled to the floor"; and the giant barrel a century old | the barrel is the terraces' furniture; the vase its middle stratum |
@@ -363,3 +380,6 @@ lanterns (lure-feeders), the rockfall's rust (living), the pit and the dark (emp
 - Strikes on the roster as it appears in the game (v9.5 shows the reef top, the shelf, the flats, the rockfall's rust
   and the rafts; the slope, the deep, the vents and the rim keep their old flora until the next pass).
 - Whether the lines under the colonies should sting (the canopy as a hazard).
+- The high-current form SEAFLOOR §2's brief allowed (a fisher on the passes' floor, `flow` high, `shel` low) was not built (v11.67): the
+  fan, the nod, the bommie, the tube and the stilt already own that rock (`flow` ≥ 0.3–0.6 on `sub` ≥ 0.5), and a sixth fisher on the same
+  ground would be a draw call for a look the others give. The turbidity form and the sill's red were built (paddle, darkrind).
