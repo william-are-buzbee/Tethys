@@ -137,7 +137,8 @@ Docs, most upstream first. When a doc's Open list says a choice is the person's,
 | `AUDIO.md` | the sound's design (v11.14); every number was chosen blind |
 | `DESIGN.md` | **the reference**: one section per system with the owning file, the numbers, the knobs and the reasons |
 | `analysis_believability.md` | the 12 Sep analysis: how the world, flora, clades and spawning work, and where the believability is strong and thin |
-| `DIRECTION.md` | where the project is going (12 Sep): the archipelago, oxygen, the silled basin, the hingeshells, and the game's loop ("the body is the tech"); its Open list is the person's |
+| `DIRECTION.md` | where the project is going (12 Sep): the archipelago, oxygen, the silled basin, the hingeshells, and the game's loop ("the body is the tech"); its Open list is the person's. Its "not a lineage" line is struck (20 Sep) |
+| `LINEAGE.md` | the line across generations (20 Sep 2026, designed, not built): the brood and the switch at the hatch, the three clade modes, the mutation budget as materials, the sparkle that marks the magic, the player's variants as ledger entries, the shrine after the run; §11 open, §12 the person's answers |
 | `CHANGELOG.md` | judging risk: what each version changed, what the person saw and said, what was never seen |
 | `HANDOFF.md` | current state only, newest first, with what to ask the person to look at; entries no longer true are removed, not kept |
 | `IDEAS.txt` | the person's own backlog |

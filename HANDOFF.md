@@ -1,5 +1,20 @@
 # HANDOFF — tethys
 
+**v11.67.1 (20 Sep 2026): `LINEAGE.md`, designed, not built.** The creator is to become the start of the game, so the life-to-life loop
+was decided first. The frame: one admitted wrench (the player) in a simulation that otherwise keeps its rules; `DIRECTION.md`'s "not a
+lineage" line is struck. You breed as you play and may take a hatchling at the moment it hatches — immediate and in place, no time skip
+— and the moment passes; what you do not claim goes to nature, and at death a living descendant or the save is over. **Only your own
+descent is eligible**: not siblings, not parents, grandchildren yes — so every life must breed for itself, and a switch rebases the tree
+and throws the rest away. The clades set the odds (ringmouth semelparous, slowblood indifferent, hingeshell brooding). The mutation
+budget is a bill of materials paid by eating; the magic is marked by a sparkle that must appear nowhere else; the player's variants
+become ledger entries, which wants a sparse per-variant table, a tree of population nodes to carry descent (the ledger counts and cannot
+know who begat whom), and a derived `DEFS` (role, prey, reach, diet, envelope) — the load-bearing gap in the creator plan. The shrine
+after the run needs a track log recorded from the first version. **Ask first**: §11 (what the body you leave does the second after you
+leave it; whether the hatch moment needs a warning; may a new founder be another clade; do your variants know each other; the budget's
+first numbers). The creator's own cleanup — the part registry's duplicates, blanks and cross-clade styles, then one segmented body with
+a smoothing term, then direct manipulation and the studio — is agreed but unwritten; `LINEAGE.md` §13 assumes the registry pass lands
+before the creator opens at a hatch.
+
 **v11.67 (16 Sep 2026): the flora variety pass.** SEAFLOOR §2 built: the sessile life varies with the fields, not only with depth, and nothing
 reads an island. The three variants of an `eco` species are its exposure ecotypes now (grow.js `ecoK` from `expo` at the instance, the same rng
 draw; turf, wisp, chain, stipe, ladder, ribbon, bladder — a `species()` since this pass — and paddle read k as the kelps do: exposed short, thick,

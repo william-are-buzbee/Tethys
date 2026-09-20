@@ -63,8 +63,10 @@ paraphrased; where a point was raised and not answered it is in [Open](#open) an
 ### The game (what makes it fun)
 The person's framing, accepted: a believable ecology is a documentary until you are hungry or dying; the loop that works is Metroid's —
 keys, doors, fear of the door, opening it anyway — and Subnautica supplies the reason to go down the scary hole with tech. **Not a
-human** (decided). **Not a lineage across generations** (decided: the world would have to change with the generations, and that is not
-the game). So, in a creature-only game, **the body is the tech**: one animal, from juvenile to giant, the creator opening at growth
+human** (decided). ~~**Not a lineage across generations** (decided: the world would have to change with the generations, and that is not
+the game).~~ **Struck 20 Sep 2026: the game is a lineage — see `LINEAGE.md`.** The old reason is answered there: the line is the
+animal's, not the world's, and the world does not have to move for a hatchling to inherit its parent's spec. So, in a creature-only
+game, **the body is the tech**: one animal, from juvenile to giant, the creator opening at growth
 stages the way the fabricator opens on blueprints.
 
 - **The doors** are physical and already exist: current (the passes on a spring, the sill gaps), depth (pressure on a chambered shell,
@@ -125,8 +127,9 @@ channel) → the archipelago (the chain, the saddles, the sill and its gaps) →
    creatures (the slowbloods scale speed, turn and detect by temperature; gigantotherms and mixotherms with a floor) and by the player
    (the loop's cold and depth doors).
 3. **Player hunger.** Yes, to build; the first piece of the loop.
-4. **Eggs, mating and reproduction are real mechanics**, within one life (not generations): a mate of your kind, a clutch at the den, the
-   hatchlings. The egg system (v11.26) is the start.
+4. **Eggs, mating and reproduction are real mechanics**: a mate of your kind, a clutch at the den, the hatchlings. The egg system
+   (v11.26) is the start. ~~within one life (not generations)~~ — **20 Sep 2026: across generations too; the clutch is how the line
+   continues and how you change bodies (`LINEAGE.md` §4).**
 5. **Reputation is a facet of intelligence in general.** Some species remember (the clever clade first); it is not a mechanic on its own
    but part of how intelligent animals behave.
 6. **The starting size is the smallest body the creator allows** for the clade — the juvenile, born in the nursery.

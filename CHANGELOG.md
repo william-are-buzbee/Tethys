@@ -4363,3 +4363,46 @@ no biomes, no island ids, no names, so the giant's coasts and ours differ for fr
   crowns of the rift arm at −52 — chemistry, or dirt; the paddle among the strap on the giant's windward shelf at 1600×900; the darkrind's
   paler rim at play distance; the edge of the young bound where the forest stops at the arm's flank — a line, or a fade; the frame on the
   4060 at (330, 0) (one draw and 3% triangles say nothing changed; the pane cannot say more).
+
+## v11.67.1 — LINEAGE.md, the line across generations (20 Sep 2026)
+
+The creator becomes the start of the game, so what happens between lives had to be decided before any of it is built. A discussion of
+20 Sep recorded as `LINEAGE.md`, designed, not built. The frame is the person's: Tethys is a believable simulation with exactly one
+thing in it that does not obey the rules, and that thing is the player — rapid evolution, no in-world justification owed, and the
+12 Sep decision against a lineage struck in `DIRECTION.md` with today's date (its reason, that the world would have to change with the
+generations, is answered: the line is the animal's, not the world's).
+
+- **The loop** (§4): you breed as you play; at a hatch, if you are there, you may take a hatchling and become it, and the moment passes.
+  A switch is immediate and in place — no skip and no pause (the person, 20 Sep); what becomes of a loosed brood is decided by the
+  off-screen model in its own time, the same code that decides every other species' fate. What you do not claim goes to nature and
+  mostly dies. At death the game looks for any living descendant; none, and the save is over (no grace).
+  So survival at death depends on whether the animals you designed and abandoned were good enough to live without you.
+- **Only your own descent** (the person, 20 Sep): you may swap only into what the body you wear produced. Siblings and parents are not
+  eligible — the clutch you hatched out of is not a reserve of spare bodies — and grandchildren are, at any depth. So every life must
+  breed for itself, and a switch rebases the tree: the den you leave and everything else that parent made is outside the line forever.
+  The choice at a hatch is "am I done with everything this body made", not "is this body better".
+- **The three starts** (§3) are the clades' own reproduction: ringmouths semelparous (one forced switch, many cheap young), slowbloods
+  iteroparous and indifferent (several switches, middling odds), hingeshells brooding (few switches, young that actually survive).
+  Drifters later.
+- **The mutation budget is physics** (§6): a body plan is a bill of materials — mass, mineral, pigment, nerve — paid for by eating, the
+  model `coatFor` already sets. No points, no unlock tree; the constants are playtest constants. A lost part is not inherited.
+- **The sparkle** (§7): the magic admitted, not explained — a star or candle flicker with a trail, on the founder, in the creator, at a
+  switch, closing the mutation window, on the cursor, and as the save icon. The rule that makes it work is that it appears nowhere else.
+  Cheap: fx.js's pooled emitters and a HUD overlay; the silhouette must read at 16 px.
+- **The ledger absorbs what the player looses** (§8): variants become real entries with envelopes and compete. The arithmetic is stated
+  — five dense `Float32Array`s over 57,600 cells is ~1.15 MB an entry, so player variants want a sparse cell→count map walked through
+  `POP.cells[ei]` as the loops already do. And the gap this forces: `derive` gives physics, not role, prey, reach, diet or envelope, so
+  a derived `DEFS` (§8.2) is the load-bearing missing piece of the whole creator plan, lineage or not. A finding from the descent rule:
+  the ledger counts and cannot know who begat whom, and an unclaimed child wears its parent's spec exactly — so descent is carried by a
+  **tree of population nodes** (`{cell, n, born, gen, parent, spec}`) that the model grows and kills, a surviving node spawning child
+  nodes that are the grandchildren. Eligibility is a subtree walk of tens of entries, and the same nodes are the shrine's marketshare.
+- **The shrine** (§9) is out of the world, after the run: the forms, their tracks over the world, diet, close calls, kilometres, and each
+  variant's share of the population by region. It needs a track log recorded from the first version, since it cannot be retrofitted;
+  `worldmap.js` is most of the renderer already.
+- **Sharing a place, not just a creature** (§10) is far future but shapes the early record: `sample()` is deterministic and the island
+  records are shared, so a coordinate means the same thing in every save — a distribution is portable in a way a seeded world's would
+  not be.
+- §11 is open (the body you leave behind at a switch, the hatch's warning, a new founder's clade, kin recognition, the budget's first
+  numbers); §12 records the person's ten answers of 20 Sep; §13 is the build order — the line and the track log first, then the whole
+  loop on one clade with no creator work, then death's search for a descendant, then the creator at the hatch.
+- **Unseen, ask in this order**: nothing was built, so nothing was seen. The doc's own questions are §11.
