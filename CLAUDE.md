@@ -69,7 +69,9 @@ Env vars: `TIER` (`low`), `PICK` (menu pick for smoke), `T0`, `OLD`, for preview
 5. `HANDOFF.md` describes current state only: a short paragraph for the new version at the top, and remove entries that are no
    longer true rather than appending. Keep that file short; the history is `CHANGELOG.md`.
 6. Commit each version on `main`, one commit per version, the message the CHANGELOG header. Identity is `WB <willbuzbee@gmail.com>`
-   (`user.name` in the repo's local config; never any other name). No pushing, rebasing or hard resets from here (`.claude/settings.json`).
+   (`user.name` in the repo's local config; never any other name). `origin` is a **private** GitHub mirror
+   (`william-are-buzbee/Tethys`, added 19 Sep 2026 so the person can work from elsewhere and so the history is not on one disk):
+   the person pushes, from their own shell. No pushing, rebasing or hard resets from here (`.claude/settings.json`).
 
 The sandbox delivery (when there is no PC): copy `tethys.html` to `/mnt/user-data/outputs/`, zip the folder as `tethys-src.zip`.
 
