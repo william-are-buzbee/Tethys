@@ -1,0 +1,9 @@
+# Tethys — .gitattributes
+# One line ending everywhere: the repo stores LF and every checkout writes LF, on Windows too.
+# Before this (19 Sep 2026) core.autocrlf=true alone left the working copy a per-file mix — 27 files
+# CRLF, 54 LF, and src/player.js mixed with one stray bare LF — so a scripted edit had to match each
+# file's own ending, and a Git Bash grep for CR reported LF for every file including the CRLF ones.
+# Every tracked file is text (51 js, 22 md, 2 txt, 2 json, 2 html, 1 py, .gitignore, LICENSE);
+# the only binaries the project makes are test/preview/*.png and test/render/*.wav, both gitignored.
+
+* text=auto eol=lf
