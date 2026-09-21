@@ -6,7 +6,7 @@
 // (ecology.js POP), so a save is the ledger's five tables and the clock; the loaded cells are counted into the tables as the tick counts them
 // (the living, and the eggs). What a cell drew — carcasses, wounds, a school's shape — is not kept, as it is not kept across an unload either.
 // A save is written every SAVE_EVERY seconds of play, on leaving to the menu (menu.js toMenu) and when the page is hidden.
-const SAVE_V=1,SAVE_EVERY=30,SEEN_R=30; // the record format's version; seconds of play between autosaves; m: a species drawn nearer than this in play is seen
+const SAVE_V=2,SAVE_EVERY=30,SEEN_R=30; // the record format's version (2, v11.68: the player's spec on the record; a 1 has only the clade id and loads as its preset); seconds of play between autosaves; m: a species drawn nearer than this in play is seen
 // ---------- the store ----------
 // Callbacks, not promises: the localStorage and memory backends answer synchronously, which is what the headless tests need (their frames are
 // driven by hand and no microtask ever runs between them); IndexedDB answers when it does.
@@ -73,7 +73,7 @@ function popLoad(p){ // the ledger from a record; a save from another roster (SP
 }
 function saveRecord(){ // the game as it stands, as a record for the store
   const P=player,s=curSave;
-  return {id:s.id,kind:'save',v:SAVE_V,name:s.name,made:s.made,played:Date.now(),playT:Math.round(playT),clade:P.clade.id,pos:[r3(P.pos.x),r3(P.pos.y),r3(P.pos.z)],yaw:r3(P.yaw),pitch:r3(P.pitch),deaths:s.deaths||[],arms:P.armsLost||0,regrow:(P.regrow||[]).map(r3),bleed:r3(P.bleed||0),lost:(P.lost||[]).slice(),t:r3(t),pop:popRows()}; // arms, regrow, bleed (v11.56): the animal's injuries — a dropped arm is still dropped when you come back, and regrows by the world's clock // deaths (v11.55): the slot's animals that died, {cause, day, playT}
+  return {id:s.id,kind:'save',v:SAVE_V,name:s.name,made:s.made,played:Date.now(),playT:Math.round(playT),clade:P.clade.id,spec:JSON.parse(specToJSON(P.clade.spec)),pos:[r3(P.pos.x),r3(P.pos.y),r3(P.pos.z)],yaw:r3(P.yaw),pitch:r3(P.pitch),deaths:s.deaths||[],arms:P.armsLost||0,regrow:(P.regrow||[]).map(r3),bleed:r3(P.bleed||0),lost:(P.lost||[]).slice(),t:r3(t),pop:popRows()}; // arms, regrow, bleed (v11.56): the animal's injuries — a dropped arm is still dropped when you come back, and regrows by the world's clock // deaths (v11.55): the slot's animals that died, {cause, day, playT}
 }
 function saveNow(){if(!curSave||mode!=='play'||player.dead||!player.clade)return false;camNote();const rec=saveRecord();curSave.played=rec.played;curSave.playT=rec.playT;storePut(rec);if(profileDirty)profileSave();saveT=SAVE_EVERY;return true;}
 function updateSave(dt){if(mode!=='play'||!curSave)return;playT+=dt;saveT-=dt;if(saveT<=0)saveNow();}
@@ -91,8 +91,8 @@ function saveShadow(){if(!curSave||mode!=='play'||player.dead||!player.clade)ret
 function saveName(){let n=0;for(const r of saveList){const m=/^game (\d+)$/.exec(r.name||'');if(m&&+m[1]>n)n=+m[1];}return 'game '+(n+1);}
 function saveImport(txt,cb){ // a file back in (menu.js): checked as far as the shape goes, given a new id if its own is taken, stored
   let r=null;try{r=JSON.parse(txt);}catch(e){}
-  if(!r||r.kind!=='save'||!r.pop||typeof r.clade!=='string'){if(cb)cb(null);return;}
-  const rec={id:typeof r.id==='string'&&!saveList.some(s=>s.id===r.id)?r.id:'s'+Date.now().toString(36),kind:'save',v:+r.v||SAVE_V,name:typeof r.name==='string'?r.name.slice(0,40):saveName(),made:+r.made||Date.now(),played:+r.played||Date.now(),playT:+r.playT||0,clade:r.clade,pos:Array.isArray(r.pos)?r.pos.slice(0,3).map(v=>+v||0):[0,dispY,0],yaw:+r.yaw||0,pitch:+r.pitch||0,deaths:Array.isArray(r.deaths)?r.deaths.slice(-50):[],arms:Math.max(0,+r.arms||0),regrow:Array.isArray(r.regrow)?r.regrow.map(v=>+v||0):[],bleed:Math.max(0,+r.bleed||0),lost:Array.isArray(r.lost)?r.lost.map(v=>v|0):[],t:Math.max(0,+r.t||0),pop:r.pop};
+  if(!r||r.kind!=='save'||!r.pop||typeof r.clade!=='string'){if(cb)cb(null);return;}const sp=specOk(r.spec);
+  const rec={id:typeof r.id==='string'&&!saveList.some(s=>s.id===r.id)?r.id:'s'+Date.now().toString(36),kind:'save',v:+r.v||SAVE_V,name:typeof r.name==='string'?r.name.slice(0,40):saveName(),made:+r.made||Date.now(),played:+r.played||Date.now(),playT:+r.playT||0,clade:r.clade,spec:sp||undefined,pos:Array.isArray(r.pos)?r.pos.slice(0,3).map(v=>+v||0):[0,dispY,0],yaw:+r.yaw||0,pitch:+r.pitch||0,deaths:Array.isArray(r.deaths)?r.deaths.slice(-50):[],arms:Math.max(0,+r.arms||0),regrow:Array.isArray(r.regrow)?r.regrow.map(v=>+v||0):[],bleed:Math.max(0,+r.bleed||0),lost:Array.isArray(r.lost)?r.lost.map(v=>v|0):[],t:Math.max(0,+r.t||0),pop:r.pop};
   storePut(rec,()=>{saveRefresh(()=>{if(cb)cb(rec);});});
 }
 // ---------- the world in and out ----------
@@ -105,7 +105,7 @@ function playerBody(C,pos,yaw,pitch){ // the player's body built and placed as t
   const P=player;playerDrop();const b=C.build();castOn(b.g);scene.add(b.g);
   P.clade=C;P.b=b;P.g=b.g;P.anim=b.anim;P.mass=C.mass;P.def.size=C.size;P.paraT=0;P.stungT=0;P.sickT=0;P.armsLost=0;P.regrow=null;P.cause='';P.live=null;P.lost=null;P.speedK=1;P.turnK=1;
   P.pos.copy(pos);b.g.position.copy(pos);P.vel.set(0,0,0);P.yaw=+yaw||0;P.pitch=clamp(+pitch||0,-1.35,1.35);P.dead=false;P.cd=0;P.inkT=0;P.bleed=0;P.hold=null;P.held=0;P.grab=null;P.holding=0;P.withdrawn=false;P.fp=false;P.camAbove=false;P.camFlipT=0;P.wet=true;P.sub=1;P.hurtT=0;P.lastHurt=-100;P.jetT=0;P.pulse=0;P.biteCD=0;P.flopT=0;
-  camera.position.copy(pos).add(V3(0,2,8));snapMed=true;seeSpec(C.id);
+  camera.position.copy(pos).add(V3(0,2,8));snapMed=true;seeSpec(C.spec.id);
 }
 function playerDrop(){const P=player;if(!P.g)return;releaseAll(P);for(const c of creatures)if(c.target===P)dropTarget(c);ghostBody(P.g,false);scene.remove(P.g);P.g.traverse(o=>{if(o.geometry)o.geometry.dispose();});P.g=null;P.b=null;P.anim=null;P.dead=true;P.fp=false;P.hold=null;P.held=0;P.grab=null;}
 function startNew(C){ // a new game (menu.js): a fresh ledger, the clock at boot, the player at the peak as the clade, a new slot written at once so continue lists it
@@ -114,12 +114,15 @@ function startNew(C){ // a new game (menu.js): a fresh ledger, the clock at boot
   choose(C);saveNow();saveRefresh();
 }
 function startFrom(rec){ // continue a slot (menu.js): the clock and the ledger as saved, the player where it was
-  const C=CLADES.find(c=>c.id===rec.clade)||CLADES[1];
+  const C=cladeOfRec(rec);
   worldClear();t=Math.max(0,+rec.t||0);clockH=t*CLOCK_RATE;TIDE=tideAt(clockH);popLoad(rec.pop);
   curSave={id:rec.id,name:rec.name,made:rec.made,played:rec.played,playT:+rec.playT||0,deaths:Array.isArray(rec.deaths)?rec.deaths.slice():[]};playT=curSave.playT;
   const p=Array.isArray(rec.pos)?V3(+rec.pos[0]||0,+rec.pos[1]||0,+rec.pos[2]||0):V3(0,dispY,0);if(Math.abs(p.x)>HALF+1500||Math.abs(p.z)>HALF+1500)p.set(0,dispY,0);
   choose(C,p,rec.yaw,rec.pitch);injuriesLoad(rec);
 }
+// the player's body from a record (v11.68): its spec when it has one that compiles, else (a version 1 record, or a spec that no longer compiles) the preset its clade id names
+function specOk(sp){if(!sp||typeof sp!=='object'||!sp.core||!sp.clade||!Array.isArray(sp.parts))return null;try{const b=compile(sp);b.g.traverse(o=>{if(o.geometry)o.geometry.dispose();});statsOf(sp);return sp;}catch(e){console.warn('save: the player spec does not compile ('+e.message+'); the preset instead');return null;}}
+function cladeOfRec(rec){const pre=CLADE_PRESETS.find(p=>p.id===rec.clade),sp=specOk(rec.spec);if(sp)return playerClade(sp,pre);return CLADES.find(c=>c.id===rec.clade)||CLADES[1];}
 function injuriesLoad(rec){const P=player;P.armsLost=Math.max(0,+rec.arms||0);P.regrow=Array.isArray(rec.regrow)&&rec.regrow.length?rec.regrow.map(v=>+v||0):null;P.bleed=Math.max(0,+rec.bleed||0);const rig=armsOf(P);if(rig){const n=Math.min(P.armsLost,Math.max(0,rig.chains.length-AUTOTOMY.keep));P.armsLost=n;rig.chains.forEach((c,i)=>{c.gone=i<n;c.grow=0;});}else P.armsLost=0;if(P.armsLost)armsLive(P);for(const pi of (Array.isArray(rec.lost)?rec.lost:[]))losePart(P,pi|0,null,null,true);} // the saved injuries back on the body (v11.56)
 // the slot's animal is dead (v11.55, COMBAT.md §9; the person, 15 Sep 2026: the slot ends): the death is written to the slot with the world as it
 // stands, the next animal waits at the peak, and the menu comes back from the spot of the death with the cause as its note. Continue starts it

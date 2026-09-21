@@ -163,7 +163,7 @@ The dev tool, built on the zoo (same camera, light, water, action keys, coats). 
   stages — `size` grows with food, and at a stage you may change parts. Nothing here needs building now, only that `size` stays a
   spec field and the compiler is deterministic.
 - **Mirror by default, asymmetry as a choice** (the hose precedent).
-- The derived stats bind: the player's speed, turn, mass, hp come from the calculator, and the *mode* (jet, undulate, flap, walk)
+- The derived stats bind (**built v11.68**: `playerClade`, the presets' old numbers as `stats` locks; the save stores the spec): the player's speed, turn, mass, hp come from the calculator, and the *mode* (jet, undulate, flap, walk)
   from the propulsors — `player.js` already switches behaviour on `jet` and `legs`; the calculator sets those flags.
 - Plausibility is a meter, not a wall, for the player; a wall for the world's own species.
 

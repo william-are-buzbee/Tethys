@@ -70,7 +70,7 @@ const HOLD_DRAG=3; // per second: how fast the two bodies' velocities are pulled
 const PLAYER_GRIP={soft:1.2,fin:1.0,coil:0.6}; // the clades' grips: the jetter's arms are for this; the coilshell's are short
 const BLOOD_COL={ringmouths:[0.16,0.24,0.34],slowbloods:[0.32,0.03,0.03],hingeshells:[0.52,0.5,0.32],drifters:[0.6,0.6,0.6]}; // copper, iron, vanadium (PLANET)
 function massOf(o){return o===player?player.mass:(o.mass||bodyMass(o.def));} // the physical mass (creatures_ai.js): a hold is a struggle between two bodies
-function cladeOf(o){if(o===player)return player.clade&&player.clade.id==='fin'?'slowbloods':'ringmouths';const sp=SPECS[o.kind];return sp?sp.clade:'hingeshells';}
+function cladeOf(o){if(o===player)return player.clade?player.clade.spec.clade:'ringmouths';const sp=SPECS[o.kind];return sp?sp.clade:'hingeshells';}
 function dmgOf(o){return o===player?(player.clade?player.clade.bite:8):(o.def.dmg||0);}
 // a local point of o's frame in the world, with o's current position (the group's matrix may be a shift behind pos: resolveBodies moves pos)
 function localToWorld(o,l,out){const e=o.g.matrix.elements;out.x=e[0]*l[0]+e[4]*l[1]+e[8]*l[2]+o.pos.x;out.y=e[1]*l[0]+e[5]*l[1]+e[9]*l[2]+o.pos.y;out.z=e[2]*l[0]+e[6]*l[1]+e[10]*l[2]+o.pos.z;return out;}
@@ -174,7 +174,7 @@ function widestR(o){const H=o.b&&o.b.hit,s=o.b&&o.b.g?o.b.g.scale.x:1;let r=0;if
 // a slowblood swallows what fits its mouth (the gape by geometry: the prey's widest capsule against gape × GAPE_K); a ringmouth or a hingeshell takes
 // forage in pieces at the touch, by mass as before (WHOLE). The player is swallowed like anything else — the finback's death (COMBAT.md §3)
 function swallows(a,b){if(cladeOf(a)==='slowbloods')return widestR(b)<=(a.b.gape||0)*GAPE_K;return b!==player&&!!b.def.edible&&massOf(b)<=WHOLE*massOf(a);}
-function gulps(tg){const P=player;if(!tg.def||!tg.def.edible)return false;return P.clade.id==='fin'?widestR(tg)<=(P.b.gape||0)*GAPE_K:massOf(tg)<=WHOLE_P*P.mass;} // the player's gulp: the finback by its gape, the beaks by mass (pieces)
+function gulps(tg){const P=player;if(!tg.def||!tg.def.edible)return false;return P.clade.spec.clade==='slowbloods'?widestR(tg)<=(P.b.gape||0)*GAPE_K:massOf(tg)<=WHOLE_P*P.mass;} // the player's gulp: the finback by its gape, the beaks by mass (pieces)
 function pinTime(a,b){return PIN.t*clamp(Math.pow(massOf(b)/massOf(a),PIN.mass),0.3,3);}
 function venomOf(o){return o===player?(player.clade&&player.clade.venom)||null:(o.def&&o.def.venom)||null;}
 function stings(o){const v=venomOf(o);return !!(v&&v.kind==='sting');}
@@ -198,7 +198,7 @@ function regrowTick(o){const R=o.regrow;if(!R||!R.length)return;const rig=armsOf
 // worse because it is missing the thing that did that (speedK, turnK: the live build's derive against the whole one). What a hold can take is
 // what has its own capsule (LOSE.parts: the tail); an arm goes by autotomy (the live spec's arm count). A lost part's meshes are hidden (the far
 // bake still shows it — a kind's bake is shared); a slowblood's tail never regrows, a ringmouth's arm does (regrowTick)
-function specOf(o){return o===player?SPECS[player.clade.id]:SPECS[o.kind];}
+function specOf(o){return o===player?player.clade&&player.clade.spec:SPECS[o.kind];} // the player's is its own (v11.68)
 function liveSpec(o){if(o.live)return o.live;const sp=specOf(o);o.live=sp?JSON.parse(JSON.stringify(fillSpec(sp))):null;return o.live;}
 function rederive(o){const sp=specOf(o),live=o.live;if(!sp||!live){o.speedK=1;o.turnK=1;return;}
   try{const full=derive(sp),now=derive(Object.assign({},live,{parts:live.parts.filter(p=>!p.lost)}));o.speedK=clamp(now.speed/(full.speed||1),LOSE.floor,1);o.turnK=clamp(now.turn/(full.turn||1),0.3,1.5);}catch(e){o.speedK=1;o.turnK=1;}}

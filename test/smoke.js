@@ -3,7 +3,7 @@
 // never input.js, so neither the bite nor the look had ever run here). Catches runtime errors (undefined names, bad calls) on
 // the paths it drives — it says nothing about rendering or frame rate. TIER=low runs the low tier. Per clade: 30 menu frames,
 // pick, then 1500 frames sprinting forward with bites, the grab, the ability and space every so often (stub.js __run), then the
-// mouse both ways (locked, and the drag with the lock refused), then a kill and the respawn; the finback
+// mouse both ways (locked, and the drag with the lock refused), then a kill and the respawn (v11.68: a fourth run as a spec that is no preset); the finback
 // also swims 8400 frames from the peak straight out into the void, with a mid-run coilshell-style 'C' hold.
 const fs=require('fs'),path=require('path');
 const ROOT=path.join(__dirname,'..');
@@ -15,13 +15,14 @@ js+='\nglobal.__eco=()=>{let s=0,nan=0;for(const N of POP.n)for(let c=0;c<N.leng
 js+='\nglobal.__fx=(k)=>{fxToggle(k);return FX[k];};'; // v11.40: the effects list's switch (the de-res on: fxApply, the shimmer hidden)
 js+='\nglobal.__mouse=()=>({yaw:player.yaw,pitch:player.pitch,biteCD:player.biteCD,grab:mouseGrab,locked:locked});'; // v11.31.4: the mouse reaches input.js at all
 js+='\nglobal.__zoo={n:()=>ROSTER.length,mode:()=>mode,specs:()=>Object.keys(SPECS),labLoad:(id)=>labLoad(SPECS[id]),labBlank:(c)=>labLoad(SPEC_BLANK[c]),labAdd:(k)=>{lab.spec.parts.push({kind:k,style:stylesFor(k,lab.spec.clade)[0]});labBuild();labRender();}};';
-js+='\nglobal.__start=(i)=>{choose(i);};'; // v11.47: the bare start (menu.js choose) for the clades the menu no longer offers; stub.js __run
+js+='\nglobal.__start=(i)=>{if(i<CLADES.length){choose(i);return;}const sp=JSON.parse(JSON.stringify(SPECS.sickle));sp.id="smoke";choose(playerClade(sp));};'; // v11.47: the bare start (menu.js choose) for the clades the menu no longer offers; stub.js __run. v11.68: pick 3 is a spec that is no preset (the sickle, a hingeshell: no ability, derive's numbers)
+js+='\nglobal.__clade=()=>({id:player.clade.id,spec:player.clade.spec.id,speed:player.clade.speed,ability:player.clade.ability});';
 // the saves (v11.47): the slot the menu wrote, esc to the menu, continue from the list, and what came back
 js+='\nglobal.__save={slots:()=>saveList.map(r=>({id:r.id,name:r.name,clade:r.clade,playT:r.playT,deaths:(r.deaths||[]).length})),cur:()=>curSave&&curSave.id,now:()=>saveNow(),menu:()=>{const h=global.__h;h["win:keydown"].forEach(f=>f({code:"Escape",preventDefault(){}}));},cont:(id)=>{saveRefresh();const r=saveList.find(r=>r.id===id);if(!r)throw new Error("no slot "+id);startFrom(r);},del:(id)=>{storeDel(id);saveRefresh();},t:()=>t,pop:()=>{let s=0;for(const N of POP.n)for(let c=0;c<N.length;c++)s+=N[c];return s;},seen:()=>PROFILE.seen.sp.length,creator:()=>PROFILE.creator,locked:()=>locked};';
 const tmp=path.join(require('os').tmpdir(),'tethys_bundle.js');
 fs.writeFileSync(tmp,'(function(){"use strict";\n'+js+'\n})();');
 let failed=false;
-for(const pick of [0,1,2]){
+for(const pick of [0,1,2,3]){
   for(const k of Object.keys(require.cache))delete require.cache[k];
   process.env.PICK=String(pick);
   try{
@@ -46,6 +47,7 @@ for(const pick of [0,1,2]){
       if(__zoo.mode()!=='menu')throw new Error('the lab did not return to the menu');
     }
     console.log('  short run:',__run(),JSON.stringify(__dbg()));
+    if(pick===3){const c=__clade();console.log('  as a spec:',JSON.stringify(c));if(c.spec!=='smoke')throw new Error('pick 3 is not the non-preset spec');}
     if(__dbg().visible<1)throw new Error('no creature is drawn after the short run (v11.18.1: an edit ate c.lodFar and every creature went invisible while still biting)');
     {const d=__dbg();if(!(d.visible>0))throw new Error('no creature drawn after the short run (v11.18 shipped with lodFar commented out: everything invisible, still biting)');}
     { // the mouse (v11.31.4): both ways of playing, since the test drove neither. Locked (how play starts): a move is the look, a

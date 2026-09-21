@@ -1,11 +1,24 @@
-// player.js — the three playable clades, movement in water / air / on land, camera, bite, abilities, damage and death
-// legs:true on a clade (none yet) would make it walk on the strand (landSpeed, jump) instead of flopping.
-// size: the body's half-length in world units (disturbance radius, flow radius); mass: for contact with creatures (size³ for them).
-const CLADES=[
-  {id:'soft',name:'soft-arm',build:()=>compile(SPECS.soft),speed:7.0,jet:true,jetImp:10,accel:3.2,bite:9,cam:6.5,turn:7,size:1.6,mass:5},
-  {id:'fin',name:'finback',build:()=>compile(SPECS.fin),speed:8.8,sprint:1.75,accel:2.6,bite:26,cam:7.5,turn:4.5,size:1.8,mass:7},
-  {id:'coil',name:'coilshell',build:()=>compile(SPECS.coil),speed:4.6,jet:true,jetImp:7,accel:1.5,bite:6,cam:6.5,turn:3,size:1.5,mass:8,venom:{kind:'paralyse',t:5,against:{slowbloods:1,ringmouths:1}}} // bite: the bite's size for the blood and the debris (v11.55: no hit points); venom (COMBAT.md §3b): the coilshell's beak paralyses what its short arms hold
+// player.js — the player as a spec and its presets (the three clades), movement in water / air / on land, camera, bite, abilities, damage and death
+// legs (derive's, off the spec: none of the presets has any) makes it walk on the strand (landSpeed, jump) instead of flopping.
+// The player is a spec (v11.68): the numbers come off the build (statsOf: derive with the spec's locks over it), and a preset is a spec plus the
+// few numbers derive has no term for — cam (the third-person arm, m), jetImp (a jet's squeeze, an impulse), sprint (a tail's burst, a multiple of
+// speed), venom (COMBAT.md §3b: the coilshell's beak paralyses what its short arms hold) and the ability (ink: predators lose you; stun: the
+// tail-strike; withdraw: hold, invulnerable, sinking). The three presets' old hand numbers are locks on their SPECS (stats), so they play as
+// they did. A spec that is no preset takes those few from the preset of its kind (presetFor), the arm scaled by its size; the ability only if
+// the clade is the preset's. size: the spec's half-length (disturbance, flow, contact); mass: for contact with creatures (size³ for them).
+const CLADE_PRESETS=[
+  {id:'soft',name:'soft-arm',spec:'soft',jetImp:10,cam:6.5,ability:'ink'},
+  {id:'fin',name:'finback',spec:'fin',sprint:1.75,cam:7.5,ability:'stun'},
+  {id:'coil',name:'coilshell',spec:'coil',jetImp:7,cam:6.5,ability:'withdraw',venom:{kind:'paralyse',t:5,against:{slowbloods:1,ringmouths:1}}}
 ];
+function presetFor(spec){const id=spec.clade==='ringmouths'?(spec.core&&spec.core.kind==='coilbody'?'coil':'soft'):'fin';return CLADE_PRESETS.find(p=>p.id===id);} // the preset whose fixed numbers a spec takes: a coiled ringmouth the coilshell's, another ringmouth the soft-arm's, anything else the finback's
+function playerClade(spec,pre){ // the player's clade object from a spec (and its preset, if it is one): what player.js, combat.js and the rest read as player.clade
+  pre=pre||presetFor(spec);const st=statsOf(spec),base=SPECS[pre.spec],same=base&&base.clade===spec.clade,k=base&&base.size?spec.size/base.size:1;
+  return {id:pre.id,name:spec===base?pre.name:(spec.id&&spec.id!==pre.spec?spec.id:pre.name),spec:spec,preset:pre,build:()=>compile(spec),
+    speed:st.speed,accel:st.accel,turn:st.turn,mass:st.mass,bite:st.bite!==undefined?st.bite:Math.round(st.mass*3),size:spec.size,jet:!!st.jet,legs:!!st.legs, // bite for a spec without the lock: the lab's DEFS rule (specExport, dmg = mass × 3)
+    sprint:pre.sprint,jetImp:pre.jetImp,cam:pre.cam*k,venom:same?pre.venom:undefined,ability:same?pre.ability:null};
+}
+const CLADES=CLADE_PRESETS.map(p=>playerClade(SPECS[p.spec],p));
 let floor0=-1e9;for(let a=0;a<TAU;a+=0.3)for(let r=0;r<=16;r+=4)floor0=Math.max(floor0,sample(Math.cos(a)*r,Math.sin(a)*r).h);
 const dispY=floor0+4.5,spawnPos=V3(0,floor0+3,0);
 const player={clade:null,pos:V3(0,dispY,0),vel:V3(0,0,0),yaw:0,pitch:0,g:null,b:null,anim:null,inkT:0,withdrawn:false,cd:0,jetT:0,hurtT:0,lastHurt:-100,dead:true,pulse:0,spd:0,biteCD:0,sub:1,wet:true,grounded:false,flopT:0,camAbove:false,camFlipT:0,fp:false,
@@ -34,8 +47,8 @@ function die(cause){ // v11.55: a placed act (combat.js killBy) — swallowed, o
 function bite(){playerBite();} // v11.31: combat.js — a gulp, a mouthful of a carcass, or a wound (a tear on what you hold)
 function ability(){
   const P=player,C=P.clade;if(mode!=='play'||P.dead||!C||P.cd>0||P.paraT>0)return; // paralysed, nothing answers (v11.55)
-  if(C.id==='soft'){spawnInk(P.pos);P.inkT=6;P.cd=12;for(const c of creatures){if(c.target===player)dropTarget(c,6);}} // v11.31.1: dropTarget lets go of the arms too, not only the target
-  else if(C.id==='fin'){let hit=false;for(const c of creatures){if(!c.alive)continue;const r=c.def.role;if(!(r==='hunter'||r==='ambush'||r==='coil'))continue;if(c.pos.distanceTo(P.pos)<6+c.def.size*0.3){c.stun=2.5;T1.copy(c.pos).sub(P.pos).normalize();c.vel.addScaledVector(T1,9);dropTarget(c,5);hit=true;}}P.cd=hit?9:1.5;P.pulse=1;thump(0.7,60,25,null,0.25,0.12);}
+  if(C.ability==='ink'){spawnInk(P.pos);P.inkT=6;P.cd=12;for(const c of creatures){if(c.target===player)dropTarget(c,6);}} // v11.31.1: dropTarget lets go of the arms too, not only the target
+  else if(C.ability==='stun'){let hit=false;for(const c of creatures){if(!c.alive)continue;const r=c.def.role;if(!(r==='hunter'||r==='ambush'||r==='coil'))continue;if(c.pos.distanceTo(P.pos)<6+c.def.size*0.3){c.stun=2.5;T1.copy(c.pos).sub(P.pos).normalize();c.vel.addScaledVector(T1,9);dropTarget(c,5);hit=true;}}P.cd=hit?9:1.5;P.pulse=1;thump(0.7,60,25,null,0.25,0.12);}
 }
 // ink clouds (soft-arm ability)
 const inks=[],INKG=new THREE.SphereGeometry(1,7,5);
@@ -86,7 +99,7 @@ function updatePlayer(dt){
     mx=(keys.KeyD?1:0)-(keys.KeyA?1:0);mz=(keys.KeyW?1:0)-(keys.KeyS?1:0);my=(keys.Space?1:0)-(keys.KeyC?1:0);
     if(touchL){mx+=touchL.mx;mz+=touchL.mz;if(touchL.sprint)sprint=true;}
     if(keys.ShiftLeft||keys.ShiftRight)sprint=true;
-    P.withdrawn=C.id==='coil'&&(!!keys.KeyQ||touchAbility)&&!(P.paraT>0);
+    P.withdrawn=C.ability==='withdraw'&&(!!keys.KeyQ||touchAbility)&&!(P.paraT>0);
     if(P.withdrawn)sprint=false;
     P.sprint=sprint;
   }else{P.withdrawn=false;P.sprint=false;}

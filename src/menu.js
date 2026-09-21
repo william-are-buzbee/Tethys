@@ -32,8 +32,8 @@ function fmtAgo(ms){const s=(Date.now()-ms)/1000;return s<90?'just now':s<5400?M
 function fmtPlay(s){return s<3600?Math.max(1,Math.round(s/60))+' min':(s/3600).toFixed(1)+' h';}
 function menuSlots(){
   if(!saveList.length){mslotsEl.innerHTML='<div class="mdim">no saved games</div>';return;}
-  mslotsEl.innerHTML=saveList.map(r=>{const C=CLADES.find(c=>c.id===r.clade),conf=menu.confirm===r.id;
-    return '<div class="slot" data-id="'+escH(r.id)+'"><b>'+escH(r.name||'game')+'</b><span>'+escH(C?C.name:r.clade)+'</span><span>'+fmtPlay(+r.playT||0)+'</span><span>'+fmtAgo(+r.played||+r.made||Date.now())+'</span>'+(r.deaths&&r.deaths.length?'<span>'+r.deaths.length+' dead · '+escH(r.deaths[r.deaths.length-1].cause||'')+'</span>':'')+'<i data-act="export">export</i><i data-act="del"'+(conf?' class="warn"':'')+'>'+(conf?'sure?':'delete')+'</i></div>';}).join('');
+  mslotsEl.innerHTML=saveList.map(r=>{const C=CLADES.find(c=>c.id===r.clade),conf=menu.confirm===r.id,sp=r.spec&&typeof r.spec.id==='string'&&(!C||r.spec.id!==C.spec.id)?r.spec.id:''; // a spec that is no preset shows its own id (v11.68)
+    return '<div class="slot" data-id="'+escH(r.id)+'"><b>'+escH(r.name||'game')+'</b><span>'+escH(sp||(C?C.name:r.clade))+'</span><span>'+fmtPlay(+r.playT||0)+'</span><span>'+fmtAgo(+r.played||+r.made||Date.now())+'</span>'+(r.deaths&&r.deaths.length?'<span>'+r.deaths.length+' dead · '+escH(r.deaths[r.deaths.length-1].cause||'')+'</span>':'')+'<i data-act="export">export</i><i data-act="del"'+(conf?' class="warn"':'')+'>'+(conf?'sure?':'delete')+'</i></div>';}).join('');
 }
 function menuGo(fn){ // a quick fade to black round a change of world (a game starting, the menu coming back); the fade's own 1.8 s is the boot's and death's
   if(menu.busy)return;menu.busy=true;fadeEl.style.transition='opacity .35s';fadeEl.style.opacity=1;

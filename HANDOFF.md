@@ -1,5 +1,11 @@
 # HANDOFF — tethys
 
+**v11.68 (21 Sep 2026): the player as a spec.** `player.clade` is `playerClade(spec, preset)`: speed, accel, turn, mass and bite from `statsOf`, the
+few numbers derive has no term for (cam, jetImp, sprint, venom, the ability) on `CLADE_PRESETS`. The three presets' old hand numbers are
+`stats` locks on their SPECS, so they play identically (`test/player.js`); derive alone is loose (the finback 7.5 m/s and 1.7 t). The save
+stores the spec (`SAVE_V` 2; a version 1 record loads as its preset). Visible only in the lab: the presets' readout shows their locks.
+**Ask first** whether anything in play feels different (it should not).
+
 **v11.67.3 (20 Sep 2026): the lineage answered further, and the size ceiling raised.** **A life only ends in a death**: there is no
 hatch moment and no stepping out of a healthy body — you breed, you live, and when the animal dies you continue as one of its children
 if it left any (swapping while alive is left open for later, as an addition rather than a change). The editor opens at **conception**,

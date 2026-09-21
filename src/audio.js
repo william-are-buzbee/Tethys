@@ -152,7 +152,7 @@ function auTick(dt,P,play){
   const wind=Math.hypot(K.wind[0],K.wind[1])/WIND_U;auP(AU.wind.out.gain,B*0.1*wind*k,0.3);auP(AU.rainAir.out.gain,B*0.09*K.rainA*k,0.3);auP(AU.rainHush.out.gain,B*0.06*K.rainA*k,0.3);
   // the body: the flow past it (by speed, a swish on a turn), the finback's beat as a slow swell, the scrape on rock, the brush through weed
   if(play&&P.clade){const C=P.clade,vmax=C.speed*(C.sprint||1),yr=Math.abs(P.yaw-AU.lastYaw)/Math.max(dt,0.01);AU.lastYaw=P.yaw;
-    let s=clamp(P.spd/vmax,0,1.3)+clamp(yr*0.12,0,0.3);AU.ph+=dt*(1.1+P.spd*0.22);const beat=C.id==='fin'?0.7+0.3*Math.sin(AU.ph*TAU):1;
+    let s=clamp(P.spd/vmax,0,1.3)+clamp(yr*0.12,0,0.3);AU.ph+=dt*(1.1+P.spd*0.22);const beat=C.spec.clade==='slowbloods'?0.7+0.3*Math.sin(AU.ph*TAU):1;
     auP(AU.flow.out.gain,0.16*s*s*sub*beat,0.06);auP(AU.flow.f.frequency,180+1100*s,0.08);
     auP(AU.scrape.out.gain,P.hitRk&&P.spd>0.8?0.1*Math.min(1,P.spd/4)*(subK>0.5?1:0.6):0,0.05);auP(AU.scrape.f.frequency,subK>0.5?900:400,0.1);
     auP(AU.brush.out.gain,P.hitFl?0.09*Math.min(1,P.spd/3)+0.02:0,0.06);}

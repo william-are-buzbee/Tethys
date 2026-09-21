@@ -4467,3 +4467,37 @@ But a full life is a good place to start for each creature."*). Doc only; no cod
   but is not a body you can be. That is the one hole the death-only loop leaves: either the world runs on to the hatch, which is a skip
   of a different kind to the one struck, or an unhatched clutch does not count and the save ends.
 - **Unseen**: doc only, nothing to look at.
+
+## v11.68 — the player as a spec (21 Sep 2026)
+
+The first code of `LINEAGE.md` §13: before a child can carry the player's body, the player has to *be* a body. To v11.67 `CLADES`
+hand-typed speed, accel, turn, mass and bite, player.js never called `derive`, and the save stored a clade id. Now the player is built
+from any spec, and the three presets play on exactly the numbers they had.
+
+- **`playerClade(spec, preset)`** (player.js) makes the object the game reads as `player.clade`: speed, accel, turn, mass and `bite` from
+  `statsOf(spec)` — derive with the spec's `stats` locks over it — `size` the spec's, `jet` and `legs` derive's. **`CLADE_PRESETS`** keeps
+  only what derive has no term for: `cam` (the third-person arm, scaled by the spec's size against the preset's), `jetImp`, `sprint`,
+  `venom`, and the `ability` (ink, stun, withdraw). `CLADES` is the three presets built through it, so every old reader still works.
+- **The old numbers are locks**: `SPECS.soft/fin/coil` carry `stats` (speed/accel/turn/mass/bite soft 7.0/3.2/7/5/9, fin 8.8/2.6/4.5/7/26,
+  coil 4.6/1.5/3/8/6). Derive alone would give the finback 7.5 m/s, 2.01, 3.08 and **1.7 t against 7** — its calibration against the
+  hand numbers is loose, which is worth knowing before the creator is the start: a spec with no locks plays on derive's numbers.
+- **A spec that is no preset** takes its fixed numbers from `presetFor` (a coiled ringmouth the coilshell's, another ringmouth the
+  soft-arm's, anything else the finback's); the ability and the venom only if its clade is the preset's, so a hingeshell has none; its
+  bite without a lock is `mass × 3`, the lab's own `dmg` rule (`specExport`). The id stays the preset's, so the crusher's `preyClade:'coil'`
+  and `PLAYER_GRIP` read it as before.
+- **The readers moved off the clade id** onto the spec where the id stood for the body: `cladeOf(player)` is the spec's clade (the finback's
+  test was `id==='fin'`), the gulp by gape is any slowblood's, `specOf(player)` is the player's own spec (so a wound edits *that* build),
+  the swim sound's tail beat is any slowblood's, the ability switches on `C.ability`. Identical for the three presets.
+- **The save stores the spec**: `SAVE_V` 2, the record's `spec` beside `clade` (the preset's id); `cladeOfRec` builds the saved spec, and a
+  version 1 record — or a spec that no longer compiles (`specOk`, warned) — loads as the preset its clade id names. The continue list shows
+  a spec's own id when it is no preset's.
+- **Tests**: `test/player.js` (new, in `--test` on both tiers) — each preset's speed, accel, turn, mass, bite, cam, size, jet, jetImp,
+  sprint and venom against the literal CLADES numbers of v11.67, a non-preset spec (the sickle) on derive's, the spec through the save,
+  a version 1 record and a broken spec to their presets, the finback's round trip. `test/smoke.js` swims a fourth run as the sickle
+  (no ability, derive's 10.8 m/s): 256 m out, bites, grabs, the mouse, a death and the respawn. Green on both tiers.
+- **Seen** (dev.html in the pane): a new game is the finback at the peak with 8.8, 4.5 and the 7.5 m arm, as before. The sickle as the player
+  swims at 10.8 m/s with a 20.8 m arm (7.5 × its size against the finback's). **One visible change, in the lab only**: loading the soft-arm,
+  the finback or the coilshell shows their four readout numbers as locks (checked, the old values in the fields), and `p` places them at
+  those numbers; the lab's caption still shows derive's.
+- **Unseen, ask in this order**: nothing in play should differ — if the finback feels any different at all, that is a bug here. Then
+  whether a spec that is no preset should get the finback's sprint and arm by default or something the calculator says.

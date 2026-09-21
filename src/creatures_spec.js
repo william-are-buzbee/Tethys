@@ -3202,6 +3202,7 @@ const SPECS = {
     clade: 'ringmouths',
     size: 1.6,
     s: 1.0,
+    stats: {speed: 7.0, accel: 3.2, turn: 7, mass: 5, bite: 9}, // v11.68: the player preset's hand numbers (CLADES to v11.67) as locks over derive; bite: the bite's size for the blood and the debris
     coat: 'softP',
     core: {kind: 'mantle', L: 2.5, R: 0.6, beat: [1.8, 0.45]},
     parts: [
@@ -3236,6 +3237,7 @@ const SPECS = {
     clade: 'ringmouths',
     size: 1.5,
     s: 1.0,
+    stats: {speed: 4.6, accel: 1.5, turn: 3, mass: 8, bite: 6}, // v11.68: the player preset's hand numbers (CLADES to v11.67) as locks over derive; bite: the bite's size for the blood and the debris
     coat: 'coilP',
     core: {kind: 'coilbody', R: 0.46, z: 0.15, beat: [2.2, 1]},
     parts: [
@@ -3313,6 +3315,7 @@ const SPECS = {
     clade: 'slowbloods',
     size: 1.8,
     s: 1.05,
+    stats: {speed: 8.8, accel: 2.6, turn: 4.5, mass: 7, bite: 26}, // v11.68: the player preset's hand numbers (CLADES to v11.67) as locks over derive; bite: the bite's size for the blood and the debris
     coat: 'finP',
     core: {kind: 'lathe', prof: FIN_PROF, segs: 8, beat: [1.5, 0.9]},
     parts: [

@@ -2,7 +2,7 @@
 """Builds the game and the name index.
 
   python3 build.py          tethys.html (single file, everything inlined), dev.html (loads src/*.js separately), src/INDEX.md
-  python3 build.py --test   the same, then node test/lint.js, node test/physics.js, node test/anim.js, node test/audio.js, node test/snow.js, node test/combat.js, node test/pool.js, node test/census.js 40, node test/live.js and node test/smoke.js on both tiers; exit 1 on any failure
+  python3 build.py --test   the same, then node test/lint.js, node test/physics.js, node test/anim.js, node test/audio.js, node test/snow.js, node test/combat.js, node test/pool.js, node test/census.js 40, node test/player.js, node test/live.js and node test/smoke.js (player, live and smoke on both tiers); exit 1 on any failure
 
 Build order comes from src/order.txt. src/INDEX.md is generated: every top-level name, its file and line, and which other
 files use it. Do not edit INDEX.md by hand; it is rewritten on every build.
@@ -101,7 +101,7 @@ print('built tethys.html, dev.html, src/INDEX.md (%d files, %d top-level names)'
 # ---------- tests ----------
 if '--test' in sys.argv:
     ok = True
-    for cmd, env in [(['node', 'test/lint.js'], {}), (['node', 'test/physics.js'], {}), (['node', 'test/anim.js'], {}), (['node', 'test/audio.js'], {}), (['node', 'test/snow.js'], {}), (['node', 'test/combat.js'], {}), (['node', 'test/pool.js'], {}), (['node', 'test/census.js', '40'], {}), (['node', 'test/live.js'], {}), (['node', 'test/live.js'], {'TIER': 'low'}), (['node', 'test/smoke.js'], {}), (['node', 'test/smoke.js'], {'TIER': 'low'})]:
+    for cmd, env in [(['node', 'test/lint.js'], {}), (['node', 'test/physics.js'], {}), (['node', 'test/anim.js'], {}), (['node', 'test/audio.js'], {}), (['node', 'test/snow.js'], {}), (['node', 'test/combat.js'], {}), (['node', 'test/pool.js'], {}), (['node', 'test/player.js'], {}), (['node', 'test/player.js'], {'TIER': 'low'}), (['node', 'test/census.js', '40'], {}), (['node', 'test/live.js'], {}), (['node', 'test/live.js'], {'TIER': 'low'}), (['node', 'test/smoke.js'], {}), (['node', 'test/smoke.js'], {'TIER': 'low'})]:
         print('\n$ ' + ' '.join(('%s=%s ' % kv for kv in env.items())) + ' '.join(cmd))
         r = subprocess.run(cmd, cwd=ROOT, env={**os.environ, **env})
         ok = ok and r.returncode == 0
