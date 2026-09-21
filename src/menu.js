@@ -33,7 +33,7 @@ function fmtPlay(s){return s<3600?Math.max(1,Math.round(s/60))+' min':(s/3600).t
 function menuSlots(){
   if(!saveList.length){mslotsEl.innerHTML='<div class="mdim">no saved games</div>';return;}
   mslotsEl.innerHTML=saveList.map(r=>{const C=CLADES.find(c=>c.id===r.clade),conf=menu.confirm===r.id,sp=r.spec&&typeof r.spec.id==='string'&&(!C||r.spec.id!==C.spec.id)?r.spec.id:''; // a spec that is no preset shows its own id (v11.68)
-    return '<div class="slot" data-id="'+escH(r.id)+'"><b>'+escH(r.name||'game')+'</b><span>'+escH(sp||(C?C.name:r.clade))+'</span><span>'+fmtPlay(+r.playT||0)+'</span><span>'+fmtAgo(+r.played||+r.made||Date.now())+'</span>'+(r.deaths&&r.deaths.length?'<span>'+r.deaths.length+' dead · '+escH(r.deaths[r.deaths.length-1].cause||'')+'</span>':'')+'<i data-act="export">export</i><i data-act="del"'+(conf?' class="warn"':'')+'>'+(conf?'sure?':'delete')+'</i></div>';}).join('');
+    return '<div class="slot" data-id="'+escH(r.id)+'"><b>'+escH(r.name||'game')+'</b><span>'+escH(sp||(C?C.name:r.clade))+'</span>'+(Array.isArray(r.line)&&r.line.length>1?'<span>gen '+r.line.length+'</span>':'')+'<span>'+fmtPlay(+r.playT||0)+'</span>'+(r.over?'<span>the line ended</span>':'')+'<span>'+fmtAgo(+r.played||+r.made||Date.now())+'</span>'+(r.deaths&&r.deaths.length?'<span>'+r.deaths.length+' dead · '+escH(r.deaths[r.deaths.length-1].cause||'')+'</span>':'')+'<i data-act="export">export</i><i data-act="del"'+(conf?' class="warn"':'')+'>'+(conf?'sure?':'delete')+'</i></div>';}).join('');
 }
 function menuGo(fn){ // a quick fade to black round a change of world (a game starting, the menu coming back); the fade's own 1.8 s is the boot's and death's
   if(menu.busy)return;menu.busy=true;fadeEl.style.transition='opacity .35s';fadeEl.style.opacity=1;
@@ -43,7 +43,7 @@ function choose(c,pos,yaw,pitch){ // into play as clade c (an index or the clade
   const C=typeof c==='number'?CLADES[c]:c;
   playerBody(C,pos||V3(0,dispY,0),yaw,pitch);cellsAround();
   mode='play';menuEl.classList.add('gone');fxShow(false);
-  hintEl.textContent=isTouch?'left side: drag to swim. right side: drag to look, tap to bite, hold to grab. two fingers: ability':'w a s d swim, space rise, c dive, shift burst, q ability, click bite, right button or r hold, f first person, tab cursor, m mute, esc menu';
+  hintEl.textContent=isTouch?'left side: drag to swim. right side: drag to look, tap to bite, hold to grab. two fingers: ability':'w a s d swim, space rise, c dive, shift burst, q ability, x lay, click bite, right button or r hold, f first person, tab cursor, m mute, esc menu';
   hintEl.style.opacity=1;setTimeout(()=>{hintEl.style.opacity=0;},10000);
   saveT=SAVE_EVERY;initAudio();tryLock();
 }
@@ -63,6 +63,7 @@ mslotsEl.addEventListener('click',e=>{
   const id=el.dataset.id,rec=saveList.find(r=>r.id===id);if(!rec)return;
   if(act==='del'){if(menu.confirm===id){menu.confirm=null;storeDel(id,()=>{saveRefresh(menuSlots);});}else{menu.confirm=id;menuSlots();}}
   else if(act==='export')fileSave((rec.name||'game').replace(/[^\w-]+/g,'_')+'.tethys.json',JSON.stringify(rec));
+  else if(rec.over)menuNote('this line has ended'); // v11.69: no living child at the last death — the slot is kept to look at (the shrine, later), never continued
   else menuGo(()=>{startFrom(rec);});
 });
 addEventListener('keydown',e=>{if(e.code!=='Escape'||e.defaultPrevented)return;if(mode==='play'&&!locked&&!player.dead)toMenu();else if(mode==='menu'&&menu.page==='saves')menuPage('main');}); // effects.js takes esc first when its list is open (and prevents the default); with the pointer locked the browser keeps the first esc for the lock

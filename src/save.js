@@ -6,7 +6,7 @@
 // (ecology.js POP), so a save is the ledger's five tables and the clock; the loaded cells are counted into the tables as the tick counts them
 // (the living, and the eggs). What a cell drew — carcasses, wounds, a school's shape — is not kept, as it is not kept across an unload either.
 // A save is written every SAVE_EVERY seconds of play, on leaving to the menu (menu.js toMenu) and when the page is hidden.
-const SAVE_V=2,SAVE_EVERY=30,SEEN_R=30; // the record format's version (2, v11.68: the player's spec on the record; a 1 has only the clade id and loads as its preset); seconds of play between autosaves; m: a species drawn nearer than this in play is seen
+const SAVE_V=3,SAVE_EVERY=30,SEEN_R=30; // the record format's version (2, v11.68: the player's spec on the record; a 1 has only the clade id and loads as its preset. 3, v11.69: the line — line.js — and `over`, the save ended; an older record's animal is its line's founder); seconds of play between autosaves; m: a species drawn nearer than this in play is seen
 // ---------- the store ----------
 // Callbacks, not promises: the localStorage and memory backends answer synchronously, which is what the headless tests need (their frames are
 // driven by hand and no microtask ever runs between them); IndexedDB answers when it does.
@@ -54,7 +54,7 @@ function rle(a){const o=[],n=a.length;let i=0;while(i<n){const v=r3(a[i]);let k=
 function unrle(a){if(!Array.isArray(a))return null;const o=[];for(const t of a){if(Array.isArray(t)){for(let k=0;k<t[1];k++)o.push(t[0]);}else o.push(t);}return o;}
 function popRows(){ // the ledger's tables as arrays, the loaded cells counted as ecoTick counts them (creatures alive on the ledger, and the eggs)
   const n=POP.n.map(a=>Array.from(a,r3));
-  for(const ch of chunks.values()){const c=ch.i*NCELL+ch.j;if(!POP.done[c])continue;const cnt=new Float32Array(SPAWN.length);for(const o of ch.creatures)if(o.alive&&o.ent>=0)cnt[o.ent]+=1;for(const g of ch.eggs)cnt[g.ent]+=g.n;for(let ei=0;ei<SPAWN.length;ei++)n[ei][c]=r3(cnt[ei]/Q.creatures);}
+  for(const ch of chunks.values()){const c=ch.i*NCELL+ch.j;if(!POP.done[c])continue;const cnt=new Float32Array(SPAWN.length);for(const o of ch.creatures)if(o.alive&&o.ent>=0)cnt[o.ent]+=1;for(const g of ch.eggs)if(g.ent>=0)cnt[g.ent]+=g.n;for(let ei=0;ei<SPAWN.length;ei++)n[ei][c]=r3(cnt[ei]/Q.creatures);}
   const R=T=>T.map(rle);
   return {ents:SPAWN.map(e=>e.kind),n:R(n),k:R(POP.k),ke:R(POP.ke),cd:R(POP.cd),ow:R(POP.ow),done:rle(POP.done),last:POP.last,tally:[POP.births,POP.deaths,POP.kills,POP.starved,POP.eaten,POP.recruits,POP.laid,POP.hatched]};
 }
@@ -73,10 +73,11 @@ function popLoad(p){ // the ledger from a record; a save from another roster (SP
 }
 function saveRecord(){ // the game as it stands, as a record for the store
   const P=player,s=curSave;
-  return {id:s.id,kind:'save',v:SAVE_V,name:s.name,made:s.made,played:Date.now(),playT:Math.round(playT),clade:P.clade.id,spec:JSON.parse(specToJSON(P.clade.spec)),pos:[r3(P.pos.x),r3(P.pos.y),r3(P.pos.z)],yaw:r3(P.yaw),pitch:r3(P.pitch),deaths:s.deaths||[],arms:P.armsLost||0,regrow:(P.regrow||[]).map(r3),bleed:r3(P.bleed||0),lost:(P.lost||[]).slice(),t:r3(t),pop:popRows()}; // arms, regrow, bleed (v11.56): the animal's injuries — a dropped arm is still dropped when you come back, and regrows by the world's clock // deaths (v11.55): the slot's animals that died, {cause, day, playT}
+  return {id:s.id,kind:'save',v:SAVE_V,name:s.name,made:s.made,played:Date.now(),playT:Math.round(playT),clade:P.clade.id,spec:JSON.parse(specToJSON(P.clade.spec)),pos:[r3(P.pos.x),r3(P.pos.y),r3(P.pos.z)],yaw:r3(P.yaw),pitch:r3(P.pitch),deaths:s.deaths||[],arms:P.armsLost||0,regrow:(P.regrow||[]).map(r3),bleed:r3(P.bleed||0),lost:(P.lost||[]).slice(),t:r3(t),line:lineOut(),over:!!s.over,pop:popRows()}; // arms, regrow, bleed (v11.56): the animal's injuries — a dropped arm is still dropped when you come back, and regrows by the world's clock // deaths (v11.55): the slot's animals that died, {cause, day, playT}
 }
+function lineOut(){const L=curSave.line;if(!L)return [];for(const M of L)for(const b of M.broods)if(b._ch)b.n=b.hatched?broodLive(b):b._egg?b._egg.n:0;return JSON.parse(JSON.stringify(L,(k,v)=>k[0]==='_'?undefined:v));} // the line as data (line.js): the loaded broods counted first, the runtime links dropped
 function saveNow(){if(!curSave||mode!=='play'||player.dead||!player.clade)return false;camNote();const rec=saveRecord();curSave.played=rec.played;curSave.playT=rec.playT;storePut(rec);if(profileDirty)profileSave();saveT=SAVE_EVERY;return true;}
-function updateSave(dt){if(mode!=='play'||!curSave)return;playT+=dt;saveT-=dt;if(saveT<=0)saveNow();}
+function updateSave(dt){if(mode!=='play'||!curSave)return;playT+=dt;lineTick(dt);saveT-=dt;if(saveT<=0)saveNow();}
 function saveRefresh(cb){ // the slots read again; first, a shadow the page left on its way out (saveShadow) goes into the store — it is the latest state of that slot, nothing later can exist
   let sh=null;try{const ls=window.localStorage,s=ls&&ls.getItem('tethys.last');if(s){ls.removeItem('tethys.last');sh=JSON.parse(s);}}catch(e){}
   const go=()=>storeAll(rs=>{saveList=rs.filter(r=>r&&r.kind==='save'&&r.pop).sort((a,b)=>(b.played||b.made||0)-(a.played||a.made||0));if(cb)cb();});
@@ -92,7 +93,7 @@ function saveName(){let n=0;for(const r of saveList){const m=/^game (\d+)$/.exec
 function saveImport(txt,cb){ // a file back in (menu.js): checked as far as the shape goes, given a new id if its own is taken, stored
   let r=null;try{r=JSON.parse(txt);}catch(e){}
   if(!r||r.kind!=='save'||!r.pop||typeof r.clade!=='string'){if(cb)cb(null);return;}const sp=specOk(r.spec);
-  const rec={id:typeof r.id==='string'&&!saveList.some(s=>s.id===r.id)?r.id:'s'+Date.now().toString(36),kind:'save',v:+r.v||SAVE_V,name:typeof r.name==='string'?r.name.slice(0,40):saveName(),made:+r.made||Date.now(),played:+r.played||Date.now(),playT:+r.playT||0,clade:r.clade,spec:sp||undefined,pos:Array.isArray(r.pos)?r.pos.slice(0,3).map(v=>+v||0):[0,dispY,0],yaw:+r.yaw||0,pitch:+r.pitch||0,deaths:Array.isArray(r.deaths)?r.deaths.slice(-50):[],arms:Math.max(0,+r.arms||0),regrow:Array.isArray(r.regrow)?r.regrow.map(v=>+v||0):[],bleed:Math.max(0,+r.bleed||0),lost:Array.isArray(r.lost)?r.lost.map(v=>v|0):[],t:Math.max(0,+r.t||0),pop:r.pop};
+  const rec={id:typeof r.id==='string'&&!saveList.some(s=>s.id===r.id)?r.id:'s'+Date.now().toString(36),kind:'save',v:+r.v||SAVE_V,name:typeof r.name==='string'?r.name.slice(0,40):saveName(),made:+r.made||Date.now(),played:+r.played||Date.now(),playT:+r.playT||0,clade:r.clade,spec:sp||undefined,pos:Array.isArray(r.pos)?r.pos.slice(0,3).map(v=>+v||0):[0,dispY,0],yaw:+r.yaw||0,pitch:+r.pitch||0,deaths:Array.isArray(r.deaths)?r.deaths.slice(-50):[],arms:Math.max(0,+r.arms||0),regrow:Array.isArray(r.regrow)?r.regrow.map(v=>+v||0):[],bleed:Math.max(0,+r.bleed||0),lost:Array.isArray(r.lost)?r.lost.map(v=>v|0):[],t:Math.max(0,+r.t||0),line:Array.isArray(r.line)?r.line:undefined,over:!!r.over,pop:r.pop};
   storePut(rec,()=>{saveRefresh(()=>{if(cb)cb(rec);});});
 }
 // ---------- the world in and out ----------
@@ -111,25 +112,33 @@ function playerDrop(){const P=player;if(!P.g)return;releaseAll(P);for(const c of
 function startNew(C){ // a new game (menu.js): a fresh ledger, the clock at boot, the player at the peak as the clade, a new slot written at once so continue lists it
   worldClear();ecoReset();t=0;clockH=0;TIDE=tideAt(0);
   curSave={id:'s'+Date.now().toString(36)+Math.floor(Math.random()*1296).toString(36),name:saveName(),made:Date.now(),played:Date.now(),playT:0};playT=0;
-  choose(C);saveNow();saveRefresh();
+  lineStart(C);choose(C);saveNow();saveRefresh();
 }
 function startFrom(rec){ // continue a slot (menu.js): the clock and the ledger as saved, the player where it was
-  const C=cladeOfRec(rec);
+  if(rec.over)return false; // the line ended (v11.69): nothing to continue as
+  let C=cladeOfRec(rec);
   worldClear();t=Math.max(0,+rec.t||0);clockH=t*CLOCK_RATE;TIDE=tideAt(clockH);popLoad(rec.pop);
   curSave={id:rec.id,name:rec.name,made:rec.made,played:rec.played,playT:+rec.playT||0,deaths:Array.isArray(rec.deaths)?rec.deaths.slice():[]};playT=curSave.playT;
+  lineLoadRec(rec,C);const L=lineCur();if(L&&t<L.grown)C=lifeClade(L,ECO.juv); // the line (line.js); a hatchling still small
   const p=Array.isArray(rec.pos)?V3(+rec.pos[0]||0,+rec.pos[1]||0,+rec.pos[2]||0):V3(0,dispY,0);if(Math.abs(p.x)>HALF+1500||Math.abs(p.z)>HALF+1500)p.set(0,dispY,0);
-  choose(C,p,rec.yaw,rec.pitch);injuriesLoad(rec);
+  choose(C,p,rec.yaw,rec.pitch);injuriesLoad(rec);return true;
 }
+// the body swapped in place (v11.69: a hatchling grown, line.js lineTick): where it is, moving as it was, its wounds kept, the camera left where it is
+function playerRebody(C){const P=player,pos=P.pos.clone(),vel=P.vel.clone(),cam=camera.position.clone(),fp=P.fp,inj={arms:P.armsLost,regrow:P.regrow?P.regrow.slice():[],bleed:P.bleed,lost:P.lost?P.lost.slice():[]};
+  playerBody(C,pos,P.yaw,P.pitch);P.vel.copy(vel);camera.position.copy(cam);injuriesLoad(inj);if(fp){P.fp=true;ghostBody(P.g,true);}}
 // the player's body from a record (v11.68): its spec when it has one that compiles, else (a version 1 record, or a spec that no longer compiles) the preset its clade id names
 function specOk(sp){if(!sp||typeof sp!=='object'||!sp.core||!sp.clade||!Array.isArray(sp.parts))return null;try{const b=compile(sp);b.g.traverse(o=>{if(o.geometry)o.geometry.dispose();});statsOf(sp);return sp;}catch(e){console.warn('save: the player spec does not compile ('+e.message+'); the preset instead');return null;}}
 function cladeOfRec(rec){const pre=CLADE_PRESETS.find(p=>p.id===rec.clade),sp=specOk(rec.spec);if(sp)return playerClade(sp,pre);return CLADES.find(c=>c.id===rec.clade)||CLADES[1];}
 function injuriesLoad(rec){const P=player;P.armsLost=Math.max(0,+rec.arms||0);P.regrow=Array.isArray(rec.regrow)&&rec.regrow.length?rec.regrow.map(v=>+v||0):null;P.bleed=Math.max(0,+rec.bleed||0);const rig=armsOf(P);if(rig){const n=Math.min(P.armsLost,Math.max(0,rig.chains.length-AUTOTOMY.keep));P.armsLost=n;rig.chains.forEach((c,i)=>{c.gone=i<n;c.grow=0;});}else P.armsLost=0;if(P.armsLost)armsLive(P);for(const pi of (Array.isArray(rec.lost)?rec.lost:[]))losePart(P,pi|0,null,null,true);} // the saved injuries back on the body (v11.56)
-// the slot's animal is dead (v11.55, COMBAT.md §9; the person, 15 Sep 2026: the slot ends): the death is written to the slot with the world as it
-// stands, the next animal waits at the peak, and the menu comes back from the spot of the death with the cause as its note. Continue starts it
+// the slot's animal is dead (v11.55, COMBAT.md §9). Since v11.69 (LINEAGE §4.5): the death is written to the life and the slot, and you continue
+// as the nearest living child of this life (line.js lineNext: an unhatched clutch counts, and the world runs on to its hatch). None, and the
+// save is over (the person, 20 Sep 2026: "There is no grace"): the slot is written ended, the menu says so, and continue refuses it.
 function slotDeath(cause){const s=curSave;if(!s||mode!=='play')return;(s.deaths||(s.deaths=[])).push({cause:cause||'',day:+(clockH/DAY_H).toFixed(1),playT:Math.round(playT)});
-  const rec=saveRecord();rec.pos=[0,dispY,0];rec.yaw=0;rec.pitch=0;rec.arms=0;rec.regrow=[];rec.bleed=0;rec.lost=[];storePut(rec);if(profileDirty)profileSave();curSave=null;unlock();
+  const L=lineCur();if(L){L.died=r3(t);L.cause=cause||'';}
+  const x=lineNext(player.pos);if(x){lineContinue(x,cause);return;}
+  s.over=true;const rec=saveRecord();storePut(rec);if(profileDirty)profileSave();curSave=null;unlock();
   const shot=camNow();playerDrop();mode='menu';worldClear();menuCam(shot);cellsAround();menuEl.classList.remove('gone');menuPage('main');menuRise(MENU_RISE_BACK);hintEl.style.opacity=0;menuRefresh();
-  setTimeout(()=>{fadeEl.style.opacity=0;},400);menuNote(cause||'dead');}
+  setTimeout(()=>{fadeEl.style.opacity=0;},400);menuNote((cause||'dead')+'. no young: the line ends');}
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')saveNow();});
 addEventListener('pagehide',()=>{saveNow();saveShadow();});addEventListener('beforeunload',()=>{saveShadow();});
 document.addEventListener('pointerlockchange',()=>{if(mode==='play'&&!document.pointerLockElement)saveNow();}); // the first esc from locked play frees the pointer (the browser keeps that esc): save there, so a close right after it loses nothing (v11.47.1)

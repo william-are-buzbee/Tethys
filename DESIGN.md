@@ -1365,8 +1365,8 @@ a gape swallows from the body only. A dropped arm keeps `RIG_STUMP` 1 segment an
 gone the first back); a tail never regrows. The commit coasts (`c.vel × (1−3·dt)`) so the bite lands where aimed. The far bake is shared per
 kind, so a lost part shows again past `lodNear`. **Autotomy** (automatic): a ringmouth about to be pinned by a jaw or claws drops the held arm (`c.gone`: the chain's frames
 collapse to its base in `rigSkin`), the hold goes with it, the holder keeps it (`AUTOTOMY.cool` 6 s), the arm regrows in `AUTOTOMY.regrow` 5
-game days, never the last `keep` 2. **Death ends the slot's animal** (save.js `slotDeath`): the cause on the slot, the menu from the spot with
-the cause as its note, continue a new animal at the peak in the same world. `GRIP.first/bite/bleed` are a bite's size for the blood and the
+game days, never the last `keep` 2. **Death ends the slot's animal** (save.js `slotDeath`): the cause on the slot and on the life; since v11.69
+you continue as the nearest living child ([The player](#the-player), the line), and with none the menu comes back from the spot with the cause and "no young: the line ends" as its note, the slot ended. `GRIP.first/bite/bleed` are a bite's size for the blood and the
 debris now. On paper (`test/combat.js`): the eel pins the finback 0.73 s after the hold and tears it open at 1.6 s; the crusher, stone,
 basker, ridge and abyssal swallow it 0.7 s into the hold; the sickle skewers it; the lurker and the ortho bite the nerve cord; the trap and
 the hook let go.
@@ -1571,7 +1571,7 @@ far LOD), `setLOD`, steering, one `updateX` per role, `updateCreatures()`.
   at the peak, a new slot `game N` written at once), `continue` (the slots newest first: name, clade, time played, when; click loads
   `startFrom`; `export` a .json; `delete` asks `sure?` once; `import a file`), `options` (the effects list), `creator` (the lab as the player's,
   once `PROFILE.creator` — opening the lab at all grants it, or `#creator`). Esc in play with the pointer free saves and returns (`toMenu`; with
-  the pointer locked the browser keeps the first esc, so twice). A save record (`SAVE_V` 2 since v11.68): the player (clade — the preset's id, spec — the whole spec its body is built from, pos, yaw, pitch; a version 1 record, or a spec that no longer compiles, loads as the preset its clade id names: `cladeOfRec`), `t`, and the ledger's
+  the pointer locked the browser keeps the first esc, so twice). A save record (`SAVE_V` 3 since v11.69 — the line and `over`; 2 since v11.68): the player (clade — the preset's id, spec — the whole spec its body is built from, pos, yaw, pitch; a version 1 record, or a spec that no longer compiles, loads as the preset its clade id names: `cladeOfRec`), `t`, and the ledger's
   `n/k/ke/cd/ow`, `done`, `last`, the tally — the loaded cells counted as `ecoTick` counts them (`popRows`), run-length coded since v11.58
   (`rle`/`unrle`: a run of k equal values is `[v,k]`; 0.30 MB and 28 ms for 14,400 cells, raw was 6.6 MB and 105 ms; an older raw record decodes as itself). Stored in IndexedDB
   (`tethys`/`kv`; localStorage, then memory, as fallbacks; callbacks not promises so the headless tests can drive it; `navigator.storage.persist`
@@ -1669,9 +1669,26 @@ lists, not 37 entries' worth. The paper census (`ecoGen`, 32 cells a frame) take
 its impulse `jetImp` delivered as a thrust over the first `JET_W` 0.18 s of the cycle (v10.8; one frame before, which whipped the
 arms). Faces its velocity when moving (and its arc when
 airborne). Terrain: gentle slopes clamp you up, steep walls push you back horizontally (`solidPush`, then the floor clamp, then
-the pads; bodies and arms in `creatures_ai.js` after the creatures have moved, then `finishPlayer`: pose, arms, camera). Death = fade to black, respawn at the peak. The bite and the grab are [Combat](#combat) (v11.31): the bite gulps small forage (heals), eats
+the pads; bodies and arms in `creatures_ai.js` after the creatures have moved, then `finishPlayer`: pose, arms, camera). Death = fade to black; in a slot, you continue as a child (the line, below) or the save is over; without one (the tests, the lab) the respawn at the peak. The bite and the grab are [Combat](#combat) (v11.31): the bite gulps small forage (heals), eats
 at a carcass, or wounds; the grab (right mouse, r) holds. The player's food is arrow squid, needles and scuttlers, and what it kills. Open question, never answered: should clades differ in *what they can reach* (crevices for soft-arm,
 surface air for finback)? Any persistence, or is a clean cold start the point?
+
+**The line (v11.69, `line.js`; LINEAGE.md §13.1–2).** The slot carries `line`, a list of lives, the last the one played: `{spec, preset, born, grown, died,
+cause, playT, parent, track, lay, broods}` — times on the world clock `t`, `track` a sample every `LINE.trackS` 5 s of play run-length coded (`[x,y,z]`,
+`[x,y,z,k]` for k equal ones). **Laying** (`x`, `playerLay`): a slowblood, grown, on the floor under water (`LINE.near` 3 m, the floor below −4 m, clear of
+solids), `LINE.cool` 0.2 game days since its last clutch — the cost is that cooldown until the player has hunger; `LINE.n` 4 eggs, the world's clutch mesh
+(`eggGeo`, `MATT`) hatching after `ECO.hatch`·mass^¼ days (0.39 for the finback). **A brood** is a record on the life that laid it, `{cell, pos, n, born,
+hatch, spec, hatched, at}`, and the truth about the clutch: loaded, it is an egg outside the ledger (`ent` −1, eaten down by scavengers like any clutch) or
+its young — `ent` −1 creatures of a kind per spec (`lineKind`: `line:<hash>`, the player's numbers, a hunter of `LINE_PREY` arrow, needle, scuttle; hunted
+by whatever has the player on its prey list, `preyOn`), juveniles at `ECO.juv` until `ECO.grow`·mass^¼ days — and n follows them (`broodLive`, every
+second); unloaded, n falls by `BROOD_SURVIVE` 0.8 a game day (`broodCatchUp`, lazily) and the hatch goes by the clock — the stand-in for §8's sparse
+ledger entries. `lineLoad`/`lineUnload` (chunks.js) put a brood back or count it. **Death** (`slotDeath` → `lineNext`): the nearest living child of the
+life that died — a young in a loaded cell, a clutch, an unloaded brood with n ≥ ½; an unhatched clutch runs the world on to its hatch (`worldClear`, the
+clock to `hatch`, the model catching up over its next ticks). `lineContinue`: the child's place and age (a juvenile body is `playerClade(spec, preset,
+ECO.juv)`: size and mass and bite scaled as `scaledDef` scales, the body compiled at that scale; it grows up in one step at `grown`, `playerRebody`), a new
+life with the parent's index, the save written. No child: `over` on the slot, the menu's note, `continue` refused. Only the life's own broods count (LINEAGE §4); the
+earlier lives' still load as animals of the world. **The sparkle** (`updateSpark`, the canvas `#spark` over the fade): a four-point star (`starPath`, the
+mark) with a 16-point trail comes down from high in the view onto the child over 1.2 s, flickers there and goes — 2.2 s, at the handover only (§7's rule).
 
 ## The body's effects
 

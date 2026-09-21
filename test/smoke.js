@@ -18,7 +18,7 @@ js+='\nglobal.__zoo={n:()=>ROSTER.length,mode:()=>mode,specs:()=>Object.keys(SPE
 js+='\nglobal.__start=(i)=>{if(i<CLADES.length){choose(i);return;}const sp=JSON.parse(JSON.stringify(SPECS.sickle));sp.id="smoke";choose(playerClade(sp));};'; // v11.47: the bare start (menu.js choose) for the clades the menu no longer offers; stub.js __run. v11.68: pick 3 is a spec that is no preset (the sickle, a hingeshell: no ability, derive's numbers)
 js+='\nglobal.__clade=()=>({id:player.clade.id,spec:player.clade.spec.id,speed:player.clade.speed,ability:player.clade.ability});';
 // the saves (v11.47): the slot the menu wrote, esc to the menu, continue from the list, and what came back
-js+='\nglobal.__save={slots:()=>saveList.map(r=>({id:r.id,name:r.name,clade:r.clade,playT:r.playT,deaths:(r.deaths||[]).length})),cur:()=>curSave&&curSave.id,now:()=>saveNow(),menu:()=>{const h=global.__h;h["win:keydown"].forEach(f=>f({code:"Escape",preventDefault(){}}));},cont:(id)=>{saveRefresh();const r=saveList.find(r=>r.id===id);if(!r)throw new Error("no slot "+id);startFrom(r);},del:(id)=>{storeDel(id);saveRefresh();},t:()=>t,pop:()=>{let s=0;for(const N of POP.n)for(let c=0;c<N.length;c++)s+=N[c];return s;},seen:()=>PROFILE.seen.sp.length,creator:()=>PROFILE.creator,locked:()=>locked};';
+js+='\nglobal.__save={slots:()=>saveList.map(r=>({id:r.id,name:r.name,clade:r.clade,playT:r.playT,deaths:(r.deaths||[]).length,over:!!r.over})),cur:()=>curSave&&curSave.id,now:()=>saveNow(),menu:()=>{const h=global.__h;h["win:keydown"].forEach(f=>f({code:"Escape",preventDefault(){}}));},cont:(id)=>{saveRefresh();const r=saveList.find(r=>r.id===id);if(!r)throw new Error("no slot "+id);return startFrom(r);},del:(id)=>{storeDel(id);saveRefresh();},t:()=>t,pop:()=>{let s=0;for(const N of POP.n)for(let c=0;c<N.length;c++)s+=N[c];return s;},seen:()=>PROFILE.seen.sp.length,creator:()=>PROFILE.creator,locked:()=>locked};';
 const tmp=path.join(require('os').tmpdir(),'tethys_bundle.js');
 fs.writeFileSync(tmp,'(function(){"use strict";\n'+js+'\n})();');
 let failed=false;
@@ -79,11 +79,13 @@ for(const pick of [0,1,2,3]){
       __zoo.labLoad('lash');__step(3);__zoo.labAdd('weapon');__step(4);key('Space');__step(20);key('KeyR');__step(3);h['win:keyup'].forEach(f=>f({code:'KeyR',preventDefault(){}})); // r up again: held, it is the grab (v11.31)
       key('KeyL');__step(3);if(__zoo.mode()!=='play')throw new Error('the lab did not return to play');console.log('  lab from play: ok');}
     __hurt(1e4);__step(20);
-    if(pick===1){ // a slot (v11.55, COMBAT.md §9): the death ends the animal — the menu comes back, the slot carries the death, continue puts a new animal at the peak
+    if(pick===1){ // a slot (v11.55, COMBAT.md §9): the death ends the animal — the menu comes back, the slot carries the death; since v11.69 (LINEAGE §4.5) a death with no young ends the slot, continue refuses it, and a new game goes on
       const S0=global.__save;if(__zoo.mode()!=='menu')throw new Error('the death did not return to the menu');
       const dead=S0.slots().find(r=>r.deaths>0);if(!dead)throw new Error('the death was not written to the slot');
-      S0.cont(dead.id);__step(3);if(__zoo.mode()!=='play')throw new Error('continue after a death did not start play');}
-    const d=__dbg();console.log('  killed and '+(pick===1?'continued as a new animal':'respawned')+':',JSON.stringify(d));
+      if(!dead.over)throw new Error('a death with no young did not end the slot (v11.69, LINEAGE §4.5)');
+      if(S0.cont(dead.id)!==false||__zoo.mode()!=='menu')throw new Error('an ended slot was continued');
+      h['mnew:click'].forEach(f=>f({}));__step(3);if(__zoo.mode()!=='play')throw new Error('new game after the line ended did not start play');}
+    const d=__dbg();console.log('  killed and '+(pick===1?'the line ended; a new game':'respawned')+':',JSON.stringify(d));
     if(d.hp<=0||Math.hypot(d.pos[0],d.pos[2])>20)throw new Error('respawn did not put the player back at the peak alive');
     if(pick===1){
       const key=(code,down)=>h['win:'+(down?'keydown':'keyup')].forEach(f=>f({code,preventDefault(){}}));

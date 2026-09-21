@@ -85,7 +85,7 @@ function loop(now){
   updateWounds(dt);updateStates(dt);updateInks(dt);updateSplashes(dt);updateBlood(dt);updateDebris(dt);updateFlush(dt); // the wounds bleed and the blood drifts (combat.js, v11.31)
   updateAtmosphere(dt);updateSurface();
   camera.updateMatrixWorld();updateFogCamera();cullChunks(dt);cullFar();assignLights();updateShadow();updateShadowS(dt);updateAudio(dt); // the shadow map's box and casters (v11.23): after everything has moved; the sound (v11.14) last, with the camera where it is
-  updateCompass(dt);updateFX();updateWMap(dt); // no health bar since v11.55: the body shows the damage (COMBAT.md §5)
+  updateCompass(dt);updateFX();updateWMap(dt);updateSpark(dt); // the sparkle (line.js, v11.69): the handover's mark, over everything // no health bar since v11.55: the body shows the damage (COMBAT.md §5)
   const r0=performance.now();renderFrame();renderMs=performance.now()-r0; // v11.64: the horizon pass first when the camera is in air (horizon.js), then the world
   if(!warmed){warmed=true;warmShaders();} // the first frame, behind the fade
   updateStats(dt);frameMs=performance.now()-f0;

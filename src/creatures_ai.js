@@ -13,16 +13,16 @@ function layEggs(ch,e,ei,n,rng){
   if(adults.length){const a=adults[Math.floor(rng()*adults.length)];at=V3(a.pos.x+(rng()-0.5)*8,0,a.pos.z+(rng()-0.5)*8);}
   else{at=chunkPoint(ch,rng,e.env,!!e.land);if(!at)return 0;}
   const h=ch.h(at.x,at.z);if(!e.land&&h>-4)return 0;at.y=h;if(solidPush(at,0.6,null,ch))return 0;
-  const sz=0.12*Math.pow(D.size,0.6),m=new THREE.Mesh(eggGeo(SPECS[kind]?SPECS[kind].clade:'hingeshells'),MATT);m.position.copy(at);m.scale.setScalar(sz);m.rotation.y=rng()*TAU;scene.add(m);
+  const sz=0.12*Math.pow(D.size,0.6),m=new THREE.Mesh(eggGeo(specOfKind(kind)?specOfKind(kind).clade:'hingeshells'),MATT);m.position.copy(at);m.scale.setScalar(sz);m.rotation.y=rng()*TAU;scene.add(m);
   const egg={mesh:m,pos:at,ent:ei,e:e,kind:kind,chunk:ch,n:n,n0:n,t:ECO.hatch*Math.pow(EK.mass,0.25)*DAY_S*(0.8+0.4*rng()),flesh:n*sz*sz*sz*40,flesh0:n*sz*sz*sz*40,gone:false,def:{size:sz*2},egg:true};
   eggs.push(egg);ch.eggs.push(egg);POP.laid+=n;return n;
 }
-function removeEgg(g){g.gone=true;scene.remove(g.mesh);let k=eggs.indexOf(g);if(k>=0)eggs.splice(k,1);k=g.chunk.eggs.indexOf(g);if(k>=0)g.chunk.eggs.splice(k,1);}
+function removeEgg(g){g.gone=true;if(g.brood&&g.brood._egg===g)g.brood._egg=null;scene.remove(g.mesh);let k=eggs.indexOf(g);if(k>=0)eggs.splice(k,1);k=g.chunk.eggs.indexOf(g);if(k>=0)g.chunk.eggs.splice(k,1);}
 function updateEggs(dt){
   for(let i=eggs.length-1;i>=0;i--){const g=eggs[i];
-    if(g.flesh<g.flesh0){const left=Math.ceil(g.n0*Math.max(0,g.flesh)/g.flesh0);if(left<g.n){const c=g.chunk.i*NCELL+g.chunk.j;POP.n[g.ent][c]=Math.max(0,POP.n[g.ent][c]-(g.n-left)/Q.creatures);POP.eaten+=g.n-left;g.n=left;}
+    if(g.flesh<g.flesh0){const left=Math.ceil(g.n0*Math.max(0,g.flesh)/g.flesh0);if(left<g.n){if(g.ent>=0){const c=g.chunk.i*NCELL+g.chunk.j;POP.n[g.ent][c]=Math.max(0,POP.n[g.ent][c]-(g.n-left)/Q.creatures);}POP.eaten+=g.n-left;g.n=left;if(g.brood)g.brood.n=left;} // a brood's clutch (line.js, v11.69) is outside the ledger: its record is debited instead
       if(g.n<=0){removeEgg(g);continue;}}
-    g.t-=dt;if(g.t<=0){const r=placeKind(g.chunk,g.e,g.n,mulberry((g.pos.x*131+g.pos.z*7)|0),{ent:g.ent,juv:true,at:g.pos});let q=r.next();while(!q.done)q=r.next();POP.hatched+=q.value||0;removeEgg(g);}}
+    g.t-=dt;if(g.t<=0&&g.brood){broodHatch(g);removeEgg(g);continue;}if(g.t<=0){const r=placeKind(g.chunk,g.e,g.n,mulberry((g.pos.x*131+g.pos.z*7)|0),{ent:g.ent,juv:true,at:g.pos});let q=r.next();while(!q.done)q=r.next();POP.hatched+=q.value||0;removeEgg(g);}}
 }
 let visibleCreatures=0;
 
@@ -35,7 +35,9 @@ const KIND_GEO={},SHARED_GEO=new Set();
 // A juvenile (v11.26): a recruit is born at ECO.juv of its kind's scale and grows up off screen (growUp). Its def is its kind's with the
 // size-dependent numbers scaled, chained to the adult's so every other read falls through; its geometry is cached apart (KIND_GEO 'kind~')
 const JUV_DEF={};
-function juvDef(kind){let j=JUV_DEF[kind];if(j)return j;const d=DEFS[kind],s=ECO.juv,sp=SPECS[kind];j=JUV_DEF[kind]=scaledDef(d,s);j.juv=true;j.build=()=>compile(sp,s*(sp.s||1));return j;}
+// a kind's spec: the roster's, or the def's own (v11.69: the young of the player's line, a kind per spec — line.js lineKind)
+function specOfKind(k){return SPECS[k]||(DEFS[k]&&DEFS[k].spec)||null;}
+function juvDef(kind){let j=JUV_DEF[kind];if(j)return j;const d=DEFS[kind],s=ECO.juv,sp=specOfKind(kind);j=JUV_DEF[kind]=scaledDef(d,s);j.juv=true;j.build=()=>compile(sp,s*(sp.s||1));return j;}
 // ---------- the individual (v11.66, the hingeshell variety pass — the infrastructure is every clade's) ----------
 // Two of a kind were identical to v11.65: one geometry per kind, one palette, the juvenile the only variation. Now every animal the ledger places
 // draws three things at its spawn, from the cell's own rng so a cell comes back the same: a size within VARY.spread of its kind's (an instance
@@ -53,7 +55,7 @@ function juvDef(kind){let j=JUV_DEF[kind];if(j)return j;const d=DEFS[kind],s=ECO
 // would drag on it). Anything outside the ledger (ent −1: the lab's placed spec, the fleets, the tests' bodies) is built plain.
 const VARY={spread:0.15}; // ±: the adult size band as a fraction of the kind's size
 const MOULT={frac:0.05,soft:0.5,every:20,hide:6,prey:0.5,shedT:4,shedPer:0.5,keep:0.85}; // frac: the share of a moulting clade's placed adults that start soft; soft: game days soft at unit mass (× mass^¼); every: game days between moults at unit mass (× mass^¼); hide: m a soft one looks about for a solid to lie against; prey: a hunter takes a soft body of any kind while its own mass is at least this share of the body's; shedT: game days a cast carapace dropped in play lasts; shedPer: sheds placed per cell per unit of the kind's capacity; keep: a shed's scale against the animal's (it grew at the moult)
-function moults(kind){const sp=SPECS[kind],g=sp&&GRAMMAR[sp.clade];return !!(g&&g.moult);}
+function moults(kind){const sp=specOfKind(kind),g=sp&&GRAMMAR[sp.clade];return !!(g&&g.moult);}
 // the kind built in a coat class: its PAL preset swapped for the shifted twin for the build and put back (the zoo's own trick for the variants)
 function buildKind(d,kind,cls){const sp=SPECS[kind],pk=sp&&typeof sp.coat==='string'?sp.coat:null;if(!cls||!pk||!PAL[pk])return d.build();const p0=PAL[pk];PAL[pk]=coatChem(p0,cls,sp.clade);try{return d.build();}finally{PAL[pk]=p0;}}
 // a def with the size-dependent numbers scaled by k (a juvenile at ECO.juv, an adult's band at VARY): chained to the kind's so every other read falls through
@@ -141,7 +143,8 @@ function disposeCreature(c){c.alive=false;c.gone=true;releaseAll(c);scene.remove
 function removeCreature(c){disposeCreature(c);let k=creatures.indexOf(c);if(k>=0)creatures.splice(k,1);if(c.chunk){k=c.chunk.creatures.indexOf(c);if(k>=0)c.chunk.creatures.splice(k,1);}
   if(c.school){k=c.school.members.indexOf(c);if(k>=0)c.school.members.splice(k,1);}k=carcasses.indexOf(c);if(k>=0)carcasses.splice(k,1);}
 // a juvenile grows up: the adult is spawned in its place with its ledger entry, school and state, and the small one goes
-function growUp(c){const ch=c.chunk,a=spawn(ch,c.kind,c.pos,Math.random,{ent:c.ent});a.vel.copy(c.vel);a.home.copy(c.home);a.g.quaternion.copy(c.g.quaternion);a.hunger=c.hunger;
+function growUp(c){const ch=c.chunk,a=spawn(ch,c.kind,c.pos,Math.random,{ent:c.ent});a.vel.copy(c.vel);a.home.copy(c.home);a.g.quaternion.copy(c.g.quaternion);a.hunger=c.hunger;a.brood=c.brood; // a brood's young stays its brood's (line.js)
+  
   if(c.school){a.school=c.school;c.school.members.push(a);}if(c.state==='sit'){a.state='sit';}removeCreature(c);return a;}
 
 // ---------- steering ----------
@@ -163,10 +166,12 @@ function setWander(c){
   c.wander.copy(p);c.wanderT=rnd(6,14);
 }
 function wander(c,dt){c.wanderT-=dt;if(c.wanderT<=0||c.pos.distanceTo(c.wander)<3)setWander(c);const k=burstK(c,dt);seek(c,c.wander,c.def.speed*(c.def.cruiseF||0.45)*k,dt,0.8*k);}
+// o is on d's prey list: by its kind, or (v11.69) a young of the player's line to whatever hunts the player (line.js lineKind; the crusher's preyClade by the line's preset)
+function preyOn(d,o){if(d.prey.indexOf(o.kind)>=0)return true;return !!(o.def.line&&d.prey.indexOf('player')>=0&&(!d.preyClade||o.def.lineId===d.preyClade));}
 function findPrey(c,R){
   const d=c.def;let best=null,bd=1e9;if(R===undefined)R=d.detect;
   if(d.prey.indexOf('player')>=0&&!player.dead&&player.inkT<=0&&(!d.preyClade||(player.clade&&player.clade.id===d.preyClade))){const dp=c.pos.distanceTo(player.pos);if(dp<R){best=player;bd=dp*0.7;}}
-  for(const o of creatures){if(!o.alive||o===c)continue;if(d.prey.indexOf(o.kind)<0&&!(o.soft&&softPrey(c,o)))continue;const dd=c.pos.distanceTo(o.pos);if(dd<R&&dd<bd){bd=dd;best=o;}} // a soft body of any kind is prey to a hunter big enough (v11.66, MOULT)
+  for(const o of creatures){if(!o.alive||o===c)continue;if(!preyOn(d,o)&&!(o.soft&&softPrey(c,o)))continue;const dd=c.pos.distanceTo(o.pos);if(dd<R&&dd<bd){bd=dd;best=o;}} // a soft body of any kind is prey to a hunter big enough (v11.66, MOULT)
   return best;
 }
 // The kill (v11.26): the ledger is debited and nothing comes back. Eaten whole (the player's bite, a small prey in a big mouth) the
@@ -348,7 +353,7 @@ function updateGrazer(c,dt){
   // threats, scanned three times a second (a hundred grazers reading a thousand creatures a frame was the frame's biggest cost)
   c.scanT-=dt;if(c.scanT<=0){c.scanT=0.3;let threat=null;
     if(!player.dead&&c.pos.distanceTo(player.pos)<8)threat=player.pos;
-    if(!threat)for(const o of creatures){if(!o.alive||!o.def.prey)continue;const big=o.def.size>=6;if((big||o.def.prey.indexOf(c.kind)>=0)&&c.pos.distanceTo(o.pos)<(big?18:7)){threat=o.pos;break;}}
+    if(!threat)for(const o of creatures){if(!o.alive||!o.def.prey)continue;const big=o.def.size>=6;if((big||preyOn(o.def,c))&&c.pos.distanceTo(o.pos)<(big?18:7)){threat=o.pos;break;}}
     c.threat=threat;}
   const threat=c.threat;
   if(threat){seekAway(c,threat,d.flee,dt);c.alarm=2.5;c.scav=null;}

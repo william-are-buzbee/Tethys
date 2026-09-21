@@ -1,5 +1,13 @@
 # HANDOFF — tethys
 
+**v11.69 (21 Sep 2026): the first loop, the finback only (LINEAGE §13.1–2).** `src/line.js`: the slot carries the line — lives with their
+tracks (a sample every 5 s, run-length coded, from now on) and their broods. `x` lays a clutch on the floor (a slowblood, grown; the cost is a
+0.2-day cooldown until the player has hunger). A brood is a record that survives an unload (`BROOD_SURVIVE` 0.8 a day, the stand-in for §8); its young
+are `ent` −1 creatures of a kind per spec, hunted by what hunts you. At death you continue as the nearest living child, where and as it is; an
+unhatched clutch runs the world on to its hatch; none, and the save is over (the slot kept, never continued). The sparkle at the handover only.
+**Ask first** whether the handover reads as the magic (the star is small on purpose), then the cooldown and the clutch size, then the run-on
+to another hour with nothing said.
+
 **v11.68 (21 Sep 2026): the player as a spec.** `player.clade` is `playerClade(spec, preset)`: speed, accel, turn, mass and bite from `statsOf`, the
 few numbers derive has no term for (cam, jetImp, sprint, venom, the ability) on `CLADE_PRESETS`. The three presets' old hand numbers are
 `stats` locks on their SPECS, so they play identically (`test/player.js`); derive alone is loose (the finback 7.5 m/s and 1.7 t). The save
@@ -18,9 +26,7 @@ box for larger-than-life animals so the rest of the world stays strict. Code: `S
 disagreeing literals in the lab (the size field is a *claim*; `s` is the lever — found by looking), and `c.nearR`/`c.stepR` replace the
 update loop's bare 90 and 150 so a giant is pushed against and animated at full rate as far as it is drawn; nothing changes at today's
 sizes. `CREATOR.md` "The size ceiling" is the audit: hosting a giant needs a creature that is not owned by one 215 m cell, a range term
-in the ledger (the same one `SEAFLOOR.md` §6 leaves open), a draw past the 1600 m far plane, and an upper term on `derive`'s speed.
-**Ask first**: `LINEAGE.md` §11 — which child you continue as when several are alive at your death (a choice, or the nearest), and the
-one hole the death-only loop leaves: what happens when the only thing you left is a clutch that has not hatched yet.
+in the ledger (the same one `SEAFLOOR.md` §6 leaves open), a draw past the 1600 m far plane, and an upper term on `derive`'s speed. (§11.1–2 were answered 21 Sep 2026 and built in v11.69.)
 
 **v11.67.1 (20 Sep 2026): `LINEAGE.md`, designed, not built.** The creator is to become the start of the game, so the life-to-life loop
 was decided first. The frame: one admitted wrench (the player) in a simulation that otherwise keeps its rules; `DIRECTION.md`'s "not a

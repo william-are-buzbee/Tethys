@@ -70,7 +70,7 @@ const HOLD_DRAG=3; // per second: how fast the two bodies' velocities are pulled
 const PLAYER_GRIP={soft:1.2,fin:1.0,coil:0.6}; // the clades' grips: the jetter's arms are for this; the coilshell's are short
 const BLOOD_COL={ringmouths:[0.16,0.24,0.34],slowbloods:[0.32,0.03,0.03],hingeshells:[0.52,0.5,0.32],drifters:[0.6,0.6,0.6]}; // copper, iron, vanadium (PLANET)
 function massOf(o){return o===player?player.mass:(o.mass||bodyMass(o.def));} // the physical mass (creatures_ai.js): a hold is a struggle between two bodies
-function cladeOf(o){if(o===player)return player.clade?player.clade.spec.clade:'ringmouths';const sp=SPECS[o.kind];return sp?sp.clade:'hingeshells';}
+function cladeOf(o){if(o===player)return player.clade?player.clade.spec.clade:'ringmouths';const sp=specOfKind(o.kind);return sp?sp.clade:'hingeshells';}
 function dmgOf(o){return o===player?(player.clade?player.clade.bite:8):(o.def.dmg||0);}
 // a local point of o's frame in the world, with o's current position (the group's matrix may be a shift behind pos: resolveBodies moves pos)
 function localToWorld(o,l,out){const e=o.g.matrix.elements;out.x=e[0]*l[0]+e[4]*l[1]+e[8]*l[2]+o.pos.x;out.y=e[1]*l[0]+e[5]*l[1]+e[9]*l[2]+o.pos.y;out.z=e[2]*l[0]+e[6]*l[1]+e[10]*l[2]+o.pos.z;return out;}
@@ -198,7 +198,7 @@ function regrowTick(o){const R=o.regrow;if(!R||!R.length)return;const rig=armsOf
 // worse because it is missing the thing that did that (speedK, turnK: the live build's derive against the whole one). What a hold can take is
 // what has its own capsule (LOSE.parts: the tail); an arm goes by autotomy (the live spec's arm count). A lost part's meshes are hidden (the far
 // bake still shows it — a kind's bake is shared); a slowblood's tail never regrows, a ringmouth's arm does (regrowTick)
-function specOf(o){return o===player?player.clade&&player.clade.spec:SPECS[o.kind];} // the player's is its own (v11.68)
+function specOf(o){return o===player?player.clade&&player.clade.spec:specOfKind(o.kind);} // the player's is its own (v11.68)
 function liveSpec(o){if(o.live)return o.live;const sp=specOf(o);o.live=sp?JSON.parse(JSON.stringify(fillSpec(sp))):null;return o.live;}
 function rederive(o){const sp=specOf(o),live=o.live;if(!sp||!live){o.speedK=1;o.turnK=1;return;}
   try{const full=derive(sp),now=derive(Object.assign({},live,{parts:live.parts.filter(p=>!p.lost)}));o.speedK=clamp(now.speed/(full.speed||1),LOSE.floor,1);o.turnK=clamp(now.turn/(full.turn||1),0.3,1.5);}catch(e){o.speedK=1;o.turnK=1;}}
@@ -231,7 +231,7 @@ function slowOf(o){return (o.bleed>0?WOUND_SLOW:1)*(o.stungT>0?STING.slow:1)*(o.
 function bleeding(o){return o===player?player.bleed>0&&!player.dead&&player.inkT<=0:o.bleed>0;}
 // the nearest bleeding body on c's prey list within R (creatures_ai.js updateHunter: past its detect, the water carries the blood)
 function findBleeding(c,R){const d=c.def;let best=null,bd=R;if(d.prey.indexOf('player')>=0&&bleeding(player)&&(!d.preyClade||(player.clade&&player.clade.id===d.preyClade))){const dp=c.pos.distanceTo(player.pos);if(dp<bd){bd=dp;best=player;}}
-  for(const o of creatures){if(!o.alive||o===c||!(o.bleed>0))continue;if(d.prey.indexOf(o.kind)<0)continue;const dd=c.pos.distanceTo(o.pos);if(dd<bd){bd=dd;best=o;}}return best;}
+  for(const o of creatures){if(!o.alive||o===c||!(o.bleed>0))continue;if(!preyOn(d,o))continue;const dd=c.pos.distanceTo(o.pos);if(dd<bd){bd=dd;best=o;}}return best;}
 function missWin(tg,dur){return MISS.k*2*widestR(tg)*Math.max(1,dur/MISS.t);} // how far across the strike's line the prey may move during a commit of dur seconds before the jaws close on water
 // the prey's movement since the commit, across the line the strike was aimed along (n: the unit vector from the striker to the prey at the commit); running straight away is caught by the reach check, the dodge is what is measured
 function dodged(tpos,p0,n){const dx=tpos.x-p0.x,dy=tpos.y-p0.y,dz=tpos.z-p0.z,al=dx*n.x+dy*n.y+dz*n.z;return len3(dx-al*n.x,dy-al*n.y,dz-al*n.z);}

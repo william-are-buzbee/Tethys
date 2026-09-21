@@ -4501,3 +4501,54 @@ from any spec, and the three presets play on exactly the numbers they had.
   those numbers; the lab's caption still shows derive's.
 - **Unseen, ask in this order**: nothing in play should differ — if the finback feels any different at all, that is a bug here. Then
   whether a spec that is no preset should get the finback's sprint and arm by default or something the calculator says.
+
+## v11.69 — the first loop: the line, the clutch, the handover (21 Sep 2026)
+
+`LINEAGE.md` §13.1–2, the finback only. Decided for this pass (the person, 21 Sep 2026, recorded as §12.17–19): **the player breeds alone**,
+no mate; **at death you continue as the nearest living child**; **an unhatched clutch counts as a living child**, and the world runs on to
+its hatch. New file `src/line.js`.
+
+- **The line on the slot**: `curSave.line`, a list of lives `{spec, preset, born, grown, died, cause, playT, parent, track, lay, broods}`,
+  the last the one played. Times are the world clock `t`. **The track** is a position every `LINE.trackS` 5 s of play, whole metres,
+  run-length coded (`[x,y,z]`, or `[x,y,z,k]` for k equal samples) — recorded from this version on, since the shrine cannot be retrofitted.
+  A record from before is its animal as the founder. `SAVE_V` 3 (the line, and `over`).
+- **Laying** (`x`, `playerLay`): the slowblood only, grown, within `LINE.near` 3 m of a floor deeper than −4 m, clear of solids.
+  **The cost is a cooldown**, `LINE.cool` 0.2 game days (8 real minutes) between clutches, because **the player has no hunger yet** (the
+  bite on a carcass "feeds nothing yet", combat.js) — LINEAGE §6's bill of materials replaces it when eating is built. `LINE.n` 4 eggs,
+  the world's own clutch (`eggGeo`, `MATT`, `0.12·size^0.6`), hatching after `ECO.hatch`·mass^¼ — 0.39 game days, 15.5 real minutes for
+  the finback. Refused with one word on the hint line (`not yet`, `not yet grown`, `on the floor, under water`, `not here`, `not this body`).
+  No touch gesture for it yet.
+- **Broods**: a record per clutch on the life that laid it, `{cell, pos, n, born, hatch, spec, hatched, at}`, true whether its cell is loaded
+  or not. Loaded, it is a clutch outside the ledger (`ent` −1; scavengers eat it down like any clutch and its n falls) and then its young —
+  `ent` −1 creatures of **a kind per spec** (`lineKind`, `line:<hash>`: `DEFS` built like the lab's placed creature from the player's
+  numbers, a hunter of the player's own food, `LINE_PREY` arrow, needle, scuttle), juveniles until `ECO.grow`·mass^¼ days, and n is counted
+  off them every second. **Whatever hunts the player hunts them** (`preyOn`: a prey list's `player` stands for the line's young too).
+  Unloaded, **n falls by `BROOD_SURVIVE` 0.8 a game day** and the hatch goes by the clock — a named stand-in for §8's sparse ledger entries,
+  said so where it lives. `lineLoad`/`lineUnload` in chunks.js put a brood back or count it; the young of earlier lives still load, as
+  animals of the world, not as yours. The lookups that took a kind's spec from `SPECS` take a def's own (`specOfKind`).
+- **Death** (`slotDeath` → `lineNext`): the nearest living child of the life that died — a young in a loaded cell, a clutch, an unloaded
+  brood with n ≥ ½. **An unhatched clutch runs the world on**: every cell out (the living into the ledger), the clock to its hatch, the
+  ledger's model catching up the gap over its next ticks (0.5 game days a tick), then its survivors hatch and you are one of them — or, if
+  the run-on left none, the next nearest child. `lineContinue` makes you the child **where and as it is**: a young's own place and facing, its
+  age — a hatchling is `playerClade(spec, preset, ECO.juv)`, the numbers scaled as `scaledDef` scales a juvenile's and the body compiled at
+  that scale, and it grows up in one step at its time (`playerRebody`: in view, where the world's juveniles grow out of sight — a stand-in).
+  **No child, and the save is over**: `over` on the slot, the menu's note "<cause>. no young: the line ends", the continue list shows "the
+  line ended" and a click on it says "this line has ended". Only the life's own broods count: a hatchling that dies with siblings alive and
+  no clutch of its own ends the save (seen, below — §4's rule, not a bug).
+- **The sparkle, minimal** (LINEAGE §7): at the handover only, a screen-space four-point star (`starPath` — the mark, one shape so the save
+  icon can be the same drawing) with a 16-point trail, on a canvas `#spark` over the fade: it comes down in a curl from high in the view onto
+  the child over 1.2 s, flickers like a flame and goes by 2.2 s (`SPARK`). Nothing else of §7.
+- **Tests**: `test/player.js` gains the line — the clutch laid and the second refused; a death with only the clutch (the world ran on 0.39
+  game days, you at the clutch as a 0.99 m hatchling at 6.5 m/s, three siblings round you); a hatchling cannot lay; grown at its time; the
+  child's clutch hatched and a death with four young alive (you are the nearest, 2.1 m off, where it was; three left); founder, child,
+  grandchild, each with its own broods; the track's run; a death with none (the slot ended with its line of three, continue refused); an
+  unloaded brood a game day on (4 → 3.20, hatched by the clock); the line through the save and back as three young at the clutch.
+  `test/smoke.js`: the finback's death with no young now ends the slot, continue refuses it and a new game goes on. The stub gained a 2D
+  context's paths and `Vector3.project`. Green on both tiers.
+- **Seen** (dev.html in the pane, the loop live): a new game, the clutch laid at the peak's floor (in first person, the seven-sphere knot,
+  `test/render/v69_clutch_fp.png`); death with the clutch out — black, the world run on to night (day 0.39), the star coming down onto the
+  hatchling at the clutch with its trail, siblings beside it (`v69_handover_b.png`, `v69_handover_c.png`, `v69_child.png`); the hatchling
+  grown and laying its own clutch; and, first, a hatchling's death with only siblings alive: the menu, the slot "gen 2 · the line ended".
+- **Unseen, ask in this order**: whether the handover reads as the magic (the star is 28 px at 1080 lines, `SPARK.r` 14 — small on purpose,
+  candle-sized); whether an eight-minute cooldown and four eggs feel like a slowblood's career; whether the run-on to another hour wants
+  saying (nothing says the world moved on; the dark says it); the hatchling's growth pop in view.

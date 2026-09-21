@@ -12,10 +12,10 @@ const CLADE_PRESETS=[
   {id:'coil',name:'coilshell',spec:'coil',jetImp:7,cam:6.5,ability:'withdraw',venom:{kind:'paralyse',t:5,against:{slowbloods:1,ringmouths:1}}}
 ];
 function presetFor(spec){const id=spec.clade==='ringmouths'?(spec.core&&spec.core.kind==='coilbody'?'coil':'soft'):'fin';return CLADE_PRESETS.find(p=>p.id===id);} // the preset whose fixed numbers a spec takes: a coiled ringmouth the coilshell's, another ringmouth the soft-arm's, anything else the finback's
-function playerClade(spec,pre){ // the player's clade object from a spec (and its preset, if it is one): what player.js, combat.js and the rest read as player.clade
-  pre=pre||presetFor(spec);const st=statsOf(spec),base=SPECS[pre.spec],same=base&&base.clade===spec.clade,k=base&&base.size?spec.size/base.size:1;
-  return {id:pre.id,name:spec===base?pre.name:(spec.id&&spec.id!==pre.spec?spec.id:pre.name),spec:spec,preset:pre,build:()=>compile(spec),
-    speed:st.speed,accel:st.accel,turn:st.turn,mass:st.mass,bite:st.bite!==undefined?st.bite:Math.round(st.mass*3),size:spec.size,jet:!!st.jet,legs:!!st.legs, // bite for a spec without the lock: the lab's DEFS rule (specExport, dmg = mass × 3)
+function playerClade(spec,pre,j){ // the player's clade object from a spec (and its preset, if it is one): what player.js, combat.js and the rest read as player.clade. j: a hatchling's scale (v11.69: ECO.juv until grown), the numbers scaled as the world's juveniles' are (creatures_ai.js scaledDef)
+  pre=pre||presetFor(spec);j=j||1;const st=statsOf(spec),base=SPECS[pre.spec],same=base&&base.clade===spec.clade,k=(base&&base.size?spec.size/base.size:1)*j,sq=Math.sqrt(j);
+  return {id:pre.id,name:spec===base?pre.name:(spec.id&&spec.id!==pre.spec?spec.id:pre.name),spec:spec,preset:pre,build:j===1?()=>compile(spec):()=>compile(spec,j*(spec.s||1)),juv:j<1?j:0,
+    speed:st.speed*sq,accel:st.accel,turn:st.turn,mass:st.mass*j*j*j,bite:(st.bite!==undefined?st.bite:Math.round(st.mass*3))*j*j,size:spec.size*j,jet:!!st.jet,legs:!!st.legs, // bite for a spec without the lock: the lab's DEFS rule (specExport, dmg = mass × 3)
     sprint:pre.sprint,jetImp:pre.jetImp,cam:pre.cam*k,venom:same?pre.venom:undefined,ability:same?pre.ability:null};
 }
 const CLADES=CLADE_PRESETS.map(p=>playerClade(SPECS[p.spec],p));

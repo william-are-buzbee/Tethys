@@ -1,6 +1,9 @@
 # LINEAGE.md — the line across generations: a full life, the brood it leaves, the mutation, and the magic that is admitted
 
-**Status: design, 20 Sep 2026, nothing built. The person's answers are in §12 and are folded through the body of this doc.** Written
+**Status: §13.1–2 built, minimal (v11.69, 21 Sep 2026): the line on the slot with its track, the finback's clutch (a cooldown for its cost), broods as
+records that survive an unload, the handover at death to the nearest living child, the save ended with none, and the sparkle at the handover only.
+The player became a spec first (v11.68). Not built: the crude shrine page, §8's sparse entries (a survival knob stands in), the editor at conception,
+the other clades' modes. Design otherwise, 20 Sep 2026. The person's answers are in §12 and are folded through the body of this doc.** Written
 at the head of the creator pass (the person, 20 Sep: the creator becomes the default start of the game, and the game becomes "a genetic
 lineage game where you can trace your ancestry, lives and activity levels"). Upstream: `PLANET.md` (the clades and their limits),
 `CLADES.md` (the three signatures), `COMBAT.md` (death, and `slotDeath` as built), `CREATOR.md` (the spec, the compiler, the lab as it
@@ -290,10 +293,10 @@ coordinates and days in a form that could be exported.
 
 ## 11. Open (20 Sep 2026)
 
-1. **Which child do you get** when several are alive at your death — your choice from a list, the nearest, the oldest, or the one the
+1. *(Answered 21 Sep 2026 — §12.18: the nearest.)* **Which child do you get** when several are alive at your death — your choice from a list, the nearest, the oldest, or the one the
    world has treated best? (A choice is the obvious answer and makes the shrine's map mean more; the nearest is the one that needs no
    interface at all.)
-2. **What if the only thing you leave is a clutch that has not hatched?** It counts as a living child by §4, but you cannot be a body
+2. *(Answered 21 Sep 2026 — §12.19: it counts; the world runs on to the hatch.)* **What if the only thing you leave is a clutch that has not hatched?** It counts as a living child by §4, but you cannot be a body
    that does not exist yet. Either the world runs on to the hatch — which is not the switch-time skip that was struck, but it is a
    skip — or an unhatched clutch does not count and the save ends. This is the one hole the death-only loop leaves.
 3. **May a new founder** in the same slot be another clade? (A hatchling may not — decided.)
@@ -333,6 +336,10 @@ coordinates and days in a form that could be exported.
     life is a good place to start for each creature"*). There is no hatch moment and no stepping out of a healthy animal. **Swapping
     while alive is left open for later** — it would be an addition to this loop, not a change to it, so nothing built against §4 has to
     be undone if it arrives.
+17. **The player breeds alone** (21 Sep 2026) — no mate, for this pass: laying is the parent's act, as the ledger's own clutches are.
+18. **At death you continue as the nearest living child** (21 Sep 2026, §11.1) — no list, no interface; distance from where you died.
+19. **An unhatched clutch counts as a living child** (21 Sep 2026, §11.2): at death the world runs on to its hatch, and you are one of what hatches
+    — if the run-on leaves one alive. Built (v11.69) as every cell out, the clock to the hatch, and the ledger's model catching up the gap.
 
 ## 13. Build order
 
@@ -340,14 +347,17 @@ Each step is playable and tells the person something; the expensive answers (§8
 
 1. **The line on the slot, and the track log.** `{spec, born, died, cause, playT, parent, track}`, recorded from the first version,
    because the shrine cannot be retrofitted onto runs that were not logged. A crude shrine page on top of `worldmap.js` to prove it.
+   *(Built v11.69 without the page: line.js, a sample every 5 s of play, run-length coded.)*
 2. **Player reproduction, one clade** (the slowblood — the current default start): a real clutch with your spec on it, surviving an
    unload as a record on the line, hatching into ordinary young. **Death continues as one of them**, with the parent's spec unchanged.
    The smallest complete loop, and it needs no creator work at all — the death-only rule makes it smaller than the first draft's.
+   *(Built v11.69: `x` lays on the floor, a cooldown for the cost; the brood records of step 3 came with it, with `BROOD_SURVIVE` for the model.)*
 3. **The brood records and death's search** — the records of §8, the model growing and killing them, and the question "is a child of
    mine alive, and where". This is the point at which the sparse-entry work has to be real, and the first version where an unclaimed
    brood can outlive you.
 4. **The editor at conception**: the parent's spec loaded, the diff priced as materials (§6), declining allowed, the child let go into
    the world. Needs the creator's registry pass to have landed first, or the bill prices nonsense.
-5. **The sparkle** (§7) — small, and it should arrive with the first handover so the tell exists from the beginning.
+5. **The sparkle** (§7) — small, and it should arrive with the first handover so the tell exists from the beginning. *(Built v11.69 for the
+   handover only: a screen-space four-point star, `starPath`, with a short trail.)*
 6. **The other two modes**: the ringmouth's one spawning and scheduled death; the hingeshell's brood and den.
 7. **§8.2's derived `DEFS`**, and with it variants as real ledger entries, marketshare, and the shrine's ecology tab.

@@ -399,7 +399,7 @@ function* genChunk(i,j){
   for(const f of FLORA){if(f.mat!==MATROCK)continue;yield* placeFloraType(ch,mulberry((((i*73856093)^(j*19349663)^hashStr(f.id))>>>0)),f);yield;}
   for(const f of FLORA){if(f.mat===MATROCK)continue;yield* placeFloraType(ch,mulberry((((i*73856093)^(j*19349663)^hashStr(f.id))>>>0)),f);yield;}
   placeLandmarks(ch);yield;
-  yield* spawnChunkCreatures(ch,rng);
+  yield* spawnChunkCreatures(ch,rng);lineLoad(ch); // the player's broods that lie in it (line.js, v11.69)
   scene.add(ch.group);chunks.set(ch.k,ch);chunkGrid[i*NCELL+j]=ch;farCellChanged(i,j);shadowDirty(ch);
 }
 function loadChunkNow(i,j){if(chunks.has(ckey(i,j)))return;const g=genChunk(i,j);while(!g.next().done){}}
@@ -407,7 +407,7 @@ function unloadChunk(ch){
   scene.remove(ch.group);for(const P of ch.pooled)poolRemove(P,ch);ch.pooled.length=0; // the cell's blocks out of the species pools (v11.52)
   for(const m of ch.meshes){if(m.geometry&&!FLORA.some(f=>f.geo===m.geometry||(f.glow&&f.glow.geo===m.geometry)))m.geometry.dispose();if(m.isInstancedMesh)m.dispose();if(m.isPoints&&m.material)m.material.dispose();}
   for(const s of ch.lightSrc){const k=lightSources.indexOf(s);if(k>=0)lightSources.splice(k,1);}
-  ecoWriteBack(ch); // the living go back into the ledger (v11.26); the dead stay dead
+  lineUnload(ch);ecoWriteBack(ch); // the player's broods counted (line.js, v11.69); the living go back into the ledger (v11.26); the dead stay dead
   for(let i=ch.eggs.length-1;i>=0;i--)removeEgg(ch.eggs[i]); // the clutches go with the cell; the ledger keeps their count
   for(let i=ch.sheds.length-1;i>=0;i--)removeShed(ch.sheds[i]); // and the sheds dropped in it (v11.66)
   for(const c of ch.creatures)disposeCreature(c);
