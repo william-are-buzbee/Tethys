@@ -103,7 +103,7 @@ function releaseAll(o){for(let i=holds.length-1;i>=0;i--){const h=holds[i];if(h.
 // the AI's bite (creatures_ai.js landBite): a hunter within reach of its prey. Forage dies at the touch as before; something that can
 // fight is taken hold of, and the hold does the biting from here; a body with nothing to hold with (none placed) snaps as before
 function combatBite(a,b){
-  if(b===player){if(player.dead)return;if(player.withdrawn){a.bored++;return;}}
+  if(b===player){if(playerGone())return;if(player.withdrawn){a.bored++;return;}}
   else{if(!b.alive)return;if(b.def.hp>=1e8){a.bored++;return;}
     const sw=swallows(a,b);if(b.def.hp<=1||sw){kill(b,a,sw);dropTarget(a,6);return;}} // forage dies at the touch; a slowblood gulps what fits its gape (v11.55)
   if(!gripOf(a)){wound(b,dmgOf(a),a,null,'snap');return;}
@@ -228,7 +228,7 @@ function killBy(h,act){const a=h.a,b=h.b,at=h.at||b.pos,cl=cladeOf(b);bloodBurst
   if(b===player){die((act==='swallowed'?'swallowed by':act==='thrash'?'torn open by':act+' by')+' a '+(a===player?'player':a.kind));return;}
   kill(b,a,act==='swallowed');}
 function slowOf(o){return (o.bleed>0?WOUND_SLOW:1)*(o.stungT>0?STING.slow:1)*(o.sickT>0?POISON.slow:1)*(o.speedK||1);} // speedK: the live spec's derive against the whole body's (v11.57)
-function bleeding(o){return o===player?player.bleed>0&&!player.dead&&player.inkT<=0:o.bleed>0;}
+function bleeding(o){return o===player?player.bleed>0&&!playerGone()&&player.inkT<=0:o.bleed>0;}
 // the nearest bleeding body on c's prey list within R (creatures_ai.js updateHunter: past its detect, the water carries the blood)
 function findBleeding(c,R){const d=c.def;let best=null,bd=R;if(d.prey.indexOf('player')>=0&&bleeding(player)&&(!d.preyClade||(player.clade&&player.clade.id===d.preyClade))){const dp=c.pos.distanceTo(player.pos);if(dp<bd){bd=dp;best=player;}}
   for(const o of creatures){if(!o.alive||o===c||!(o.bleed>0))continue;if(!preyOn(d,o))continue;const dd=c.pos.distanceTo(o.pos);if(dd<bd){bd=dd;best=o;}}return best;}

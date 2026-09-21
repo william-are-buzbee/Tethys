@@ -4839,3 +4839,22 @@ the lobe). The budget prices the move, not what it buys — honest only as far a
 3. The first numbers: is 3 points enough to feel like a choice at generation 2 (a new pair of fins is 2–3; a longer tail 0.5)?
 4. The world runs while the window is open (as `l` in play always has): a predator can arrive while you edit. Pause it?
 5. The lab frames the child among the weed where you laid — the studio (CREATOR, size ceiling item 6) would fix that.
+
+## v11.72.1 — out of the world while you edit (21 Sep 2026)
+
+The person on v11.72: "WOW, that is a lot of fun. Really enjoying this." Their four answers (LINEAGE §12.21–24): **the sparkle on the clutch
+is in**; **the budget as the only cap on a child's distance from its parent "works fine for now"** (§11.5, answered for now); **3 points is OK
+for now**; and **"the game should teleport the player out of existence temporarily or make them invis/invuln while they edit."**
+
+Built: while the editor at conception is open the parent is out of the world (player.js `playerAway`, set by `conceiveOpen`, lifted by
+`labLeave`): the body hidden, its hold dropped, every creature that had it as a target let go, and nothing can see, smell, chase, hold, sting or
+flee it — the twelve reads of `player.dead` in creatures_ai.js and the two in combat.js that mean "is the player there to react to" (a hold's
+start, the blood trail) ask `playerGone()`, which death answers too. The world runs on; the clutch is laid where you were, and you are back
+in the world the frame the window closes.
+
+- **Tests**: `test/player.js` §5 — with the window open a hungry eel 7 m off leaves the hidden parent alone for 3 s; on the close the body is
+  back and the eel takes it. `--test` green on both tiers.
+- **Seen** in the app's browser (the loop by hand): a hungry eel put 8 m from the parent, the window held open 5 s — away, hidden, no target,
+  no hold, no wound, the eel wandered off to 16 m; the window closed and the eel had the player as its target on the first frame.
+- **Unseen, ask in this order**: whether coming back into the world beside something hungry wants a second of grace; the lab's creature standing
+  where your body was (it is drawn ahead of you, as `l` in play draws it).

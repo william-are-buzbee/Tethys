@@ -302,7 +302,7 @@ coordinates and days in a form that could be exported.
 3. **May a new founder** in the same slot be another clade? (A hatchling may not — decided.)
 4. **How far may a "preset, mutated" founder move** from its preset, and how fast does that loosen over generations (§5)?
 5. **How far may a child vary from its parent** (§5's "not allowed to vary too far") — a hard cap on the diff, or just what the budget
-   affords? *(v11.72 builds the default — no hard cap, the budget is the cap — until this is answered.)*
+   affords? *(v11.72 builds the default — no hard cap, the budget is the cap. Answered for now, 21 Sep 2026 — §12.22: "works fine for now".)*
 6. **How is disposition expressed in the creator** (§5's followers)? It is the first thing in the editor that is behaviour rather than
    body, and `DEFS` has no term for it — the same gap as §8.2.
 7. **Drifters** (§3): later, or never?
@@ -343,6 +343,11 @@ coordinates and days in a form that could be exported.
 20. **A child's speed is derived from its body, like any animal's** (21 Sep 2026): "The child's speed should be derived from the animal's body
     map like any other. Not its parent's, but there should just be a universal logic of how fast an animal moves based on its size and mass
     and such." Built v11.71: `derive` is the one calculator for every `DEFS` kind and the player; nothing in the world runs on a lock.
+21. **The sparkle at the closed mutation window is in** (21 Sep 2026, on v11.72): "It's in, no worries."
+22. **The budget is the only cap on how far a child may move from its parent, for now** (21 Sep 2026, §11.5): "Works fine for now."
+23. **The budget's first numbers stand for now** (21 Sep 2026, §11.8): 3 points at generation 2 "seems OK for now, not a huge issue".
+24. **You are out of the world while you edit** (21 Sep 2026): "the game should teleport the player out of existence temporarily or make them
+    invis/invuln while they edit." Built v11.72.1: hidden, and nothing can see, chase, hold or hurt the parent while the window is open.
 
 ## 13. Build order
 

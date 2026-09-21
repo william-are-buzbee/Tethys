@@ -24,6 +24,11 @@ let floor0=-1e9;for(let a=0;a<TAU;a+=0.3)for(let r=0;r<=16;r+=4)floor0=Math.max(
 const dispY=floor0+4.5,spawnPos=V3(0,floor0+3,0);
 const player={clade:null,pos:V3(0,dispY,0),vel:V3(0,0,0),yaw:0,pitch:0,g:null,b:null,anim:null,inkT:0,withdrawn:false,cd:0,jetT:0,hurtT:0,lastHurt:-100,dead:true,pulse:0,spd:0,biteCD:0,sub:1,wet:true,grounded:false,flopT:0,camAbove:false,camFlipT:0,fp:false,
   mass:6,bound:0,reach:0,shapesW:null,chainW:null,grab:null,grabT:0,heldT:0,heldK:1,holding:0,hold:null,held:0,grabKey:false,grabCD:0,bleed:0,woundL:null,paraT:0,stungT:0,sickT:0,armsLost:0,regrow:null,cause:'',speedK:1,turnK:1,live:null,lost:null,cWith:null,onPad:null,def:{size:1.6},hitRk:0,hitFl:0,landV:0,wasGrounded:false}; // hitRk/hitFl: this frame's push was against rock / a plant; landV: the speed of the last landing on the floor (audio.js consumes both) // def.size: creatures read it when the player is their target
+// Out of the world (v11.72.1, the person, 21 Sep 2026: "the game should teleport the player out of existence temporarily or make them invis/invuln while
+// they edit"): while the editor at conception is open (line.js conceiveOpen) the body is hidden and nothing in the world can see, smell, chase, hold,
+// sting or flee it — every read of the player as a thing to react to in creatures_ai.js and combat.js asks playerGone(), which death answers too.
+function playerGone(){return player.dead||!!player.away;}
+function playerAway(on){const P=player;P.away=!!on;if(P.g)P.g.visible=!on;if(on){P.hold=null;P.vel.set(0,0,0);for(const c of creatures)if(c.target===P)dropTarget(c);}}
 const keys={};let locked=false,drag=null,touchL=null,touchAbility=false;
 const JET_W=0.18; // s of thrust per 0.5 s jet cycle
 const CAM_DWELL=0.5,CAM_FLIP=0.4; // v11.42: CAM_CLEAR (0.35, the camera held clear of the wave) is gone — the camera may rest on the line, half in and half out (WATER.md L; the fog is per fragment, scene.js); camAbove flips CAM_FLIP past the wave, for the light, the sound and the water's things only

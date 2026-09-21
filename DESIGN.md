@@ -1712,7 +1712,9 @@ surface air for finback)? Any persistence, or is a clean cold start the point?
 `conceiveBudget(gen)` = `base` 3 + `gen` 1.5 per generation behind the parent. `conceiveClose`: unchanged or declined lays a copy; changed within
 the budget lays the child's spec and plays the sparkle on the clutch; over the budget it refuses and the lab stays. The cooldown goes with the
 child's derived mass (`LINE.cool` 0.2 days at `LINE.coolM` 1.69 t, the life's `coolS`) — the stand-in for §6's fuel until the player has hunger.
-No hard cap on the distance from the parent: the budget is the cap (LINEAGE §11.5, open).
+No hard cap on the distance from the parent: the budget is the cap (LINEAGE §12.22, for now). While the window is open the parent is out of
+the world (v11.72.1, player.js `playerAway`: hidden, its hold and every creature's target on it dropped; `playerGone()` — dead or away — is what
+creatures_ai.js and combat.js ask wherever they mean "is the player there").
 
 **The line (v11.69, `line.js`; LINEAGE.md §13.1–2).** The slot carries `line`, a list of lives, the last the one played: `{spec, preset, born, grown, died,
 cause, playT, parent, track, lay, broods}` — times on the world clock `t`, `track` a sample every `LINE.trackS` 5 s of play run-length coded (`[x,y,z]`,

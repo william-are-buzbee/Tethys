@@ -782,6 +782,7 @@ function labLeave() {
   }
   lab.player = false;
   lab.conceive = null;
+  if (player.away) playerAway(false); // the parent back in the world (v11.72.1)
   if (mode === 'menu') {
     menuPage('main');
     layoutMenu();

@@ -55,7 +55,8 @@ function playerLay(){
 // (lab.js: nothing else can be loaded, and labLoad refuses another clade). Closing the window is the laying: unchanged, the clutch is a copy and the
 // generation counts all the same (you may decline, §4.2); changed and within the budget, the clutch carries the new spec and the sparkle marks it
 // (§7: "when you successfully close the mutation window"); over the budget the lab will not commit and says what costs what — take something back,
-// or decline. There is no way out that lays nothing: opening the window was the mating.
+// or decline. There is no way out that lays nothing: opening the window was the mating. While the window is open the parent is out of the world
+// (player.js playerAway, v11.72.1): hidden, and nothing can see, chase, hold or hurt it — the world runs on, and the editor is not a place to be eaten.
 // The budget is the diff between the child and the parent, priced off the v11.70 registry (paramOf: a parameter's believable band is what a move is
 // measured against). First numbers, to be moved by play (§6: "playtested a lot"). There is no hard cap on the distance from the parent — the budget
 // is the cap (§11.5: a default, not the person's answer yet). The fuel half of §6 is LINE.cool's.
@@ -98,7 +99,7 @@ function conceivePrice(parent,child){ // {total, items:[{what, cost}]} dearest f
   items.sort((x,y)=>y.cost-x.cost);let total=0;for(const it of items)total+=it.cost;return {total:+total.toFixed(2),items:items};}
 function conceiveOpen(L,at,ch){ // x, with the floor under you: the lab as the creator, on your own spec
   const gen=curSave.line.length;lab.conceive={parent:JSON.parse(specToJSON(L.spec)),gen:gen,budget:conceiveBudget(gen),at:at.clone(),price:{total:0,items:[]}};
-  labEnter(lab.conceive.parent,true);if(mode!=='lab'){lab.conceive=null;return false;}lab.player=true;
+  labEnter(lab.conceive.parent,true);if(mode!=='lab'){lab.conceive=null;return false;}lab.player=true;playerAway(true); // v11.72.1: out of the world while the window is open; labLeave brings the body back
   hintEl.textContent='the child: change it, or not — l lays the clutch';hintEl.style.opacity=1;return true;}
 function conceiveHTML(){const cv=lab.conceive,pr=cv.price=conceivePrice(cv.parent,lab.v||cv.parent),over=pr.total>cv.budget+1e-9;
   let h='<div id="lab-cv" class="cv'+(over?' over':'')+'"><div class="hd">conception<span class="v">generation '+(cv.gen+1)+'</span></div><div class="row"><span>the bill</span><span class="v">'+pr.total.toFixed(2)+' of '+cv.budget.toFixed(1)+'</span></div>';

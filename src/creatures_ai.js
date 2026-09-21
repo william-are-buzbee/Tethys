@@ -172,7 +172,7 @@ function wander(c,dt){c.wanderT-=dt;if(c.wanderT<=0||c.pos.distanceTo(c.wander)<
 function preyOn(d,o){if(d.prey.indexOf(o.kind)>=0)return true;return !!(o.def.line&&d.prey.indexOf('player')>=0&&(!d.preyClade||o.def.lineId===d.preyClade));}
 function findPrey(c,R){
   const d=c.def;let best=null,bd=1e9;if(R===undefined)R=d.detect;
-  if(d.prey.indexOf('player')>=0&&!player.dead&&player.inkT<=0&&(!d.preyClade||(player.clade&&player.clade.id===d.preyClade))){const dp=c.pos.distanceTo(player.pos);if(dp<R){best=player;bd=dp*0.7;}}
+  if(d.prey.indexOf('player')>=0&&!playerGone()&&player.inkT<=0&&(!d.preyClade||(player.clade&&player.clade.id===d.preyClade))){const dp=c.pos.distanceTo(player.pos);if(dp<R){best=player;bd=dp*0.7;}}
   for(const o of creatures){if(!o.alive||o===c)continue;if(!preyOn(d,o)&&!(o.soft&&softPrey(c,o)))continue;const dd=c.pos.distanceTo(o.pos);if(dd<R&&dd<bd){bd=dd;best=o;}} // a soft body of any kind is prey to a hunter big enough (v11.66, MOULT)
   return best;
 }
@@ -269,7 +269,7 @@ function updateHunter(c,dt){
     // pursuit that has run ECO_CHASE seconds without a bite (a real pursuit is short; prey with a flee speed at its hunter's cruise outran
     // every hunter for good before this, and no hunt in the game ever ended in a meal). The clock stops while it has hold of the prey (v11.31)
     if(!c.hold)c.chaseT=(c.chaseT||0)+dt;const chaseK=tg===player?1:1+0.6*smooth(6,2,c.chaseT);
-    const lost=!tg||(tg!==player&&!tg.alive)||ashore||dist>(bleeding(tg)?Math.max(d.detect*1.6,SMELL_R*1.2):d.detect*1.6)||(tg===player&&(player.dead||(player.inkT>0&&dist>3.5)))||c.bored>2||c.pos.distanceTo(c.home)>(d.home||30)*1.9||(tg!==player&&c.chaseT>ECO_CHASE);
+    const lost=!tg||(tg!==player&&!tg.alive)||ashore||dist>(bleeding(tg)?Math.max(d.detect*1.6,SMELL_R*1.2):d.detect*1.6)||(tg===player&&(playerGone()||(player.inkT>0&&dist>3.5)))||c.bored>2||c.pos.distanceTo(c.home)>(d.home||30)*1.9||(tg!==player&&c.chaseT>ECO_CHASE);
     if(lost){dropTarget(c,d.cool||4);}
     else if(d.strike){
       // the strike (PLANET, hingeshells; the platebacks' bite): in range, the tell first — it slows, cocks and turns to the prey —
@@ -310,9 +310,9 @@ function updateTrap(c,dt){
 // player it walks up to a standoff of `stand` and holds there facing the player, following if they move, backing off if they
 // come closer than half the standoff, and drifting back to its wander when they leave.
 function updateWatcher(c,dt){
-  const d=c.def,dp=player.dead?1e9:c.pos.distanceTo(player.pos),stand=d.stand||6;
+  const d=c.def,dp=playerGone()?1e9:c.pos.distanceTo(player.pos),stand=d.stand||6;
   if(c.state!=='curious'){if(dp<d.detect&&mode==='play'){c.state='curious';}else{c.face=null;if(!scavenge(c,dt))wander(c,dt);return;}}
-  if(dp>d.detect*1.4||player.dead){c.state='wander';c.face=null;setWander(c);return;}
+  if(dp>d.detect*1.4||playerGone()){c.state='wander';c.face=null;setWander(c);return;}
   T1.copy(c.pos).sub(player.pos);T1.y=0;const L=T1.length()||1;T1.multiplyScalar((dp<stand*0.55?stand*1.5:stand)/L).add(player.pos);
   T1.y=groundAt(T1.x,T1.z)+d.size*0.35+0.4;
   const far=c.pos.distanceTo(T1);if(far>1.5)seek(c,T1,Math.min(d.speed,far*0.8),dt,1.6);else c.vel.multiplyScalar(1-3*dt);
@@ -328,7 +328,7 @@ function updateBoid(c,dt){
   T3.copy(s.target).sub(c.pos);const L=T3.length()||0.01;T3.multiplyScalar(Math.min(1,L/6)/L);
   if(n){const iv=0.5/(n*d.speed),ic=0.3/(n*R);T3.x+=ax*iv+cx*ic+sx*1.0;T3.y+=ay*iv+cy*ic+sy*1.0;T3.z+=az*iv+cz*ic+sz*1.0;}
   T3.x+=0.35*Math.sin(t*1.1+c.t0);T3.y+=0.15*Math.sin(t*0.9+c.t0*1.7);T3.z+=0.35*Math.cos(t*1.3+c.t0*0.6); // its own wander, so the ribbon frays and re-forms
-  let fl=0;if(!player.dead){const dd=c.pos.distanceTo(player.pos);if(dd<6){T2.copy(c.pos).sub(player.pos).normalize().multiplyScalar(2);T3.add(T2);fl=1;}}
+  let fl=0;if(!playerGone()){const dd=c.pos.distanceTo(player.pos);if(dd<6){T2.copy(c.pos).sub(player.pos).normalize().multiplyScalar(2);T3.add(T2);fl=1;}}
   if(s.threat){const dd=c.pos.distanceTo(s.threat);if(dd<8){T2.copy(c.pos).sub(s.threat).normalize().multiplyScalar(2);T3.add(T2);fl=1;}} // the school scans for hunters; a member only reads the answer
   T3.y*=0.5;const M=T3.length()||0.01,sp=fl?d.flee:d.speed*Math.min(1,0.35+M);T3.multiplyScalar(sp/M);curComp(c,T3,sp);
   c.vel.lerp(T3,1-Math.exp(-3.5*dt));
@@ -342,7 +342,7 @@ function updateSchools(dt){
     // threats: the player, and any hunter of the members' kind, scanned four times a second (every member reading every creature
     // was a thousand by a thousand a frame)
     s.scanT=(s.scanT||0)-dt;if(s.scanT<=0){s.scanT=0.25;let th=null,td=14;const kind=s.members.length?s.members[0].kind:'';
-      if(!player.dead){const d=s.pos.distanceTo(player.pos);if(d<td){th=player.pos;td=d;}}
+      if(!playerGone()){const d=s.pos.distanceTo(player.pos);if(d<td){th=player.pos;td=d;}}
       for(const c of creatures){if(!c.alive||!c.def.prey||c.def.prey.indexOf(kind)<0)continue;const d=s.pos.distanceTo(c.pos);if(d<td){th=c.pos;td=d;}}
       s.threat=th;}
     const th=s.threat;
@@ -354,7 +354,7 @@ function updateGrazer(c,dt){
   if(d.calm){wander(c,dt);return;} // the tread: nothing hunts it, so nothing moves it
   // threats, scanned three times a second (a hundred grazers reading a thousand creatures a frame was the frame's biggest cost)
   c.scanT-=dt;if(c.scanT<=0){c.scanT=0.3;let threat=null;
-    if(!player.dead&&c.pos.distanceTo(player.pos)<8)threat=player.pos;
+    if(!playerGone()&&c.pos.distanceTo(player.pos)<8)threat=player.pos;
     if(!threat)for(const o of creatures){if(!o.alive||!o.def.prey)continue;const big=o.def.size>=6;if((big||preyOn(o.def,c))&&c.pos.distanceTo(o.pos)<(big?18:7)){threat=o.pos;break;}}
     c.threat=threat;}
   const threat=c.threat;
@@ -370,8 +370,8 @@ function scavenge(c,dt){const d=c.def;if(!d.scav)return false;
   if(dist>at)seek(c,f.pos,d.speed*0.7,dt,1.4);else{c.vel.multiplyScalar(1-3*dt);eatAt(c,f,dt);c.face=f.pos;}return true;}
 function updateCoil(c,dt){
   const d=c.def;c.cool-=dt;const dist=c.pos.distanceTo(player.pos);
-  if(c.state==='ram'){c.ramT-=dt;seek(c,player.pos,d.ram,dt,3);c.biteT-=dt;if(dist<reachOf(c,player)&&c.biteT<=0){c.biteT=2;wound(player,d.dmg,c,null,'snap');}if(c.ramT<=0||player.dead){c.state='wander';c.cool=8;setWander(c);}}
-  else{if(dist<d.radius&&c.cool<=0&&!player.dead){c.state='ram';c.ramT=3.5;}wander(c,dt);}
+  if(c.state==='ram'){c.ramT-=dt;seek(c,player.pos,d.ram,dt,3);c.biteT-=dt;if(dist<reachOf(c,player)&&c.biteT<=0){c.biteT=2;wound(player,d.dmg,c,null,'snap');}if(c.ramT<=0||playerGone()){c.state='wander';c.cool=8;setWander(c);}}
+  else{if(dist<d.radius&&c.cool<=0&&!playerGone()){c.state='ram';c.ramT=3.5;}wander(c,dt);}
 }
 // the ambushers (the lurker, the hook) lunge at their prey (v11.26: a prey list, not only the player), when hungry
 function updateLurker(c,dt){
@@ -379,14 +379,14 @@ function updateLurker(c,dt){
   if(c.state==='sit'){c.vel.set(0,0,0);c.cool-=dt;c.scanT-=dt;if(c.scanT<=0){c.scanT=0.25;if(c.cool<=0&&c.hunger>ECO.hungry){const tg=findPrey(c,d.radius);if(tg){c.state='lunge';c.target=tg;c.lungeT=1.3;}}}}
   else if(c.state==='lunge'){const tg=c.target,tp=tg===player?player.pos:tg?tg.pos:c.home,dist=c.pos.distanceTo(tp);c.lungeT-=dt;seek(c,tp,d.lunge,dt,6);c.biteT-=dt;c.grab=c.b.rigs&&tg&&dist<armReach(c,tg,1.6)?tg:null;if(d.hang||d.strikeOnLunge)c.st.strike=1; // strikeOnLunge (v11.66): the hood's claws open on the way up
     if(c.lungeC>0){c.lungeC-=dt;c.vel.multiplyScalar(1-2*dt);if(c.lungeC<=0){c.lungeC=0;c.biteT=1;if(tg&&dist<reachOf(c,tg)*MISS.range&&dodged(tp,c.lungeP,c.lungeN)<missWin(tg,MISS.t))landBite(c,tg);else if(tg)missed(c,tg);if(c.state!=='feed')c.state='return';}} // the lunge's commit (v11.56)
-    else if(tg&&dist<reachOf(c,tg)&&c.biteT<=0){c.lungeC=MISS.t;[c.lungeP,c.lungeN]=commitAt(c,tp,c.lungeP,c.lungeN);}if((c.lungeT<=0&&!(c.lungeC>0))||!tg||(tg!==player&&!tg.alive)||(tg===player&&player.dead)){c.state='return';c.lungeC=0;}}
+    else if(tg&&dist<reachOf(c,tg)&&c.biteT<=0){c.lungeC=MISS.t;[c.lungeP,c.lungeN]=commitAt(c,tp,c.lungeP,c.lungeN);}if((c.lungeT<=0&&!(c.lungeC>0))||!tg||(tg!==player&&!tg.alive)||(tg===player&&playerGone())){c.state='return';c.lungeC=0;}}
   else if(c.state==='feed'){const f=c.feedAt;c.feedT-=dt;if(!f||f.gone||f.flesh<=0||c.feedT<=0){c.state='return';c.feedAt=null;return;}const dist=c.pos.distanceTo(f.pos);if(dist>reachOf(c,f)*0.8)seek(c,f.pos,3,dt,2);else{c.vel.multiplyScalar(1-3*dt);eatAt(c,f,dt);}}
   else{c.grab=null;if(!c.hold)c.target=null;seek(c,c.home,4,dt,2);if(c.pos.distanceTo(c.home)<0.8){c.state='sit';c.cool=3;c.pos.copy(c.home);}} // v11.31: what it has hold of comes home with it
   if(c.state==='flee')c.state='return';
 }
 function updateJelly(c,dt){
   const k=c.def.size>3?0.5:1;c.vel.set(0.3*k*Math.sin(t*0.3*k+c.t0),0.15*k*Math.sin(t*0.5*k+c.t0),0.3*k*Math.cos(t*0.27*k+c.t0));
-  c.biteT-=dt;if(c.def.dmg>0&&!player.dead&&c.biteT<=0&&c.pos.distanceTo(player.pos)<Math.max((c.def.reach||0)+1,reachOf(c,player))){c.biteT=0.6;stingPlayer();}
+  c.biteT-=dt;if(c.def.dmg>0&&!playerGone()&&c.biteT<=0&&c.pos.distanceTo(player.pos)<Math.max((c.def.reach||0)+1,reachOf(c,player))){c.biteT=0.6;stingPlayer();}
 }
 // The sailer (DRIFTERS.md): rides the wave (the surface rule below), carried by the current like everything, and sails at ~5% of the
 // wind at 40° off downwind — left- or right-handed by the animal, so one wind sorts a fleet two ways. The whole animal is yawed to its
@@ -398,7 +398,7 @@ function updateSailer(c,dt){
   c.vel.set(Math.cos(a)*sp,0,Math.sin(a)*sp);
   const th=HPI-a;_q.setFromAxisAngle(UP,th);c.g.quaternion.slerp(_q,1-Math.exp(-0.5*dt));
   const cs=Math.cos(th),sn=Math.sin(th),wx=-c.vel.x,wz=-c.vel.z;c.st.lx=wx*cs-wz*sn;c.st.lz=wx*sn+wz*cs;
-  c.biteT-=dt;if(c.biteT<=0&&!player.dead&&c.lod===0&&c.b.rigs){const R=d.lines*d.lines;
+  c.biteT-=dt;if(c.biteT<=0&&!playerGone()&&c.lod===0&&c.b.rigs){const R=d.lines*d.lines;
     for(const rig of c.b.rigs)for(const ch of rig.chains){const P=ch.pts;for(let k=1;k<=ch.n;k++){const dx=P[k*3]-player.pos.x,dy=P[k*3+1]-player.pos.y,dz=P[k*3+2]-player.pos.z;
       if(dx*dx+dy*dy+dz*dz<R){c.biteT=0.7;stingPlayer();return;}}}}
 }

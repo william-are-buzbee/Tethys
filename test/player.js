@@ -7,7 +7,7 @@ const ORDER=fs.readFileSync(path.join(ROOT,'src','order.txt'),'utf8').split('\n'
 let js=ORDER.map(n=>fs.readFileSync(path.join(ROOT,'src',n+'.js'),'utf8')).join('\n');
 js+='\nglobal.__pl={CLADES,SPECS,DEFS,derive,statsOf,playerClade,player,startNew,startFrom,saveNow,saveRefresh,get saveList(){return saveList;},get curSave(){return curSave;},get mode(){return mode;},SAVE_V,specToJSON};';
 js+='\nglobal.__line={get t(){return t;},setT(v){t=v;clockH=t*CLOCK_RATE;},DAY_S,LINE,BROOD_SURVIVE,groundAt,lay:()=>playerLay()&&conceiveClose(true),eggs:()=>eggs,cur:()=>lineCur(),line:()=>curSave?curSave.line:null,die:(c)=>die(c),live:(b)=>broodLive(b),young:(b)=>creatures.filter(c=>c.alive&&c.brood===b),tick:(dt)=>lineTick(dt),children:()=>lineChildren(),clear:()=>worldClear(),cells:()=>cellsAround()};';
-js+='\nglobal.__cv={lab,open:()=>playerLay(),close:(d)=>conceiveClose(d),build:()=>labBuild(),load:(sp)=>labLoad(sp),price:(a,b)=>conceivePrice(a,b),budget:(g)=>conceiveBudget(g),BUDGET,paramOf,frame:(sp)=>compileFrame(sp),spark:()=>spark,noSpark:()=>{spark=null;}};';
+js+='\nglobal.__cv={lab,open:()=>playerLay(),close:(d)=>conceiveClose(d),build:()=>labBuild(),load:(sp)=>labLoad(sp),price:(a,b)=>conceivePrice(a,b),budget:(g)=>conceiveBudget(g),BUDGET,paramOf,frame:(sp)=>compileFrame(sp),spark:()=>spark,gone:()=>playerGone(),hunter:(kind,dx)=>{const p=V3(player.pos.x+dx,player.pos.y+1,player.pos.z),c=spawn(chunkAt(p.x,p.z),kind,p,mulberry(11),{ent:-1});c.hunger=1;return c;},noSpark:()=>{spark=null;}};';
 const tmp=path.join(require('os').tmpdir(),'tethys_player.js');
 fs.writeFileSync(tmp,'(function(){"use strict";\n'+js+'\n})();');
 require('./stub.js');require(tmp);
@@ -113,6 +113,11 @@ const Cf=X.player.clade;check(['speed','accel','turn','mass','bite','cam','sprin
   check(X.mode==='play'&&!P.dead&&L.line().length===2&&X.specToJSON(C2.spec)===X.specToJSON(kid2),'dead with an edited clutch: you continue as the child you shaped ('+C2.spec.id+')');
   L.setT(L.cur().grown+1);__step(3);const C3=P.clade,d3=X.derive(kid2);
   check(!C3.juv&&C3.speed===d3.speed&&C3.turn===d3.turn&&C3.accel===d3.accel&&C3.speed!==fin.speed,'grown, it plays on its own derived numbers: speed '+C3.speed+' (the parent '+fin.speed+'), accel '+C3.accel+', turn '+C3.turn);
+  // v11.72.1: out of the world while the window is open — a hungry eel 7 m off neither sees nor takes the parent; back in the world on the close, it does
+  floor();L.setT(L.cur().grown+2);const eel=V.hunter('eel',7);V.open();__step(180);
+  check(V.gone()&&P.g.visible===false&&eel.target!==P&&!P.hold&&!(P.bleed>0),'the window open: the parent is hidden and a hungry eel 7 m off leaves it alone for 3 s (its target: '+(eel.target?(eel.target===P?'the player':eel.target.kind):'none')+')');
+  V.close(true);const vis=P.g.visible;let took=false;for(let i=0;i<40&&!took;i++){eel.pos.set(P.pos.x+7,P.pos.y+1,P.pos.z);eel.hunger=1;eel.state='wander';__step(15);took=eel.target===P;}
+  check(!V.gone()&&vis===true&&took,'the window closed: the body is back, and the eel takes it as prey');eel.alive&&(eel.target=null);L.setT(L.t+L.DAY_S);
   floor();V.open();check(V.lab.conceive&&V.lab.conceive.gen===2&&V.lab.conceive.budget===V.budget(2)&&X.specToJSON(V.lab.conceive.parent)===X.specToJSON(kid2),'and its own conception starts from its spec with generation 2\'s budget ('+V.budget(2)+')');V.close(true);
 }
 console.log(fails?'player: '+fails+' FAILED':'player: all ok');

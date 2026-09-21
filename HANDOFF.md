@@ -1,15 +1,18 @@
 # HANDOFF — tethys
 
+**v11.72.1 (21 Sep 2026): out of the world while you edit.** The person on v11.72: "a lot of fun"; the sparkle on the clutch is in, the budget
+as the only cap works for now (§11.5), 3 points is OK for now (LINEAGE §12.21–24). Built their fourth answer: while the editor at conception is
+open the parent is hidden and nothing can see, chase, hold or hurt it (player.js `playerAway`, `playerGone()` wherever the AI or combat asks
+whether the player is there); back the frame the window closes. **Ask first** whether the return beside something hungry wants a second of grace.
+
 **v11.72 (21 Sep 2026): the editor at conception (LINEAGE §13.4), the finback only.** `x` opens the lab as the creator over the world on your own
 spec, the clade locked. Close unchanged (or `decline`) and the clutch is a copy, the generation counted; close changed within the budget and the
 clutch carries the child — the sparkle plays on it — and at your death you are that child, on its own derived numbers (v11.71); over the budget
 the lab will not commit and says what costs what. line.js `BUDGET` prices the diff off the v11.70 registry (a number by how far it moves across
 its believable band, parts added, dropped and restyled by their registry cost, a core 6, size 4 a doubling) against 3 + 1.5 a generation. The
 fuel half of §6 waits on the player's hunger: until then a clutch's cooldown goes with the child's derived mass (`LINE.cool`, `LINE.coolM`).
-No hard cap on the distance from the parent — the budget is the cap, a default: **§11.5 is still the person's.** Found: 0.45 points of tail
-buys +31% speed, because `derive`'s tail lobes weigh and drag nothing — the next term. **Ask first** the sparkle on the clutch (drawn, not
-judged: the pane had no viewport), then §11.5, then whether 3 points is a choice at generation 2, then whether the world should pause while
-the window is open. Not built: disposition and followers (§8.2's derived `DEFS`), the other two clades' modes.
+No hard cap on the distance from the parent — the budget is the cap (answered for now, §12.22). Found: 0.45 points of tail
+buys +31% speed, because `derive`'s tail lobes weigh and drag nothing — the next term. (Its four asks were answered the same day: v11.72.1 above.) Not built: disposition and followers (§8.2's derived `DEFS`), the other two clades' modes.
 
 **v11.71 (21 Sep 2026): one calculator for every animal.** The person: a child's speed is derived from its body like any animal's — "a universal
 logic of how fast an animal moves based on its size and mass and such" (LINEAGE §12.20; it replaces CREATOR's decision 2 for anything in the
