@@ -1,13 +1,19 @@
 # HANDOFF — tethys
 
+**v11.70.1 (21 Sep 2026): the registry answered.** The person on v11.70: "much much better … a lot of fun this time making creatures". Their six
+answers built (CREATOR.md, Fifth round): the slit the hingeshells' only; `arms:hold` off, kept; **a style is one clade's** — `spines` split into the
+slowbloods' `row` and the hingeshells' `thorns` (same build for now, a first pass; old saves migrate by `was`); back and placed valves stay two
+(back in fractions of the body, placed in metres); a second mouth allowed; **every piece has controls** (the valve eyes, the tail spine and plates,
+the keel, the hood, back and small) but `tail:stub` and `weapon:ram`, which build nothing. The roster identical to the bit. **Ask first** how the
+hingeshells' thorns should look now that they may differ, then whether the ram's blow wants its numbers on the animal.
+
 **v11.70 (21 Sep 2026): the registry pass.** The person's complaint of 20 Sep (the creator's parts "duplicates, or blank, or parts from another
 animal type"). `test/registry.js` (in `--test`) walks everything the lab offers through the real panel; on v11.69: 62 of 505 offers did not
 build, 105 had a blank control, 32 a duplicate name, none crossed a clade. One registry now (creatures_spec.js): `PARTS[kind].reg` — a style's
 clades, cores and params — and every parameter's label, unit, bands and default on its own line, read through `paramOf`; `STYLE_CLADES`, `PSTYLE`,
 `LAB_NAME`, `LAB_NAME_BY` are gone. Fixed: a coat lacking a colour (the sac and every shell failed in the lab), parts on a core that cannot carry
 them, lists without defaults, false names off the shared table, a core change keeping the last core's parts. 578 of 578 now; all 42 species
-compile identically. **Ask first** the six judgement calls in CHANGELOG v11.70 — first whether a style worn on one core only (the bean's clam
-valves on a trunk) counts as "another animal type", since that is one word per style in the registry. Next in the creator: one segmented body
+compile identically. The six judgement calls were answered and built as v11.70.1. Next in the creator: one segmented body
 with a smoothing term, then direct manipulation and the studio (the lab's camera still frames by `size`).
 
 **v11.69 (21 Sep 2026): the first loop, the finback only (LINEAGE §13.1–2).** `src/line.js`: the slot carries the line — lives with their

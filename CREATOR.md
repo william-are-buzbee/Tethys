@@ -281,9 +281,16 @@ colours a core or a part reads (the sac, every shell), defaults reading a frame 
 slowblood, `withdraw` off the shelled body), lists with no default (`pairs`, `prof`), a name table a file away from the ranges it named
 (raw keys; "tooth length" on a trunk's tail), and a core change that kept the last core's parts. Built: one registry — `PARTS[kind].reg`
 (a style's clades, cores and params) and a label, unit, bands and default on every parameter's own line, read through `paramOf` (DESIGN,
-Creatures, The registry). The judgement calls are open and the person's (CHANGELOG v11.70, Ask first): `mouth:slit` across three clades;
-`arms:hold` worn by nothing; whether a style worn on one core only should be offered on its clade's others; `valves:placed` = `valves:back`
-at its defaults; a second mouth from the add list; the five styles with no controls.
+Creatures, The registry). **The person's answers (21 Sep 2026), built v11.70.1:**
+1. `mouth:slit`: the hingeshells' only, for now (unsure).
+2. `arms:hold`: disabled, not deleted (`off`).
+3. **A style is one clade's.** "Each clade is genetically distinct, but it's possible two clades may have a similar adaptation given
+   similar ancestry and convergent evolution. But they necessarily have to be different. Two parts that look similar must be genetically
+   distinct if they are on different clades … they should be separate pieces always. Any actual reusing of parts is just a first pass —
+   every clade's parts are related to that clade." (`spines` split into the slowbloods' `row` and the hingeshells' `thorns`; the test enforces it.)
+4. `valves:back` and `valves:placed`: "probably two, but only if that makes sense" — two: back follows the body in fractions, placed is in metres.
+5. A second mouth: allowed.
+6. "All pieces should have control." Every piece has controls but the two that build nothing (`tail:stub`, `weapon:ram`).
 
 ## The size ceiling (20 Sep 2026) — what a monstrous animal costs
 

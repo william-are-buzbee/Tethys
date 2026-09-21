@@ -8,7 +8,8 @@
 //   dup     two controls with one label in one panel, a style twice in a select, a kind twice in the add list; and, where a finished animal's
 //           core is changed (every species onto every other core of its clade), a part the new core is itself, or a style that cannot stand on it
 //   foreign offered to a clade the registry does not declare it for; undeclared: no clade declared at all (to v11.69 stylesFor let those through to every clade of the kind)
-// and, as information only: a style declared for a clade none of whose species wears it (the Ask-first list), a part with no controls.
+//   bare    a piece with no controls (v11.70.1, the person: every piece has control) — tail:stub and weapon:ram are exempt: they build nothing
+// and, as information only: a style declared for a clade none of whose species wears it, styles that build the same body at their defaults.
 // Then the registry read directly (labels, bands, defaults, the styles' clades, cores and params, the roster against it). Fails on any FAIL, blank,
 // dup, foreign or undeclared, and on any fault in the registry. The lab is not tier-dependent: one run. Real geometry (test/geo.js), the same bundle and stub as the smoke test.
 //   node test/registry.js          the summary and every line that is not clean
@@ -67,6 +68,7 @@ function broken(){const L=X.lab;if(!L.b)return String(X.labCap.innerHTML).replac
 const sel=(act,v)=>X.labOnSelect({target:{dataset:{act:act},value:v}}),
   input=(p,v)=>X.labOnInput({target:{dataset:{path:p},value:v,tagName:'SELECT',type:'select-one'}});
 // ---------- the walk ----------
+const BARE_OK={'tail:stub':1,'weapon:ram':1}; // build nothing: the stub is no tail, the ram's blow is the head's (its numbers are combat.js RAM's)
 const alike={},finger=()=>{let n=0,sum=0;X.lab.b.g.traverse(o=>{sum+=o.position.x*3+o.position.y*5+o.position.z*7+o.rotation.x*11+o.rotation.y*13+o.rotation.z*17+o.scale.x*19+o.scale.y*23;if(!o.isMesh||!o.geometry||!o.geometry.attributes.position)return;const a=o.geometry.attributes.position.array;n+=a.length/9;for(let i=0;i<a.length;i++)sum+=a[i]*(1+(i%7));});return n+':'+sum.toFixed(3);};
 const lines=[],tot={offered:0,ok:0,fail:0,blank:0,dup:0,foreign:0,undeclared:0},unworn={},empty={};
 function note(mode,clade,core,what,r){tot.offered++;const bad=r.fail||r.blank.length||r.dup.length||r.foreign;if(r.fail)tot.fail++;else tot.ok++;if(r.blank.length)tot.blank++;if(r.dup.length)tot.dup++;if(r.foreign)tot[/^foreign/.test(r.foreign)?'foreign':'undeclared']++;
@@ -96,7 +98,7 @@ for(const mode of ['dev','creator']){
         if(!dec){if(!w[clade]&&Object.keys(w).length)foreign='foreign: worn only by '+Object.keys(w).join(', ')+', declared for no clade, so offered to every clade of the kind';else foreign='undeclared: no clade listed for it (offered by the fall-through)';}
         else if(dec.indexOf(clade)<0)foreign='foreign: declared for '+dec.join(', ');
         else if(!w[clade])(unworn[key]=unworn[key]||{})[clade]=1;
-        if(!rows.length&&!fail)empty[key]=1;
+        if(!rows.length&&!fail&&!BARE_OK[key])empty[key]=1;
         if(!fail&&mode==='dev'){const a=alike[clade+' '+core+' '+kind]=alike[clade+' '+core+' '+kind]||{},fp=finger();(a[fp]=a[fp]||[]).push(st);}
         note(mode,clade,core,key,{fail:fail,blank:blanks(rows,kind),dup:dups(rows),foreign:foreign,n:rows.length});
       }
@@ -118,7 +120,9 @@ const checkParams=(owner,params)=>{for(const key in params){const q=params[key];
   if(q.by)for(const st in q.by)if(!X.PARTS[owner]||!X.PARTS[owner].reg[st])R.push(owner+'.'+key+': a label for a style the part has not ('+st+')');}};
 for(const k in X.CORES)checkParams(k,X.CORES[k].params);
 for(const k in X.PARTS){const d=X.PARTS[k];checkParams(k,d.params);if(!d.reg||!Object.keys(d.reg).length){R.push(k+': no styles');continue;}
-  for(const st in d.reg){const r=d.reg[st];if(!r.clades||!r.clades.length)R.push(k+':'+st+': no clade');else for(const c of r.clades)if(!X.GRAMMAR[c])R.push(k+':'+st+': '+c+' is no clade');
+  for(const st in d.reg){const r=d.reg[st];if(!r.clades||!r.clades.length)R.push(k+':'+st+': no clade');else if(r.clades.length>1)R.push(k+':'+st+': declared for '+r.clades.join(' and ')+' — a style is one clade\'s (the person, 21 Sep 2026: two clades\' parts are genetically distinct however alike)');
+    if(r.was&&!d.reg[r.was])R.push(k+':'+st+': split from '+r.was+', which the part has not');
+    if(r.off)for(const id in X.SPECS)if(X.SPECS[id].parts.some(p=>p.kind===k&&p.style===st))R.push(id+' wears '+k+':'+st+', which is off');else for(const c of r.clades)if(!X.GRAMMAR[c])R.push(k+':'+st+': '+c+' is no clade');
     for(const c of r.cores||[])if(!X.CORES[c]||r.clades.indexOf(X.CORES[c].clade)<0)R.push(k+':'+st+': the core '+c+' is not a body of its clades');
     for(const p of r.params||[])if(!d.params[p])R.push(k+':'+st+': reads '+p+', which the part has not');R.push.apply(R,twice(r.params||[],k+':'+st+' lists'));}}
 for(const id in X.SPECS){const sp=X.SPECS[id];for(const p of sp.parts){const d=X.PARTS[p.kind],st=p.style||(d&&d.styles[0]);if(!d){R.push(id+': no part '+p.kind);continue;}
@@ -142,7 +146,7 @@ console.log('registry: '+tot.offered+' offered (clade × core × kind × style i
 for(const l of lines)console.log('  '+l);
 const uw=Object.keys(unworn).map(k=>k+' ('+Object.keys(unworn[k]).join(', ')+')');
 if(uw.length)console.log('  declared for a clade none of whose species wears it (information; the Ask-first list): '+uw.join('; '));
-if(Object.keys(empty).length)console.log('  parts with no controls (information): '+Object.keys(empty).join(', '));
+if(Object.keys(empty).length){console.log('  pieces with no controls: '+Object.keys(empty).join(', '));R.push(Object.keys(empty).length+' pieces with no controls');}
 const la=[];for(const k in alike)for(const fp in alike[k])if(alike[k][fp].length>1)la.push(k+': '+alike[k][fp].join(' = '));
 if(la.length)console.log('  styles that build the same body at their defaults (information; a duplicate that might be two things): '+la.join('; '));
 console.log('registry, read directly: '+(R.length?R.length+' faults':'sound'));for(const r of R)console.log('  '+r);

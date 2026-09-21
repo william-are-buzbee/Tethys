@@ -4622,3 +4622,38 @@ inventory first, one registry, fix what it finds, leave the judgement calls. Inv
   6. Five styles have no controls (`eyes:valve`, `tailplate:spine`, `tailplate:plates`, `keel:ventral`, `weapon:ram`): fixed pieces, or to be opened?
 - **Unseen**: the creator from the menu with a real profile (the test sees everything; a real game has seen little); `p` placing a lab
   animal whose coat was filled; the look of a filled colour against a hand-drawn coat (it takes the clade's first coat that has the key).
+
+## v11.70.1 — the registry answered: a style is one clade's, every piece has controls (21 Sep 2026)
+
+The person on v11.70: "much much better … I actually had a lot of fun this time making creatures", and the six asks answered (CREATOR.md,
+Fifth round). Built:
+
+1. **`mouth:slit` is the hingeshells' only** (for now; the person is not sure). It was declared for all three clades; only the flicker wears it.
+2. **`arms:hold` is off, not deleted**: `off: true` on its registry line; `stylesFor` offers an off style to no one, the build is kept.
+3. **A style is one clade's.** The person: each clade is genetically distinct; two clades may converge on a similar adaptation, but the
+   parts are necessarily different pieces, and any reuse is a first pass. The one style declared for two clades, `spines:row`, is split:
+   `row` the slowbloods', `thorns` the hingeshells' (hook, picker, cinder), still the same build — the first pass the person allows; how a
+   hingeshell's thorns should differ is a content pass. `was: 'row'` on thorns: a saved hingeshell that wears the old name moves to it with
+   its numbers (`validate`), and the profile re-reads its seen species' parts at load so the creator offers thorns to whoever saw a hook
+   (save.js `profileLoad`). The test now fails on a style declared for two clades. (Asked about styles across a clade's *cores*; the answer
+   was about clades, which I read as: within a clade every core may wear every style, so that stays.)
+4. **`valves:back` and `valves:placed` stay two**, and now differ by more than a name: `back` and `small` are in fractions of the body
+   (`fa` front edge, `fb` back edge — or length on small —, `fw` width, `fy` height, `ft` thickness, unit ×body), so they follow it when the
+   core changes; `placed` is the same pair in metres and stays where it is put. At the trunk's defaults they build the same body, as before.
+   `small` is the same machine as `back` with other fractions; kept, the roster wears both.
+5. **A second mouth is allowed** — it was; nothing changed.
+6. **Every piece has controls.** `eyes:valve` (`vs`, `vs2` the front and back eye, `vx` out ×valve, `vy`, `vf`, `vb` along ×valve; the valves'
+   build reads them through `ctx.eyeP`), `tailplate:spine` (`sl`, `sr`, `st`, `sy`, `sz`), `tailplate:plates` (`pz`, `ph`, `pl`), `keel:ventral`
+   (`w`, `h`, `l`, `y`, `z`; its cover reads them), `valves:hood` (`kw`, `kl`, `kh` ×head, `lift`), and back/small above. Each default is the
+   number that was hard-coded. **Two stay bare, and say why**: `tail:stub` builds nothing (it is the absence of a tail), and `weapon:ram`
+   builds nothing either — the blow is the head's, and its strength is combat.js `RAM` (stun 2.5 s, daze 2, cool 3), one table for every
+   ram. A reach control on it moved the ram's derived reach 4.6 → 8.1 m (its reach term was NaN and dropped until then), so it was taken
+   back. The test fails on any other piece without controls.
+
+- **Identical**: all 42 species' geometry, capsules, grip, edge, cover, gape, `derive` and `statsOf` unchanged to the bit against v11.70;
+  the validated specs differ only by the new controls' defaults and the thorns rename. `--test` green on both tiers; the registry test 569
+  of 569 (hold's offers are gone).
+- **Seen** in the app's browser: the hose's eye and valve controls with the eyes enlarged and the valves widened; the hood's plate lengthened
+  and its tail spine drawn out. The first labels ("width, of the body") were cut off by the panel's column; the fraction moved into the unit.
+- **Unseen, ask in this order**: how a hingeshell's thorns should look against a slowblood's spines, now that they may differ; whether the
+  ram's blow wants its numbers on the animal (per ram, from the part) rather than one `RAM` table.

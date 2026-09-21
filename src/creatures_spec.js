@@ -916,10 +916,12 @@ const DEG = Math.PI / 180;
 // which styles belong to which clade, and stand on which core: the registry's word (PARTS[kind].reg, v11.70; STYLE_CLADES to v11.69, which listed
 // only eyes, mouth and arms and let every unlisted style through to every clade of its kind). The lab offers only these, validate corrects the
 // rest (answer 1 of the second round). core: a core kind, where the asker has one — a style with `cores` stands only on those, and a kind the
-// core provides itself (the chain body is its own tail) has no styles there.
+// core provides itself (the chain body is its own tail) has no styles there. A style with `off` is kept in the kit and offered to no one
+// (v11.70.1: arms:hold, worn by nothing; the person: disable, don't delete); `was` names the style it was split from, so a spec that
+// wears the old name moves to it with its numbers (validate).
 function styleClades(kind,style){const d=PARTS[kind],r=d&&d.reg[style];return r?r.clades:null;}
 function stylesFor(kind,clade,core){const d=PARTS[kind];if(!d)return [];if(core&&CORES[core]&&(CORES[core].provides||[]).indexOf(kind)>=0)return [];
-  return d.styles.filter(st=>{const r=d.reg[st];return r.clades.indexOf(clade)>=0&&(!core||!r.cores||r.cores.indexOf(core)>=0);});}
+  return d.styles.filter(st=>{const r=d.reg[st];return !r.off&&r.clades.indexOf(clade)>=0&&(!core||!r.cores||r.cores.indexOf(core)>=0);});}
 // the mouth parts of a hingeshell (answer 6): around a plate ring at (x0,y0,z0) that faces `down` or forward — mandibles (a pair of
 // curved blades that close inward), palps (short jointed stubs, leg()), feelers (thin whiskers fanned out)
 function feedParts(P, pal, y0, z0, R, down, kind, n, len) {
@@ -1020,7 +1022,7 @@ const PARTS = {
       rim:{clades:['hingeshells'],params:['n','x','y','z','size','sweep','snap']},
       crown:{clades:['hingeshells'],params:['x','y','z','len','size','tilt','snap']},
       under:{clades:['hingeshells'],params:['n','x','y','z','size','snap']},
-      valve:{clades:['hingeshells'],params:[]},
+      valve:{clades:['hingeshells'],params:['vs','vs2','vx','vy','vf','vb']},
       arc:{clades:['hingeshells'],params:['n','x','r','y','z','arc','size','snap']},
       rows:{clades:['hingeshells'],params:['n','rows','x','y','z','dy','dz','size','size2','snap']}
     },
@@ -1100,6 +1102,13 @@ const PARTS = {
       rows: {label: 'rows', k: 'n', b: [1, 2], x: [1, 4], d: (F, p) => (p.style === 'rows' ? 2 : 1)},
       dy: {label: 'row drop', k: 'len', b: [-0.1, 0], x: [-0.5, 0.5], d: F => -(F.H ? F.H.h * 0.33 : 0.1)},
       dz: {label: 'spacing', k: 'len', b: [-0.05, 0.05], x: [-0.5, 0.5], d: 0},
+      // valve (v11.70.1: it had no controls): two pairs on the valves' faces — vs/vs2 the front and back eye, vx out across the valve (of its width), vy up, vf/vb along it (of its length); the valves part builds them
+      vs: {label: 'front eye size', k: 'len', b: [0.008, 0.04], x: [0.002, 0.1], d: F => F.h0 * 0.14},
+      vs2: {label: 'back eye size', k: 'len', b: [0.006, 0.04], x: [0.002, 0.1], d: F => F.h0 * 0.12},
+      vx: {label: 'out', unit: '×valve', k: 'k', b: [0.3, 0.5], x: [0, 0.6], d: 0.47},
+      vy: {label: 'y (up)', k: 'len', b: [-0.02, 0.03], x: [-0.1, 0.1], d: F => F.h0 * 0.06},
+      vf: {label: 'front eye', unit: '×valve', k: 'k', b: [0, 0.5], x: [-0.5, 0.5], d: 0.3},
+      vb: {label: 'back eye', unit: '×valve', k: 'k', b: [0, 0.4], x: [-0.5, 0.5], d: 0.1},
       size2: {label: 'lower row size', k: 'len', b: [0.005, 0.08], x: [0.002, 0.3], d: (F, p) => (F.H ? F.H.h * 0.1 : 0.04)}
     },
     build: (ctx, p) => {
@@ -1196,6 +1205,7 @@ const PARTS = {
           }
         }
         ctx.eyeStyle = st;
+        ctx.eyeP = p;
       }
       return {};
     }
@@ -1207,7 +1217,7 @@ const PARTS = {
       plates:{clades:['hingeshells'],params:['where','z','y','R','plen','feed','fn','flen','snap']},
       rasp:{clades:['ringmouths'],params:['z','y','R','h']},
       peck:{clades:['hingeshells'],params:['z','y','len','r','dip','pk','wob']},
-      slit:{clades:['hingeshells','slowbloods','ringmouths'],params:['z','y','R','h']}
+      slit:{clades:['hingeshells'],params:['z','y','R','h']}
     },
     cost: 3,
     params: {
@@ -1337,7 +1347,7 @@ const PARTS = {
       jet:{clades:['ringmouths'],params:['n','z','R','len','w','segs','curve','ks','damp','cosMax','plan','phase','taper','col','shade']},
       cone:{clades:['ringmouths'],params:['n','z','R','len','w','segs','curve','ks','damp','cosMax','plan','phase','taper','col','shade','s0','s1','a0','a1','k0','k1']},
       withdraw:{clades:['ringmouths'],cores:['coilbody'],params:['n','z','R','len','w','segs','curve','ks','damp','cosMax','plan','phase','taper','col','shade','s0','a0']},
-      hold:{clades:['ringmouths'],params:['n','z','R','len','w','segs','curve','ks','damp','cosMax','plan','phase','taper','col','shade','s0','a0']},
+      hold:{clades:['ringmouths'],off:true,params:['n','z','R','len','w','segs','curve','ks','damp','cosMax','plan','phase','taper','col','shade','s0','a0']}, // off (v11.70.1, the person): worn by no species; kept, offered to no one
       crawl:{clades:['ringmouths'],params:['n','len','w','segs','ks','damp','cosMax','plan','phase','z0','y0','taper','h','col','shade','s0','s1','a0','a1','k0','k1','sw']},
       raise:{clades:['ringmouths'],params:['n','len','w','segs','ks','damp','cosMax','plan','phase','z0','y0','taper','h','col','shade','s0','a0','wob','wf','f0','sw']},
       net:{clades:['ringmouths'],params:['n','z','R','len','w','segs','curve','ks','damp','cosMax','plan','phase','taper','col','shade','soft','web','wsp','s0','s1','a0','wob','wf','f0','jet']},
@@ -1600,7 +1610,8 @@ const PARTS = {
   },
   spines: {
     reg:{
-      row:{clades:['slowbloods','hingeshells']}
+      row:{clades:['slowbloods']},
+      thorns:{clades:['hingeshells'],was:'row'} // v11.70.1: a style is one clade's (the person, 21 Sep 2026: two clades' parts are genetically distinct however alike); the hingeshells' spines were the slowbloods' row, and still build as it for now — a first pass. was: a hingeshell spec that wears the old name keeps its numbers
     },
     cost: 2,
     params: {
@@ -1839,8 +1850,8 @@ const PARTS = {
   tailplate: {
     reg:{
       fan:{clades:['hingeshells'],params:['w','l','x','dx','y','dy','z','dz']},
-      spine:{clades:['hingeshells'],params:[]},
-      plates:{clades:['hingeshells'],params:[]},
+      spine:{clades:['hingeshells'],params:['sl','sr','st','sy','sz']},
+      plates:{clades:['hingeshells'],params:['pz','ph','pl']},
       abdomen:{clades:['hingeshells'],params:['n','w0','dw','seg','curl','y','z','amp','flick']}
     },
     cost: 2,
@@ -1862,7 +1873,16 @@ const PARTS = {
       seg: {label: 'segment', k: 'len', b: [0.02, 0.4], x: [0.01, 1], d: F => F.LT * 0.12},
       curl: {label: 'curl', k: 'k', b: [0, 0.3], x: [-0.5, 0.8], d: 0.12},
       amp: {label: 'amplitude', k: 'k', b: [0, 0.3], x: [0, 1], d: 0.1},
-      flick: {label: 'flick', k: 'k', b: [0.5, 2], x: [0, 3], d: 1.4}
+      flick: {label: 'flick', k: 'k', b: [0.5, 2], x: [0, 3], d: 1.4},
+      // v11.70.1 (they had no controls): the spine — a cone sl long, radius st at the front and sr at the back, centred at (0, sy, sz); the plates — three lobes at pz, ph high, pl long
+      sl: {label: 'length', k: 'len', b: [0.1, 0.5], x: [0.02, 1], d: F => F.LT * 0.35},
+      sr: {label: 'back radius', k: 'len', b: [0.005, 0.05], x: [0.001, 0.15], d: F => F.w1 * 0.18},
+      st: {label: 'front radius', k: 'len', b: [0.001, 0.03], x: [0.0002, 0.1], d: 0.03},
+      sy: {label: 'y (up)', k: 'len', b: [-0.1, 0.1], x: [-0.5, 0.5], d: F => F.cy || 0},
+      sz: {label: 'z (fore–aft)', k: 'z', b: [-2, 0], x: [-6, 2], d: F => F.z1 - F.LT * 0.17},
+      pz: {label: 'z (fore–aft)', k: 'z', b: [-2, 0], x: [-6, 2], d: F => F.z1 - F.w1 * 0.4},
+      ph: {label: 'plate height', k: 'len', b: [0.05, 0.3], x: [0.01, 0.8], d: F => F.h1 * 2.2},
+      pl: {label: 'plate length', k: 'len', b: [0.02, 0.2], x: [0.005, 0.6], d: F => F.w1 * 0.9}
     },
     build: (ctx, p) => {
       const P = ctx.P,
@@ -1878,7 +1898,7 @@ const PARTS = {
                 c2: pal.belly
               })
             );
-      else if (p.style === 'spine') P.push(part(G.cyl(0.03, F.w1 * 0.18, F.LT * 0.35, 5), 0, F.cy || 0, z1 - F.LT * 0.17, pal.top, {r: [HPI, 0, 0]}));
+      else if (p.style === 'spine') P.push(part(G.cyl(p.st, p.sr, p.sl, 5), 0, p.sy, p.sz, pal.top, {r: [HPI, 0, 0]}));
       else if (p.style === 'abdomen') {
         const A = [],
           n = Math.max(1, Math.round(p.n));
@@ -1907,7 +1927,7 @@ const PARTS = {
           turn: 0.3,
           extent: [p.z - p.seg * n, p.z]
         };
-      } else tailTrio(P, pal, z1 - F.w1 * 0.4, F.h1 * 2.2, F.w1 * 0.9, pal.flap || pal.top);
+      } else tailTrio(P, pal, p.pz, p.ph, p.pl, pal.flap || pal.top);
       return {turn: p.style === 'fan' ? 0.6 : 0.3, thrust: p.style === 'spine' ? 0 : F.w1 * F.w1 * 2};
     }
   },
@@ -2116,11 +2136,17 @@ const PARTS = {
       ventral:{clades:['hingeshells']}
     },
     cost: 1,
-    params: {},
-    cover: F => ({bottom: (x, z) => (Math.abs(x) <= 0.04 && z <= F.z0 - F.LT * 0.125 && z >= F.z0 - F.LT * 0.575 ? (F.cy || 0) - F.h0 * 1.1 : null)}),
+    params: { // v11.70.1 (it had none): a blade w thick, h deep, l long, centred at (0, y, z)
+      w: {label: 'thickness', k: 'len', b: [0.003, 0.02], x: [0.001, 0.06], d: 0.08},
+      h: {label: 'depth', k: 'len', b: [0.05, 0.3], x: [0.01, 0.8], d: F => F.h0 * 0.7},
+      l: {label: 'length', k: 'len', b: [0.1, 0.6], x: [0.02, 1], d: F => F.LT * 0.45},
+      y: {label: 'y (up)', k: 'len', b: [-0.3, 0], x: [-0.8, 0.2], d: F => (F.cy || 0) - F.h0 * 0.75},
+      z: {label: 'z (fore–aft)', k: 'z', b: [-1, 1], x: [-4, 4], d: F => F.z0 - F.LT * 0.35}
+    },
+    cover: (F, c, p) => ({bottom: (x, z) => (Math.abs(x) <= p.w / 2 && z <= p.z + p.l / 2 && z >= p.z - p.l / 2 ? p.y - p.h / 2 : null)}),
     build: (ctx, p) => {
       const F = ctx.F;
-      ctx.P.push(part(G.box(0.08, F.h0 * 0.7, F.LT * 0.45), 0, (F.cy || 0) - F.h0 * 0.75, F.z0 - F.LT * 0.35, ctx.pal.top, {c2: ctx.pal.belly}));
+      ctx.P.push(part(G.box(p.w, p.h, p.l), 0, p.y, p.z, ctx.pal.top, {c2: ctx.pal.belly}));
       return {streamline: 0.85, turn: -0.2};
     }
   },
@@ -2130,15 +2156,28 @@ const PARTS = {
   // by tk on the tell and sk on the strike.
   valves: {
     reg:{
-      back:{clades:['hingeshells'],params:['o0','o1','tc','sc','tk','sk']},
-      small:{clades:['hingeshells'],params:['o0','o1','tc','sc','tk','sk']},
-      hood:{clades:['hingeshells'],params:['o0','o1','tc','sc','tk','sk']},
+      back:{clades:['hingeshells'],params:['fa','fb','fw','fy','ft','o0','o1','tc','sc','tk','sk']},
+      small:{clades:['hingeshells'],params:['fa','fb','fw','fy','ft','o0','o1','tc','sc','tk','sk']},
+      hood:{clades:['hingeshells'],params:['kw','kl','kh','lift','o0','o1','tc','sc','tk','sk']},
       placed:{clades:['hingeshells'],params:['z0','z1','w','y','th','o0','o1','tc','sc','tk','sk']},
       clam:{clades:['hingeshells'],params:['R','sx','sy','sz','y','ox','oy','o0','o1','tc','sc','tk','sk']}
     },
     cost: 3,
     paired: true,
     params: {
+      // back and small (v11.70.1: they had only the opening): in fractions of the body, so they follow it when the core changes — placed is the
+      // same pair in metres, and stays where it is put. fa the front edge back from the body's front, fb the back edge (back: forward from the
+      // tail; small: back from the front), fw the width of the body's, fy the height and ft the thickness of its height. hood: kw, kl, kh the
+      // plate's width, length and thickness of the head's, lift how far it lifts open
+      fa: {label: 'front edge', unit: '×body', k: 'k', b: [0, 0.2], x: [-0.2, 0.5], d: 0.02},
+      fb: {label: 'back edge', by: {small: 'length'}, unit: '×body', k: 'k', b: [0, 0.7], x: [-0.2, 1], d: (F, p) => (p.style === 'small' ? 0.45 : 0.12)},
+      fw: {label: 'width', unit: '×body', k: 'k', b: [0.4, 1.2], x: [0.1, 2], d: (F, p) => (p.style === 'small' ? 0.6 : 0.95)},
+      fy: {label: 'height', unit: '×body', k: 'k', b: [0.3, 0.7], x: [0, 1.5], d: 0.5},
+      ft: {label: 'thickness', unit: '×body', k: 'k', b: [0.03, 0.2], x: [0.01, 0.5], d: 0.09},
+      kw: {label: 'width', unit: '×head', k: 'k', b: [0.8, 1.8], x: [0.3, 3], d: 1.3},
+      kl: {label: 'length', unit: '×head', k: 'k', b: [0.8, 2], x: [0.3, 3], d: 1.4},
+      kh: {label: 'thickness', unit: '×head', k: 'k', b: [0.08, 0.3], x: [0.02, 0.6], d: 0.16},
+      lift: {label: 'lift', k: 'k', b: [0, 0.6], x: [0, 1.5], d: 0.25},
       z0: {label: 'first z', k: 'z', b: [-1, 2], x: [-4, 6], d: F => F.z0 - F.LT * 0.02},
       z1: {label: 'last z', k: 'z', b: [-3, 0], x: [-8, 4], d: F => F.z1 + F.LT * 0.12},
       w: {label: 'width', k: 'len', b: [0.1, 1], x: [0.02, 3], d: F => F.w0 * 0.95},
@@ -2161,16 +2200,16 @@ const PARTS = {
       if (p.style === 'hood') {
         const H = F.H,
           zc = F.zh - H.l * 0.05,
-          hl = H.l * 0.7,
-          y = (F.hy || 0) + F.ht * 0.9 + H.h * 0.18;
-        return {top: (x, z) => (Math.abs(x) <= H.w * 0.65 && z >= zc - hl && z <= zc + hl ? y : null)};
+          hl = H.l * (p.kl * 0.5),
+          y = (F.hy || 0) + F.ht * 0.9 + H.h * (0.1 + p.kh * 0.5);
+        return {top: (x, z) => (Math.abs(x) <= H.w * (p.kw * 0.5) && z >= zc - hl && z <= zc + hl ? y : null)};
       }
       if (p.style === 'clam') return {top: (x, z) => (Math.abs(x) <= p.R * p.sx * 2 && Math.abs(z) <= p.R * p.sz ? p.y : null)};
       const pl = p.style === 'placed',
-        wv = pl ? p.w : p.style === 'back' ? F.w0 * 0.95 : F.w0 * 0.6,
-        zv0 = pl ? p.z0 : F.z0 - F.LT * 0.02,
-        zv1 = pl ? p.z1 : p.style === 'back' ? F.z1 + F.LT * 0.12 : F.z0 - F.LT * 0.45,
-        y = pl ? p.y + p.th * 0.5 : (F.cy || 0) + F.h0 * 0.545;
+        wv = pl ? p.w : F.w0 * p.fw,
+        zv0 = pl ? p.z0 : F.z0 - F.LT * p.fa,
+        zv1 = pl ? p.z1 : p.style === 'back' ? F.z1 + F.LT * p.fb : F.z0 - F.LT * p.fb,
+        y = pl ? p.y + p.th * 0.5 : (F.cy || 0) + F.h0 * (p.fy + p.ft * 0.5);
       return {top: (x, z) => (Math.abs(x) <= wv / 2 && z >= zv1 && z <= zv0 ? y : null)};
     },
     build: (ctx, p) => {
@@ -2192,13 +2231,13 @@ const PARTS = {
         g.add(Hd);
         Hd.add(
           new THREE.Mesh(
-            merge([part(G.box(H.w * 1.3, H.h * 0.16, H.l * 1.4), 0, H.h * 0.1, H.l * 0.25, pal.top, {r: [0.18, 0, 0], c2: pal.joint})]),
+            merge([part(G.box(H.w * p.kw, H.h * p.kh, H.l * p.kl), 0, H.h * 0.1, H.l * 0.25, pal.top, {r: [0.18, 0, 0], c2: pal.joint})]),
             ctx.mat
           )
         );
         vv = {
           set: k => {
-            Hd.rotation.x = -0.25 * k;
+            Hd.rotation.x = -p.lift * k;
           }
         };
       } else if (V === 'clam') {
@@ -2218,11 +2257,11 @@ const PARTS = {
         };
       } else {
         const pl = V === 'placed',
-          wv = pl ? p.w : V === 'back' ? F.w0 * 0.95 : F.w0 * 0.6,
-          zv0 = pl ? p.z0 : z0 - L * 0.02,
-          zv1 = pl ? p.z1 : V === 'back' ? z1 + L * 0.12 : z0 - L * 0.45,
-          yv = pl ? p.y : cy + F.h0 * 0.5,
-          th = pl ? p.th : F.h0 * 0.09;
+          wv = pl ? p.w : F.w0 * p.fw,
+          zv0 = pl ? p.z0 : z0 - L * p.fa,
+          zv1 = pl ? p.z1 : V === 'back' ? z1 + L * p.fb : z0 - L * p.fb,
+          yv = pl ? p.y : cy + F.h0 * p.fy,
+          th = pl ? p.th : F.h0 * p.ft;
         vv = valves(g, pal, zv0, zv1, wv, yv, th);
         if (ctx.eyeStyle === 'valve')
           for (const Gi of g.children.slice(-2)) {
@@ -2230,8 +2269,8 @@ const PARTS = {
             Gi.add(
               new THREE.Mesh(
                 merge([
-                  part(G.sph(F.h0 * 0.14, 5, 4), sx * wv * 0.47, F.h0 * 0.06, (zv0 - zv1) * 0.3, pal.eye),
-                  part(G.sph(F.h0 * 0.12, 5, 4), sx * wv * 0.47, F.h0 * 0.06, -(zv0 - zv1) * 0.1, pal.eye)
+                  part(G.sph(ctx.eyeP.vs, 5, 4), sx * wv * ctx.eyeP.vx, ctx.eyeP.vy, (zv0 - zv1) * ctx.eyeP.vf, pal.eye),
+                  part(G.sph(ctx.eyeP.vs2, 5, 4), sx * wv * ctx.eyeP.vx, ctx.eyeP.vy, -(zv0 - zv1) * ctx.eyeP.vb, pal.eye)
                 ]),
                 ctx.mat
               )
@@ -2304,7 +2343,7 @@ const PARTS = {
       spears:{clades:['hingeshells']},
       fold:{clades:['hingeshells']},
       whips:{clades:['hingeshells']},
-      ram:{clades:['hingeshells'],params:[]},
+      ram:{clades:['hingeshells'],params:[]}, // no geometry and no numbers: the blow is the head's, its strength combat.js RAM's (v11.70.1: left bare — a reach control moved the ram's derived reach 4.6 → 8.1)
       combs:{clades:['hingeshells'],params:['x','y','z','n','seg','teeth','tl','len','w']}
     },
     cost: 4,
@@ -2781,6 +2820,8 @@ function validate(spec0) {
   for (const p of spec.parts) {
     const ok = stylesFor(p.kind, spec.clade, spec.core.kind); // by the core too (v11.70)
     if (!ok.length && PARTS[p.kind] && stylesFor(p.kind, spec.clade).length) W.push('a ' + spec.core.kind + ' cannot carry ' + p.kind + ((core.provides || []).indexOf(p.kind) >= 0 ? ': it is its own' : '')); // warned, not removed: the lab's part indices are the spec's (it removes them itself when the core changes)
+    const heir = ok.find(st => PARTS[p.kind].reg[st].was === p.style); // a style split off per clade (v11.70.1): the numbers go with it
+    if (heir) { p.style = heir; continue; }
     if (ok.length && ok.indexOf(p.style) < 0) {
       W.push(p.style + ' ' + p.kind + ' are not a ' + spec.clade.replace(/s$/, '') + "'s: " + ok[0]);
       p.style = ok[0];
@@ -3918,7 +3959,7 @@ const SPECS = {
     core: {kind: 'trunk', L: 3.5, n: 7, z0: 1.6, w0: 0.44, w1: 0.32, h0: 0.48, h1: 0.3, hw: 0.58, hh: 0.52, hl: 0.62, hy: 0.02, hz: 0.04, beat: [1.6, 0.8]},
     parts: [
       {kind: 'eyes', style: 'rows', n: 4, rows: 2, x: 0.21, y: 0.17, z: 2.25, dy: -0.17, dz: 0.02, size: 0.065, size2: 0.05, snap: false},
-      {kind: 'spines', n: 3, r: 0.06, h: 0.3, z0: -1.95, dz: -0.1, y0: 0.3, dy: 0, rx: -1.1708, x: 0, col: 'joint'},
+      {kind: 'spines', n: 3, r: 0.06, h: 0.3, z0: -1.95, dz: -0.1, y0: 0.3, dy: 0, rx: -1.1708, x: 0, col: 'joint', style: 'thorns'},
       {kind: 'comb', y: -0.12, z: 2.26, n: 4, w: 0.4, len: 0.26},
       {kind: 'mouth', style: 'plates', where: 'front', y: -0.16, z: 2.28, R: 0.11, snap: false},
       {kind: 'valves', style: 'placed', z0: 1.45, z1: -1.6, w: 0.95, y: 0.26, th: 0.05, o0: 0.2, o1: 0, tc: 1},
@@ -3937,7 +3978,7 @@ const SPECS = {
     core: {kind: 'trunk', L: 0.88, n: 4, z0: 0.43, w0: 0.16, w1: 0.16, h0: 0.14, h1: 0.14, hw: 0.15, hh: 0.15, hl: 0.16, hy: 0.11, hz: -0.07, beat: [2, 1]},
     parts: [
       {kind: 'eyes', style: 'rows', n: 2, rows: 1, x: 0.05, y: 0.21, z: 0.44, size: 0.03, snap: false},
-      {kind: 'spines', n: 1, r: 0.05, h: 0.18, z0: -0.55, dz: 0, y0: 0.02, dy: 0, rx: -1.5708, x: 0},
+      {kind: 'spines', n: 1, r: 0.05, h: 0.18, z0: -0.55, dz: 0, y0: 0.02, dy: 0, rx: -1.5708, x: 0, style: 'thorns'},
       {kind: 'comb', y: 0.06, z: 0.52, n: 3, w: 0.18, len: 0.14},
       {kind: 'mouth', style: 'peck', y: -0.02, z: 0.5, len: 0.55, r: 0.055, dip: 0.45, pk: 0.9, wob: 0.05},
       {kind: 'valves', style: 'placed', z0: 0.42, z1: -0.42, w: 0.5, y: 0.08, th: 0.03, o0: 0.55, o1: 0, tc: 0},
@@ -4007,7 +4048,7 @@ const SPECS = {
   // paddlers: the comb's small relative in the lit, fed water — a filter-feeding swarmer the size of a forearm, its frontal combs sweeping; tells: stalked eyes, flap rows
   sifter:{id:'sifter',clade:'hingeshells',size:0.6,s:1,coat:'sifter',core:{kind:'trunk',L:0.95,n:6,w0:0.3,w1:0.13,h0:0.24,h1:0.11,hw:0.3,hh:0.24,hl:0.3,beat:[2.6,1.3]},parts:[{kind:'eyes',style:'stalks',n:1},{kind:'mouth',style:'plates',where:'front'},{kind:'comb',n:3},{kind:'valves',style:'small'},{kind:'flaps',style:'sides',np:7,th:0.03},{kind:'weapon',style:'combs',n:3,seg:0.14,teeth:5,tl:0.1,w:0.8},{kind:'tailplate',style:'spine'}],behaviour:{role:'boid'}},
   // walkers: the seep form — the picker's cousin on the diffuse vents' mats, plated where the picker is stilted, black by the sulfide it lives in, poison by its diet (combat.js POISON); tells: mouth under
-  cinder:{id:'cinder',clade:'hingeshells',size:1.2,s:1,coat:'cinder',core:{kind:'trunk',L:1.7,n:5,z0:0.75,w0:0.72,w1:0.5,h0:0.34,h1:0.24,hw:0.7,hh:0.34,hl:0.5,hz:0,beat:[2,1]},parts:[{kind:'eyes',style:'rows',n:3,rows:1,x:0.2,size:0.045},{kind:'comb',n:4},{kind:'mouth',style:'plates',where:'under'},{kind:'valves',style:'placed',th:0.06,o0:0.08,o1:0.15},{kind:'legs',style:'walk',n:4,x:0.4,y:-0.12,z:0.5,dz:-0.38,kx:0.42,ky:0.12,fx:0.7,fy:-0.42,wl:0.06,amp:0.25},{kind:'spines',n:3,r:0.05,h:0.16,z0:0.3,dz:-0.35,y0:0.2,x:0,rx:-1.3,col:'joint'}],behaviour:{role:'graze',floor:true}},
+  cinder:{id:'cinder',clade:'hingeshells',size:1.2,s:1,coat:'cinder',core:{kind:'trunk',L:1.7,n:5,z0:0.75,w0:0.72,w1:0.5,h0:0.34,h1:0.24,hw:0.7,hh:0.34,hl:0.5,hz:0,beat:[2,1]},parts:[{kind:'eyes',style:'rows',n:3,rows:1,x:0.2,size:0.045},{kind:'comb',n:4},{kind:'mouth',style:'plates',where:'under'},{kind:'valves',style:'placed',th:0.06,o0:0.08,o1:0.15},{kind:'legs',style:'walk',n:4,x:0.4,y:-0.12,z:0.5,dz:-0.38,kx:0.42,ky:0.12,fx:0.7,fy:-0.42,wl:0.06,amp:0.25},{kind:'spines',n:3,r:0.05,h:0.16,z0:0.3,dz:-0.35,y0:0.2,x:0,rx:-1.3,col:'joint',style:'thorns'}],behaviour:{role:'graze',floor:true}},
   // walkers: the surf-zone walker — the scuttle's exposure ecotype (SEAFLOOR §2): a low wide shield, short paddle legs, valves twice as thick, wedged on the rock the waves strike; tells: mouth under
   wedge:{id:'wedge',clade:'hingeshells',size:0.9,s:1,coat:'wedge',core:{kind:'shield',R:0.55,sx:1.4,sy:0.28,sz:1.25,y:0.14,z:0,ws:8,hs:4,hw:0.9,hh:0.12,hl:0.42,hy:0.12,hz:0.62,tw:0.5,th:0.1,tl:0.25,ty:0.1,tz:-0.78,beat:[3.5,3]},parts:[{kind:'eyes',style:'arc',n:7,x:0.5,r:0.22,y:0.2,z:0.62,arc:60,size:0.035,snap:false},{kind:'comb',y:0.04,z:0.82,n:5,w:0.5,len:0.16},{kind:'mouth',style:'plates',where:'under',y:0.0,z:0.45,R:0.14,snap:false},{kind:'valves',style:'placed',z0:0.5,z1:-0.62,w:1.5,y:0.28,th:0.14,o0:0.03,o1:0.06,tc:1},{kind:'legs',style:'rock',n:4,x:0.62,y:0.08,z:0.38,dz:-0.26,ll:0.34,wl:0.07,th:0.06,splay:36,yaw:7,amp:0.28,k0:0.2,sk:0.6}],hit:[{a:[0,0.14,-0.75],b:[0,0.14,0.5],r:0.32}],behaviour:{role:'graze',floor:true}},
   // walkers: the flats' burrower that is not the trap — feeding combs under the front, no weapon, the mouth under, on the sand the grazers pasture; tells: stalked eyes, mouth under

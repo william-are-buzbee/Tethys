@@ -1468,7 +1468,10 @@ far LOD), `setLOD`, steering, one `updateX` per role, `updateCreatures()`.
   means another thing there), its unit (a `len` or a `z` is metres by its kind; `°`, `rad` said), its type `k` (`n` a count, `k` a
   number, `len` a length and `z` a place along the body, both × the core's reference length, `b` a switch, `s` one of `opts`, `l` a list),
   the believable band `b`, the extreme band `x`, the default `d` (a number, or a function of the frame and the part). So a key means one
-  thing per part. Readers: `stylesFor(kind, clade, core)` (also empty for a kind the core `provides`: the chain is its own tail),
+  thing per part. **A style is one clade's** (the person, 21 Sep 2026: convergent parts on two clades are two pieces — `spines` is the
+  slowbloods' `row` and the hingeshells' `thorns`); `off` keeps a style in the kit and offers it to no one (`arms:hold`); `was` names the
+  style one was split from, so a spec that wears the old name keeps its numbers. Every piece has controls but `tail:stub` and `weapon:ram`,
+  which build nothing (v11.70.1). Readers: `stylesFor(kind, clade, core)` (also empty for a kind the core `provides`: the chain is its own tail),
   `styleClades`, `paramsFor(kind, style)`, and `paramOf(owner, key, p, F)` / `paramsOf(owner, p, F)` — a parameter resolved for a body
   (label, unit, type, bands and range in the spec's units, default, value): the lab's sliders today; next the editor at conception, which
   prices a child's diff from these (LINEAGE §6), and direct manipulation, which hangs a handle on each. The lab: a build that throws is
@@ -1476,7 +1479,8 @@ far LOD), `setLOD`, steering, one `updateX` per role, `updateCreatures()`.
   short the kit's `pal.mouth || pal.band` chains), and a core changed under a finished animal drops the parts it cannot carry, both said
   under the caption (`lab.note`). The test walks clade × core × kind × style through the real panel in both modes, the roster's panels
   and every species onto every other core, and fails on anything that does not compile, a control without a name, a value or a range,
-  two controls with one name, a style offered outside its declaration, or a fault in the registry itself.
+  two controls with one name, a style offered outside its declaration, a style declared for two clades, a piece with no controls, or a
+  fault in the registry itself.
 - **Roles:** hunter (chases prey; `strike {tell, dur, speed, range}` for one that cocks and lunges — the tell slows it, turns it to
   the prey and drives `st.tell`, then a burst at `speed` with `st.strike` on and one bite within `reach`; `burst {on, off}`
   for burst-and-coast: speed and accel on a duty cycle, full for `on` s then a third for `off` s, in the chase and the wander
