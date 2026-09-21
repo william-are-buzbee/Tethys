@@ -1441,7 +1441,7 @@ state), hit, rigs}` (`hit`: body capsules; `rigs`: simulated arms/tails, [Contac
 **Creatures, the spec (v11.10).** Most species are no longer hand builders but *specs* compiled by `creatures_spec.js`: a spec is
 `{id, clade, core:{kind, ...}, parts:[{kind, style, ...}], coat, size, hit, stats}`; `compile(spec, s, pal)` returns exactly what a
 hand builder returns, built from the same kit. Cores: `mantle` (jetters), `coilbody` (shelled ringmouths), `lathe` (slowbloods, with a
-profile), `trunk` (hingeshells, the old `buildRaptor`). `PARTS` is the registry — each part's clades, styles, parameters with a
+profile), `trunk` (hingeshells, the old `buildRaptor`). `PARTS` is the registry — each part's styles (`reg`, below), parameters with a
 believable band and an extreme band, cost, whether it is paired — and `GRAMMAR` the clade's allowed cores and required parts.
 `derive(spec)` is the calculator: mass from volume × the clade's density, drag from the frontal area, thrust from the propulsors
 (fins undulate, a mantle jets, legs crawl, a coil is slow), speed `K·(thrust/drag)^0.35·(halflength)^0.4` scaled by the mode, turn
@@ -1449,7 +1449,7 @@ from length, hp from mass; `statsOf` merges the per-stat locks. `SPECS` holds th
 call `compile(SPECS.x)`. `test/ident.js` proved the migration identical to the old builders (kept at `/home/claude/old_builders.js`
 in that session; not in the repo). `coatFor(clade, depth, diet)` draws a palette from pigment chemistry (CREATOR.md, Colour).
 Placed parts snap to the body: `bodySurf` is the core's section, the armour parts declare a `cover`, and `ctx.top(x,z)` /
-`ctx.bottom(x,z)` give a part the surface with what lies on it; `STYLE_CLADES` keeps each clade's styles its own (v11.11).
+`ctx.bottom(x,z)` give a part the surface with what lies on it; each clade's styles are its own (v11.11; the registry since v11.70).
 `lab.js` is the tool on it (`#lab`, `l` from the menu, the bestiary or play; CREATOR.md). **Since v11.25 every species is a spec** (37
 entries plus three scale variants; creatures_builders.js keeps the kit only): eleven cores — `mantle`, `coilbody`, `sac` (ringmouths),
 `lathe`, `chain` (slowbloods; the chain's `finish` skins the rig over the body's parts and `provides` the tail), `trunk`, `shield`,
@@ -1460,6 +1460,23 @@ entries plus three scale variants; creatures_builders.js keeps the kit only): el
 `thrust`, `mode` and `chambered` to the calculator, whose dry context has a body frame (the moving parts' thrust was lost since v11.18). `creatures_ai.js`: registries `creatures/schools/respawns`, `spawn()` (bakes the
 far LOD), `setLOD`, steering, one `updateX` per role, `updateCreatures()`.
 
+- **The registry (v11.70; `test/registry.js`).** What the lab offers and what the kit can build are one table. `PARTS[kind].reg` is every
+  style of the kind: `{clades, cores?, params?}` — the clades it belongs to, the cores it can stand on (none listed: any of the clade's;
+  `arms:withdraw` coilbody, `fins:trio` lathe) and the params it reads (none listed: all; `[]`: none). `styles` (the first is the
+  default) and `clades` are read off it at load; `STYLE_CLADES`, `PSTYLE` and the lab's `LAB_NAME` / `LAB_NAME_BY` / `LAB_UNIT` are gone.
+  A parameter, a part's or a core's, is one line: `{label, by?, unit?, k, b, x, d}` — its name (`by`: a style's own word where the key
+  means another thing there), its unit (a `len` or a `z` is metres by its kind; `°`, `rad` said), its type `k` (`n` a count, `k` a
+  number, `len` a length and `z` a place along the body, both × the core's reference length, `b` a switch, `s` one of `opts`, `l` a list),
+  the believable band `b`, the extreme band `x`, the default `d` (a number, or a function of the frame and the part). So a key means one
+  thing per part. Readers: `stylesFor(kind, clade, core)` (also empty for a kind the core `provides`: the chain is its own tail),
+  `styleClades`, `paramsFor(kind, style)`, and `paramOf(owner, key, p, F)` / `paramsOf(owner, p, F)` — a parameter resolved for a body
+  (label, unit, type, bands and range in the spec's units, default, value): the lab's sliders today; next the editor at conception, which
+  prices a child's diff from these (LINEAGE §6), and direct manipulation, which hangs a handle on each. The lab: a build that throws is
+  tried once more with the coat's missing colours filled from the clade's coats (`coatFill`; never ahead of need — a filled key would cut
+  short the kit's `pal.mouth || pal.band` chains), and a core changed under a finished animal drops the parts it cannot carry, both said
+  under the caption (`lab.note`). The test walks clade × core × kind × style through the real panel in both modes, the roster's panels
+  and every species onto every other core, and fails on anything that does not compile, a control without a name, a value or a range,
+  two controls with one name, a style offered outside its declaration, or a fault in the registry itself.
 - **Roles:** hunter (chases prey; `strike {tell, dur, speed, range}` for one that cocks and lunges — the tell slows it, turns it to
   the prey and drives `st.tell`, then a burst at `speed` with `st.strike` on and one bite within `reach`; `burst {on, off}`
   for burst-and-coast: speed and accel on a duty cycle, full for `on` s then a third for `off` s, in the chase and the wander

@@ -55,7 +55,7 @@ const CORES = {
   // ringmouths, the jetters (buildJetter): a mantle L long and R round at the collar, tapering back into a tail knob, the collar sphere
   mantle: {
     clade: 'ringmouths',
-    params: {L: {k: 'k', b: [0.6, 6], x: [0.3, 14], d: 2.5}, R: {k: 'k', b: [0.12, 1.6], x: [0.06, 4], d: 0.6}},
+    params: {L: {label: 'length', k: 'k', b: [0.6, 6], x: [0.3, 14], d: 2.5}, R: {label: 'mantle radius', k: 'k', b: [0.12, 1.6], x: [0.06, 4], d: 0.6}},
     build: (ctx, c) => {
       const P = ctx.P,
         pal = ctx.pal,
@@ -103,16 +103,16 @@ const CORES = {
   coilbody: {
     clade: 'ringmouths',
     params: {
-      R: {k: 'k', b: [0.15, 1.2], x: [0.08, 3], d: 0.46},
-      z: {k: 'k', b: [-1, 4], x: [-4, 8], d: 0.15},
-      y: {k: 'k', b: [-0.3, 1], x: [-2, 3], d: 0},
-      sx: {k: 'k', b: [0.8, 1.4], x: [0.5, 2], d: 1.1},
-      sy: {k: 'k', b: [0.6, 1.2], x: [0.3, 2], d: 0.85},
-      sz: {k: 'k', b: [0.7, 2], x: [0.4, 3], d: 1.5},
-      ws: {k: 'n', b: [6, 10], x: [4, 16], d: 8},
-      hs: {k: 'n', b: [4, 8], x: [3, 12], d: 6},
-      breathe: {k: 'k', b: [0, 0.05], x: [0, 0.2], d: 0},
-      bf: {k: 'k', b: [0.5, 2], x: [0.1, 5], d: 1.3}
+      R: {label: 'body radius', k: 'k', b: [0.15, 1.2], x: [0.08, 3], d: 0.46},
+      z: {label: 'z (fore–aft)', k: 'k', b: [-1, 4], x: [-4, 8], d: 0.15},
+      y: {label: 'y (up)', k: 'k', b: [-0.3, 1], x: [-2, 3], d: 0},
+      sx: {label: 'width', k: 'k', b: [0.8, 1.4], x: [0.5, 2], d: 1.1},
+      sy: {label: 'squash', k: 'k', b: [0.6, 1.2], x: [0.3, 2], d: 0.85},
+      sz: {label: 'stretch', k: 'k', b: [0.7, 2], x: [0.4, 3], d: 1.5},
+      ws: {label: 'segments round', k: 'n', b: [6, 10], x: [4, 16], d: 8},
+      hs: {label: 'segments up', k: 'n', b: [4, 8], x: [3, 12], d: 6},
+      breathe: {label: 'breathe', k: 'k', b: [0, 0.05], x: [0, 0.2], d: 0},
+      bf: {label: 'breath rate', k: 'k', b: [0.5, 2], x: [0.1, 5], d: 1.3}
     },
     build: (ctx, c) => {
       const P = ctx.P,
@@ -167,10 +167,10 @@ const CORES = {
   lathe: {
     clade: 'slowbloods',
     params: {
-      segs: {k: 'n', b: [6, 10], x: [5, 14], d: 8},
-      sz: {k: 'k', b: [0.45, 1.2], x: [0.3, 1.6], d: 1},
-      y: {k: 'k', b: [-0.2, 0.2], x: [-1, 1], d: 0},
-      belly: {k: 's', opts: ['belly', 'rust'], d: 'belly'}
+      segs: {label: 'segments', k: 'n', b: [6, 10], x: [5, 14], d: 8},
+      sz: {label: 'stretch', k: 'k', b: [0.45, 1.2], x: [0.3, 1.6], d: 1},
+      y: {label: 'y (up)', k: 'k', b: [-0.2, 0.2], x: [-1, 1], d: 0},
+      belly: {label: 'belly', k: 's', opts: ['belly', 'rust'], d: 'belly'}
     },
     build: (ctx, c) => {
       const P = ctx.P,
@@ -235,29 +235,29 @@ const CORES = {
   trunk: {
     clade: 'hingeshells',
     params: {
-      L: {k: 'k', b: [0.8, 12], x: [0.4, 20], d: 5.5},
-      n: {k: 'n', b: [3, 9], x: [3, 14], d: 7},
-      z0: {k: 'k', b: [-2, 8], x: [-6, 12], d: c => c.L * 0.45},
-      y: {k: 'k', b: [-0.6, 0.6], x: [-2, 2], d: 0},
-      w0: {k: 'k', b: [0.12, 3.2], x: [0.1, 6], d: 1.1},
-      w1: {k: 'k', b: [0.1, 1.4], x: [0.05, 4], d: 0.45},
-      h0: {k: 'k', b: [0.1, 2.2], x: [0.08, 5], d: 0.9},
-      h1: {k: 'k', b: [0.08, 1], x: [0.04, 3], d: 0.4},
-      hw: {k: 'k', b: [0.12, 3], x: [0.1, 6], d: 1.1},
-      hh: {k: 'k', b: [0.1, 2], x: [0.08, 5], d: 0.9},
-      hl: {k: 'k', b: [0.12, 2.4], x: [0.1, 5], d: 1.1},
-      hy: {k: 'k', b: [-0.6, 0.6], x: [-2, 2], d: c => c.y},
-      hz: {k: 'k', b: [-0.5, 0.5], x: [-3, 3], d: 0},
-      tw: {k: 'k', b: [0.2, 2], x: [0.05, 5], d: 0.8},
-      th: {k: 'k', b: [0.1, 1], x: [0.03, 3], d: 0.3},
-      tl: {k: 'k', b: [0, 1.5], x: [0, 4], d: 0},
-      ty: {k: 'k', b: [-0.6, 0.6], x: [-2, 2], d: c => c.y},
-      tz: {k: 'k', b: [-0.5, 0.5], x: [-3, 3], d: 0},
-      nw: {k: 'k', b: [0.2, 3], x: [0.05, 6], d: 1},
-      nh: {k: 'k', b: [0.1, 2], x: [0.03, 5], d: 0.6},
-      nl: {k: 'k', b: [0, 2], x: [0, 5], d: 0},
-      ny: {k: 'k', b: [-0.6, 0.6], x: [-2, 2], d: c => c.y},
-      nz: {k: 'k', b: [-0.5, 0.5], x: [-3, 3], d: 0}
+      L: {label: 'length', k: 'k', b: [0.8, 12], x: [0.4, 20], d: 5.5},
+      n: {label: 'plates', k: 'n', b: [3, 9], x: [3, 14], d: 7},
+      z0: {label: 'first z', k: 'k', b: [-2, 8], x: [-6, 12], d: c => c.L * 0.45},
+      y: {label: 'y (up)', k: 'k', b: [-0.6, 0.6], x: [-2, 2], d: 0},
+      w0: {label: 'front width', k: 'k', b: [0.12, 3.2], x: [0.1, 6], d: 1.1},
+      w1: {label: 'back width', k: 'k', b: [0.1, 1.4], x: [0.05, 4], d: 0.45},
+      h0: {label: 'front height', k: 'k', b: [0.1, 2.2], x: [0.08, 5], d: 0.9},
+      h1: {label: 'back height', k: 'k', b: [0.08, 1], x: [0.04, 3], d: 0.4},
+      hw: {label: 'head width', k: 'k', b: [0.12, 3], x: [0.1, 6], d: 1.1},
+      hh: {label: 'head height', k: 'k', b: [0.1, 2], x: [0.08, 5], d: 0.9},
+      hl: {label: 'head length', k: 'k', b: [0.12, 2.4], x: [0.1, 5], d: 1.1},
+      hy: {label: 'head y', k: 'k', b: [-0.6, 0.6], x: [-2, 2], d: c => c.y},
+      hz: {label: 'head z', k: 'k', b: [-0.5, 0.5], x: [-3, 3], d: 0},
+      tw: {label: 'tail width', k: 'k', b: [0.2, 2], x: [0.05, 5], d: 0.8},
+      th: {label: 'tail height', k: 'k', b: [0.1, 1], x: [0.03, 3], d: 0.3},
+      tl: {label: 'tail length', k: 'k', b: [0, 1.5], x: [0, 4], d: 0},
+      ty: {label: 'tail y', k: 'k', b: [-0.6, 0.6], x: [-2, 2], d: c => c.y},
+      tz: {label: 'tail z', k: 'k', b: [-0.5, 0.5], x: [-3, 3], d: 0},
+      nw: {label: 'snout width', k: 'k', b: [0.2, 3], x: [0.05, 6], d: 1},
+      nh: {label: 'snout height', k: 'k', b: [0.1, 2], x: [0.03, 5], d: 0.6},
+      nl: {label: 'snout length', k: 'k', b: [0, 2], x: [0, 5], d: 0},
+      ny: {label: 'snout y', k: 'k', b: [-0.6, 0.6], x: [-2, 2], d: c => c.y},
+      nz: {label: 'snout z', k: 'k', b: [-0.5, 0.5], x: [-3, 3], d: 0}
     },
     build: (ctx, c) => {
       const P = ctx.P,
@@ -336,22 +336,22 @@ const CORES = {
   sac: {
     clade: 'ringmouths',
     params: {
-      shape: {k: 's', opts: ['sphere', 'lathe'], d: 'sphere'},
-      R: {k: 'k', b: [0.3, 3.5], x: [0.1, 8], d: 1.0},
-      sy: {k: 'k', b: [0.6, 1.2], x: [0.3, 2], d: 0.95},
-      sz: {k: 'k', b: [0.8, 3], x: [0.4, 5], d: 1.9},
-      z: {k: 'k', b: [-4, 1], x: [-10, 4], d: -1.1},
-      ws: {k: 'n', b: [6, 12], x: [4, 16], d: 9},
-      hs: {k: 'n', b: [4, 10], x: [3, 14], d: 7},
-      segs: {k: 'n', b: [6, 12], x: [5, 16], d: 10},
-      cR: {k: 'k', b: [0.3, 3.5], x: [0.1, 8], d: 1.05},
-      cy: {k: 'k', b: [-0.5, 0.5], x: [-2, 2], d: -0.05},
-      cz: {k: 'k', b: [0, 6], x: [-2, 12], d: 1.1},
-      csy: {k: 'k', b: [0.6, 1.2], x: [0.3, 2], d: 0.9},
-      csz: {k: 'k', b: [0.4, 1.2], x: [0.2, 2], d: 0.75},
-      cws: {k: 'n', b: [6, 12], x: [4, 16], d: 8},
-      chs: {k: 'n', b: [4, 10], x: [3, 14], d: 6},
-      prof: {k: 'l', d: null}
+      shape: {label: 'shape', k: 's', opts: ['sphere', 'lathe'], d: 'sphere'},
+      R: {label: 'mantle radius', k: 'k', b: [0.3, 3.5], x: [0.1, 8], d: 1.0},
+      sy: {label: 'squash', k: 'k', b: [0.6, 1.2], x: [0.3, 2], d: 0.95},
+      sz: {label: 'stretch', k: 'k', b: [0.8, 3], x: [0.4, 5], d: 1.9},
+      z: {label: 'z (fore–aft)', k: 'k', b: [-4, 1], x: [-10, 4], d: -1.1},
+      ws: {label: 'segments round', k: 'n', b: [6, 12], x: [4, 16], d: 9},
+      hs: {label: 'segments up', k: 'n', b: [4, 10], x: [3, 14], d: 7},
+      segs: {label: 'segments', k: 'n', b: [6, 12], x: [5, 16], d: 10},
+      cR: {label: 'collar radius', k: 'k', b: [0.3, 3.5], x: [0.1, 8], d: 1.05},
+      cy: {label: 'collar y', k: 'k', b: [-0.5, 0.5], x: [-2, 2], d: -0.05},
+      cz: {label: 'collar z', k: 'k', b: [0, 6], x: [-2, 12], d: 1.1},
+      csy: {label: 'collar squash', k: 'k', b: [0.6, 1.2], x: [0.3, 2], d: 0.9},
+      csz: {label: 'collar stretch', k: 'k', b: [0.4, 1.2], x: [0.2, 2], d: 0.75},
+      cws: {label: 'collar segments', k: 'n', b: [6, 12], x: [4, 16], d: 8},
+      chs: {label: 'collar rings', k: 'n', b: [4, 10], x: [3, 14], d: 6},
+      prof: {label: 'profile', k: 'l', d: null}
     },
     build: (ctx, c) => {
       const P = ctx.P,
@@ -431,22 +431,22 @@ const CORES = {
     clade: 'slowbloods',
     provides: ['tail'],
     params: {
-      n: {k: 'n', b: [6, 14], x: [3, 24], d: 11},
-      L: {k: 'k', b: [0.3, 1.2], x: [0.1, 3], d: 0.68},
-      w0: {k: 'k', b: [0.05, 0.5], x: [0.02, 1.5], d: 0.16},
-      w1: {k: 'k', b: [0.2, 1.2], x: [0.05, 3], d: 0.5},
-      hl: {k: 'k', b: [0.3, 1.2], x: [0.1, 3], d: 0.7},
-      fin: {k: 'b', d: true},
-      fh: {k: 'k', b: [0.3, 1.5], x: [0, 3], d: 0.8},
-      lobes: {k: 'k', b: [1, 4], x: [0, 6], d: 2.6},
-      ll: {k: 'k', b: [0.2, 1.5], x: [0.05, 3], d: 0.7},
-      amp: {k: 'k', b: [0.15, 0.45], x: [0.02, 1], d: 0.3},
-      sp0: {k: 'k', b: [0.1, 0.5], x: [0, 1], d: 0.25},
-      spk: {k: 'k', b: [0.1, 0.5], x: [0, 1], d: 0.3},
-      kph: {k: 'k', b: [0.4, 1.2], x: [0.1, 2], d: 0.75},
-      ks: {k: 'k', b: [60, 200], x: [20, 400], d: 130},
-      damp: {k: 'k', b: [6, 16], x: [3, 30], d: 12},
-      cosMax: {k: 'k', b: [0.5, 0.9], x: [0.2, 1], d: 0.72}
+      n: {label: 'segments', k: 'n', b: [6, 14], x: [3, 24], d: 11},
+      L: {label: 'length', k: 'k', b: [0.3, 1.2], x: [0.1, 3], d: 0.68},
+      w0: {label: 'tail width', k: 'k', b: [0.05, 0.5], x: [0.02, 1.5], d: 0.16},
+      w1: {label: 'head width', k: 'k', b: [0.2, 1.2], x: [0.05, 3], d: 0.5},
+      hl: {label: 'head length', k: 'k', b: [0.3, 1.2], x: [0.1, 3], d: 0.7},
+      fin: {label: 'dorsal fin', k: 'b', d: true},
+      fh: {label: 'fin height', k: 'k', b: [0.3, 1.5], x: [0, 3], d: 0.8},
+      lobes: {label: 'tail lobes', k: 'k', b: [1, 4], x: [0, 6], d: 2.6},
+      ll: {label: 'lobe length', k: 'k', b: [0.2, 1.5], x: [0.05, 3], d: 0.7},
+      amp: {label: 'amplitude', k: 'k', b: [0.15, 0.45], x: [0.02, 1], d: 0.3},
+      sp0: {label: 'speed at rest', k: 'k', b: [0.1, 0.5], x: [0, 1], d: 0.25},
+      spk: {label: 'speed gain', k: 'k', b: [0.1, 0.5], x: [0, 1], d: 0.3},
+      kph: {label: 'wave pitch', k: 'k', b: [0.4, 1.2], x: [0.1, 2], d: 0.75},
+      ks: {label: 'stiffness', k: 'k', b: [60, 200], x: [20, 400], d: 130},
+      damp: {label: 'damping', k: 'k', b: [6, 16], x: [3, 30], d: 12},
+      cosMax: {label: 'joint limit', k: 'k', b: [0.5, 0.9], x: [0.2, 1], d: 0.72}
     },
     build: (ctx, c) => {
       const P = ctx.P,
@@ -520,24 +520,24 @@ const CORES = {
   shield: {
     clade: 'hingeshells',
     params: {
-      R: {k: 'k', b: [0.2, 3], x: [0.08, 8], d: 0.5},
-      sx: {k: 'k', b: [0.7, 1.4], x: [0.4, 2.5], d: 1},
-      sy: {k: 'k', b: [0.25, 1], x: [0.1, 2], d: 0.45},
-      sz: {k: 'k', b: [0.8, 2.2], x: [0.4, 4], d: 1.4},
-      y: {k: 'k', b: [-0.5, 1], x: [-2, 3], d: 0.22},
-      z: {k: 'k', b: [-1, 1], x: [-4, 4], d: 0.02},
-      ws: {k: 'n', b: [6, 10], x: [4, 16], d: 7},
-      hs: {k: 'n', b: [3, 8], x: [3, 12], d: 4},
-      hw: {k: 'k', b: [0.2, 3], x: [0.05, 6], d: 0.62},
-      hh: {k: 'k', b: [0.05, 1], x: [0.02, 3], d: 0.16},
-      hl: {k: 'k', b: [0.1, 2], x: [0.05, 5], d: 0.42},
-      hy: {k: 'k', b: [-0.5, 1], x: [-2, 3], d: 0.2},
-      hz: {k: 'k', b: [0, 3], x: [-2, 8], d: 0.68},
-      tw: {k: 'k', b: [0.1, 2], x: [0.05, 5], d: 0.4},
-      th: {k: 'k', b: [0.05, 1], x: [0.02, 3], d: 0.14},
-      tl: {k: 'k', b: [0, 2], x: [0, 5], d: 0.3},
-      ty: {k: 'k', b: [-0.5, 1], x: [-2, 3], d: 0.16},
-      tz: {k: 'k', b: [-3, 0], x: [-8, 2], d: -0.8}
+      R: {label: 'body radius', k: 'k', b: [0.2, 3], x: [0.08, 8], d: 0.5},
+      sx: {label: 'width', k: 'k', b: [0.7, 1.4], x: [0.4, 2.5], d: 1},
+      sy: {label: 'squash', k: 'k', b: [0.25, 1], x: [0.1, 2], d: 0.45},
+      sz: {label: 'stretch', k: 'k', b: [0.8, 2.2], x: [0.4, 4], d: 1.4},
+      y: {label: 'y (up)', k: 'k', b: [-0.5, 1], x: [-2, 3], d: 0.22},
+      z: {label: 'z (fore–aft)', k: 'k', b: [-1, 1], x: [-4, 4], d: 0.02},
+      ws: {label: 'segments round', k: 'n', b: [6, 10], x: [4, 16], d: 7},
+      hs: {label: 'segments up', k: 'n', b: [3, 8], x: [3, 12], d: 4},
+      hw: {label: 'head width', k: 'k', b: [0.2, 3], x: [0.05, 6], d: 0.62},
+      hh: {label: 'head height', k: 'k', b: [0.05, 1], x: [0.02, 3], d: 0.16},
+      hl: {label: 'head length', k: 'k', b: [0.1, 2], x: [0.05, 5], d: 0.42},
+      hy: {label: 'head y', k: 'k', b: [-0.5, 1], x: [-2, 3], d: 0.2},
+      hz: {label: 'head z', k: 'k', b: [0, 3], x: [-2, 8], d: 0.68},
+      tw: {label: 'tail width', k: 'k', b: [0.1, 2], x: [0.05, 5], d: 0.4},
+      th: {label: 'tail height', k: 'k', b: [0.05, 1], x: [0.02, 3], d: 0.14},
+      tl: {label: 'tail length', k: 'k', b: [0, 2], x: [0, 5], d: 0.3},
+      ty: {label: 'tail y', k: 'k', b: [-0.5, 1], x: [-2, 3], d: 0.16},
+      tz: {label: 'tail z', k: 'k', b: [-3, 0], x: [-8, 2], d: -0.8}
     },
     build: (ctx, c) => {
       const P = ctx.P,
@@ -595,18 +595,18 @@ const CORES = {
   bean: {
     clade: 'hingeshells',
     params: {
-      R: {k: 'k', b: [0.05, 0.6], x: [0.02, 2], d: 0.12},
-      sx: {k: 'k', b: [0.5, 1.2], x: [0.3, 2], d: 0.7},
-      sy: {k: 'k', b: [0.6, 1.2], x: [0.3, 2], d: 0.9},
-      sz: {k: 'k', b: [1, 2.5], x: [0.5, 4], d: 1.5},
-      y: {k: 'k', b: [-0.1, 0.1], x: [-1, 1], d: -0.02},
-      z: {k: 'k', b: [-0.2, 0.2], x: [-2, 2], d: 0.05},
-      ws: {k: 'n', b: [6, 10], x: [4, 16], d: 7},
-      hs: {k: 'n', b: [4, 8], x: [3, 12], d: 5},
-      gut: {k: 'b', d: true},
-      gw: {k: 'k', b: [0.01, 0.06], x: [0.005, 0.3], d: 0.03},
-      gl: {k: 'k', b: [0.1, 0.6], x: [0.02, 3], d: 0.34},
-      gy: {k: 'k', b: [-0.1, 0.2], x: [-1, 1], d: 0.06}
+      R: {label: 'body radius', k: 'k', b: [0.05, 0.6], x: [0.02, 2], d: 0.12},
+      sx: {label: 'width', k: 'k', b: [0.5, 1.2], x: [0.3, 2], d: 0.7},
+      sy: {label: 'squash', k: 'k', b: [0.6, 1.2], x: [0.3, 2], d: 0.9},
+      sz: {label: 'stretch', k: 'k', b: [1, 2.5], x: [0.5, 4], d: 1.5},
+      y: {label: 'y (up)', k: 'k', b: [-0.1, 0.1], x: [-1, 1], d: -0.02},
+      z: {label: 'z (fore–aft)', k: 'k', b: [-0.2, 0.2], x: [-2, 2], d: 0.05},
+      ws: {label: 'segments round', k: 'n', b: [6, 10], x: [4, 16], d: 7},
+      hs: {label: 'segments up', k: 'n', b: [4, 8], x: [3, 12], d: 5},
+      gut: {label: 'gut line', k: 'b', d: true},
+      gw: {label: 'gut width', k: 'k', b: [0.01, 0.06], x: [0.005, 0.3], d: 0.03},
+      gl: {label: 'gut length', k: 'k', b: [0.1, 0.6], x: [0.02, 3], d: 0.34},
+      gy: {label: 'gut y', k: 'k', b: [-0.1, 0.2], x: [-1, 1], d: 0.06}
     },
     build: (ctx, c) => {
       const P = ctx.P,
@@ -662,26 +662,26 @@ const CORES = {
   arches: {
     clade: 'hingeshells',
     params: {
-      n: {k: 'n', b: [5, 10], x: [3, 16], d: 8},
-      z0: {k: 'k', b: [1, 8], x: [0, 16], d: 5},
-      L: {k: 'k', b: [0.6, 3], x: [0.2, 6], d: 1.7},
-      w0: {k: 'k', b: [1, 8], x: [0.3, 16], d: 5},
-      w1: {k: 'k', b: [0.5, 5], x: [0.2, 10], d: 2.4},
-      h0: {k: 'k', b: [0.4, 2.5], x: [0.1, 5], d: 1.35},
-      h1: {k: 'k', b: [0.2, 1.5], x: [0.05, 4], d: 0.75},
-      y: {k: 'k', b: [-1, 0.5], x: [-3, 2], d: -0.35},
-      segs: {k: 'n', b: [8, 16], x: [6, 24], d: 12},
-      alt: {k: 'b', d: true},
-      hR: {k: 'k', b: [1, 5], x: [0.3, 10], d: 2.9},
-      hsy: {k: 'k', b: [0.2, 0.8], x: [0.1, 1.5], d: 0.42},
-      hsz: {k: 'k', b: [0.4, 1.2], x: [0.2, 2], d: 0.75},
-      hy: {k: 'k', b: [-1, 0.5], x: [-3, 2], d: -0.15},
-      hz: {k: 'k', b: [1, 9], x: [0, 18], d: 5.4},
-      tR: {k: 'k', b: [0.3, 3], x: [0.1, 6], d: 1.2},
-      tsy: {k: 'k', b: [0.2, 1], x: [0.1, 2], d: 0.5},
-      tsz: {k: 'k', b: [0.4, 1.5], x: [0.2, 3], d: 0.9},
-      ty: {k: 'k', b: [-1.5, 0.5], x: [-4, 2], d: -0.6},
-      tz: {k: 'k', b: [-16, -2], x: [-30, 0], d: -8.7}
+      n: {label: 'arches', k: 'n', b: [5, 10], x: [3, 16], d: 8},
+      z0: {label: 'first z', k: 'k', b: [1, 8], x: [0, 16], d: 5},
+      L: {label: 'length', k: 'k', b: [0.6, 3], x: [0.2, 6], d: 1.7},
+      w0: {label: 'front width', k: 'k', b: [1, 8], x: [0.3, 16], d: 5},
+      w1: {label: 'back width', k: 'k', b: [0.5, 5], x: [0.2, 10], d: 2.4},
+      h0: {label: 'front height', k: 'k', b: [0.4, 2.5], x: [0.1, 5], d: 1.35},
+      h1: {label: 'back height', k: 'k', b: [0.2, 1.5], x: [0.05, 4], d: 0.75},
+      y: {label: 'y (up)', k: 'k', b: [-1, 0.5], x: [-3, 2], d: -0.35},
+      segs: {label: 'segments', k: 'n', b: [8, 16], x: [6, 24], d: 12},
+      alt: {label: 'alternate colours', k: 'b', d: true},
+      hR: {label: 'shield radius', k: 'k', b: [1, 5], x: [0.3, 10], d: 2.9},
+      hsy: {label: 'shield squash', k: 'k', b: [0.2, 0.8], x: [0.1, 1.5], d: 0.42},
+      hsz: {label: 'shield stretch', k: 'k', b: [0.4, 1.2], x: [0.2, 2], d: 0.75},
+      hy: {label: 'head y', k: 'k', b: [-1, 0.5], x: [-3, 2], d: -0.15},
+      hz: {label: 'head z', k: 'k', b: [1, 9], x: [0, 18], d: 5.4},
+      tR: {label: 'tail knob', k: 'k', b: [0.3, 3], x: [0.1, 6], d: 1.2},
+      tsy: {label: 'knob squash', k: 'k', b: [0.2, 1], x: [0.1, 2], d: 0.5},
+      tsz: {label: 'knob stretch', k: 'k', b: [0.4, 1.5], x: [0.2, 3], d: 0.9},
+      ty: {label: 'tail y', k: 'k', b: [-1.5, 0.5], x: [-4, 2], d: -0.6},
+      tz: {label: 'tail z', k: 'k', b: [-16, -2], x: [-30, 0], d: -8.7}
     },
     build: (ctx, c) => {
       const P = ctx.P,
@@ -749,13 +749,13 @@ const CORES = {
   bell: {
     clade: 'drifters',
     params: {
-      R: {k: 'k', b: [0.3, 1.5], x: [0.1, 4], d: 0.72},
-      H: {k: 'k', b: [0.3, 1.2], x: [0.1, 3], d: 0.56},
-      segs: {k: 'n', b: [6, 12], x: [5, 24], d: 8},
-      inner: {k: 'b', d: true},
-      core: {k: 'b', d: true},
-      pulse: {k: 'k', b: [0.04, 0.16], x: [0, 0.4], d: 0.1},
-      sway: {k: 'k', b: [0, 0.1], x: [0, 0.3], d: 0.06}
+      R: {label: 'bell radius', k: 'k', b: [0.3, 1.5], x: [0.1, 4], d: 0.72},
+      H: {label: 'height', k: 'k', b: [0.3, 1.2], x: [0.1, 3], d: 0.56},
+      segs: {label: 'segments', k: 'n', b: [6, 12], x: [5, 24], d: 8},
+      inner: {label: 'inner bell', k: 'b', d: true},
+      core: {label: 'core', k: 'b', d: true},
+      pulse: {label: 'pulse', k: 'k', b: [0.04, 0.16], x: [0, 0.4], d: 0.1},
+      sway: {label: 'sway', k: 'k', b: [0, 0.1], x: [0, 0.3], d: 0.06}
     },
     build: (ctx, c) => {
       const P = ctx.P,
@@ -809,14 +809,14 @@ const CORES = {
   float: {
     clade: 'drifters',
     params: {
-      sx: {k: 'k', b: [0.4, 1], x: [0.2, 2], d: 0.62},
-      sy: {k: 'k', b: [0.3, 0.9], x: [0.15, 2], d: 0.5},
-      sz: {k: 'k', b: [1, 3], x: [0.5, 6], d: 1.8},
-      y: {k: 'k', b: [-0.2, 0.3], x: [-1, 1], d: 0.05},
-      crest: {k: 'b', d: true},
-      cn: {k: 'n', b: [5, 13], x: [3, 20], d: 9},
-      ch: {k: 'k', b: [0.2, 1], x: [0, 2], d: 0.62},
-      bodies: {k: 'n', b: [8, 30], x: [0, 60], d: 18}
+      sx: {label: 'width', k: 'k', b: [0.4, 1], x: [0.2, 2], d: 0.62},
+      sy: {label: 'squash', k: 'k', b: [0.3, 0.9], x: [0.15, 2], d: 0.5},
+      sz: {label: 'stretch', k: 'k', b: [1, 3], x: [0.5, 6], d: 1.8},
+      y: {label: 'y (up)', k: 'k', b: [-0.2, 0.3], x: [-1, 1], d: 0.05},
+      crest: {label: 'crest', k: 'b', d: true},
+      cn: {label: 'crest slabs', k: 'n', b: [5, 13], x: [3, 20], d: 9},
+      ch: {label: 'crest height', k: 'k', b: [0.2, 1], x: [0, 2], d: 0.62},
+      bodies: {label: 'feeding bodies', k: 'n', b: [8, 30], x: [0, 60], d: 18}
     },
     build: (ctx, c) => {
       const P = ctx.P,
@@ -913,42 +913,13 @@ function prepCtx(ctx, F, spec) {
   return ctx;
 }
 const DEG = Math.PI / 180;
-// which styles belong to which clade: the lab offers only these, validate corrects the rest (answer 1 of the second round)
-const STYLE_CLADES = {
-  'eyes:collar': ['ringmouths'],
-  'eyes:cluster': ['ringmouths'],
-  'eyes:ring': ['slowbloods'],
-  'eyes:stalks': ['hingeshells'],
-  'eyes:rim': ['hingeshells'],
-  'eyes:crown': ['hingeshells'],
-  'eyes:under': ['hingeshells'],
-  'eyes:valve': ['hingeshells'],
-  'eyes:arc': ['hingeshells'],
-  'eyes:rows': ['hingeshells'],
-  'mouth:beak': ['ringmouths'],
-  'mouth:rasp': ['ringmouths'],
-  'mouth:tentacles': ['slowbloods'],
-  'mouth:plates': ['hingeshells'],
-  'mouth:peck': ['hingeshells'],
-  'mouth:slit': ['hingeshells', 'slowbloods', 'ringmouths'],
-  'arms:jet': ['ringmouths'],
-  'arms:cone': ['ringmouths'],
-  'arms:withdraw': ['ringmouths'],
-  'arms:hold': ['ringmouths'],
-  'arms:crawl': ['ringmouths'],
-  'arms:raise': ['ringmouths'],
-  'arms:net': ['ringmouths'],
-  'arms:hang': ['drifters'],
-  'arms:lines': ['drifters']
-};
-function stylesFor(kind, clade) {
-  const def = PARTS[kind];
-  if (!def) return [];
-  return def.styles.filter(st => {
-    const c = STYLE_CLADES[kind + ':' + st];
-    return !c || c.indexOf(clade) >= 0;
-  });
-}
+// which styles belong to which clade, and stand on which core: the registry's word (PARTS[kind].reg, v11.70; STYLE_CLADES to v11.69, which listed
+// only eyes, mouth and arms and let every unlisted style through to every clade of its kind). The lab offers only these, validate corrects the
+// rest (answer 1 of the second round). core: a core kind, where the asker has one — a style with `cores` stands only on those, and a kind the
+// core provides itself (the chain body is its own tail) has no styles there.
+function styleClades(kind,style){const d=PARTS[kind],r=d&&d.reg[style];return r?r.clades:null;}
+function stylesFor(kind,clade,core){const d=PARTS[kind];if(!d)return [];if(core&&CORES[core]&&(CORES[core].provides||[]).indexOf(kind)>=0)return [];
+  return d.styles.filter(st=>{const r=d.reg[st];return r.clades.indexOf(clade)>=0&&(!core||!r.cores||r.cores.indexOf(core)>=0);});}
 // the mouth parts of a hingeshell (answer 6): around a plate ring at (x0,y0,z0) that faces `down` or forward — mandibles (a pair of
 // curved blades that close inward), palps (short jointed stubs, leg()), feelers (thin whiskers fanned out)
 function feedParts(P, pal, y0, z0, R, down, kind, n, len) {
@@ -1031,19 +1002,33 @@ const PLANS = {
   ]
 };
 // ---------- the parts ----------
-// A part: clades it belongs to, styles (the first is the default), params with ranges and defaults (a default may be a function of
-// the frame F: what the lab places when you add it), cost in points, req (cannot be removed once the clade requires it), mirror (a
+// A part: reg — the registry (v11.70): every style with the clades it belongs to, the cores it can stand on (`cores`; none listed: any of the
+// clade's) and the params it reads (`params`; none listed: all); the first style is the default; `styles` and `clades` are read off it at
+// load — params, each with its label (`by`: a style's own word where the key means another thing there), its unit (`unit`; a 'len' or a 'z'
+// is metres), its believable band b and extreme band x and its default d next to each other, so a key means one thing per part (a default may
+// be a function of the frame F: what the lab places when you add it), cost in points, req (cannot be removed once the clade requires it), mirror (a
 // placed part that can be doubled across x: two for twice the cost; the required ones are symmetrical already) and build(ctx,p) →
 // {anim?, rig?, hit?, thrust?, area?, mass?, turn?}: static geometry goes into ctx.P (one draw call with the body), moving parts add
 // their own meshes to ctx.g and return an anim hook. ctx.clock(f0,f1) hands out swimClocks; ctx.beat is the core's [f0,f1].
 const PARTS = {
   eyes: {
-    clades: ['ringmouths', 'slowbloods', 'hingeshells'],
-    styles: ['collar', 'cluster', 'ring', 'stalks', 'rim', 'crown', 'under', 'valve', 'arc', 'rows'],
+    reg:{
+      collar:{clades:['ringmouths'],params:['n','z','R','r','sy','y0']},
+      cluster:{clades:['ringmouths'],params:['n','y','z','R','r']},
+      ring:{clades:['slowbloods'],params:['z','R','pred']},
+      stalks:{clades:['hingeshells'],params:['n','x','y','z','len','size','tilt','splay','thick','sc','rise','snap']},
+      rim:{clades:['hingeshells'],params:['n','x','y','z','size','sweep','snap']},
+      crown:{clades:['hingeshells'],params:['x','y','z','len','size','tilt','snap']},
+      under:{clades:['hingeshells'],params:['n','x','y','z','size','snap']},
+      valve:{clades:['hingeshells'],params:[]},
+      arc:{clades:['hingeshells'],params:['n','x','r','y','z','arc','size','snap']},
+      rows:{clades:['hingeshells'],params:['n','rows','x','y','z','dy','dz','size','size2','snap']}
+    },
     cost: 2,
     params: {
-      n: {k: 'n', b: (F, p) => (p.style === 'stalks' ? [1, 3] : p.style === 'rows' ? [2, 6] : [3, 12]), x: [1, 24], d: (F, p) => (p.style === 'stalks' ? 1 : p.style === 'rim' ? 5 : p.style === 'under' || p.style === 'rows' ? 4 : p.style === 'arc' ? 7 : 8)},
+      n: {label: 'count', k: 'n', b: (F, p) => (p.style === 'stalks' ? [1, 3] : p.style === 'rows' ? [2, 6] : [3, 12]), x: [1, 24], d: (F, p) => (p.style === 'stalks' ? 1 : p.style === 'rim' ? 5 : p.style === 'under' || p.style === 'rows' ? 4 : p.style === 'arc' ? 7 : 8)},
       z: {
+        label: 'z (fore–aft)',
         k: 'z',
         b: [-1, 1],
         x: [-4, 4],
@@ -1053,6 +1038,7 @@ const PARTS = {
         }
       },
       R: {
+        label: 'ring radius',
         k: 'len',
         b: [0.05, 1],
         x: [0.02, 2],
@@ -1062,6 +1048,7 @@ const PARTS = {
         }
       },
       r: {
+        label: 'radius',
         k: 'len',
         b: [0.01, 0.2],
         x: [0.005, 0.5],
@@ -1072,45 +1059,48 @@ const PARTS = {
         }
       },
       y: {
+        label: 'y (up)',
         k: 'len',
         b: [-0.5, 0.8],
         x: [-1, 2],
         d: (F, p) =>
           F.anchors.cluster ? F.anchors.cluster.y : F.H ? (F.hy || 0) + (p.style === 'crown' ? -F.ht * 0.3 : p.style === 'under' ? -F.ht * 0.6 : F.ht) : 0
       },
-      sy: {k: 'k', b: [0.6, 1], x: [0.3, 1.4], d: F => (F.anchors.collar ? F.anchors.collar.sy : 1)},
-      y0: {k: 'k', b: [0, 1], x: [-1, 2], d: F => (F.anchors.collar ? F.anchors.collar.y0 : 0)},
-      pred: {k: 'b', d: false},
+      sy: {label: 'squash', k: 'k', b: [0.6, 1], x: [0.3, 1.4], d: F => (F.anchors.collar ? F.anchors.collar.sy : 1)},
+      y0: {label: 'height', k: 'k', b: [0, 1], x: [-1, 2], d: F => (F.anchors.collar ? F.anchors.collar.y0 : 0)},
+      pred: {label: 'forward-facing', k: 'b', d: false},
       // the hingeshell styles (the head box): x the lateral spread (mirrored), len the stalk, size the eye, tilt forward and splay outward in degrees, sweep how far back the rim's outer eyes sit, snap: y follows the surface (armour included)
       x: {
+        label: 'x (out)',
         k: 'len',
         b: [0, 0.3],
         x: [0, 1],
         d: (F, p) =>
           F.H ? (p.style === 'stalks' ? F.H.w * 0.34 : p.style === 'rim' ? F.H.w * 0.45 : p.style === 'crown' ? F.H.w * 0.52 : p.style === 'arc' ? F.H.w * 0.44 : F.H.w * 0.4) : 0
       },
-      len: {k: 'len', b: [0.02, 0.3], x: [0.005, 1], d: (F, p) => (F.H ? F.H.h * (p.style === 'crown' ? 0.9 : 0.7) : 0.2)},
+      len: {label: 'length', k: 'len', b: [0.02, 0.3], x: [0.005, 1], d: (F, p) => (F.H ? F.H.h * (p.style === 'crown' ? 0.9 : 0.7) : 0.2)},
       size: {
+        label: 'eye size',
         k: 'len',
         b: [0.005, 0.08],
         x: [0.002, 0.3],
         d: (F, p) => (F.H ? F.H.h * (p.style === 'stalks' ? 0.3 : p.style === 'crown' ? 0.32 : p.style === 'rim' ? 0.16 : 0.17) : 0.05)
       },
-      tilt: {k: 'k', b: [-30, 80], x: [-90, 90], d: (F, p) => (p.style === 'crown' ? 11.3 : 8.5)},
-      splay: {k: 'k', b: [0, 70], x: [-30, 90], d: 35},
-      sweep: {k: 'k', b: [0, 1], x: [-1, 2], d: 0.5},
-      arc: {k: 'k', b: [20, 90], x: [5, 180], d: 60},
-      snap: {k: 'b', d: true},
+      tilt: {label: 'tilt forward', unit: '°', k: 'k', b: [-30, 80], x: [-90, 90], d: (F, p) => (p.style === 'crown' ? 11.3 : 8.5)},
+      splay: {label: 'splay out', unit: '°', k: 'k', b: [0, 70], x: [-30, 90], d: 35},
+      sweep: {label: 'sweep back', k: 'k', b: [0, 1], x: [-1, 2], d: 0.5},
+      arc: {label: 'arc', unit: '°', k: 'k', b: [20, 90], x: [5, 180], d: 60},
+      snap: {label: 'snap to the body', k: 'b', d: true},
       // v11.25: stalks that rise on the tell (the trap: rise m, their own mesh), the stalk's thickness over the eye and its colour;
       // arc: n eyes on an arc round the head's rim (the scuttle, the tread) — x and r its half-axes, sweep the half-angle in degrees;
       // rows: rows of n across the face (the hook's eight in two rows, the picker's pair), dy/dz between rows, size2 the lower row's
-      rise: {k: 'len', b: [0, 0.2], x: [0, 1], d: 0},
-      thick: {k: 'k', b: [0.2, 0.7], x: [0.05, 1.5], d: 0.4},
-      sc: {k: 's', opts: ['joint', 'top', 'eye'], d: 'joint'},
-      rows: {k: 'n', b: [1, 2], x: [1, 4], d: (F, p) => (p.style === 'rows' ? 2 : 1)},
-      dy: {k: 'len', b: [-0.1, 0], x: [-0.5, 0.5], d: F => -(F.H ? F.H.h * 0.33 : 0.1)},
-      dz: {k: 'len', b: [-0.05, 0.05], x: [-0.5, 0.5], d: 0},
-      size2: {k: 'len', b: [0.005, 0.08], x: [0.002, 0.3], d: (F, p) => (F.H ? F.H.h * 0.1 : 0.04)}
+      rise: {label: 'rise on the tell', k: 'len', b: [0, 0.2], x: [0, 1], d: 0},
+      thick: {label: 'stalk thickness', k: 'k', b: [0.2, 0.7], x: [0.05, 1.5], d: 0.4},
+      sc: {label: 'stalk colour', k: 's', opts: ['joint', 'top', 'eye'], d: 'joint'},
+      rows: {label: 'rows', k: 'n', b: [1, 2], x: [1, 4], d: (F, p) => (p.style === 'rows' ? 2 : 1)},
+      dy: {label: 'row drop', k: 'len', b: [-0.1, 0], x: [-0.5, 0.5], d: F => -(F.H ? F.H.h * 0.33 : 0.1)},
+      dz: {label: 'spacing', k: 'len', b: [-0.05, 0.05], x: [-0.5, 0.5], d: 0},
+      size2: {label: 'lower row size', k: 'len', b: [0.005, 0.08], x: [0.002, 0.3], d: (F, p) => (F.H ? F.H.h * 0.1 : 0.04)}
     },
     build: (ctx, p) => {
       const P = ctx.P,
@@ -1211,47 +1201,56 @@ const PARTS = {
     }
   },
   mouth: {
-    clades: ['ringmouths', 'slowbloods', 'hingeshells'],
-    styles: ['beak', 'tentacles', 'plates', 'rasp', 'peck', 'slit'],
+    reg:{
+      beak:{clades:['ringmouths'],params:['z','y','R']},
+      tentacles:{clades:['slowbloods'],params:['z','r','len','n','w','segs','idle','tell','kk','pulse','edge']},
+      plates:{clades:['hingeshells'],params:['where','z','y','R','plen','feed','fn','flen','snap']},
+      rasp:{clades:['ringmouths'],params:['z','y','R','h']},
+      peck:{clades:['hingeshells'],params:['z','y','len','r','dip','pk','wob']},
+      slit:{clades:['hingeshells','slowbloods','ringmouths'],params:['z','y','R','h']}
+    },
     cost: 3,
     params: {
-      z: {k: 'z', b: [-0.2, 1.2], x: [-4, 4], d: (F, p) => (F.anchors.mouth ? F.anchors.mouth.z : p.where === 'under' ? F.zh - F.H.l * 0.2 : F.zf)},
+      z: {label: 'z (fore–aft)', k: 'z', b: [-0.2, 1.2], x: [-4, 4], d: (F, p) => (F.anchors.mouth ? F.anchors.mouth.z : p.where === 'under' ? F.zh - F.H.l * 0.2 : F.zf)},
+      // y, R (v11.70): a mouth anchor without them (the slowbloods': z, r, len, n, w) gives the axis and the ring's radius — a slit on a lathe built NaN
       y: {
+        label: 'y (up)',
         k: 'len',
         b: [-0.5, 0.5],
         x: [-1, 1],
-        d: (F, p) => (F.anchors.mouth ? F.anchors.mouth.y : (F.hy || 0) + (p.where === 'under' ? -F.ht * 1.05 : p.where === 'probe' ? -F.ht * 0.35 : -F.ht * 0.15))
+        d: (F, p) => (F.anchors.mouth ? F.anchors.mouth.y || 0 : (F.hy || 0) + (p.where === 'under' ? -F.ht * 1.05 : p.where === 'probe' ? -F.ht * 0.35 : -F.ht * 0.15))
       },
       R: {
+        label: 'mouth radius',
         k: 'len',
         b: [0.01, 0.3],
         x: [0.005, 0.6],
-        d: (F, p) => (F.anchors.mouth ? F.anchors.mouth.R : F.H.w * (p.where === 'under' ? 0.3 : p.where === 'probe' ? 0.16 : 0.26))
+        d: (F, p) => (F.anchors.mouth ? F.anchors.mouth.R || F.anchors.mouth.r : F.H.w * (p.where === 'under' ? 0.3 : p.where === 'probe' ? 0.16 : 0.26))
       },
       // v11.25 — rasp (the shelled grazer's disc under the front: R across, h thick); peck (the picker's proboscis: a rod from
       // (0,y,z) reaching len forward and dip down, pecking pk on the strike with a wob idle)
-      h: {k: 'len', b: [0.02, 0.2], x: [0.005, 0.6], d: F => F.Rmax * 0.12},
-      dip: {k: 'k', b: [0, 1], x: [-1, 2], d: 0.45},
-      pk: {k: 'k', b: [0.3, 1.5], x: [0, 3], d: 0.9},
-      wob: {k: 'k', b: [0, 0.15], x: [0, 0.5], d: 0.05},
-      where: {k: 's', opts: ['under', 'front', 'probe'], d: 'front'},
+      h: {label: 'thickness', k: 'len', b: [0.02, 0.2], x: [0.005, 0.6], d: F => F.Rmax * 0.12},
+      dip: {label: 'dip', k: 'k', b: [0, 1], x: [-1, 2], d: 0.45},
+      pk: {label: 'peck', k: 'k', b: [0.3, 1.5], x: [0, 3], d: 0.9},
+      wob: {label: 'wobble', k: 'k', b: [0, 0.15], x: [0, 0.5], d: 0.05},
+      where: {label: 'faces', k: 's', opts: ['under', 'front', 'probe'], d: 'front'},
       // the hingeshell plate ring: where it faces, z along the body (snap: an under mouth sits on the belly, a front mouth on the face), plen the probe, and the mouth parts around it
-      plen: {k: 'len', b: [0.02, 0.4], x: [0.01, 1], d: F => (F.H ? F.H.l * 0.55 : 0.3)},
-      feed: {k: 's', opts: ['none', 'mandibles', 'palps', 'feelers'], d: 'none'},
-      fn: {k: 'n', b: [2, 6], x: [1, 10], d: 4},
-      flen: {k: 'len', b: [0.02, 0.3], x: [0.005, 1], d: F => (F.H ? F.H.l * 0.5 : 0.2)},
-      snap: {k: 'b', d: true},
+      plen: {label: 'probe length', k: 'len', b: [0.02, 0.4], x: [0.01, 1], d: F => (F.H ? F.H.l * 0.55 : 0.3)},
+      feed: {label: 'mouth parts', k: 's', opts: ['none', 'mandibles', 'palps', 'feelers'], d: 'none'},
+      fn: {label: 'their count', k: 'n', b: [2, 6], x: [1, 10], d: 4},
+      flen: {label: 'their length', k: 'len', b: [0.02, 0.3], x: [0.005, 1], d: F => (F.H ? F.H.l * 0.5 : 0.2)},
+      snap: {label: 'snap to the body', k: 'b', d: true},
       // tentacles (mouthArms): r the ring, len the reach, n, w the width, segs; how they open: idle (a permanent gape), tell (the cock), k (the strike's share), pulse (the player's bite opens them)
-      r: {k: 'len', b: [0.02, 0.5], x: [0.01, 1.6], d: F => (F.anchors.mouth ? F.anchors.mouth.r : 0.2)},
-      len: {k: 'len', b: [0.05, 1.2], x: [0.02, 3], d: F => (F.anchors.mouth ? F.anchors.mouth.len : 0.5)},
-      n: {k: 'n', b: [4, 8], x: [3, 12], d: 6},
-      w: {k: 'len', b: [0.01, 0.3], x: [0.005, 0.7], d: F => (F.anchors.mouth ? F.anchors.mouth.w : 0.1)},
-      segs: {k: 'n', b: [1, 3], x: [1, 5], d: 2},
-      idle: {k: 'k', b: [0, 0.3], x: [0, 0.7], d: 0},
-      tell: {k: 'k', b: [0, 0.3], x: [0, 1], d: 0},
-      kk: {k: 'k', b: [0, 1], x: [0, 1.5], d: 1},
-      pulse: {k: 'b', d: false},
-      edge: {k: 's', opts: ['hold', 'cut', 'point', 'crush'], d: 'hold'} // the petals' inner edges (COMBAT.md §2, v11.54): hold (a clamp that swallows or lets go), cut (tears a piece out with a thrash), point (a needle jaw: skewers), crush (the crusher's plate jaw: shell and plate)
+      r: {label: 'radius', k: 'len', b: [0.02, 0.5], x: [0.01, 1.6], d: F => (F.anchors.mouth ? F.anchors.mouth.r : 0.2)},
+      len: {label: 'length', k: 'len', b: [0.05, 1.2], x: [0.02, 3], d: F => (F.anchors.mouth ? F.anchors.mouth.len : 0.5)},
+      n: {label: 'count', k: 'n', b: [4, 8], x: [3, 12], d: 6},
+      w: {label: 'width', k: 'len', b: [0.01, 0.3], x: [0.005, 0.7], d: F => (F.anchors.mouth ? F.anchors.mouth.w : 0.1)},
+      segs: {label: 'segments', k: 'n', b: [1, 3], x: [1, 5], d: 2},
+      idle: {label: 'gape', k: 'k', b: [0, 0.3], x: [0, 0.7], d: 0},
+      tell: {label: 'cock', k: 'k', b: [0, 0.3], x: [0, 1], d: 0},
+      kk: {label: 'strike share', k: 'k', b: [0, 1], x: [0, 1.5], d: 1},
+      pulse: {label: 'opens on the bite', k: 'b', d: false},
+      edge: {label: 'inner edge', k: 's', opts: ['hold', 'cut', 'point', 'crush'], d: 'hold'} // the petals' inner edges (COMBAT.md §2, v11.54): hold (a clamp that swallows or lets go), cut (tears a piece out with a thrash), point (a needle jaw: skewers), crush (the crusher's plate jaw: shell and plate)
     },
     build: (ctx, p) => {
       const P = ctx.P,
@@ -1334,50 +1333,59 @@ const PARTS = {
   // differentiated (PLANS); phase in steps of 1/n round the ring (0.5 is a half step, armRing's own default). Flat rings (crawl,
   // raise) lie on the floor round y: z0 is where an arm starts along its axis, y0 its height, sw the sideways sweep of the pose.
   arms: {
-    clades: ['ringmouths', 'drifters'],
-    styles: ['jet', 'cone', 'withdraw', 'hold', 'crawl', 'raise', 'net', 'hang', 'lines'],
+    reg:{
+      jet:{clades:['ringmouths'],params:['n','z','R','len','w','segs','curve','ks','damp','cosMax','plan','phase','taper','col','shade']},
+      cone:{clades:['ringmouths'],params:['n','z','R','len','w','segs','curve','ks','damp','cosMax','plan','phase','taper','col','shade','s0','s1','a0','a1','k0','k1']},
+      withdraw:{clades:['ringmouths'],cores:['coilbody'],params:['n','z','R','len','w','segs','curve','ks','damp','cosMax','plan','phase','taper','col','shade','s0','a0']},
+      hold:{clades:['ringmouths'],params:['n','z','R','len','w','segs','curve','ks','damp','cosMax','plan','phase','taper','col','shade','s0','a0']},
+      crawl:{clades:['ringmouths'],params:['n','len','w','segs','ks','damp','cosMax','plan','phase','z0','y0','taper','h','col','shade','s0','s1','a0','a1','k0','k1','sw']},
+      raise:{clades:['ringmouths'],params:['n','len','w','segs','ks','damp','cosMax','plan','phase','z0','y0','taper','h','col','shade','s0','a0','wob','wf','f0','sw']},
+      net:{clades:['ringmouths'],params:['n','z','R','len','w','segs','curve','ks','damp','cosMax','plan','phase','taper','col','shade','soft','web','wsp','s0','s1','a0','wob','wf','f0','jet']},
+      hang:{clades:['drifters'],params:['n','R','len','w','segs','ks','damp','cosMax','phase','y0','taper','col','soft','a0','pm']},
+      lines:{clades:['drifters'],params:['n','R','len','w','segs','ks','damp','cosMax','phase','y0','taper','col','soft','lean','toff']}
+    },
     cost: 4,
     req: true,
     params: {
-      n: {k: 'n', b: [4, 24], x: [2, 32], d: (F, p) => (p.style === 'crawl' ? 6 : p.style === 'raise' ? 4 : 8)},
-      z: {k: 'z', b: [-0.5, 1.5], x: [-4, 4], d: F => (F.anchors.ring ? F.anchors.ring.z : 0)},
-      R: {k: 'len', b: [0.05, 1], x: [0.02, 3], d: F => (F.anchors.ring ? F.anchors.ring.R : F.Rmax * 0.6)},
-      len: {k: 'len', b: [0.3, 8], x: [0.1, 14], d: (F, p) => F.L * (p.style === 'lines' ? 7 : 0.8)},
-      w: {k: 'len', b: [0.005, 0.5], x: [0.002, 1], d: F => F.Rmax * 0.35},
-      segs: {k: 'n', b: [2, 16], x: [2, 20], d: (F, p) => (p.style === 'lines' ? 14 : 4)},
-      curve: {k: 'k', b: [0, 0.25], x: [-0.1, 0.4], d: 0.02},
-      ks: {k: 'k', b: [8, 90], x: [3, 150], d: 55},
-      damp: {k: 'k', b: [4, 12], x: [2, 20], d: 9},
-      cosMax: {k: 'k', b: [0.2, 0.9], x: [0.05, 1], d: 0.55},
-      plan: {k: 's', opts: ['242', 'equal', 'fan', 'crawl', 'raise'], d: (F, p) => (p.style === 'crawl' ? 'crawl' : p.style === 'raise' ? 'raise' : F.anchors.collar ? '242' : 'equal')},
-      phase: {k: 'k', b: [0, 1], x: [-2, 2], d: 0.5},
-      z0: {k: 'len', b: [0, 0.6], x: [-1, 1], d: 0},
-      y0: {k: 'len', b: [-0.3, 0.3], x: [-2, 2], d: F => (F.anchors.ring && F.anchors.ring.y0 !== undefined ? F.anchors.ring.y0 : 0)},
-      taper: {k: 'k', b: [0.6, 0.98], x: [0.3, 1], d: (F, p) => (p.style === 'lines' ? 0.97 : p.style === 'hang' ? 0.9 : 0.76)},
-      h: {k: 'k', b: [0.5, 1.5], x: [0.2, 3], d: 1},
-      col: {k: 's', opts: ['arm', 'top', 'belly', 'flesh', 'web'], d: 'arm'},
-      shade: {k: 'b', d: false},
-      soft: {k: 'b', d: (F, p) => p.style === 'net' || p.style === 'hang' || p.style === 'lines'},
-      web: {k: 'b', d: (F, p) => p.style === 'net'},
-      wsp: {k: 'k', b: [0.4, 0.9], x: [0, 1.5], d: 0.8},
-      sw: {k: 'k', b: [0, 0.4], x: [0, 1], d: 0.15},
+      n: {label: 'count', k: 'n', b: [4, 24], x: [2, 32], d: (F, p) => (p.style === 'crawl' ? 6 : p.style === 'raise' ? 4 : 8)},
+      z: {label: 'z (fore–aft)', k: 'z', b: [-0.5, 1.5], x: [-4, 4], d: F => (F.anchors.ring ? F.anchors.ring.z : 0)},
+      R: {label: 'ring radius', k: 'len', b: [0.05, 1], x: [0.02, 3], d: F => (F.anchors.ring ? F.anchors.ring.R : F.Rmax * 0.6)},
+      len: {label: 'length', k: 'len', b: [0.3, 8], x: [0.1, 14], d: (F, p) => F.L * (p.style === 'lines' ? 7 : 0.8)},
+      w: {label: 'width', k: 'len', b: [0.005, 0.5], x: [0.002, 1], d: F => F.Rmax * 0.35},
+      segs: {label: 'segments', k: 'n', b: [2, 16], x: [2, 20], d: (F, p) => (p.style === 'lines' ? 14 : 4)},
+      curve: {label: 'curve', k: 'k', b: [0, 0.25], x: [-0.1, 0.4], d: 0.02},
+      ks: {label: 'stiffness', k: 'k', b: [8, 90], x: [3, 150], d: 55},
+      damp: {label: 'damping', k: 'k', b: [4, 12], x: [2, 20], d: 9},
+      cosMax: {label: 'joint limit', k: 'k', b: [0.2, 0.9], x: [0.05, 1], d: 0.55},
+      plan: {label: 'plan', k: 's', opts: ['242', 'equal', 'fan', 'crawl', 'raise'], d: (F, p) => (p.style === 'crawl' ? 'crawl' : p.style === 'raise' ? 'raise' : F.anchors.collar ? '242' : 'equal')},
+      phase: {label: 'phase (steps)', k: 'k', b: [0, 1], x: [-2, 2], d: 0.5},
+      z0: {label: 'first z', k: 'len', b: [0, 0.6], x: [-1, 1], d: 0},
+      y0: {label: 'lift', k: 'len', b: [-0.3, 0.3], x: [-2, 2], d: F => (F.anchors.ring && F.anchors.ring.y0 !== undefined ? F.anchors.ring.y0 : 0)},
+      taper: {label: 'taper', k: 'k', b: [0.6, 0.98], x: [0.3, 1], d: (F, p) => (p.style === 'lines' ? 0.97 : p.style === 'hang' ? 0.9 : 0.76)},
+      h: {label: 'box height', k: 'k', b: [0.5, 1.5], x: [0.2, 3], d: 1},
+      col: {label: 'colour', k: 's', opts: ['arm', 'top', 'belly', 'flesh', 'web'], d: 'arm'},
+      shade: {label: 'countershaded', k: 'b', d: false},
+      soft: {label: 'soft (no contact)', k: 'b', d: (F, p) => p.style === 'net' || p.style === 'hang' || p.style === 'lines'},
+      web: {label: 'webbed', k: 'b', d: (F, p) => p.style === 'net'},
+      wsp: {label: 'web spread', k: 'k', b: [0.4, 0.9], x: [0, 1.5], d: 0.8},
+      sw: {label: 'sweep', k: 'k', b: [0, 0.4], x: [0, 1], d: 0.15},
       // the pose: jet (the jetters: spread by speed, closed on the jet), cone (great/ortho: closing from s0 to s1 over the speed band
       // k0..k1), withdraw (the coilshell: pulled in when st.withdrawn), hold (a fixed spread), crawl (flat: s0/a0 at rest to s1/a1 over
       // the band), raise (held up: s0 with a slow wob), net (s0 with a wob, s1 on the jet), hang (0 spread, a0 sway, half the bell's
       // beat), lines (streamed against the water: lean per m/s, toff a phase offset)
-      s0: {k: 'k', b: [-0.4, 0.9], x: [-0.6, 1.5], d: (F, p) => (p.style === 'raise' ? 0.8 : p.style === 'net' ? 0.8 : p.style === 'crawl' ? 0 : 0.3)},
-      s1: {k: 'k', b: [-0.4, 0.9], x: [-0.6, 1.5], d: (F, p) => (p.style === 'net' ? 0.15 : p.style === 'crawl' ? 0.5 : 0.1)},
-      a0: {k: 'k', b: [0, 0.2], x: [0, 0.5], d: (F, p) => (p.style === 'raise' ? 0.2 : p.style === 'net' ? 0.05 : p.style === 'hang' ? 0.08 : p.style === 'crawl' ? 0.04 : 0.1)},
-      a1: {k: 'k', b: [0, 0.2], x: [0, 0.5], d: (F, p) => (p.style === 'crawl' ? 0 : 0.1)},
-      k0: {k: 'k', b: [0.4, 1.4], x: [0, 3], d: (F, p) => (p.style === 'crawl' ? 1.2 : 0.6)},
-      k1: {k: 'k', b: [1, 2], x: [0, 4], d: (F, p) => (p.style === 'crawl' ? 1.8 : 1.4)},
-      wob: {k: 'k', b: [0, 0.15], x: [0, 0.5], d: (F, p) => (p.style === 'raise' ? 0.1 : 0.06)},
-      wf: {k: 'k', b: [0.2, 1.2], x: [0.05, 3], d: (F, p) => (p.style === 'raise' ? 0.9 : 0.5)},
-      f0: {k: 'k', b: [0.3, 1.2], x: [0.05, 3], d: (F, p) => (p.style === 'raise' ? 0.7 : 0.5)},
-      pm: {k: 'k', b: [0.25, 1], x: [0.05, 2], d: 0.5},
-      jet: {k: 'b', d: true},
-      lean: {k: 'k', b: [1, 4], x: [0.2, 8], d: 2.6},
-      toff: {k: 'k', b: [0, 3], x: [0, 10], d: 0}
+      s0: {label: 'spread', k: 'k', b: [-0.4, 0.9], x: [-0.6, 1.5], d: (F, p) => (p.style === 'raise' ? 0.8 : p.style === 'net' ? 0.8 : p.style === 'crawl' ? 0 : 0.3)},
+      s1: {label: 'spread, fast', k: 'k', b: [-0.4, 0.9], x: [-0.6, 1.5], d: (F, p) => (p.style === 'net' ? 0.15 : p.style === 'crawl' ? 0.5 : 0.1)},
+      a0: {label: 'curl', k: 'k', b: [0, 0.2], x: [0, 0.5], d: (F, p) => (p.style === 'raise' ? 0.2 : p.style === 'net' ? 0.05 : p.style === 'hang' ? 0.08 : p.style === 'crawl' ? 0.04 : 0.1)},
+      a1: {label: 'curl, fast', k: 'k', b: [0, 0.2], x: [0, 0.5], d: (F, p) => (p.style === 'crawl' ? 0 : 0.1)},
+      k0: {label: 'from speed', k: 'k', b: [0.4, 1.4], x: [0, 3], d: (F, p) => (p.style === 'crawl' ? 1.2 : 0.6)},
+      k1: {label: 'to speed', k: 'k', b: [1, 2], x: [0, 4], d: (F, p) => (p.style === 'crawl' ? 1.8 : 1.4)},
+      wob: {label: 'wobble', k: 'k', b: [0, 0.15], x: [0, 0.5], d: (F, p) => (p.style === 'raise' ? 0.1 : 0.06)},
+      wf: {label: 'wobble rate', k: 'k', b: [0.2, 1.2], x: [0.05, 3], d: (F, p) => (p.style === 'raise' ? 0.9 : 0.5)},
+      f0: {label: 'rate', k: 'k', b: [0.3, 1.2], x: [0.05, 3], d: (F, p) => (p.style === 'raise' ? 0.7 : 0.5)},
+      pm: {label: 'beat share', k: 'k', b: [0.25, 1], x: [0.05, 2], d: 0.5},
+      jet: {label: 'closes on the jet', k: 'b', d: true},
+      lean: {label: 'lean per m/s', k: 'k', b: [1, 4], x: [0.2, 8], d: 2.6},
+      toff: {label: 'phase offset', k: 'k', b: [0, 3], x: [0, 10], d: 0}
     },
     build: (ctx, p) => {
       const st0 = p.style,
@@ -1460,24 +1468,26 @@ const PARTS = {
     }
   },
   shell: {
-    clades: ['ringmouths'],
-    styles: ['coil', 'cone'],
+    reg:{
+      coil:{clades:['ringmouths'],params:['n','R0','R1','cy','cz','k','carry','spines']},
+      cone:{clades:['ringmouths'],params:['L','z0','r0','segs','turns']}
+    },
     cost: 5,
     params: {
-      n: {k: 'n', b: [14, 30], x: [8, 48], d: 22},
-      R0: {k: 'len', b: [0.04, 0.2], x: [0.02, 0.5], d: 0.12},
-      R1: {k: 'len', b: [0.3, 1.4], x: [0.15, 3], d: 1.0},
-      cy: {k: 'len', b: [0.2, 1], x: [-0.5, 2], d: 0.55},
-      cz: {k: 'z', b: [-1.5, 0], x: [-4, 4], d: -1.0},
-      k: {k: 'k', b: [0.3, 0.45], x: [0.2, 0.7], d: 0.36},
-      carry: {k: 's', opts: ['up', 'flat', 'vertical'], d: 'up'},
-      spines: {k: 'b', d: false},
+      n: {label: 'chambers', k: 'n', b: [14, 30], x: [8, 48], d: 22},
+      R0: {label: 'inner radius', k: 'len', b: [0.04, 0.2], x: [0.02, 0.5], d: 0.12},
+      R1: {label: 'outer radius', k: 'len', b: [0.3, 1.4], x: [0.15, 3], d: 1.0},
+      cy: {label: 'shell y', k: 'len', b: [0.2, 1], x: [-0.5, 2], d: 0.55},
+      cz: {label: 'shell z', k: 'z', b: [-1.5, 0], x: [-4, 4], d: -1.0},
+      k: {label: 'whorl', k: 'k', b: [0.3, 0.45], x: [0.2, 0.7], d: 0.36},
+      carry: {label: 'carried', k: 's', opts: ['up', 'flat', 'vertical'], d: 'up'},
+      spines: {label: 'spines', k: 'b', d: false},
       // cone (the ortho): L back from z0, r0 at the front, segs, helix turns
-      L: {k: 'len', b: [3, 10], x: [1, 20], d: 7.5},
-      z0: {k: 'z', b: [1, 5], x: [-4, 8], d: 3.4},
-      r0: {k: 'len', b: [0.3, 1], x: [0.1, 2], d: 0.62},
-      segs: {k: 'n', b: [5, 9], x: [3, 14], d: 7},
-      turns: {k: 'k', b: [2, 5], x: [0, 12], d: 3.5}
+      L: {label: 'length', k: 'len', b: [3, 10], x: [1, 20], d: 7.5},
+      z0: {label: 'first z', k: 'z', b: [1, 5], x: [-4, 8], d: 3.4},
+      r0: {label: 'front radius', k: 'len', b: [0.3, 1], x: [0.1, 2], d: 0.62},
+      segs: {label: 'segments', k: 'n', b: [5, 9], x: [3, 14], d: 7},
+      turns: {label: 'helix turns', k: 'k', b: [2, 5], x: [0, 12], d: 3.5}
     },
     build: (ctx, p) => {
       const pal = ctx.pal,
@@ -1526,15 +1536,16 @@ const PARTS = {
     }
   },
   ridge: {
-    clades: ['ringmouths'],
-    styles: ['gladius'],
+    reg:{
+      gladius:{clades:['ringmouths']}
+    },
     cost: 1,
     params: {
-      w: {k: 'len', b: [0.02, 0.15], x: [0.01, 0.6], d: F => (F.anchors.ridge ? F.anchors.ridge.w : F.Rmax * 0.2)},
-      h: {k: 'len', b: [0.03, 0.3], x: [0.01, 0.8], d: F => (F.anchors.ridge ? F.anchors.ridge.h : F.Rmax * 0.25)},
-      len: {k: 'len', b: [0.3, 1], x: [0.1, 1.2], d: F => (F.anchors.ridge ? F.anchors.ridge.len : F.L * 0.7)},
-      y: {k: 'len', b: [0.1, 0.6], x: [0, 2], d: F => (F.anchors.ridge ? F.anchors.ridge.y : F.Rmax * 0.9)},
-      z: {k: 'z', b: [-1, 0.2], x: [-4, 4], d: F => (F.anchors.ridge ? F.anchors.ridge.z : (F.nose + F.tail) / 2)}
+      w: {label: 'width', k: 'len', b: [0.02, 0.15], x: [0.01, 0.6], d: F => (F.anchors.ridge ? F.anchors.ridge.w : F.Rmax * 0.2)},
+      h: {label: 'height', k: 'len', b: [0.03, 0.3], x: [0.01, 0.8], d: F => (F.anchors.ridge ? F.anchors.ridge.h : F.Rmax * 0.25)},
+      len: {label: 'length', k: 'len', b: [0.3, 1], x: [0.1, 1.2], d: F => (F.anchors.ridge ? F.anchors.ridge.len : F.L * 0.7)},
+      y: {label: 'y (up)', k: 'len', b: [0.1, 0.6], x: [0, 2], d: F => (F.anchors.ridge ? F.anchors.ridge.y : F.Rmax * 0.9)},
+      z: {label: 'z (fore–aft)', k: 'z', b: [-1, 0.2], x: [-4, 4], d: F => (F.anchors.ridge ? F.anchors.ridge.z : (F.nose + F.tail) / 2)}
     },
     build: (ctx, p) => {
       ctx.P.push(part(G.box(p.w, p.h, p.len), 0, p.y, p.z, palk(ctx.pal, 'ridge', 'web', 'top')));
@@ -1542,19 +1553,20 @@ const PARTS = {
     }
   },
   skirt: {
-    clades: ['ringmouths'],
-    styles: ['trio'],
+    reg:{
+      trio:{clades:['ringmouths']}
+    },
     cost: 2,
     params: {
-      z: {k: 'z', b: [-1.2, -0.2], x: [-4, 4], d: F => (F.anchors.skirt ? F.anchors.skirt.z : F.tail + F.L * 0.3)},
-      R: {k: 'len', b: [0.1, 2], x: [0.05, 4], d: F => (F.anchors.skirt ? F.anchors.skirt.R : F.Rmax)},
-      h: {k: 'len', b: [0.2, 2], x: [0.05, 4], d: F => (F.anchors.skirt ? F.anchors.skirt.h : F.Rmax * 1.3)},
-      len: {k: 'len', b: [0.2, 2], x: [0.05, 4], d: F => (F.anchors.skirt ? F.anchors.skirt.len : F.L * 0.42)},
-      f0: {k: 'k', b: [0.5, 6], x: [0.2, 10], d: 4.5},
-      f1: {k: 'k', b: [0, 0.5], x: [0, 2], d: 0.15},
-      amp: {k: 'k', b: [0.1, 0.5], x: [0, 1], d: 0.35},
-      k0: {k: 'k', b: [0.2, 1], x: [0, 1], d: 0.3},
-      sk: {k: 'k', b: [0, 0.4], x: [0, 1], d: 0.2}
+      z: {label: 'z (fore–aft)', k: 'z', b: [-1.2, -0.2], x: [-4, 4], d: F => (F.anchors.skirt ? F.anchors.skirt.z : F.tail + F.L * 0.3)},
+      R: {label: 'ring radius', k: 'len', b: [0.1, 2], x: [0.05, 4], d: F => (F.anchors.skirt ? F.anchors.skirt.R : F.Rmax)},
+      h: {label: 'height', k: 'len', b: [0.2, 2], x: [0.05, 4], d: F => (F.anchors.skirt ? F.anchors.skirt.h : F.Rmax * 1.3)},
+      len: {label: 'length', k: 'len', b: [0.2, 2], x: [0.05, 4], d: F => (F.anchors.skirt ? F.anchors.skirt.len : F.L * 0.42)},
+      f0: {label: 'rate', k: 'k', b: [0.5, 6], x: [0.2, 10], d: 4.5},
+      f1: {label: 'rate gain', k: 'k', b: [0, 0.5], x: [0, 2], d: 0.15},
+      amp: {label: 'amplitude', k: 'k', b: [0.1, 0.5], x: [0, 1], d: 0.35},
+      k0: {label: 'from speed', k: 'k', b: [0.2, 1], x: [0, 1], d: 0.3},
+      sk: {label: 'speed gain', k: 'k', b: [0, 0.4], x: [0, 1], d: 0.2}
     },
     build: (ctx, p) => {
       const lobes = skirtTrio(ctx.g, ctx.pal, p.z, p.R, p.h, p.len),
@@ -1571,14 +1583,15 @@ const PARTS = {
     }
   },
   chevrons: {
-    clades: ['slowbloods'],
-    styles: ['rows'],
+    reg:{
+      rows:{clades:['slowbloods']}
+    },
     cost: 1,
     params: {
-      z0: {k: 'z', b: [0, 1], x: [-4, 4], d: F => F.anchors.chevrons.z0},
-      z1: {k: 'z', b: [-1.5, 0], x: [-4, 4], d: F => F.anchors.chevrons.z1},
-      ds: {k: 'len', b: [0.05, 0.4], x: [0.02, 1.5], d: F => F.anchors.chevrons.ds},
-      sz: {k: 'len', b: [0.01, 0.3], x: [0.005, 0.8], d: F => F.anchors.chevrons.sz}
+      z0: {label: 'first z', k: 'z', b: [0, 1], x: [-4, 4], d: F => F.anchors.chevrons.z0},
+      z1: {label: 'last z', k: 'z', b: [-1.5, 0], x: [-4, 4], d: F => F.anchors.chevrons.z1},
+      ds: {label: 'spacing', k: 'len', b: [0.05, 0.4], x: [0.02, 1.5], d: F => F.anchors.chevrons.ds},
+      sz: {label: 'size', k: 'len', b: [0.01, 0.3], x: [0.005, 0.8], d: F => F.anchors.chevrons.sz}
     },
     build: (ctx, p) => {
       chevrons(ctx.P, ctx.pal, p.z0, p.z1, p.ds, ctx.F.rAt, p.sz);
@@ -1586,21 +1599,22 @@ const PARTS = {
     }
   },
   spines: {
-    clades: ['slowbloods', 'hingeshells'],
-    styles: ['row'],
+    reg:{
+      row:{clades:['slowbloods','hingeshells']}
+    },
     cost: 2,
     params: {
-      n: {k: 'n', b: [1, 9], x: [1, 16], d: 6},
-      r: {k: 'len', b: [0.01, 0.15], x: [0.005, 0.4], d: F => F.Rmax * 0.16},
-      h: {k: 'len', b: [0.03, 0.9], x: [0.01, 2], d: F => F.Rmax * 0.9},
-      z0: {k: 'z', b: [0, 1.2], x: [-4, 4], d: F => (F.anchors.chevrons ? F.anchors.chevrons.z0 : F.z1 || F.tail)},
-      dz: {k: 'len', b: [-0.5, 0.5], x: [-1.5, 1.5], d: F => F.Rmax * 0.6},
-      y0: {k: 'len', b: [-0.5, 1.2], x: [-3, 3], d: F => (F.hy || 0) + F.Rmax * 1.05},
-      dy: {k: 'k', b: [0, 0.05], x: [-0.2, 0.2], d: 0.02},
-      x: {k: 'len', b: [0, 0.4], x: [0, 1], d: 0},
-      rx: {k: 'k', b: [-1.6, 0], x: [-1.8, 0.5], d: -0.5},
-      ry: {k: 'k', b: [0, 0.4], x: [-1, 1], d: 0},
-      col: {k: 's', opts: ['top', 'joint', 'plate'], d: 'top'}
+      n: {label: 'count', k: 'n', b: [1, 9], x: [1, 16], d: 6},
+      r: {label: 'radius', k: 'len', b: [0.01, 0.15], x: [0.005, 0.4], d: F => F.Rmax * 0.16},
+      h: {label: 'height', k: 'len', b: [0.03, 0.9], x: [0.01, 2], d: F => F.Rmax * 0.9},
+      z0: {label: 'first z', k: 'z', b: [0, 1.2], x: [-4, 4], d: F => (F.anchors.chevrons ? F.anchors.chevrons.z0 : F.z1 || F.tail)},
+      dz: {label: 'spacing', k: 'len', b: [-0.5, 0.5], x: [-1.5, 1.5], d: F => F.Rmax * 0.6},
+      y0: {label: 'base y', k: 'len', b: [-0.5, 1.2], x: [-3, 3], d: F => (F.hy || 0) + F.Rmax * 1.05},
+      dy: {label: 'step up', k: 'k', b: [0, 0.05], x: [-0.2, 0.2], d: 0.02},
+      x: {label: 'x (out)', k: 'len', b: [0, 0.4], x: [0, 1], d: 0},
+      rx: {label: 'rake', unit: 'rad', k: 'k', b: [-1.6, 0], x: [-1.8, 0.5], d: -0.5},
+      ry: {label: 'splay', unit: 'rad', k: 'k', b: [0, 0.4], x: [-1, 1], d: 0},
+      col: {label: 'colour', k: 's', opts: ['top', 'joint', 'plate'], d: 'top'}
     },
     build: (ctx, p) => {
       const P = ctx.P,
@@ -1614,19 +1628,22 @@ const PARTS = {
     }
   },
   barbels: {
-    clades: ['slowbloods'],
-    styles: ['cone', 'whisker'],
+    reg:{
+      cone:{clades:['slowbloods'],params:['x','y','z','len','r','rx','ry']},
+      whisker:{clades:['slowbloods'],params:['len','r','z','pairs']} // pairs (v11.70): the style reads it and never listed it, so only a spec that brought its own built — the lab's add threw
+    },
     cost: 1,
     paired: true,
     params: {
-      x: {k: 'len', b: [0.05, 0.9], x: [0, 2], d: F => F.Rmax * 0.6},
-      y: {k: 'len', b: [-1, 0], x: [-2, 1], d: F => -F.Rmax * 0.5},
-      z: {k: 'z', b: [0.5, 1.4], x: [-4, 4], d: F => F.nose + 0.1},
-      len: {k: 'len', b: [0.05, 1.5], x: [0.02, 4], d: F => F.Rmax * 0.7},
-      r: {k: 'len', b: [0.005, 0.08], x: [0.002, 0.3], d: 0.05},
-      rx: {k: 'k', b: [0.6, 1.6], x: [0, 3], d: HPI - 0.5},
-      ry: {k: 'k', b: [0, 0.8], x: [-1.5, 1.5], d: 0.5},
+      x: {label: 'x (out)', k: 'len', b: [0.05, 0.9], x: [0, 2], d: F => F.Rmax * 0.6},
+      y: {label: 'y (up)', k: 'len', b: [-1, 0], x: [-2, 1], d: F => -F.Rmax * 0.5},
+      z: {label: 'z (fore–aft)', k: 'z', b: [0.5, 1.4], x: [-4, 4], d: F => F.nose + 0.1},
+      len: {label: 'length', k: 'len', b: [0.05, 1.5], x: [0.02, 4], d: F => F.Rmax * 0.7},
+      r: {label: 'radius', k: 'len', b: [0.005, 0.08], x: [0.002, 0.3], d: 0.05},
+      rx: {label: 'rake', unit: 'rad', k: 'k', b: [0.6, 1.6], x: [0, 3], d: HPI - 0.5},
+      ry: {label: 'splay', unit: 'rad', k: 'k', b: [0, 0.8], x: [-1.5, 1.5], d: 0.5},
       pairs: {
+        label: 'pairs',
         k: 'l',
         d: [
           [0.22, -0.15],
@@ -1650,8 +1667,9 @@ const PARTS = {
     }
   },
   plates: {
-    clades: ['slowbloods'],
-    styles: ['rows'],
+    reg:{
+      rows:{clades:['slowbloods']}
+    },
     cost: 3,
     cover: (F, c, p) => ({
       top: (x, z) => {
@@ -1664,17 +1682,17 @@ const PARTS = {
       }
     }),
     params: {
-      rows: {k: 'n', b: [1, 3], x: [1, 5], d: 3},
-      n: {k: 'n', b: [3, 8], x: [1, 14], d: 6},
-      z0: {k: 'z', b: [0, 1.2], x: [-4, 4], d: F => F.anchors.chevrons.z0},
-      dz: {k: 'len', b: [0.08, 0.8], x: [0.02, 2], d: F => F.Rmax * 0.6},
-      w: {k: 'len', b: [0.05, 0.8], x: [0.02, 2], d: F => F.Rmax * 0.45},
-      th: {k: 'len', b: [0.01, 0.2], x: [0.005, 0.5], d: 0.12},
-      l: {k: 'len', b: [0.05, 0.8], x: [0.02, 2], d: F => F.Rmax * 0.4},
-      spread: {k: 'k', b: [0.3, 0.9], x: [0, 1.5], d: 0.62},
-      yk: {k: 'k', b: [0.3, 1.1], x: [0.2, 1.5], d: 0.98},
-      wk: {k: 'k', b: [0, 0.6], x: [0, 1], d: 0},
-      rr: {k: 'l', d: null}
+      rows: {label: 'rows', k: 'n', b: [1, 3], x: [1, 5], d: 3},
+      n: {label: 'count', k: 'n', b: [3, 8], x: [1, 14], d: 6},
+      z0: {label: 'first z', k: 'z', b: [0, 1.2], x: [-4, 4], d: F => F.anchors.chevrons.z0},
+      dz: {label: 'spacing', k: 'len', b: [0.08, 0.8], x: [0.02, 2], d: F => F.Rmax * 0.6},
+      w: {label: 'width', k: 'len', b: [0.05, 0.8], x: [0.02, 2], d: F => F.Rmax * 0.45},
+      th: {label: 'thickness', k: 'len', b: [0.01, 0.2], x: [0.005, 0.5], d: 0.12},
+      l: {label: 'plate length', k: 'len', b: [0.05, 0.8], x: [0.02, 2], d: F => F.Rmax * 0.4},
+      spread: {label: 'spread', k: 'k', b: [0.3, 0.9], x: [0, 1.5], d: 0.62},
+      yk: {label: 'height', k: 'k', b: [0.3, 1.1], x: [0.2, 1.5], d: 0.98},
+      wk: {label: 'width over radius', k: 'k', b: [0, 0.6], x: [0, 1], d: 0},
+      rr: {label: 'row radii', k: 'l', d: null}
     },
     build: (ctx, p) => {
       const P = ctx.P,
@@ -1694,18 +1712,19 @@ const PARTS = {
     }
   },
   fins: {
-    clades: ['slowbloods'],
-    styles: ['trio'],
+    reg:{
+      trio:{clades:['slowbloods'],cores:['lathe']} // the lathe's own (v11.70): the chain body has no fin anchor and carries its dorsal fin itself (chain.fin)
+    },
     cost: 2,
     params: {
-      z: {k: 'z', b: [-0.5, 1], x: [-4, 4], d: F => F.anchors.fins.z},
-      R: {k: 'len', b: [0.05, 1.5], x: [0.02, 3], d: F => F.anchors.fins.R},
-      h: {k: 'len', b: [0.05, 1.6], x: [0.02, 4], d: F => F.anchors.fins.h},
-      len: {k: 'len', b: [0.1, 2], x: [0.02, 5], d: F => F.anchors.fins.len},
-      amp: {k: 'k', b: [0, 0.4], x: [0, 1], d: 0.25},
-      fk: {k: 'k', b: [0.6, 1], x: [0.2, 2], d: 0.8},
-      dorsal: {k: 'k', b: [0.1, 0.4], x: [0, 1], d: 0.3},
-      col: {k: 's', opts: ['top', 'rust'], d: 'top'}
+      z: {label: 'z (fore–aft)', k: 'z', b: [-0.5, 1], x: [-4, 4], d: F => F.anchors.fins.z},
+      R: {label: 'ring radius', k: 'len', b: [0.05, 1.5], x: [0.02, 3], d: F => F.anchors.fins.R},
+      h: {label: 'height', k: 'len', b: [0.05, 1.6], x: [0.02, 4], d: F => F.anchors.fins.h},
+      len: {label: 'length', k: 'len', b: [0.1, 2], x: [0.02, 5], d: F => F.anchors.fins.len},
+      amp: {label: 'amplitude', k: 'k', b: [0, 0.4], x: [0, 1], d: 0.25},
+      fk: {label: 'beat ratio', k: 'k', b: [0.6, 1], x: [0.2, 2], d: 0.8},
+      dorsal: {label: 'dorsal share', k: 'k', b: [0.1, 0.4], x: [0, 1], d: 0.3},
+      col: {label: 'colour', k: 's', opts: ['top', 'rust'], d: 'top'}
     },
     build: (ctx, p) => {
       const fins = finTrio(ctx.bf, ctx.pal, p.z, p.R, p.h, p.len, p.col === 'rust' ? ctx.pal.rust : undefined),
@@ -1725,26 +1744,31 @@ const PARTS = {
     }
   },
   tail: {
-    clades: ['slowbloods'],
-    styles: ['lathe', 'cyl', 'lobes', 'stub'],
+    reg:{
+      lathe:{clades:['slowbloods'],params:['prof','z','lz','lh','ll','axis','amp','sp0','spk','full','body','col']},
+      cyl:{clades:['slowbloods'],params:['z','L','r0','r1','segs','lz','lh','ll','axis','amp','sp0','spk','full','body','col']},
+      lobes:{clades:['slowbloods'],params:['z','lz','lh','ll','axis','amp','sp0','spk','full','body','col']},
+      stub:{clades:['slowbloods'],params:[]} // no tail at all (v11.70: it listed none, so it read all fifteen — fifteen sliders on a part that builds nothing)
+    },
     cost: 3,
     req: true,
     params: {
-      z: {k: 'z', b: [-1.5, 0], x: [-4, 4], d: F => F.anchors.tail.z},
-      L: {k: 'len', b: [0.15, 1.2], x: [0.05, 6], d: F => F.anchors.tail.len},
-      r0: {k: 'len', b: [0.02, 0.6], x: [0.01, 1.5], d: F => F.anchors.tail.r0},
-      r1: {k: 'len', b: [0.005, 0.2], x: [0.002, 0.6], d: F => F.anchors.tail.r0 * 0.25},
-      segs: {k: 'n', b: [6, 9], x: [4, 14], d: 8},
-      lz: {k: 'len', b: [-2.5, -0.1], x: [-6, 0], d: F => -F.anchors.tail.len * 0.95},
-      lh: {k: 'len', b: [0.1, 2.5], x: [0.02, 6], d: F => F.anchors.tail.lobes.h},
-      ll: {k: 'len', b: [0.1, 1], x: [0.02, 3], d: F => F.anchors.tail.lobes.len},
-      axis: {k: 's', opts: ['y', 'x'], d: 'y'},
-      amp: {k: 'k', b: [0.25, 0.5], x: [0.05, 1.2], d: 0.45},
-      sp0: {k: 'k', b: [0.2, 0.35], x: [0, 1], d: 0.25},
-      spk: {k: 'k', b: [0.15, 0.35], x: [0, 1], d: 0.2},
-      full: {k: 'b', d: false},
-      body: {k: 'k', b: [0, 0.06], x: [0, 0.2], d: 0.05},
-      col: {k: 's', opts: ['top', 'rust'], d: 'top'}
+      z: {label: 'z (fore–aft)', k: 'z', b: [-1.5, 0], x: [-4, 4], d: F => F.anchors.tail.z},
+      L: {label: 'length', k: 'len', b: [0.15, 1.2], x: [0.05, 6], d: F => F.anchors.tail.len},
+      r0: {label: 'front radius', k: 'len', b: [0.02, 0.6], x: [0.01, 1.5], d: F => F.anchors.tail.r0},
+      r1: {label: 'back radius', k: 'len', b: [0.005, 0.2], x: [0.002, 0.6], d: F => F.anchors.tail.r0 * 0.25},
+      segs: {label: 'segments', k: 'n', b: [6, 9], x: [4, 14], d: 8},
+      lz: {label: 'lobe z', k: 'len', b: [-2.5, -0.1], x: [-6, 0], d: F => -F.anchors.tail.len * 0.95},
+      lh: {label: 'lobe height', k: 'len', b: [0.1, 2.5], x: [0.02, 6], d: F => F.anchors.tail.lobes.h},
+      ll: {label: 'lobe length', k: 'len', b: [0.1, 1], x: [0.02, 3], d: F => F.anchors.tail.lobes.len},
+      axis: {label: 'axis', k: 's', opts: ['y', 'x'], d: 'y'},
+      amp: {label: 'amplitude', k: 'k', b: [0.25, 0.5], x: [0.05, 1.2], d: 0.45},
+      sp0: {label: 'speed at rest', k: 'k', b: [0.2, 0.35], x: [0, 1], d: 0.25},
+      spk: {label: 'speed gain', k: 'k', b: [0.15, 0.35], x: [0, 1], d: 0.2},
+      full: {label: 'whole body', k: 'b', d: false},
+      body: {label: 'body colour', k: 'k', b: [0, 0.06], x: [0, 0.2], d: 0.05},
+      col: {label: 'colour', k: 's', opts: ['top', 'rust'], d: 'top'},
+      prof: {label: 'profile', k: 'l', d: F => FIN_TPROF.map(q => [q[0] * F.anchors.tail.r0 / 0.34, q[1] * F.anchors.tail.len / 1.35])} // the lathe style's stem (v11.70: it had no default, so the style built only on a spec that brought one — the lab's cyl → lathe threw): the blank's, at the core's tail anchor
     },
     build: (ctx, p) => {
       const pal = ctx.pal,
@@ -1780,19 +1804,21 @@ const PARTS = {
   },
   // ---------- hingeshells (buildRaptor's choices) ----------
   comb: {
-    clades: ['hingeshells'],
-    styles: ['rake', 'teeth'],
+    reg:{
+      rake:{clades:['hingeshells'],params:['n','y','z','w','len','snap']},
+      teeth:{clades:['hingeshells'],params:['n','x','y','z','w','len','stag','rake']}
+    },
     cost: 1,
     params: {
-      n: {k: 'n', b: (F, p) => (p.style === 'teeth' ? [6, 20] : [3, 7]), x: [2, 24], d: (F, p) => (p.style === 'teeth' ? 14 : 5)},
-      x: {k: 'len', b: [0, 0.4], x: [0, 1], d: F => F.H.w * 0.3},
-      y: {k: 'len', b: [-0.2, 0.2], x: [-1, 1], d: (F, p) => (F.hy || 0) + (p.style === 'teeth' ? -F.ht * 1.2 : F.ht * 0.35)},
-      z: {k: 'z', b: [-1, 1.5], x: [-4, 4], d: (F, p) => (p.style === 'teeth' ? F.zh : F.zf)},
-      w: {k: 'len', b: [0.005, 0.4], x: [0.002, 1], d: (F, p) => (p.style === 'teeth' ? F.H.w * 0.02 : F.H.w * 0.55)},
-      len: {k: 'len', b: [0.02, 0.3], x: [0.005, 1], d: (F, p) => (p.style === 'teeth' ? F.H.h * 0.6 : F.H.l * 0.35)},
-      stag: {k: 'len', b: [0, 0.05], x: [0, 0.3], d: F => F.H.l * 0.03},
-      rake: {k: 'k', b: [0, 30], x: [-60, 60], d: 14},
-      snap: {k: 'b', d: false}
+      n: {label: 'count', k: 'n', b: (F, p) => (p.style === 'teeth' ? [6, 20] : [3, 7]), x: [2, 24], d: (F, p) => (p.style === 'teeth' ? 14 : 5)},
+      x: {label: 'x (out)', k: 'len', b: [0, 0.4], x: [0, 1], d: F => F.H.w * 0.3},
+      y: {label: 'y (up)', k: 'len', b: [-0.2, 0.2], x: [-1, 1], d: (F, p) => (F.hy || 0) + (p.style === 'teeth' ? -F.ht * 1.2 : F.ht * 0.35)},
+      z: {label: 'z (fore–aft)', k: 'z', b: [-1, 1.5], x: [-4, 4], d: (F, p) => (p.style === 'teeth' ? F.zh : F.zf)},
+      w: {label: 'width', k: 'len', b: [0.005, 0.4], x: [0.002, 1], d: (F, p) => (p.style === 'teeth' ? F.H.w * 0.02 : F.H.w * 0.55)},
+      len: {label: 'length', k: 'len', b: [0.02, 0.3], x: [0.005, 1], d: (F, p) => (p.style === 'teeth' ? F.H.h * 0.6 : F.H.l * 0.35)},
+      stag: {label: 'stagger', k: 'len', b: [0, 0.05], x: [0, 0.3], d: F => F.H.l * 0.03},
+      rake: {label: 'rake', unit: '°', k: 'k', b: [0, 30], x: [-60, 60], d: 14},
+      snap: {label: 'snap to the body', k: 'b', d: false}
     },
     build: (ctx, p) => {
       let y = p.y;
@@ -1811,28 +1837,32 @@ const PARTS = {
     }
   },
   tailplate: {
-    clades: ['hingeshells'],
-    styles: ['fan', 'spine', 'plates', 'abdomen'],
+    reg:{
+      fan:{clades:['hingeshells'],params:['w','l','x','dx','y','dy','z','dz']},
+      spine:{clades:['hingeshells'],params:[]},
+      plates:{clades:['hingeshells'],params:[]},
+      abdomen:{clades:['hingeshells'],params:['n','w0','dw','seg','curl','y','z','amp','flick']}
+    },
     cost: 2,
     params: {
       // v11.25: the fan's blades placed (w across, l along, at ±x stepping dx out, y stepping dy up, from z stepping dz back); the
       // abdomen (the flicker): n curling segments from (0,y,z), seg long, w0 wide shrinking dw, curl per segment, a fan of three at
       // the end; sways amp on the beat and snaps under by flick on the strike
-      w: {k: 'len', b: [0.1, 1], x: [0.02, 3], d: F => F.w1 * 1.2},
-      l: {k: 'len', b: [0.05, 0.5], x: [0.01, 2], d: F => F.w1 * 0.55},
-      x: {k: 'len', b: [0, 0.5], x: [0, 2], d: F => F.w1 * 0.7},
-      dx: {k: 'len', b: [0, 0.2], x: [0, 1], d: 0.2},
-      y: {k: 'len', b: [-0.3, 0.3], x: [-1, 1], d: F => (F.cy || 0) + 0.05},
-      dy: {k: 'len', b: [0, 0.1], x: [0, 0.5], d: 0.08},
-      z: {k: 'z', b: [-2, 0], x: [-6, 2], d: F => F.z1 - 0.3},
-      dz: {k: 'len', b: [0, 0.3], x: [0, 1], d: 0.4},
-      n: {k: 'n', b: [2, 5], x: [1, 8], d: 3},
-      w0: {k: 'len', b: [0.05, 0.6], x: [0.01, 2], d: F => F.w1 * 0.5},
-      dw: {k: 'len', b: [0, 0.2], x: [0, 1], d: F => F.w1 * 0.1},
-      seg: {k: 'len', b: [0.02, 0.4], x: [0.01, 1], d: F => F.LT * 0.12},
-      curl: {k: 'k', b: [0, 0.3], x: [-0.5, 0.8], d: 0.12},
-      amp: {k: 'k', b: [0, 0.3], x: [0, 1], d: 0.1},
-      flick: {k: 'k', b: [0.5, 2], x: [0, 3], d: 1.4}
+      w: {label: 'width', k: 'len', b: [0.1, 1], x: [0.02, 3], d: F => F.w1 * 1.2},
+      l: {label: 'plate length', k: 'len', b: [0.05, 0.5], x: [0.01, 2], d: F => F.w1 * 0.55},
+      x: {label: 'x (out)', k: 'len', b: [0, 0.5], x: [0, 2], d: F => F.w1 * 0.7},
+      dx: {label: 'step out', k: 'len', b: [0, 0.2], x: [0, 1], d: 0.2},
+      y: {label: 'y (up)', k: 'len', b: [-0.3, 0.3], x: [-1, 1], d: F => (F.cy || 0) + 0.05},
+      dy: {label: 'step up', k: 'len', b: [0, 0.1], x: [0, 0.5], d: 0.08},
+      z: {label: 'z (fore–aft)', k: 'z', b: [-2, 0], x: [-6, 2], d: F => F.z1 - 0.3},
+      dz: {label: 'spacing', k: 'len', b: [0, 0.3], x: [0, 1], d: 0.4},
+      n: {label: 'segments', k: 'n', b: [2, 5], x: [1, 8], d: 3},
+      w0: {label: 'root width', k: 'len', b: [0.05, 0.6], x: [0.01, 2], d: F => F.w1 * 0.5},
+      dw: {label: 'narrowing', k: 'len', b: [0, 0.2], x: [0, 1], d: F => F.w1 * 0.1},
+      seg: {label: 'segment', k: 'len', b: [0.02, 0.4], x: [0.01, 1], d: F => F.LT * 0.12},
+      curl: {label: 'curl', k: 'k', b: [0, 0.3], x: [-0.5, 0.8], d: 0.12},
+      amp: {label: 'amplitude', k: 'k', b: [0, 0.3], x: [0, 1], d: 0.1},
+      flick: {label: 'flick', k: 'k', b: [0.5, 2], x: [0, 3], d: 1.4}
     },
     build: (ctx, p) => {
       const P = ctx.P,
@@ -1887,47 +1917,54 @@ const PARTS = {
   // scuttle's paddle rows, two meshes rocking against each other), march (the tread's rows off the body's own width, a metachronal
   // wave with a lift), swim (the flicker's thin paddles, still). All v11.25 but rear.
   legs: {
-    clades: ['hingeshells'],
-    styles: ['rear', 'placed', 'walk', 'hang', 'rock', 'march', 'swim'],
+    reg:{
+      rear:{clades:['hingeshells'],params:['n','z','dz','len','w']},
+      placed:{clades:['hingeshells'],params:['n','x','y','z','dz','kx','ky','kz','fx','fy','fz','kzk','fzk','wl','hook']},
+      walk:{clades:['hingeshells'],params:['n','x','y','z','dz','kx','ky','kz','fx','fy','fz','fan','kf','ff','wl','hook','root','amp','k0','sk']},
+      hang:{clades:['hingeshells'],params:['n','x','y','z','dz','kx','ky','kz','fx','fy','fz','kzk','fzk','wl','hook','wob','swing','drop']},
+      rock:{clades:['hingeshells'],params:['n','x','y','z','dz','ll','wl','th','splay','yaw','amp','k0','sk']},
+      march:{clades:['hingeshells'],params:['n','z','dz','kx','ky','fx','floor','inset','wl','amp','k0','sk','lift','step','side']},
+      swim:{clades:['hingeshells'],params:['n','x','y','z','dz','ll','wl','th','splay']}
+    },
     cost: 3,
     paired: true,
     params: {
-      n: {k: 'n', b: [1, 8], x: [1, 12], d: (F, p) => (p.style === 'march' ? 7 : p.style === 'walk' || p.style === 'swim' || p.style === 'placed' ? 4 : p.style === 'hang' || p.style === 'rock' ? 3 : 2)},
-      z: {k: 'z', b: [-1.2, 1], x: [-4, 4], d: (F, p) => (p.style === 'rear' ? F.z1 + 0.6 : F.z0 - F.LT * 0.15)},
-      dz: {k: 'len', b: [-0.4, 0.4], x: [-2, 2], d: (F, p) => (p.style === 'rear' ? 0.8 : -F.LT * 0.2)},
-      len: {k: 'k', b: [0.5, 2], x: [0.2, 4], d: 1},
-      w: {k: 'k', b: [0.5, 2], x: [0.2, 4], d: 1},
-      wl: {k: 'len', b: [0.005, 0.1], x: [0.002, 0.5], d: F => F.w0 * 0.08},
-      ll: {k: 'len', b: [0.02, 0.5], x: [0.005, 2], d: F => F.w0 * 0.5},
-      x: {k: 'len', b: [0, 0.5], x: [0, 2], d: F => F.w0 * 0.45},
-      y: {k: 'len', b: [-0.5, 0.3], x: [-2, 2], d: F => (F.cy || 0) - F.h0 * 0.4},
-      kx: {k: 'len', b: [0, 1.5], x: [-2, 3], d: F => F.w0 * 0.5},
-      ky: {k: 'len', b: [-0.3, 0.6], x: [-2, 3], d: F => F.h0 * 0.3},
-      kz: {k: 'len', b: [-0.3, 0.3], x: [-2, 2], d: 0},
-      fx: {k: 'len', b: [0, 2], x: [-2, 4], d: F => F.w0 * 0.8},
-      fy: {k: 'len', b: [-1, 0.6], x: [-4, 3], d: F => -F.h0 * 0.6},
-      fz: {k: 'len', b: [-0.3, 0.3], x: [-2, 2], d: 0},
-      hook: {k: 'len', b: [0, 0.2], x: [0, 1], d: 0},
-      fan: {k: 'len', b: [0, 0.6], x: [-1, 1], d: 0},
-      kf: {k: 'k', b: [0, 2], x: [-4, 4], d: 0},
-      ff: {k: 'k', b: [0, 3], x: [-6, 6], d: 0},
-      kzk: {k: 'k', b: [0, 0.2], x: [-1, 1], d: 0},
-      fzk: {k: 'k', b: [0, 0.2], x: [-1, 1], d: 0},
-      root: {k: 'len', b: [0, 0.8], x: [0, 2], d: 0},
-      amp: {k: 'k', b: [0, 0.5], x: [0, 1.5], d: (F, p) => (p.style === 'rock' ? 0.3 : p.style === 'march' ? 0.26 : 0.22)},
-      k0: {k: 'k', b: [0, 0.5], x: [0, 1], d: (F, p) => (p.style === 'rock' ? 0.2 : p.style === 'march' ? 0.15 : 0.1)},
-      sk: {k: 'k', b: [0.2, 1], x: [0, 3], d: (F, p) => (p.style === 'rock' ? 0.6 : p.style === 'march' ? 0.7 : 0.8)},
-      lift: {k: 'len', b: [0, 0.1], x: [0, 0.5], d: F => F.h0 * 0.07},
-      step: {k: 'k', b: [0.3, 1.5], x: [0, 3.2], d: 0.9},
-      side: {k: 'k', b: [0, 1.5], x: [0, 3.2], d: 0.45},
-      inset: {k: 'len', b: [0, 0.3], x: [-1, 1], d: F => F.w0 * 0.1},
-      floor: {k: 'len', b: [-1.5, 0], x: [-4, 0], d: F => (F.cy || 0) - F.h0 * 1.4},
-      th: {k: 'len', b: [0.005, 0.1], x: [0.002, 0.5], d: F => F.h0 * 0.06},
-      splay: {k: 'k', b: [0, 60], x: [-90, 90], d: (F, p) => (p.style === 'swim' ? 23 : 31.5)},
-      yaw: {k: 'k', b: [0, 30], x: [-60, 60], d: 8.6},
-      swing: {k: 'k', b: [0, 1], x: [0, 2], d: 0.35},
-      drop: {k: 'k', b: [0.5, 2.5], x: [0, 3.2], d: 1.7},
-      wob: {k: 'k', b: [0, 0.2], x: [0, 0.5], d: 0.06}
+      n: {label: 'pairs', k: 'n', b: [1, 8], x: [1, 12], d: (F, p) => (p.style === 'march' ? 7 : p.style === 'walk' || p.style === 'swim' || p.style === 'placed' ? 4 : p.style === 'hang' || p.style === 'rock' ? 3 : 2)},
+      z: {label: 'z (fore–aft)', k: 'z', b: [-1.2, 1], x: [-4, 4], d: (F, p) => (p.style === 'rear' ? F.z1 + 0.6 : F.z0 - F.LT * 0.15)},
+      dz: {label: 'spacing', k: 'len', b: [-0.4, 0.4], x: [-2, 2], d: (F, p) => (p.style === 'rear' ? 0.8 : -F.LT * 0.2)},
+      len: {label: 'length', k: 'k', b: [0.5, 2], x: [0.2, 4], d: 1},
+      w: {label: 'width', k: 'k', b: [0.5, 2], x: [0.2, 4], d: 1},
+      wl: {label: 'thickness', by: {rock: 'paddle width', swim: 'paddle width'}, k: 'len', b: [0.005, 0.1], x: [0.002, 0.5], d: F => F.w0 * 0.08},
+      ll: {label: 'paddle length', k: 'len', b: [0.02, 0.5], x: [0.005, 2], d: F => F.w0 * 0.5},
+      x: {label: 'x (out)', k: 'len', b: [0, 0.5], x: [0, 2], d: F => F.w0 * 0.45},
+      y: {label: 'y (up)', k: 'len', b: [-0.5, 0.3], x: [-2, 2], d: F => (F.cy || 0) - F.h0 * 0.4},
+      kx: {label: 'knee out', k: 'len', b: [0, 1.5], x: [-2, 3], d: F => F.w0 * 0.5},
+      ky: {label: 'knee up', k: 'len', b: [-0.3, 0.6], x: [-2, 3], d: F => F.h0 * 0.3},
+      kz: {label: 'knee fore', k: 'len', b: [-0.3, 0.3], x: [-2, 2], d: 0},
+      fx: {label: 'foot out', k: 'len', b: [0, 2], x: [-2, 4], d: F => F.w0 * 0.8},
+      fy: {label: 'foot up', k: 'len', b: [-1, 0.6], x: [-4, 3], d: F => -F.h0 * 0.6},
+      fz: {label: 'foot fore', k: 'len', b: [-0.3, 0.3], x: [-2, 2], d: 0},
+      hook: {label: 'hook', k: 'len', b: [0, 0.2], x: [0, 1], d: 0},
+      fan: {label: 'fan', k: 'len', b: [0, 0.6], x: [-1, 1], d: 0},
+      kf: {label: 'knee fan', k: 'k', b: [0, 2], x: [-4, 4], d: 0},
+      ff: {label: 'foot fan', k: 'k', b: [0, 3], x: [-6, 6], d: 0},
+      kzk: {label: 'knee fan by z', k: 'k', b: [0, 0.2], x: [-1, 1], d: 0},
+      fzk: {label: 'foot fan by z', k: 'k', b: [0, 0.2], x: [-1, 1], d: 0},
+      root: {label: 'root bar', k: 'len', b: [0, 0.8], x: [0, 2], d: 0},
+      amp: {label: 'amplitude', k: 'k', b: [0, 0.5], x: [0, 1.5], d: (F, p) => (p.style === 'rock' ? 0.3 : p.style === 'march' ? 0.26 : 0.22)},
+      k0: {label: 'from speed', k: 'k', b: [0, 0.5], x: [0, 1], d: (F, p) => (p.style === 'rock' ? 0.2 : p.style === 'march' ? 0.15 : 0.1)},
+      sk: {label: 'speed gain', k: 'k', b: [0.2, 1], x: [0, 3], d: (F, p) => (p.style === 'rock' ? 0.6 : p.style === 'march' ? 0.7 : 0.8)},
+      lift: {label: 'lift', k: 'len', b: [0, 0.1], x: [0, 0.5], d: F => F.h0 * 0.07},
+      step: {label: 'step phase', k: 'k', b: [0.3, 1.5], x: [0, 3.2], d: 0.9},
+      side: {label: 'side phase', k: 'k', b: [0, 1.5], x: [0, 3.2], d: 0.45},
+      inset: {label: 'inset', k: 'len', b: [0, 0.3], x: [-1, 1], d: F => F.w0 * 0.1},
+      floor: {label: 'the floor', k: 'len', b: [-1.5, 0], x: [-4, 0], d: F => (F.cy || 0) - F.h0 * 1.4},
+      th: {label: 'thickness', k: 'len', b: [0.005, 0.1], x: [0.002, 0.5], d: F => F.h0 * 0.06},
+      splay: {label: 'splay out', unit: '°', k: 'k', b: [0, 60], x: [-90, 90], d: (F, p) => (p.style === 'swim' ? 23 : 31.5)},
+      yaw: {label: 'yaw', unit: '°', k: 'k', b: [0, 30], x: [-60, 60], d: 8.6},
+      swing: {label: 'swing on the tell', k: 'k', b: [0, 1], x: [0, 2], d: 0.35},
+      drop: {label: 'drop on the strike', k: 'k', b: [0.5, 2.5], x: [0, 3.2], d: 1.7},
+      wob: {label: 'wobble', k: 'k', b: [0, 0.2], x: [0, 0.5], d: 0.06}
     },
     build: (ctx, p) => {
       const F = ctx.F,
@@ -2075,8 +2112,9 @@ const PARTS = {
     }
   },
   keel: {
-    clades: ['hingeshells'],
-    styles: ['ventral'],
+    reg:{
+      ventral:{clades:['hingeshells']}
+    },
     cost: 1,
     params: {},
     cover: F => ({bottom: (x, z) => (Math.abs(x) <= 0.04 && z <= F.z0 - F.LT * 0.125 && z >= F.z0 - F.LT * 0.575 ? (F.cy || 0) - F.h0 * 1.1 : null)}),
@@ -2091,28 +2129,33 @@ const PARTS = {
   // halves hinged along the top). How it opens: o0 at rest plus o1 with speed, closed by tc on the tell and sc on the strike, opened
   // by tk on the tell and sk on the strike.
   valves: {
-    clades: ['hingeshells'],
-    styles: ['back', 'small', 'hood', 'placed', 'clam'],
+    reg:{
+      back:{clades:['hingeshells'],params:['o0','o1','tc','sc','tk','sk']},
+      small:{clades:['hingeshells'],params:['o0','o1','tc','sc','tk','sk']},
+      hood:{clades:['hingeshells'],params:['o0','o1','tc','sc','tk','sk']},
+      placed:{clades:['hingeshells'],params:['z0','z1','w','y','th','o0','o1','tc','sc','tk','sk']},
+      clam:{clades:['hingeshells'],params:['R','sx','sy','sz','y','ox','oy','o0','o1','tc','sc','tk','sk']}
+    },
     cost: 3,
     paired: true,
     params: {
-      z0: {k: 'z', b: [-1, 2], x: [-4, 6], d: F => F.z0 - F.LT * 0.02},
-      z1: {k: 'z', b: [-3, 0], x: [-8, 4], d: F => F.z1 + F.LT * 0.12},
-      w: {k: 'len', b: [0.1, 1], x: [0.02, 3], d: F => F.w0 * 0.95},
-      y: {k: 'len', b: [-0.3, 0.6], x: [-1, 2], d: F => (F.cy || 0) + F.h0 * 0.5},
-      th: {k: 'len', b: [0.005, 0.1], x: [0.002, 0.5], d: F => F.h0 * 0.09},
-      R: {k: 'len', b: [0.05, 0.6], x: [0.01, 2], d: F => F.Rmax * 1.7},
-      sx: {k: 'k', b: [0.3, 0.8], x: [0.1, 1.5], d: 0.5},
-      sy: {k: 'k', b: [0.5, 1.2], x: [0.2, 2], d: 0.85},
-      sz: {k: 'k', b: [1, 2], x: [0.5, 4], d: 1.5},
-      ox: {k: 'len', b: [0, 0.5], x: [0, 1], d: F => F.Rmax * 0.7},
-      oy: {k: 'len', b: [-1, 0], x: [-2, 1], d: F => -F.Rmax * 1.25},
-      o0: {k: 'k', b: [0, 0.6], x: [0, 1.2], d: (F, p) => (p.style === 'clam' ? 0.16 : 0.15)},
-      o1: {k: 'k', b: [0, 0.5], x: [0, 1], d: (F, p) => (p.style === 'clam' ? 0 : 0.25)},
-      tc: {k: 'k', b: [0, 1], x: [0, 1], d: (F, p) => (p.style === 'clam' ? 0 : 1)},
-      sc: {k: 'k', b: [0, 1], x: [0, 1], d: (F, p) => (p.style === 'clam' ? 1 : 0)},
-      tk: {k: 'k', b: [0, 0.5], x: [0, 1], d: 0},
-      sk: {k: 'k', b: [0, 0.5], x: [0, 1], d: 0}
+      z0: {label: 'first z', k: 'z', b: [-1, 2], x: [-4, 6], d: F => F.z0 - F.LT * 0.02},
+      z1: {label: 'last z', k: 'z', b: [-3, 0], x: [-8, 4], d: F => F.z1 + F.LT * 0.12},
+      w: {label: 'width', k: 'len', b: [0.1, 1], x: [0.02, 3], d: F => F.w0 * 0.95},
+      y: {label: 'y (up)', k: 'len', b: [-0.3, 0.6], x: [-1, 2], d: F => (F.cy || 0) + F.h0 * 0.5},
+      th: {label: 'thickness', k: 'len', b: [0.005, 0.1], x: [0.002, 0.5], d: F => F.h0 * 0.09},
+      R: {label: 'valve radius', k: 'len', b: [0.05, 0.6], x: [0.01, 2], d: F => F.Rmax * 1.7},
+      sx: {label: 'width', k: 'k', b: [0.3, 0.8], x: [0.1, 1.5], d: 0.5},
+      sy: {label: 'squash', k: 'k', b: [0.5, 1.2], x: [0.2, 2], d: 0.85},
+      sz: {label: 'stretch', k: 'k', b: [1, 2], x: [0.5, 4], d: 1.5},
+      ox: {label: 'valve out', k: 'len', b: [0, 0.5], x: [0, 1], d: F => F.Rmax * 0.7},
+      oy: {label: 'valve down', k: 'len', b: [-1, 0], x: [-2, 1], d: F => -F.Rmax * 1.25},
+      o0: {label: 'open at rest', k: 'k', b: [0, 0.6], x: [0, 1.2], d: (F, p) => (p.style === 'clam' ? 0.16 : 0.15)},
+      o1: {label: 'open by speed', k: 'k', b: [0, 0.5], x: [0, 1], d: (F, p) => (p.style === 'clam' ? 0 : 0.25)},
+      tc: {label: 'shut on the tell', k: 'k', b: [0, 1], x: [0, 1], d: (F, p) => (p.style === 'clam' ? 0 : 1)},
+      sc: {label: 'shut on the strike', k: 'k', b: [0, 1], x: [0, 1], d: (F, p) => (p.style === 'clam' ? 1 : 0)},
+      tk: {label: 'open on the tell', k: 'k', b: [0, 0.5], x: [0, 1], d: 0},
+      sk: {label: 'open on the strike', k: 'k', b: [0, 0.5], x: [0, 1], d: 0}
     },
     cover: (F, c, p) => {
       if (p.style === 'hood') {
@@ -2210,21 +2253,24 @@ const PARTS = {
   // the swimming flaps (the paddlers): np a side in three phased rows, from z0 back to z1, pivoted at (±px, py), each `len` out at the
   // widest, `w` wide, `th` thick, raked back; the defaults are the trunk's own (v11.25: placed by hand for the comb)
   flaps: {
-    clades: ['hingeshells'],
-    styles: ['sides', 'vertical', 'rear'],
+    reg:{
+      sides:{clades:['hingeshells']},
+      vertical:{clades:['hingeshells']},
+      rear:{clades:['hingeshells']}
+    },
     cost: 4,
     paired: true,
     params: {
-      np: {k: 'n', b: [5, 13], x: [3, 20], d: 9},
-      z0: {k: 'z', b: [-1, 2], x: [-4, 6], d: (F, p) => (p.style === 'rear' ? F.z0 - F.LT * 0.45 : F.z0 - F.LT * 0.05)},
-      z1: {k: 'z', b: [-3, 0], x: [-8, 4], d: F => F.z1 + F.LT * 0.05},
-      px: {k: 'len', b: [0, 0.3], x: [0, 2], d: (F, p) => (p.style === 'vertical' ? F.h0 : F.w0) * 0.35},
-      py: {k: 'len', b: [-0.3, 0.3], x: [-1, 1], d: (F, p) => (p.style === 'vertical' ? 0 : -F.h0 * 0.08) + (F.cy || 0)},
-      len: {k: 'len', b: [0.03, 1], x: [0.01, 3], d: F => F.w0 * 0.85},
-      w: {k: 'len', b: [0.01, 0.3], x: [0.005, 1.5], d: F => F.w0 * 0.32},
-      th: {k: 'len', b: [0.001, 0.05], x: [0.0005, 0.3], d: 0.07},
-      rake: {k: 'k', b: [0, 0.6], x: [0, 1.2], d: 0.35},
-      amp: {k: 'k', b: [0.2, 0.7], x: [0, 1.2], d: 0.5}
+      np: {label: 'flaps a side', k: 'n', b: [5, 13], x: [3, 20], d: 9},
+      z0: {label: 'first z', k: 'z', b: [-1, 2], x: [-4, 6], d: (F, p) => (p.style === 'rear' ? F.z0 - F.LT * 0.45 : F.z0 - F.LT * 0.05)},
+      z1: {label: 'last z', k: 'z', b: [-3, 0], x: [-8, 4], d: F => F.z1 + F.LT * 0.05},
+      px: {label: 'pivot out', k: 'len', b: [0, 0.3], x: [0, 2], d: (F, p) => (p.style === 'vertical' ? F.h0 : F.w0) * 0.35},
+      py: {label: 'pivot up', k: 'len', b: [-0.3, 0.3], x: [-1, 1], d: (F, p) => (p.style === 'vertical' ? 0 : -F.h0 * 0.08) + (F.cy || 0)},
+      len: {label: 'length', k: 'len', b: [0.03, 1], x: [0.01, 3], d: F => F.w0 * 0.85},
+      w: {label: 'width', k: 'len', b: [0.01, 0.3], x: [0.005, 1.5], d: F => F.w0 * 0.32},
+      th: {label: 'thickness', k: 'len', b: [0.001, 0.05], x: [0.0005, 0.3], d: 0.07},
+      rake: {label: 'rake', unit: 'rad', k: 'k', b: [0, 0.6], x: [0, 1.2], d: 0.35}, // radians (flapRow turns by it as it is): to v11.69 it wore the comb's 'rake °' off the shared name table
+      amp: {label: 'amplitude', k: 'k', b: [0.2, 0.7], x: [0, 1.2], d: 0.5}
     },
     build: (ctx, p) => {
       const g = ctx.g,
@@ -2253,30 +2299,37 @@ const PARTS = {
     }
   },
   weapon: {
-    clades: ['hingeshells'],
-    styles: ['claws', 'spears', 'fold', 'whips', 'ram', 'combs'],
+    reg:{
+      claws:{clades:['hingeshells']},
+      spears:{clades:['hingeshells']},
+      fold:{clades:['hingeshells']},
+      whips:{clades:['hingeshells']},
+      ram:{clades:['hingeshells'],params:[]},
+      combs:{clades:['hingeshells'],params:['x','y','z','n','seg','teeth','tl','len','w']}
+    },
     cost: 4,
     paired: true,
     // placed at (±x, y, z) — snap hangs it from the belly there — turned by pitch (down) and yaw (out) in degrees, len and w scaling the pieces, n the teeth on a claw
     // (combs, v11.25: the filter feeder's frontal appendages — n jointed segments of `seg` with `teeth` fine spines of tl each, swept slowly)
     params: {
-      x: {k: 'len', b: [0, 0.3], x: [0, 1], d: (F, p) => F.H.w * (p.style === 'spears' ? 0.42 : p.style === 'whips' ? 0.4 : p.style === 'combs' ? 0.25 : 0.3)},
-      y: {k: 'len', b: [-0.3, 0.15], x: [-1, 1], d: (F, p) => (F.hy || 0) - F.ht * (p.style === 'spears' ? 0.7 : p.style === 'fold' ? 0.55 : 0.5)},
-      seg: {k: 'len', b: [0.05, 0.3], x: [0.01, 1], d: F => F.H.l * 0.85},
-      teeth: {k: 'n', b: [3, 12], x: [1, 20], d: 7},
-      tl: {k: 'len', b: [0.05, 0.3], x: [0.01, 1], d: F => F.H.h * 1.2},
+      x: {label: 'x (out)', k: 'len', b: [0, 0.3], x: [0, 1], d: (F, p) => F.H.w * (p.style === 'spears' ? 0.42 : p.style === 'whips' ? 0.4 : p.style === 'combs' ? 0.25 : 0.3)},
+      y: {label: 'y (up)', k: 'len', b: [-0.3, 0.15], x: [-1, 1], d: (F, p) => (F.hy || 0) - F.ht * (p.style === 'spears' ? 0.7 : p.style === 'fold' ? 0.55 : 0.5)},
+      seg: {label: 'segment', k: 'len', b: [0.05, 0.3], x: [0.01, 1], d: F => F.H.l * 0.85},
+      teeth: {label: 'teeth', k: 'n', b: [3, 12], x: [1, 20], d: 7},
+      tl: {label: 'tooth length', k: 'len', b: [0.05, 0.3], x: [0.01, 1], d: F => F.H.h * 1.2},
       z: {
+        label: 'z (fore–aft)',
         k: 'z',
         b: [-0.5, 1.2],
         x: [-4, 4],
         d: (F, p) => F.zf - F.H.l * (p.style === 'spears' ? 0.3 : p.style === 'whips' ? 0.2 : p.style === 'fold' ? 0.15 : 0.1)
       },
-      len: {k: 'k', b: [0.4, 2.2], x: [0.1, 4], d: 1},
-      w: {k: 'k', b: [0.4, 2], x: [0.1, 4], d: 1},
-      pitch: {k: 'k', b: [-60, 60], x: [-180, 180], d: 0},
-      yaw: {k: 'k', b: [-60, 60], x: [-180, 180], d: 0},
-      n: {k: 'n', b: [3, 8], x: [1, 14], d: 5},
-      snap: {k: 'b', d: false}
+      len: {label: 'length', k: 'k', b: [0.4, 2.2], x: [0.1, 4], d: 1},
+      w: {label: 'width scale', k: 'k', b: [0.4, 2], x: [0.1, 4], d: 1},
+      pitch: {label: 'pitch', unit: '°', k: 'k', b: [-60, 60], x: [-180, 180], d: 0},
+      yaw: {label: 'yaw', unit: '°', k: 'k', b: [-60, 60], x: [-180, 180], d: 0},
+      n: {label: 'count', k: 'n', b: [3, 8], x: [1, 14], d: 5},
+      snap: {label: 'snap to the body', k: 'b', d: false}
     },
     build: (ctx, p) => {
       const g = ctx.g,
@@ -2458,23 +2511,24 @@ const PARTS = {
   // v11.25: the raised head of the ringmouth crawlers (the watcher): a sphere on the mantle carrying a forward pair of pupiled eyes and
   // three more (five in all), turning slowly to look about (swing/nod, at rates f/fn); the body's own collar of eyes stays below it
   head: {
-    clades: ['ringmouths'],
-    styles: ['turret'],
+    reg:{
+      turret:{clades:['ringmouths']}
+    },
     cost: 3,
     params: {
-      y: {k: 'len', b: [0.2, 1], x: [0, 3], d: F => (F.anchors.head ? F.anchors.head.y : F.Rmax * 1.1)},
-      z: {k: 'z', b: [-0.5, 1], x: [-4, 4], d: F => (F.anchors.head ? F.anchors.head.z : F.nose * 0.5)},
-      R: {k: 'len', b: [0.15, 0.6], x: [0.05, 2], d: F => (F.anchors.head ? F.anchors.head.R : F.Rmax * 0.7)},
-      sy: {k: 'k', b: [0.7, 1.1], x: [0.4, 1.5], d: 0.9},
-      n: {k: 'n', b: [3, 5], x: [2, 5], d: 5},
-      er: {k: 'len', b: [0.03, 0.5], x: [0.01, 1], d: F => (F.anchors.head ? F.anchors.head.R * 0.34 : F.Rmax * 0.24)},
-      ex: {k: 'k', b: [0.3, 0.8], x: [0, 1.2], d: 0.56},
-      ey: {k: 'k', b: [0, 0.5], x: [-0.5, 1], d: 0.24},
-      ez: {k: 'k', b: [0.4, 1], x: [0, 1.5], d: 0.8},
-      swing: {k: 'k', b: [0, 0.8], x: [0, 1.5], d: 0.45},
-      nod: {k: 'k', b: [0, 0.3], x: [0, 0.8], d: 0.12},
-      f: {k: 'k', b: [0.2, 1], x: [0.05, 3], d: 0.45},
-      fn: {k: 'k', b: [0.1, 0.8], x: [0.05, 3], d: 0.3}
+      y: {label: 'y (up)', k: 'len', b: [0.2, 1], x: [0, 3], d: F => (F.anchors.head ? F.anchors.head.y : F.Rmax * 1.1)},
+      z: {label: 'z (fore–aft)', k: 'z', b: [-0.5, 1], x: [-4, 4], d: F => (F.anchors.head ? F.anchors.head.z : F.nose * 0.5)},
+      R: {label: 'head radius', k: 'len', b: [0.15, 0.6], x: [0.05, 2], d: F => (F.anchors.head ? F.anchors.head.R : F.Rmax * 0.7)},
+      sy: {label: 'squash', k: 'k', b: [0.7, 1.1], x: [0.4, 1.5], d: 0.9},
+      n: {label: 'eyes', k: 'n', b: [3, 5], x: [2, 5], d: 5},
+      er: {label: 'eye radius', k: 'len', b: [0.03, 0.5], x: [0.01, 1], d: F => (F.anchors.head ? F.anchors.head.R * 0.34 : F.Rmax * 0.24)},
+      ex: {label: 'eyes out', k: 'k', b: [0.3, 0.8], x: [0, 1.2], d: 0.56},
+      ey: {label: 'eyes up', k: 'k', b: [0, 0.5], x: [-0.5, 1], d: 0.24},
+      ez: {label: 'eyes fore', k: 'k', b: [0.4, 1], x: [0, 1.5], d: 0.8},
+      swing: {label: 'swing', k: 'k', b: [0, 0.8], x: [0, 1.5], d: 0.45},
+      nod: {label: 'nod', k: 'k', b: [0, 0.3], x: [0, 0.8], d: 0.12},
+      f: {label: 'swing rate', k: 'k', b: [0.2, 1], x: [0.05, 3], d: 0.45},
+      fn: {label: 'nod rate', k: 'k', b: [0.1, 0.8], x: [0.05, 3], d: 0.3}
     },
     build: (ctx, p) => {
       const pal = ctx.pal,
@@ -2502,66 +2556,20 @@ const PARTS = {
   }
 };
 
-// which of a part's params a style reads (the lab shows only these); a style not listed reads them all
-const PSTYLE = {
-  'eyes:collar': ['n', 'z', 'R', 'r', 'sy', 'y0'],
-  'eyes:cluster': ['n', 'y', 'z', 'R', 'r'],
-  'eyes:ring': ['z', 'R', 'pred'],
-  'eyes:stalks': ['n', 'x', 'y', 'z', 'len', 'size', 'tilt', 'splay', 'thick', 'sc', 'rise', 'snap'],
-  'eyes:rim': ['n', 'x', 'y', 'z', 'size', 'sweep', 'snap'],
-  'eyes:crown': ['x', 'y', 'z', 'len', 'size', 'tilt', 'snap'],
-  'eyes:under': ['n', 'x', 'y', 'z', 'size', 'snap'],
-  'eyes:valve': [],
-  'eyes:arc': ['n', 'x', 'r', 'y', 'z', 'arc', 'size', 'snap'],
-  'eyes:rows': ['n', 'rows', 'x', 'y', 'z', 'dy', 'dz', 'size', 'size2', 'snap'],
-  'mouth:beak': ['z', 'y', 'R'],
-  'mouth:rasp': ['z', 'y', 'R', 'h'],
-  'mouth:slit': ['z', 'y', 'R', 'h'],
-  'mouth:peck': ['z', 'y', 'len', 'r', 'dip', 'pk', 'wob'],
-  'mouth:tentacles': ['z', 'r', 'len', 'n', 'w', 'segs', 'idle', 'tell', 'kk', 'pulse', 'edge'],
-  'mouth:plates': ['where', 'z', 'y', 'R', 'plen', 'feed', 'fn', 'flen', 'snap'],
-  'weapon:ram': [],
-  'arms:jet': ['n', 'z', 'R', 'len', 'w', 'segs', 'curve', 'ks', 'damp', 'cosMax', 'plan', 'phase', 'taper', 'col', 'shade'],
-  'arms:cone': ['n', 'z', 'R', 'len', 'w', 'segs', 'curve', 'ks', 'damp', 'cosMax', 'plan', 'phase', 'taper', 'col', 'shade', 's0', 's1', 'a0', 'a1', 'k0', 'k1'],
-  'arms:withdraw': ['n', 'z', 'R', 'len', 'w', 'segs', 'curve', 'ks', 'damp', 'cosMax', 'plan', 'phase', 'taper', 'col', 'shade', 's0', 'a0'],
-  'arms:hold': ['n', 'z', 'R', 'len', 'w', 'segs', 'curve', 'ks', 'damp', 'cosMax', 'plan', 'phase', 'taper', 'col', 'shade', 's0', 'a0'],
-  'arms:crawl': ['n', 'len', 'w', 'segs', 'ks', 'damp', 'cosMax', 'plan', 'phase', 'z0', 'y0', 'taper', 'h', 'col', 'shade', 's0', 's1', 'a0', 'a1', 'k0', 'k1', 'sw'],
-  'arms:raise': ['n', 'len', 'w', 'segs', 'ks', 'damp', 'cosMax', 'plan', 'phase', 'z0', 'y0', 'taper', 'h', 'col', 'shade', 's0', 'a0', 'wob', 'wf', 'f0', 'sw'],
-  'arms:net': ['n', 'z', 'R', 'len', 'w', 'segs', 'curve', 'ks', 'damp', 'cosMax', 'plan', 'phase', 'taper', 'col', 'shade', 'soft', 'web', 'wsp', 's0', 's1', 'a0', 'wob', 'wf', 'f0', 'jet'],
-  'arms:hang': ['n', 'R', 'len', 'w', 'segs', 'ks', 'damp', 'cosMax', 'phase', 'y0', 'taper', 'col', 'soft', 'a0', 'pm'],
-  'arms:lines': ['n', 'R', 'len', 'w', 'segs', 'ks', 'damp', 'cosMax', 'phase', 'y0', 'taper', 'col', 'soft', 'lean', 'toff'],
-  'comb:rake': ['n', 'y', 'z', 'w', 'len', 'snap'],
-  'comb:teeth': ['n', 'x', 'y', 'z', 'w', 'len', 'stag', 'rake'],
-  'tailplate:fan': ['w', 'l', 'x', 'dx', 'y', 'dy', 'z', 'dz'],
-  'tailplate:spine': [],
-  'tailplate:plates': [],
-  'tailplate:abdomen': ['n', 'w0', 'dw', 'seg', 'curl', 'y', 'z', 'amp', 'flick'],
-  'legs:rear': ['n', 'z', 'dz', 'len', 'w'],
-  'legs:placed': ['n', 'x', 'y', 'z', 'dz', 'kx', 'ky', 'kz', 'fx', 'fy', 'fz', 'kzk', 'fzk', 'wl', 'hook'],
-  'legs:walk': ['n', 'x', 'y', 'z', 'dz', 'kx', 'ky', 'kz', 'fx', 'fy', 'fz', 'fan', 'kf', 'ff', 'wl', 'hook', 'root', 'amp', 'k0', 'sk'],
-  'legs:hang': ['n', 'x', 'y', 'z', 'dz', 'kx', 'ky', 'kz', 'fx', 'fy', 'fz', 'kzk', 'fzk', 'wl', 'hook', 'wob', 'swing', 'drop'],
-  'legs:rock': ['n', 'x', 'y', 'z', 'dz', 'll', 'wl', 'th', 'splay', 'yaw', 'amp', 'k0', 'sk'],
-  'legs:march': ['n', 'z', 'dz', 'kx', 'ky', 'fx', 'floor', 'inset', 'wl', 'amp', 'k0', 'sk', 'lift', 'step', 'side'],
-  'legs:swim': ['n', 'x', 'y', 'z', 'dz', 'll', 'wl', 'th', 'splay'],
-  'valves:back': ['o0', 'o1', 'tc', 'sc', 'tk', 'sk'],
-  'valves:small': ['o0', 'o1', 'tc', 'sc', 'tk', 'sk'],
-  'valves:hood': ['o0', 'o1', 'tc', 'sc', 'tk', 'sk'],
-  'valves:placed': ['z0', 'z1', 'w', 'y', 'th', 'o0', 'o1', 'tc', 'sc', 'tk', 'sk'],
-  'valves:clam': ['R', 'sx', 'sy', 'sz', 'y', 'ox', 'oy', 'o0', 'o1', 'tc', 'sc', 'tk', 'sk'],
-  'weapon:combs': ['x', 'y', 'z', 'n', 'seg', 'teeth', 'tl', 'len', 'w'],
-  'shell:coil': ['n', 'R0', 'R1', 'cy', 'cz', 'k', 'carry', 'spines'],
-  'shell:cone': ['L', 'z0', 'r0', 'segs', 'turns'],
-  'barbels:cone': ['x', 'y', 'z', 'len', 'r', 'rx', 'ry'],
-  'barbels:whisker': ['len', 'r', 'z'],
-  'tail:lathe': ['z', 'lz', 'lh', 'll', 'axis', 'amp', 'sp0', 'spk', 'full', 'body', 'col'],
-  'tail:cyl': ['z', 'L', 'r0', 'r1', 'segs', 'lz', 'lh', 'll', 'axis', 'amp', 'sp0', 'spk', 'full', 'body', 'col'],
-  'tail:lobes': ['z', 'lz', 'lh', 'll', 'axis', 'amp', 'sp0', 'spk', 'full', 'body', 'col']
-};
-function paramsFor(kind, style) {
-  const def = PARTS[kind];
-  if (!def) return [];
-  return PSTYLE[kind + ':' + style] || Object.keys(def.params);
-}
+// the registry, read (v11.70). A part's styles and clades are its reg's (the first style is the default); which of a part's params a style
+// reads is the style's `params` (the lab shows only these; none listed: all) — PSTYLE to v11.69.
+for(const k in PARTS){const d=PARTS[k];d.styles=Object.keys(d.reg);d.clades=[];for(const st of d.styles)for(const c of d.reg[st].clades)if(d.clades.indexOf(c)<0)d.clades.push(c);}
+function paramsFor(kind,style){const d=PARTS[kind];if(!d)return [];const r=d.reg[style];return (r&&r.params)||Object.keys(d.params);}
+// A parameter as its readers want it — the lab's panel today; next the editor at conception, which prices a child's diff from these
+// (LINEAGE.md §6), and direct manipulation, which hangs a handle on each: {key, label, unit, k, b, x, d, val, lo, hi, b0, b1} with the bands
+// resolved against the frame and in the spec's units (a 'len' or a 'z' is multiplied by the core's reference length). owner: a part kind or a
+// core kind; p: the part (or the core) the value is read off. k is the type: 'n' a count, 'k' a plain number, 'len' a length and 'z' a
+// place along the body (metres), 'b' a switch, 's' one of opts, 'l' a list the panel edits elsewhere (a profile) or not at all.
+function paramOf(owner,key,p,F){const d=PARTS[owner]||CORES[owner],q=d&&d.params[key];if(!q)return null;
+  const o={key:key,label:(q.by&&p&&q.by[p.style])||q.label||key,unit:q.unit!==undefined?q.unit:q.k==='len'||q.k==='z'?'m':'',k:q.k,opts:q.opts,d:q.d,val:p?p[key]:undefined};
+  if(q.x&&F){const qb=bandOf(q,F,p),mul=q.k==='len'||q.k==='z'?F.L:1;o.b=qb.b;o.x=qb.x;o.lo=qb.x[0]*mul;o.hi=qb.x[1]*mul;o.b0=qb.b[0]*mul;o.b1=qb.b[1]*mul;}
+  return o;}
+function paramsOf(owner,p,F){return (PARTS[owner]?paramsFor(owner,p.style):Object.keys(CORES[owner].params)).map(k=>paramOf(owner,k,p,F));}
 // ---------- compile ----------
 // spec → {g, anim, hit, rigs}: the same object every hand builder returns. s: the build scale (spec.s by default); pal: the palette
 // (the spec's coat by default — a PAL key, or the palette itself). The static parts of the core and the parts merge into one body
@@ -2771,7 +2779,8 @@ function validate(spec0) {
     }
   }
   for (const p of spec.parts) {
-    const ok = stylesFor(p.kind, spec.clade);
+    const ok = stylesFor(p.kind, spec.clade, spec.core.kind); // by the core too (v11.70)
+    if (!ok.length && PARTS[p.kind] && stylesFor(p.kind, spec.clade).length) W.push('a ' + spec.core.kind + ' cannot carry ' + p.kind + ((core.provides || []).indexOf(p.kind) >= 0 ? ': it is its own' : '')); // warned, not removed: the lab's part indices are the spec's (it removes them itself when the core changes)
     if (ok.length && ok.indexOf(p.style) < 0) {
       W.push(p.style + ' ' + p.kind + ' are not a ' + spec.clade.replace(/s$/, '') + "'s: " + ok[0]);
       p.style = ok[0];
@@ -4092,6 +4101,13 @@ const SPEC_BLANK = {
   }
 };
 // ---------- save, load, export ----------
+// A coat with every colour the clade's bodies read (v11.70). A palette is a species' own keys: the jetter's has no `top` and no `shell`, so
+// in the lab a jetter's coat on a sac, or a shell added under it, threw in merge (a part with no colour) and the panel said "the build
+// failed". The missing keys come from the clade's other coats — the blank's first, then the roster's in order (all: then any coat's, the lab's second try) — and the given ones are kept.
+// Only the lab calls it, and only when a build has thrown: a key filled in ahead of need would cut short the `pal.mouth || pal.band` chains
+// the kit chooses colours by, and move the roster's.
+function coatFill(coat,clade,all){const pal=typeof coat==='string'?PAL[coat]:coat,out=Object.assign({},pal||{}),add=p=>{for(const k in p)if(out[k]===undefined&&Array.isArray(p[k]))out[k]=p[k].slice();};
+  if(SPEC_BLANK[clade])add(PAL[SPEC_BLANK[clade].coat]);for(const id in SPECS)if(SPECS[id].clade===clade&&typeof SPECS[id].coat==='string')add(PAL[SPECS[id].coat]);if(all)add(DRY_PAL);delete out.note;return out;}
 function specToJSON(spec) {
   return JSON.stringify(spec, (k, v) => (typeof v === 'number' ? +v.toFixed(4) : v));
 }

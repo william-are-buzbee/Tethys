@@ -1,6 +1,8 @@
 # CREATOR — the creature lab: one body-plan system for every animal, a tool first, the player's creator later
 
-**Status: design, 9 Sep 2026, nothing built.** Written at the end of the clade passes (CLADES.md, v11.8–11.9.1) so the next session can
+**Status: built — the compiler, the calculator and the lab v11.10–11.11, every species a spec v11.25, the creator on the menu v11.47, the
+player as a spec v11.68, the registry pass v11.70 ("Fifth round" below). Not built: the creator as the start of a game, the editor at
+conception (LINEAGE.md), direct manipulation, the studio.** Designed 9 Sep 2026, written at the end of the clade passes (CLADES.md, v11.8–11.9.1) so the next session can
 build the first cut in one go. Downstream of `PLANET.md` (the planet and the stalemate rule) and `CLADES.md` (the three signatures and
 the kit); upstream of a new `src/lab.js` and, eventually, a rewrite of the builders. Questions for the person are at the end and are
 not to be decided by Claude.
@@ -270,6 +272,18 @@ species, clades, cores and part styles the profile has seen — any species draw
 (lab.js `lab.player`, `labOk`, `labStyles`; save.js `PROFILE.seen`). A `saved creatures` list in the lab's save section keeps the player's
 specs by name, with a file out and in. Still not done: the creator as the start of a new game (the finback starts it for now), the mass budget
 and the mineral/pigment gates at growth stages, the moult.
+
+## Fifth round (21 Sep 2026, v11.70): the registry pass
+The person, 20 Sep: the parts "show up as either duplicates, or as blank, or as parts from another animal type". `test/registry.js` walks
+everything the lab offers through the real panel; on v11.69 it found 62 offers of 505 that did not build, 105 with a blank control, 32 with
+two controls under one name, and none offered across clades (the `stylesFor` fall-through was latent). The causes were a coat without the
+colours a core or a part reads (the sac, every shell), defaults reading a frame the core has not (fins and tails on a chain, a slit on a
+slowblood, `withdraw` off the shelled body), lists with no default (`pairs`, `prof`), a name table a file away from the ranges it named
+(raw keys; "tooth length" on a trunk's tail), and a core change that kept the last core's parts. Built: one registry — `PARTS[kind].reg`
+(a style's clades, cores and params) and a label, unit, bands and default on every parameter's own line, read through `paramOf` (DESIGN,
+Creatures, The registry). The judgement calls are open and the person's (CHANGELOG v11.70, Ask first): `mouth:slit` across three clades;
+`arms:hold` worn by nothing; whether a style worn on one core only should be offered on its clade's others; `valves:placed` = `valves:back`
+at its defaults; a second mouth from the add list; the five styles with no controls.
 
 ## The size ceiling (20 Sep 2026) — what a monstrous animal costs
 

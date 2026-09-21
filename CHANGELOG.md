@@ -4552,3 +4552,73 @@ its hatch. New file `src/line.js`.
 - **Unseen, ask in this order**: whether the handover reads as the magic (the star is 28 px at 1080 lines, `SPARK.r` 14 — small on purpose,
   candle-sized); whether an eight-minute cooldown and four eggs feel like a slowblood's career; whether the run-on to another hour wants
   saying (nothing says the world moved on; the dark says it); the hatchling's growth pop in view.
+
+## v11.70 — the registry pass: what the lab offers is what the kit can build (21 Sep 2026)
+
+The person, 20 Sep: the creator's parts "show up as either duplicates, or as blank, or as parts from another animal type". The ask: an
+inventory first, one registry, fix what it finds, leave the judgement calls. Inventory first, then the build; nothing in the game moves.
+
+- **The inventory** (`test/registry.js`, new, in `--test`; one run, the lab has no tiers): drives the real lab — `labLoad`, the panel's own
+  input and select handlers, `labPanelHTML` read as the person reads it, a row a control — over every clade × core × part kind × style it
+  offers, in the dev lab and in the creator (`lab.player`, every species seen), then the 42 roster panels, then every species onto every
+  other core of its clade; then reads the registry directly (labels, bands, defaults, each style's clades, cores and params, the roster
+  against it). Real geometry (`test/geo.js`). `ALL=1` prints every line, `SRC=path` runs another tree's src.
+- **The table on v11.69** (`SRC=` a `git archive` of 656a37b): **505 offered, 443 compile, 62 do not, 105 with a blank control, 32 with a
+  duplicate, 0 foreign, 272 undeclared.** What is behind the numbers, a line per cause:
+  - *The build failed — a coat, not a part.* The ringmouth blank wears the jetter's coat, which has no `top`, `shell` or `band`: the **sac
+    core failed from the lab's own core select** (and with it all seventeen styles on it), and **`shell:coil` and `shell:cone` failed on
+    every ringmouth core** — a new ringmouth could not be given a shell at all.
+  - *Parts from another animal type — by core, not by clade.* `arms:withdraw` on a mantle or a sac threw every frame (it pulls the soft
+    body in; only the shelled body has one). `fins:trio` on a chain body threw inside the add's timeout — the panel was dead from there.
+    All four `tail` styles were offered on the chain, which is its own tail. `mouth:slit` on either slowblood core built **NaN geometry**
+    with two empty sliders (the slowbloods' mouth anchor has no `y` or `R`). `barbels:whisker` and `tail:lathe` built only on a spec that
+    brought its own list (`pairs`, `prof`): added in the lab, or reached by cyl → lathe, they failed.
+  - *Blank.* Raw keys for names: `arms.curve`, `shell.spines`, `skirt.f1`, `head.f`, `mouth.edge`, `fins.fk`, `fins.dorsal`, `chain.fin`,
+    `flaps.px`, `flaps.py`; no value: `mouth.y`, `mouth.R` on a slowblood.
+  - *Duplicate.* Two sliders, one name: `spines` "height" (`h`, `y0`), `legs:rock` and `legs:swim` "thickness" (`wl`, `th`).
+  - *Foreign: none.* The known cause — `stylesFor`'s `return !c || …` letting an unlisted style through to every clade of its kind — was
+    latent: 272 offers came through it, but the only unlisted kind with two clades is `spines`, and both wear it.
+  - *Not in the table, found by looking at the sac in the pane:* the shared name table put false names on true ranges — every body's
+    radius "ring radius", **a trunk's tail length "tooth length"** and its tail height "thickness", a skirt's and a leg's speed gain "open on
+    the strike", the chevrons' size "stretch", a plate count "count", the flaps' rake in "°" when it is radians.
+- **One registry** (creatures_spec.js). `PARTS[kind].reg` is every style with its `clades`, the `cores` it can stand on (none listed: any
+  of the clade's) and the `params` it reads (none listed: all); `styles` and `clades` are read off it at load. `STYLE_CLADES` and `PSTYLE`
+  are gone. Every parameter, part and core alike, declares its `label` (`by`: a style's own word where the key means another thing there —
+  `legs.wl` is a paddle's width on `rock` and `swim`), its `unit` (a `len` or a `z` is metres by its kind; `°` and `rad` said), its bands
+  `b` and `x` and its default `d` on one line. `LAB_NAME`, `LAB_NAME_BY` and `LAB_UNIT` are gone from lab.js; the four hundred labels were moved by
+  script (acorn) so each control reads what it read, then the twelve unnamed and the mislabelled above were written by meaning.
+  `stylesFor(kind, clade, core)` gates by core and by what the core `provides`; `styleClades`; `paramOf(owner, key, p, F)` /
+  `paramsOf` give a parameter resolved for a body — label, unit, type, bands in the spec's units, default, value — which is what the lab
+  reads now, and what the editor at conception (LINEAGE §6: a diff priced from these) and drag handles will read next. Neither is built.
+- **The fixes.** `cores` on two styles: `arms:withdraw` → coilbody, `fins:trio` → lathe; a kind the core provides is not offered
+  (tail on a chain). `mouth` `y`/`R` fall back to the axis and the ring's radius; `barbels:whisker` lists `pairs`; `tail` has a `prof`
+  with a default (the blank's, at the core's tail anchor); `tail:stub` reads nothing (it listed nothing, so it showed fifteen sliders on a
+  part that builds nothing). `coatFill(coat, clade)`: when a build throws, the lab tries once more with the coat's missing colours filled
+  from the clade's other coats, keeps that coat on the spec (every key a swatch) and says so under the caption (`lab.note`) — only then,
+  since a key filled ahead of need would cut short the `pal.mouth || pal.band` chains and move the roster. **Changing the core under a
+  finished animal** removes the parts the new core cannot carry and says how many (lathe → chain left two tails and a fin that threw),
+  and turns a style that cannot stand there into the first that can; `validate` corrects styles by core too and warns on the rest.
+- **The table now: 578 offered (the core changes are 73 of them), 578 compile, 0 blank, 0 duplicate, 0 foreign, 0 undeclared; the
+  registry sound.** The test fails on any of them from here.
+- **Identical**: all 42 `SPECS` fingerprinted before and after — triangles, meshes, a position-and-colour checksum, bounds, hit capsules,
+  rigs, grip, edge, cover, gape, `derive`, `statsOf`, `validate`'s spec and warnings. One difference in 630 fields: the stone's validated
+  spec no longer carries fifteen defaults for its stub tail. `test/player.js` green: the three presets' numbers are CLADES' old literals.
+- **Seen** in the app's browser, the panel walked by its own handlers for every clade and each of its cores (eleven; all build, the sac
+  with the coat note, the chain with "1 part the chain cannot carry: removed"); a shot per clade: a new ringmouth on the shelled body given
+  a coil shell (the build failed in v11.69), `shell`/`band` among the swatches; a new slowblood through cyl → lathe with whiskers and
+  fins (`beat ratio`, `dorsal share`); a new hingeshell's flaps (`pivot out`, `pivot up`) and rocking legs (`pairs`, `paddle length`,
+  `paddle width`, `thickness`, `speed gain`); a float with lines. **What changed in what is offered**: `arms:withdraw` is offered only on the
+  shelled body; a slowblood on a chain body is not offered `fins` and `tail`; nothing else — every other change is that what was offered now builds.
+- **Ask first** (judgement calls, left as they are):
+  1. `mouth:slit` is declared for all three clades and worn by one hingeshell (the flicker). It builds on all three now. Deliberate — the
+     forage mouth of any clade — or the hingeshells' only? (GRAMMAR requires `mouth:tentacles` of a slowblood, so there it is a second mouth.)
+  2. `arms:hold` is worn by no species. An orphan to strike, or a style waiting for an animal?
+  3. **Styles by core.** Everything in a clade is offered on every core of it and builds: the bean's `valves:clam`, `tailplate:abdomen` and
+     `legs:swim`, the shield's `legs:rock`, the arches' `legs:march`, the crawlers' `arms:crawl`/`raise` and `head:turret` on a jetter, the
+     float's `lines` on a bell and the bell's `hang` on a float. If "another animal type" also means these, `cores` on the style is one word each.
+  4. `valves:placed` at its defaults is `valves:back` (the same body to the vertex): one style with a preset, or two?
+     `arms:jet`/`cone`/`hold`/`withdraw` also build alike at rest and differ in how they move — two things, I think; say if not.
+  5. The add list offers a second `eyes` or `mouth` to a body that has one. Two eye sets are real (the soft-arm's collar and cluster); a second mouth?
+  6. Five styles have no controls (`eyes:valve`, `tailplate:spine`, `tailplate:plates`, `keel:ventral`, `weapon:ram`): fixed pieces, or to be opened?
+- **Unseen**: the creator from the menu with a real profile (the test sees everything; a real game has seen little); `p` placing a lab
+  animal whose coat was filled; the look of a filled colour against a hand-drawn coat (it takes the clade's first coat that has the key).

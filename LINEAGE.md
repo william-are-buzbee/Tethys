@@ -357,6 +357,7 @@ Each step is playable and tells the person something; the expensive answers (§8
    brood can outlive you.
 4. **The editor at conception**: the parent's spec loaded, the diff priced as materials (§6), declining allowed, the child let go into
    the world. Needs the creator's registry pass to have landed first, or the bill prices nonsense.
+   *(The registry pass landed v11.70: a parameter is `paramOf(owner, key, part, frame)` — label, unit, type, bands, default, value — creatures_spec.js.)*
 5. **The sparkle** (§7) — small, and it should arrive with the first handover so the tell exists from the beginning. *(Built v11.69 for the
    handover only: a screen-space four-point star, `starPath`, with a short trail.)*
 6. **The other two modes**: the ringmouth's one spawning and scheduled death; the hingeshell's brood and den.

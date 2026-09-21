@@ -41,6 +41,7 @@ node serve.js            static server; open http://localhost:8080/dev.html (edi
 | `test/snow.js` | the marine snow mix at thirteen sites, layering invariants, tick cost | `node test/snow.js` |
 | `test/combat.js` | holds form and kill, ropes never NaN, the player held, bled, pinned and killed, the grab, the bite, the sting, the paralysis, the blood trail, the miss rule, the poison, a tail torn off and the stump growing back; a table of every hunter of the player and its outcome; the matrix (v11.54): every hunter at contact behind each prey — the covering under the hold, the edge's verdict, the gape, the jaws' distance | `node test/combat.js` |
 | `test/pool.js` | the flora pools (v11.52): blocks contiguous, counts summing, no NaN, a cell's block identical alone, first or last, the others untouched by a removal, the card species per cell, growth without loss | `node test/pool.js` |
+| `test/registry.js` | the creator's registry (v11.70): every clade × core × part kind × style the lab offers, in the dev lab and the creator, through the real panel, the roster's panels, every species onto every other core; the registry read directly; fails on an offer that does not compile, a control with no name, value or range, two controls with one name, a style offered outside its declaration | `node test/registry.js`; `ALL=1 …`; `SRC=path …` |
 | `test/player.js` | the player as a spec (v11.68): the three presets' numbers against CLADES' old literals, a non-preset spec on derive's, the spec through the save and a version 1 record as its preset; the line (v11.69): lay, the cooldown, a death with only a clutch (the run-on to the hatch), the hatchling grown, a death with young alive, a death with none (the slot ended), an unloaded brood's losses, the line through the save | `node test/player.js`, `TIER=low …` |
 | `test/census.js` | the ecology on paper: capacities, rates, the model for N days; fails if a kind collapses under a fifth | `node test/census.js 120` (`--test` runs 40) |
 | `test/live.js` | the ecology where the player is: four game days of clutches laid and hatched with cells loaded, then a table of every hunter's hunger against the distance to its nearest meal | `node test/live.js`, `TIER=low …` |
@@ -58,7 +59,7 @@ Env vars: `TIER` (`low`), `PICK` (menu pick for smoke), `T0`, `OLD`, for preview
 1. Edit `src/*.js`. A new file goes into `src/order.txt` too. Content edits usually touch only `creatures_defs.js` (stats, spawn
    table, envelopes) and `flora.js` (species, densities, envelopes). A new creature is a **spec** in `creatures_spec.js` — make it in
    the lab (`#lab`), export, paste the `PAL`/`DEFS`/`ROSTER`/`SPECS` lines, hand-write its `SPAWN` envelope; if the kit lacks a part,
-   add one to `PARTS`. There are no hand builders since v11.25. A new plant is a `species()` in flora.js from grow.js's bauplans.
+   add one to `PARTS` — its styles in `reg` with their clades (and `cores`, `params`), every parameter with its `label`, bands and default on its line (`test/registry.js` fails otherwise). There are no hand builders since v11.25. A new plant is a `species()` in flora.js from grow.js's bauplans.
 2. `node build.js --test` green on both tiers.
 3. **Look at it.** Start `node serve.js` (or the `tethys` launch config), open `dev.html` in the app's browser, play to the changed
    thing, screenshot it. The pane's loop only ticks while it is visible, and a hidden pane reports a 0×0 viewport, which NaNs the menu
@@ -98,7 +99,7 @@ test/              headless tests, the THREE stub, real geometry for previews, t
 | parts.js | geometry kit `part`/`merge`, arm rings as rigs and their poses, `swimClock`, LOD baking |
 | grow.js | flora grammar: eight bauplans, `pigment(h,line)`, `flowYaw`, `species()` (three variants in one geometry) |
 | creatures_builders.js | palettes `PAL` and the kit the specs compile from (ring mouths, coil shells, fins, tails, valves, legs…) |
-| creatures_spec.js | the spec compiler: cores, `PARTS`, `compile`, `validate`, `derive` (the calculator), `coatFor`, `SPECS` for every species, JSON/hash/export |
+| creatures_spec.js | the spec compiler: cores, `PARTS` (the registry, v11.70: a style's clades, cores and params in `reg`; a parameter's label, unit, bands and default on one line; `stylesFor`, `paramOf`), `compile`, `validate`, `derive` (the calculator), `coatFor`, `SPECS` for every species, JSON/hash/export |
 | flora.js | the species, kept geometries, rock kits and big structures with collision lumps, `FLORA` with densities and envelopes |
 | reef.js | what remains of the reef pass: two giant colony shapes appended to `FLORA` |
 | creatures_defs.js | `DEFS` (stats, roles), `SPAWN` (capacity per cell and envelope), `ROSTER` |
@@ -223,7 +224,7 @@ Docs, most upstream first. When a doc's Open list says a choice is the person's,
   features are removed from the game; a kit may stay for reference, marked so.
 - **Stale statements: fix when touched.** A comment, doc line or dead branch you meet while editing gets corrected in the same
   change; nothing else is cleaned speculatively. Known stale spots: README's Node path and "a lily pad takes your weight" (pads went
-  with the raft, v11.16.1) and its doc table (missing TAXA, DRIFTERS, AUDIO); CREATOR.md and TAXA.md headers say nothing is built;
+  with the raft, v11.16.1) and its doc table (missing TAXA, DRIFTERS, AUDIO); TAXA.md's header says nothing is built (CREATOR.md's was fixed v11.70);
   CHANGELOG has two v11.18.1 entries; DESIGN has two Landmarks sections and opens The medium with `GRAV=14`; "biome" wording in
   far.js and scene.js; the hand-builder branches in `creatures_defs.js` and zoo.js; reef `fill`/`drop`/`clear` handling with no
   entry setting them. **Left alive on purpose** (v11.33, and each says so where it lives): `GLOW` and the `f.glow` branches, for

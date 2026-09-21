@@ -40,7 +40,7 @@ const lab = {
   player: false // the creator (v11.47): opened from the menu's `creator` word; only the species, clades, cores and part styles the profile has seen are offered (save.js PROFILE.seen, labOk)
 };
 function labOk(k,v){return !lab.player||seen(k,v);} // k: 'sp' | 'cl' | 'co' | 'pt'
-function labStyles(kind,clade,cur){const st=stylesFor(kind,clade);return lab.player?st.filter(s=>s===cur||seen('pt',kind+':'+s)):st;} // the styles offered for a part: all of the clade's, or in the creator the seen ones (and the one it wears)
+function labStyles(kind,clade,cur,core){const st=stylesFor(kind,clade,core);return lab.player?st.filter(s=>s===cur||seen('pt',kind+':'+s)):st;} // the styles offered for a part: all of the clade's that stand on the core (v11.70), or in the creator the seen ones (and the one it wears)
 const LAB_CLADES = ['ringmouths', 'slowbloods', 'hingeshells', 'drifters'],
   LAB_SECS = ['species', 'core', 'parts', 'coat', 'readout', 'save'];
 const MAT_HI = addTint(new THREE.MeshLambertMaterial({vertexColors: true, emissive: new THREE.Color(0.55, 0.32, 0.08)}), 'lam', true, undefined, undefined, 'body'); // the part under the cursor
@@ -62,9 +62,10 @@ function labBuild() {
   let b;
   try {
     b = compile(lab.v, undefined, undefined, {split: true});
-  } catch (e) {
-    labCap.innerHTML = '<i>the build failed: ' + String(e.message).replace(/</g, '&lt;') + '</i>';
-    return;
+  } catch (e) { // v11.70: a coat without a colour this core or part reads (a jetter's on a sac, a shell under it) throws in merge — once more with the coat filled from the clade's (coatFill); it is the spec's from there, every key a swatch
+    for(const all of [false,true]){if(b)break;try{const coat=coatFill(lab.v.coat,lab.v.clade,all);b=compile(Object.assign({},lab.v,{coat:coat}),undefined,undefined,{split:true});lab.v.coat=coat;lab.spec.coat=labClone(coat);lab.note="the coat had no colour for that: filled from the clade's";}catch(e1){b=null;}}
+    if(!b){labCap.innerHTML = '<i>the build failed: ' + String(e.message).replace(/</g, '&lt;') + '</i>';
+    return;}
   }
   b.owner = {b: b, pos: b.g.position, grab: null, reach: 0, shapesW: null};
   const size = lab.v.size || 2,
@@ -140,6 +141,8 @@ function labCaption() {
     d.cost +
     ' points' +
     (d.plausible.length ? '<br><i>' + d.plausible.join(' · ') + '</i>' : '') +
+    (lab.note ? '<br><i>' + lab.note + '</i>' : '') + // what the lab did to the spec on its own (v11.70: a coat filled, parts a new core cannot carry removed); until the next load
+
     '</div>';
 }
 // ---------- the panel ----------
@@ -166,237 +169,15 @@ function labNum(path, val, step, lo, hi) {
     '>'
   );
 }
-const LAB_UNIT = {len: 'm', z: 'm'},
-  LAB_NAME = {
-    n: 'count',
-    z: 'z (fore–aft)',
-    x: 'x (out)',
-    y: 'y (up)',
-    R: 'ring radius',
-    r: 'radius',
-    len: 'length',
-    w: 'width',
-    segs: 'segments',
-    sz: 'stretch',
-    sy: 'squash',
-    pred: 'forward-facing',
-    plen: 'probe length',
-    feed: 'mouth parts',
-    flen: 'their length',
-    snap: 'snap to the body',
-    tilt: 'tilt forward °',
-    splay: 'splay out °',
-    sweep: 'sweep back',
-    size: 'eye size',
-    pitch: 'pitch °',
-    yaw: 'yaw °',
-    np: 'flaps a side',
-    dz: 'spacing',
-    where: 'faces',
-    carry: 'carried',
-    R0: 'inner radius',
-    R1: 'outer radius',
-    k: 'whorl',
-    turns: 'helix turns',
-    ks: 'stiffness',
-    damp: 'damping',
-    plan: 'plan',
-    idle: 'gape',
-    tell: 'cock',
-    kk: 'strike share',
-    s0: 'spread',
-    s1: 'spread, fast',
-    a0: 'curl',
-    a1: 'curl, fast',
-    k0: 'from speed',
-    k1: 'to speed',
-    rows: 'rows',
-    th: 'thickness',
-    l: 'plate length',
-    spread: 'spread',
-    yk: 'height',
-    rx: 'rake',
-    ry: 'splay',
-    h: 'height',
-    z0: 'first z',
-    z1: 'last z',
-    ds: 'spacing',
-    lz: 'lobe z',
-    lh: 'lobe height',
-    ll: 'lobe length',
-    axis: 'axis',
-    amp: 'amplitude',
-    sp0: 'speed at rest',
-    spk: 'speed gain',
-    full: 'whole body',
-    body: 'body colour',
-    col: 'colour',
-    belly: 'belly',
-    L: 'length',
-    r0: 'front radius',
-    r1: 'back radius',
-    w0: 'front width',
-    w1: 'back width',
-    h0: 'front height',
-    h1: 'back height',
-    hw: 'head width',
-    hh: 'head height',
-    hl: 'head length',
-    sx: 'width',
-    prof: 'profile',
-    // v11.25: the migrated species' parts
-    arc: 'arc °',
-    rise: 'rise on the tell',
-    thick: 'stalk thickness',
-    sc: 'stalk colour',
-    size2: 'lower row size',
-    dy: 'row drop',
-    dip: 'dip',
-    pk: 'peck',
-    wob: 'wobble',
-    wf: 'wobble rate',
-    f0: 'rate',
-    pm: 'beat share',
-    lean: 'lean per m/s',
-    toff: 'phase offset',
-    y0: 'height',
-    taper: 'taper',
-    phase: 'phase (steps)',
-    shade: 'countershaded',
-    soft: 'soft (no contact)',
-    web: 'webbed',
-    wsp: 'web spread',
-    sw: 'sweep',
-    jet: 'closes on the jet',
-    wk: 'width over radius',
-    stag: 'stagger',
-    rake: 'rake °',
-    dx: 'step out',
-    seg: 'segment',
-    curl: 'curl',
-    flick: 'flick',
-    dw: 'narrowing',
-    wl: 'thickness',
-    kx: 'knee out',
-    ky: 'knee up',
-    kz: 'knee fore',
-    fx: 'foot out',
-    fy: 'foot up',
-    fz: 'foot fore',
-    hook: 'hook',
-    fan: 'fan',
-    kf: 'knee fan',
-    ff: 'foot fan',
-    kzk: 'knee fan by z',
-    fzk: 'foot fan by z',
-    root: 'root bar',
-    lift: 'lift',
-    step: 'step phase',
-    side: 'side phase',
-    inset: 'inset',
-    floor: 'the floor',
-    swing: 'swing on the tell',
-    drop: 'drop on the strike',
-    o0: 'open at rest',
-    o1: 'open by speed',
-    tc: 'shut on the tell',
-    tk: 'open on the tell',
-    sk: 'open on the strike',
-    ox: 'valve out',
-    oy: 'valve down',
-    teeth: 'teeth',
-    tl: 'tooth length',
-    er: 'eye radius',
-    ex: 'eyes out',
-    ey: 'eyes up',
-    ez: 'eyes fore',
-    nod: 'nod',
-    fn: 'nod rate',
-    breathe: 'breathe',
-    bf: 'breath rate',
-    ws: 'segments round',
-    hs: 'segments up',
-    shape: 'shape',
-    cR: 'collar radius',
-    cy: 'collar y',
-    cz: 'collar z',
-    csy: 'collar squash',
-    csz: 'collar stretch',
-    cws: 'collar segments',
-    chs: 'collar rings',
-    fh: 'fin height',
-    lobes: 'tail lobes',
-    kph: 'wave pitch',
-    cosMax: 'joint limit',
-    hy: 'head y',
-    hz: 'head z',
-    tw: 'tail width',
-    ty: 'tail y',
-    tz: 'tail z',
-    nw: 'snout width',
-    nh: 'snout height',
-    nl: 'snout length',
-    ny: 'snout y',
-    nz: 'snout z',
-    gut: 'gut line',
-    gw: 'gut width',
-    gl: 'gut length',
-    gy: 'gut y',
-    alt: 'alternate colours',
-    hR: 'shield radius',
-    hsy: 'shield squash',
-    hsz: 'shield stretch',
-    tR: 'tail knob',
-    tsy: 'knob squash',
-    tsz: 'knob stretch',
-    H: 'height',
-    inner: 'inner bell',
-    core: 'core',
-    pulse: 'pulse',
-    sway: 'sway',
-    crest: 'crest',
-    cn: 'crest slabs',
-    ch: 'crest height',
-    bodies: 'feeding bodies'
-  };
-const LAB_NAME_BY = {'valves.sc': 'shut on the strike', 'weapon.tl': 'tooth length', 'weapon.w': 'width scale', 'legs.swing': 'swing on the tell', 'head.swing': 'swing', 'arms.h': 'box height', 'arms.jet': 'closes on the jet', 'mouth.h': 'thickness', 'bell.H': 'height', 'arms.y0': 'lift', 'shell.cy': 'shell y', 'shell.cz': 'shell z', 'mouth.fn': 'their count', 'mouth.pulse': 'opens on the bite', 'legs.ll': 'paddle length', 'tailplate.w0': 'root width', 'chain.w0': 'tail width'}; // where a key means another thing on another part. v11.31.4: the nine keys that were twice in LAB_NAME (the later won, so a mouth's fn read 'nod rate' and a shell's cy 'collar y') live here now, one entry each
-function labSlider(path, name, q, val, ref, F, p) {
-  const label = LAB_NAME_BY[(p && p.kind ? p.kind : lab.v.core.kind) + '.' + name] || LAB_NAME[name] || name;
-  if (q.k === 'b')
-    return '<label class="row"><span>' + label + '</span><input type="checkbox" data-path="' + path + '"' + (val ? ' checked' : '') + '></label>';
-  if (q.k === 's') return '<label class="row"><span>' + label + '</span>' + labSel(path, q.opts, val) + '</label>';
-  if (q.k === 'l') return '';
-  const qb = bandOf(q, F, p),
-    mul = q.k === 'len' || q.k === 'z' ? ref : 1,
-    lo = qb.x[0] * mul,
-    hi = qb.x[1] * mul,
-    b0 = qb.b[0] * mul,
-    b1 = qb.b[1] * mul,
-    v = +val,
-    step = q.k === 'n' ? 1 : (hi - lo) / 200;
-  const out = v < b0 || v > b1;
-  return (
-    '<label class="row' +
-    (out ? ' out' : '') +
-    '" title="' +
-    (out ? 'past the believable band ' + b0.toFixed(2) + ' – ' + b1.toFixed(2) : 'believable ' + b0.toFixed(2) + ' – ' + b1.toFixed(2)) +
-    '"><span>' +
-    label +
-    '</span><input type="range" data-path="' +
-    path +
-    '" min="' +
-    lo +
-    '" max="' +
-    hi +
-    '" step="' +
-    step +
-    '" value="' +
-    v +
-    '"><b>' +
-    (q.k === 'n' ? v : v.toFixed(2)) +
-    (LAB_UNIT[q.k] ? '<i>' + LAB_UNIT[q.k] + '</i>' : '') +
-    '</b></label>'
-  );
+// A control's name, unit and range are the registry's (creatures_spec.js paramOf, v11.70): LAB_NAME, LAB_NAME_BY and LAB_UNIT lived here to
+// v11.69, the name a file away from the range it named, so a control could have one without the other
+function labSlider(path,owner,key,p,F){
+  const q=paramOf(owner,key,p,F),label=q.label,val=q.val;
+  if(q.k==='b')return '<label class="row"><span>'+label+'</span><input type="checkbox" data-path="'+path+'"'+(val?' checked':'')+'></label>';
+  if(q.k==='s')return '<label class="row"><span>'+label+'</span>'+labSel(path,q.opts,val)+'</label>';
+  if(q.k==='l')return '';
+  const v=+val,step=q.k==='n'?1:(q.hi-q.lo)/200,out=v<q.b0||v>q.b1;
+  return '<label class="row'+(out?' out':'')+'" title="'+(out?'past the believable band ':'believable ')+q.b0.toFixed(2)+' – '+q.b1.toFixed(2)+'"><span>'+label+'</span><input type="range" data-path="'+path+'" min="'+q.lo+'" max="'+q.hi+'" step="'+step+'" value="'+v+'"><b>'+(q.k==='n'?v:v.toFixed(2))+(q.unit?'<i>'+q.unit+'</i>':'')+'</b></label>';
 }
 function labProfile(path, prof) {
   let h = '<div class="prof">';
@@ -434,7 +215,6 @@ function labPanelHTML() {
   const s = lab.v,
     d = lab.d,
     F = compileFrame(s),
-    ref = F.L,
     core = CORES[s.core.kind],
     gr = GRAMMAR[s.clade];
   let h =
@@ -465,7 +245,7 @@ function labPanelHTML() {
     '<div class="sec" id="lab-core"><div class="hd">core</div><label class="row"><span>kind</span>' +
     labSel('core.kind', gr.cores.filter(c => c === s.core.kind || labOk('co', c)), s.core.kind) +
     '</label>';
-  for (const k in core.params) h += labSlider('core.' + k, k, core.params[k], s.core[k], ref, F, s.core);
+  for (const k in core.params) h += labSlider('core.' + k, s.core.kind, k, s.core, F);
   h +=
     '<label class="row"><span>beat</span>' +
     labNum('core.beat.0', (s.core.beat || [1.5, 0.9])[0], 0.1, 0.1, 12) +
@@ -481,7 +261,7 @@ function labPanelHTML() {
     const def = PARTS[p.kind];
     if (!def) return;
     const req = labIsReq(p, gr, core),
-      styles = labStyles(p.kind, s.clade, p.style),
+      styles = labStyles(p.kind, s.clade, p.style, s.core.kind),
       open = lab.open[i] !== false;
     h +=
       '<div class="part' +
@@ -503,17 +283,17 @@ function labPanelHTML() {
       for (const k of paramsFor(p.kind, p.style)) {
         if (k === 'prof' || k === 'pairs' || k === 'rr') continue;
         if (p.snap && labHidden(p, k)) continue;
-        h += labSlider('parts.' + i + '.' + k, k, def.params[k], p[k], ref, F, p);
+        h += labSlider('parts.' + i + '.' + k, p.kind, k, p, F);
       }
       if (p.prof) h += '<div class="hd2">profile</div>' + labProfile('parts.' + i + '.prof', p.prof);
       h += '</div>';
     }
     h += '</div>';
   });
-  const kinds = Object.keys(PARTS).filter(k => PARTS[k].clades.indexOf(s.clade) >= 0 && (labStyles(k, s.clade).length > 0 || (!stylesFor(k, s.clade).length && labOk('pt', k + ':'))));
+  const kinds = Object.keys(PARTS).filter(k => labStyles(k, s.clade, undefined, s.core.kind).length > 0); // a kind is offered when one of its styles is the clade's and stands on this core (v11.70: every kind has a style since the registry, so the no-style branch went)
   h +=
     '<label class="row"><span>add</span><select data-act="add"><option value="">—</option>' +
-    kinds.map(k => '<option value="' + k + '">' + k + ' (' + labStyles(k, s.clade).join(', ') + ')</option>').join('') +
+    kinds.map(k => '<option value="' + k + '">' + k + ' (' + labStyles(k, s.clade, undefined, s.core.kind).join(', ') + ')</option>').join('') +
     '</select></label></div>';
   // the coat
   const pal = typeof s.coat === 'string' ? PAL[s.coat] : s.coat,
@@ -664,6 +444,7 @@ function labLoad(spec) {
   lab.spec = labClone(spec);
   if (!lab.spec.core.beat) lab.spec.core.beat = [1.5, 0.9];
   lab.pend = true;
+  lab.note = '';
   lab.open = {};
   lab.hi = -1;
   labBuild();
@@ -722,6 +503,10 @@ function labOnInput(e) {
     }
     if (v === 'chain') lab.spec.core.beat = [2.2, 0.8];
     if (v === 'bell') lab.spec.core.beat = [1.6, 0];
+    // v11.70: what the last core's parts leave behind — a part the new core is itself (a tail under a chain body: two tails) or that has no style standing on it goes; a style that cannot stand there (withdraw off the shelled body) becomes the first that can
+    const cl=lab.spec.clade,n0=lab.spec.parts.length;lab.spec.parts=lab.spec.parts.filter(p=>!PARTS[p.kind]||stylesFor(p.kind,cl,v).length>0);
+    for(const p of lab.spec.parts){if(!PARTS[p.kind])continue;const ok=stylesFor(p.kind,cl,v);if(ok.indexOf(p.style||PARTS[p.kind].styles[0])<0){for(const k in p)if(k!=='kind'&&k!=='mirror')delete p[k];p.style=ok[0];}}
+    if(lab.spec.parts.length<n0){lab.open={};lab.hi=-1;lab.note=(n0-lab.spec.parts.length)+' part'+(n0-lab.spec.parts.length>1?'s':'')+' the '+v+' cannot carry: removed';}
   }
   if (path === 'core.shape' && v === 'lathe' && !lab.spec.core.prof) lab.spec.core.prof = SPECS.veil.core.prof.map(p => [p[0] * 0.3, p[1] * 0.3]); // a sac drawn as a lathe: start from the veil's profile at a third
   const ms = /^parts\.(\d+)\.(style|where)$/.exec(path);
@@ -855,7 +640,7 @@ function labOnSelect(e) {
   } else if (t.dataset.act === 'add') {
     const k = t.value;
     if (!k) return;
-    const st = labStyles(k, lab.spec.clade)[0];
+    const st = labStyles(k, lab.spec.clade, undefined, lab.spec.core.kind)[0];
     const p = {kind: k};
     if (st) p.style = st;
     lab.spec.parts.push(p);

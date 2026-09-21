@@ -1,5 +1,15 @@
 # HANDOFF — tethys
 
+**v11.70 (21 Sep 2026): the registry pass.** The person's complaint of 20 Sep (the creator's parts "duplicates, or blank, or parts from another
+animal type"). `test/registry.js` (in `--test`) walks everything the lab offers through the real panel; on v11.69: 62 of 505 offers did not
+build, 105 had a blank control, 32 a duplicate name, none crossed a clade. One registry now (creatures_spec.js): `PARTS[kind].reg` — a style's
+clades, cores and params — and every parameter's label, unit, bands and default on its own line, read through `paramOf`; `STYLE_CLADES`, `PSTYLE`,
+`LAB_NAME`, `LAB_NAME_BY` are gone. Fixed: a coat lacking a colour (the sac and every shell failed in the lab), parts on a core that cannot carry
+them, lists without defaults, false names off the shared table, a core change keeping the last core's parts. 578 of 578 now; all 42 species
+compile identically. **Ask first** the six judgement calls in CHANGELOG v11.70 — first whether a style worn on one core only (the bean's clam
+valves on a trunk) counts as "another animal type", since that is one word per style in the registry. Next in the creator: one segmented body
+with a smoothing term, then direct manipulation and the studio (the lab's camera still frames by `size`).
+
 **v11.69 (21 Sep 2026): the first loop, the finback only (LINEAGE §13.1–2).** `src/line.js`: the slot carries the line — lives with their
 tracks (a sample every 5 s, run-length coded, from now on) and their broods. `x` lays a clutch on the floor (a slowblood, grown; the cost is a
 0.2-day cooldown until the player has hunger). A brood is a record that survives an unload (`BROOD_SURVIVE` 0.8 a day, the stand-in for §8); its young
@@ -39,9 +49,8 @@ become ledger entries, which wants a sparse per-variant table, a tree of populat
 know who begat whom), and a derived `DEFS` (role, prey, reach, diet, envelope) — the load-bearing gap in the creator plan. The shrine
 after the run needs a track log recorded from the first version. **Ask first**: §11 (what the body you leave does the second after you
 leave it; whether the hatch moment needs a warning; may a new founder be another clade; do your variants know each other; the budget's
-first numbers). The creator's own cleanup — the part registry's duplicates, blanks and cross-clade styles, then one segmented body with
-a smoothing term, then direct manipulation and the studio — is agreed but unwritten; `LINEAGE.md` §13 assumes the registry pass lands
-before the creator opens at a hatch.
+first numbers). The creator's own cleanup — the part registry (built v11.70), then one segmented body with
+a smoothing term, then direct manipulation and the studio — is agreed; the last three are unwritten.
 
 **v11.67 (16 Sep 2026): the flora variety pass.** SEAFLOOR §2 built: the sessile life varies with the fields, not only with depth, and nothing
 reads an island. The three variants of an `eco` species are its exposure ecotypes now (grow.js `ecoK` from `expo` at the instance, the same rng
