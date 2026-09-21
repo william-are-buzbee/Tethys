@@ -1,6 +1,6 @@
-# LINEAGE.md — the line across generations: the brood, the switch, the mutation, and the magic that is admitted
+# LINEAGE.md — the line across generations: a full life, the brood it leaves, the mutation, and the magic that is admitted
 
-**Status: design, 20 Sep 2026, nothing built. The person's answers are in (§10) and are folded through the body of this doc.** Written
+**Status: design, 20 Sep 2026, nothing built. The person's answers are in §12 and are folded through the body of this doc.** Written
 at the head of the creator pass (the person, 20 Sep: the creator becomes the default start of the game, and the game becomes "a genetic
 lineage game where you can trace your ancestry, lives and activity levels"). Upstream: `PLANET.md` (the clades and their limits),
 `CLADES.md` (the three signatures), `COMBAT.md` (death, and `slotDeath` as built), `CREATOR.md` (the spec, the compiler, the lab as it
@@ -29,7 +29,7 @@ whatever animals the player looses into it and let them succeed or fail on the s
 | the word | what it is in the code |
 |---|---|
 | a **world** | a slot: `curSave` plus the ledger's five tables and the clock (save.js, `SAVE_V`) |
-| a **line** | the slot's `deaths[]` plus, new, the specs those animals wore, where each one went, and the tree of descent nodes (§8) |
+| a **line** | the slot's `deaths[]` plus, new, the specs those animals wore, where each one went, and the brood records of §8 |
 | a **life** | one animal: `player`, a `clade`, a spec, injuries (`arms`, `regrow`, `lost`) |
 | a **death** | `slotDeath(cause)` — writes `{cause, day, playT}` to the slot, returns to the menu with the cause as its note |
 | a **brood** | `layEggs` — a knot on the floor, hatching after `ECO.hatch × mass^¼` days, eaten down by scavengers, counted by the ledger |
@@ -39,16 +39,17 @@ whatever animals the player looses into it and let them succeed or fail on the s
 The line is a short list on the slot: `{spec, born, died, cause, playT, parent, track}`. That is the whole record, and the shrine (§9)
 is a read of it.
 
-## 3. The three starts: r and K, and how many chances you get
+## 3. The three starts: r and K, and what your death finds waiting
 
 Reproduction is a clade fact, not a game setting (the person, 20 Sep: "that works"). The three modes fall out of the clades as already
-written, and — now that §4's brood model is in — they turn out to set two things at once: **how many chances you get to switch**, and
-**how well the broods you never claim do without you.**
+written, and — now that a life only ends in a death (§4) — they set two things at once: **how many clutches a life gets to leave**, and **how
+well those young do without you**, which together are the odds that your death finds anything alive to continue as.
 
 ### Ringmouths — spawn once and die (semelparous, extreme r)
 The cephalopod fate, honest for a soft fast-growing animal with no skeleton: grow hard, breed once, senesce, die.
 
-- One clutch, many small eggs, at the end of the life. **One switch moment, and it is forced**: the parent is dying anyway.
+- One clutch, many small eggs, at the end of the life. **The spawning and the death are the same event**, so the handover is forced and
+  the timing is not yours: you breed and you go.
 - Unclaimed young: many, cheap, mostly eaten. A ringmouth variant establishes by numbers or not at all.
 - The feeling: a run. You build toward one spawning, and dying before it ends the line outright.
 - The person's "adults die deliberately once they lose control" is this, and it needs no cognition system: it is the clade's biology.
@@ -56,7 +57,8 @@ The cephalopod fate, honest for a soft fast-growing animal with no skeleton: gro
 ### Slowbloods — breed again and again (iteroparous, indifferent)
 Iron blood, a skeleton, a long slow life. Several clutches, little invested in each, no interest in the young.
 
-- **Several switch moments over a life** — the clade where the choice in §4 is really a choice.
+- **Several clutches over a life**, so several separate insurances against a bad day — the clade where breeding is a running decision
+  rather than a finale.
 - Unclaimed young: the shark answer. The adult does not know them and may eat them. Middling odds.
 - The feeling: a career. Death is the loss of everything you grew, if nothing of yours is left alive.
 
@@ -64,36 +66,34 @@ Iron blood, a skeleton, a long slow life. Several clutches, little invested in e
 Vanadium blood, an exoskeleton, `MOULT` already in the game (soft after a moult, hardening over `MOULT.soft` days × mass^¼).
 
 - Few large eggs, guarded at a den; a brooding parent is pinned to a place and vulnerable.
-- **Few switch moments, but the unclaimed young actually survive.** This is the clade whose loosed variants seed the world best, and the
-  only clade where staying with the young is honest.
+- **Few clutches, but the young actually survive.** This is the clade whose loosed variants seed the world best, and the only clade
+  where staying with the young is honest — and where a death is most likely to find a grown child waiting.
 - The feeling: a siege. You choose the den and defend it, and the moult is the recurring danger inside one life.
 
 ### Drifters — later (the person, 20 Sep: "maybe later")
 Not playable in the first cut. If they come, the alternation of generations (polyp and medusa — *a different animal per generation*) is
 the obvious and the strange loop, and it would need its own pass.
 
-## 4. The loop: the brood, the moment, the switch
+## 4. The loop: one full life at a time
 
-This is the person's model of 20 Sep, and it replaces the death-triggered handover that the first draft of this doc had. The difference
-matters: **switching is a live choice you make while healthy, and death is the fallback that usually fails.**
+**A life ends in a death, always** (the person, 20 Sep, deciding §11.1): you do not step out of a healthy body. You breed, you shape
+what you breed, you go on living, and when the animal dies you continue as one of its children — if it left any. *"A full life is a good
+place to start for each creature."* Swapping while alive may come later; it is not the first version, and nothing below depends on it.
 
-1. **You breed as you play**, and **the editor opens at conception, not at the hatch** (the person, 20 Sep). Mating *is* the trip to the
-   creature editor: the egg is fertilised, the genetic future of that animal is fixed at that instant, and that is the only honest
-   moment to be choosing its DNA. Whether the thing is sentient or alive yet is a separate question and not this one's.
+1. **You breed as you play**, and **the editor opens at conception, not at the hatch**. Mating *is* the trip to the creature editor: the
+   egg is fertilised, the genetic future of that animal is fixed at that instant, and that is the only honest moment to be choosing its
+   DNA. Whether the thing is sentient or alive yet is a separate question and not this one's.
 2. **You may decline.** Opening the editor and changing nothing is a legitimate move — you bred, the generation counter goes up, the
    child is a copy. The editor is the *opportunity* at conception, not a toll on it.
-3. **The clutch runs its hatch clock** whether you are there or not, carrying whatever DNA you gave it.
-4. **At the hatch there is a moment.** If you are present, you may take one of the hatchlings and become it. **The moment passes**: take
-   it or carry on as you are. There is no menu later, no queue of unclaimed bodies waiting on you.
-5. **A switch is immediate and in place.** No skip, no pause, no summary screen: you are the hatchling, at the clutch, in the world as it
-   stands, with whatever is around you still around you. The parent's body is simply no longer yours (§3: for a ringmouth it is dying
-   anyway; for the others it is an animal now). What becomes of your loosed brood is decided the way every other species' fate is
-   decided — by the off-screen model, over days, as time passes normally (ecology.js, `ECO_STEP`).
-6. **What you do not claim goes to nature.** r-selection is unkind and should be: most broods come to nothing, some establish, a few do
-   well. **Occupying a child is not a guarantee of survival — it is a large thumb on the scale**, and that asymmetry is the whole reason
-   the switch feels like something.
-7. **Death looks for your living children.** Find one and you become it, where it is. Find none — **the save is over** (the person:
-   "There is no grace. No clutch, the save is over.")
+3. **The clutch runs its hatch clock** whether you are there or not, carrying whatever DNA you gave it. What becomes of it is decided the
+   way every other species' fate is decided — by the off-screen model, over days, as time passes normally (ecology.js, `ECO_STEP`).
+4. **Your children live their own lives in front of you.** They hatch, they grow, some follow you (§5), most die; the ones that last are
+   ordinary animals of the world that happen to carry your work. You are not managing them and cannot become them while you live.
+5. **You die**, and the game looks for your living children. Find one and you continue as it, **where and as it is** — which may be a
+   juvenile at the clutch if you died young, or a grown animal halfway across the world if you died old. Find none and **the save is
+   over** (the person: "There is no grace. No clutch, the save is over.")
+6. **What you never see again is everything else.** The other children, the den, the body you just lost: outside the line from that
+   moment. One child carries it on.
 
 **Your own children, and only them** (the person, 20 Sep — grandchildren struck, misread on the first pass): the eligible set is what
 the body you are wearing produced itself. **Not siblings, not parents, not grandchildren.** A child you never claimed will breed out
@@ -104,16 +104,19 @@ Two things fall out of that, and both are the point:
 
 - **Every life must breed for itself.** "You must produce your own genetic line with each selection." Inheriting a good body buys you
   nothing if you do not use it; a life that never mates is the end of the save whatever the rest of the line achieved.
-- **A switch throws away everything but the body you took.** The clutch-mates, the den you left them at, everything else that parent
-  made — outside your line from that moment. The choice at the hatch is therefore not "which body is better" but "am I done with
-  everything this body made", which is a much better question to be asked while a clutch is opening.
+- **Breeding is insurance, and the premium is real.** With no switch while alive, a clutch is the only thing standing between a bad
+  fight and the end of the save — but mating costs the materials the child is built from (§6) and the time you spend getting to it. An
+  animal that breeds early is safe and poor; one that breeds late is rich and one mistake from nothing.
 
 The consequence is worth stating plainly, because it is the game: **your survival at death depends on whether the animals you designed
-and abandoned were good enough to live without you.** That is the simulation grading your creature work, in its own currency, with no
+and set loose were good enough to live without you.** That is the simulation grading your creature work, in its own currency, with no
 appeal. Nothing else in this project has that property.
 
-**New open questions this raises (§11): whether the hatch moment needs a warning (you must be near the clutch, so you must have chosen
-to go back for it — which is good, and is a door), and what happens to the body you leave at a switch while you are standing next to it.**
+**And the loop now has a shape the first draft did not**: each body is a whole life with a beginning, a middle and an end, and the
+creator is something you visit *during* a life rather than between them. The generations are episodes, not respawns.
+
+**New open questions this raises (§11): which child you get when several are alive, and what happens if the only thing you leave is a
+clutch that has not hatched yet.**
 
 ## 5. The animals you do not become — your children, your old bodies, the founders
 
@@ -287,12 +290,12 @@ coordinates and days in a form that could be exported.
 
 ## 11. Open (20 Sep 2026)
 
-1. **Is the hatch still a moment at all, now that the editing happens at conception?** Two readings of 20 Sep and the doc needs one:
-   either you may take a hatchling at its hatch *and* fall back to a living child at death (what §4 assumes), or occupying is only ever
-   the thing you do when the current body dies and the hatch is just a birth you watch. The first gives the switch a price; the second
-   is simpler and makes every generation a full life.
-2. **Does the hatch moment need a warning**, or is being there the point (you must have gone back for the clutch — which is a door, and
-   probably the right answer)?
+1. **Which child do you get** when several are alive at your death — your choice from a list, the nearest, the oldest, or the one the
+   world has treated best? (A choice is the obvious answer and makes the shrine's map mean more; the nearest is the one that needs no
+   interface at all.)
+2. **What if the only thing you leave is a clutch that has not hatched?** It counts as a living child by §4, but you cannot be a body
+   that does not exist yet. Either the world runs on to the hatch — which is not the switch-time skip that was struck, but it is a
+   skip — or an unhatched clutch does not count and the save ends. This is the one hole the death-only loop leaves.
 3. **May a new founder** in the same slot be another clade? (A hatchling may not — decided.)
 4. **How far may a "preset, mutated" founder move** from its preset, and how fast does that loosen over generations (§5)?
 5. **How far may a child vary from its parent** (§5's "not allowed to vary too far") — a hard cap on the diff, or just what the budget
@@ -309,8 +312,8 @@ coordinates and days in a form that could be exported.
 2. **The three clade modes** as §3 has them.
 3. **No grace**: no living descendant, the save is over.
 4. **Drifters**: maybe later.
-5. **The brood model** of §4 — lay, keep playing, choose at the hatch, the moment passes, the unclaimed go to nature. **No time skip**
-   (20 Sep): a switch is immediate and in place, and the world decides your brood's fate in its own time.
+5. **The brood model** of §4 — you breed as you play, the young live their own lives, and the world decides their fate in its own time.
+   **No time skip** at a handover, and (20 Sep, second pass) **no handover while alive**: see 16.
 6. **The budget is physics**: the body plan's mass and materials, paid for by eating; the numbers are playtest numbers.
 7. **The magic is admitted, not explained**, and marked by the sparkle (§7).
 8. **No clade change** for a hatchling.
@@ -326,6 +329,10 @@ coordinates and days in a form that could be exported.
 14. **The budget grows with the generation** (§6), against the mass and materials the body still has to be fuelled with.
 15. **The home of the sparkle** (§7b): an island of creatures that mutate as the player does, reached by following the wisp on a
     current. Endgame, and the box the larger-than-life animals go in so the rest of the world stays strict.
+16. **You only take a child when the current body dies** (§4, answering the first pass's open question; the person, 20 Sep: *"a full
+    life is a good place to start for each creature"*). There is no hatch moment and no stepping out of a healthy animal. **Swapping
+    while alive is left open for later** — it would be an addition to this loop, not a change to it, so nothing built against §4 has to
+    be undone if it arrives.
 
 ## 13. Build order
 
@@ -334,13 +341,13 @@ Each step is playable and tells the person something; the expensive answers (§8
 1. **The line on the slot, and the track log.** `{spec, born, died, cause, playT, parent, track}`, recorded from the first version,
    because the shrine cannot be retrofitted onto runs that were not logged. A crude shrine page on top of `worldmap.js` to prove it.
 2. **Player reproduction, one clade** (the slowblood — the current default start): a real clutch with your spec on it, surviving an
-   unload as a record on the line. **The hatch moment and the switch**, with the parent's spec unchanged. The smallest complete loop,
-   and it needs no creator work at all.
+   unload as a record on the line, hatching into ordinary young. **Death continues as one of them**, with the parent's spec unchanged.
+   The smallest complete loop, and it needs no creator work at all — the death-only rule makes it smaller than the first draft's.
 3. **The brood records and death's search** — the records of §8, the model growing and killing them, and the question "is a child of
    mine alive, and where". This is the point at which the sparse-entry work has to be real, and the first version where an unclaimed
    brood can outlive you.
-4. **The editor at conception**: the parent's spec loaded, the diff priced as materials (§6), decline allowed, the child let go or
-   occupied at the hatch. Needs the creator's registry pass to have landed first, or the bill prices nonsense.
-5. **The sparkle** (§7) — small, and it should arrive with the first switch so the tell exists from the beginning.
+4. **The editor at conception**: the parent's spec loaded, the diff priced as materials (§6), declining allowed, the child let go into
+   the world. Needs the creator's registry pass to have landed first, or the bill prices nonsense.
+5. **The sparkle** (§7) — small, and it should arrive with the first handover so the tell exists from the beginning.
 6. **The other two modes**: the ringmouth's one spawning and scheduled death; the hingeshell's brood and den.
 7. **§8.2's derived `DEFS`**, and with it variants as real ledger entries, marketshare, and the shrine's ecology tab.

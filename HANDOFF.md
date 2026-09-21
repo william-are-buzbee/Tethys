@@ -1,7 +1,9 @@
 # HANDOFF — tethys
 
-**v11.67.2 (20 Sep 2026): the lineage answered further, and the size ceiling raised.** The editor opens at **conception**, not at the
-hatch — mating is the trip to the creature editor, and changing nothing is allowed. **Grandchildren are struck**: only your own children
+**v11.67.3 (20 Sep 2026): the lineage answered further, and the size ceiling raised.** **A life only ends in a death**: there is no
+hatch moment and no stepping out of a healthy body — you breed, you live, and when the animal dies you continue as one of its children
+if it left any (swapping while alive is left open for later, as an addition rather than a change). The editor opens at **conception**,
+not at the hatch — mating is the trip to the creature editor, and changing nothing is allowed. **Grandchildren are struck**: only your own children
 are eligible, so descent is a flat list of brood records, not a tree. **Editing is not occupying** — shape a child and let it go, make
 several variants from one build, and the sociable ones follow you; your old body is an ordinary animal running the ordinary AI over its
 own history and may ignore or attack you. The mutation budget **grows with the generation** against the materials the body must be
@@ -11,8 +13,8 @@ disagreeing literals in the lab (the size field is a *claim*; `s` is the lever �
 update loop's bare 90 and 150 so a giant is pushed against and animated at full rate as far as it is drawn; nothing changes at today's
 sizes. `CREATOR.md` "The size ceiling" is the audit: hosting a giant needs a creature that is not owned by one 215 m cell, a range term
 in the ledger (the same one `SEAFLOOR.md` §6 leaves open), a draw past the 1600 m far plane, and an upper term on `derive`'s speed.
-**Ask first**: `LINEAGE.md` §11.1 — with the editing at conception, is the hatch still a moment you may take a body at, or is occupying
-only what happens when the current body dies?
+**Ask first**: `LINEAGE.md` §11 — which child you continue as when several are alive at your death (a choice, or the nearest), and the
+one hole the death-only loop leaves: what happens when the only thing you left is a clutch that has not hatched yet.
 
 **v11.67.1 (20 Sep 2026): `LINEAGE.md`, designed, not built.** The creator is to become the start of the game, so the life-to-life loop
 was decided first. The frame: one admitted wrench (the player) in a simulation that otherwise keeps its rules; `DIRECTION.md`'s "not a

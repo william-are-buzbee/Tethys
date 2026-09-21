@@ -4443,3 +4443,27 @@ The person's second round of answers on `LINEAGE.md`, and the first code against
 - **Unseen, ask in this order**: nothing else was built. `LINEAGE.md` §11 is the open list, and its first question is the one that
   matters — now that the editing happens at conception, is the hatch still a moment you may take a body at, or is occupying only ever
   what happens when the current body dies?
+
+## v11.67.3 — a full life for each creature (20 Sep 2026)
+
+`LINEAGE.md` §11.1 answered (the person: *"I'll say for now that it's #2, but in the future, maybe you'll be able to swap without dying.
+But a full life is a good place to start for each creature."*). Doc only; no code.
+
+- **You only take a child when the current body dies.** No hatch moment, no stepping out of a healthy animal. §4 is rewritten as one
+  full life at a time: you breed, you shape what you breed at conception, your young hatch and live their own lives in front of you
+  (some following you, most dying), and your death continues as one of them — **where and as it is**, a juvenile at the clutch if you
+  died young, a grown animal across the world if you died old. **Swapping while alive is left open for later**, and is an addition to
+  this loop rather than a change to it, so nothing built against §4 has to be undone if it arrives.
+- **What it does to the shape**: each body is now a life with a beginning, a middle and an end, and the creator is something you visit
+  *during* a life rather than between them — the generations are episodes, not respawns. It also makes the first build step smaller
+  than the first draft's, since there is no hatch interface to write (§13.2).
+- **And it gives breeding a price.** With no switch while alive, a clutch is the only thing between a bad fight and the end of the save,
+  but it costs the materials the child is built from (§6): breed early and be safe and poor, breed late and be rich and one mistake from
+  nothing. §3's clade modes are re-read in that light — they set how many clutches a life leaves and how well those young do alone,
+  which together are the odds that a death finds anything alive at all. The ringmouth's spawning and death being one event is now the
+  clade that has no choice about any of it.
+- §11's open list is the residue: **which child** you continue as when several are alive (a choice, or the nearest — a choice makes the
+  shrine's map mean more; the nearest needs no interface), and **an unhatched clutch at death**, which counts as a living child by §4
+  but is not a body you can be. That is the one hole the death-only loop leaves: either the world runs on to the hatch, which is a skip
+  of a different kind to the one struck, or an unhatched clutch does not count and the save ends.
+- **Unseen**: doc only, nothing to look at.
