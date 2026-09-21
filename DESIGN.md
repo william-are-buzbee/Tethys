@@ -1705,6 +1705,15 @@ the pads; bodies and arms in `creatures_ai.js` after the creatures have moved, t
 at a carcass, or wounds; the grab (right mouse, r) holds. The player's food is arrow squid, needles and scuttlers, and what it kills. Open question, never answered: should clades differ in *what they can reach* (crevices for soft-arm,
 surface air for finback)? Any persistence, or is a clean cold start the point?
 
+**The editor at conception (v11.72, `line.js`; LINEAGE §13.4).** `x` no longer lays at once: `playerLay` checks the floor and the cooldown and
+`conceiveOpen` opens the lab as the creator on the parent's spec (`lab.conceive = {parent, gen, budget, at, price}`; the clade locked, `p` off).
+`conceivePrice(parent, child)` prices the diff off the registry (`BUDGET`: `param` 1 per believable band, `extreme` ×2 outside it, `toggle` 0.25,
+`list` 0.5, a part `add` 1 / `remove` 0.5 / `style` 0.75 × its registry cost, `core` 6, `size` 4 per doubling, `coat` 0.3) against
+`conceiveBudget(gen)` = `base` 3 + `gen` 1.5 per generation behind the parent. `conceiveClose`: unchanged or declined lays a copy; changed within
+the budget lays the child's spec and plays the sparkle on the clutch; over the budget it refuses and the lab stays. The cooldown goes with the
+child's derived mass (`LINE.cool` 0.2 days at `LINE.coolM` 1.69 t, the life's `coolS`) — the stand-in for §6's fuel until the player has hunger.
+No hard cap on the distance from the parent: the budget is the cap (LINEAGE §11.5, open).
+
 **The line (v11.69, `line.js`; LINEAGE.md §13.1–2).** The slot carries `line`, a list of lives, the last the one played: `{spec, preset, born, grown, died,
 cause, playT, parent, track, lay, broods}` — times on the world clock `t`, `track` a sample every `LINE.trackS` 5 s of play run-length coded (`[x,y,z]`,
 `[x,y,z,k]` for k equal ones). **Laying** (`x`, `playerLay`): a slowblood, grown, on the floor under water (`LINE.near` 3 m, the floor below −4 m, clear of

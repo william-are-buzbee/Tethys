@@ -98,6 +98,13 @@ canvas{display:block;outline:none;touch-action:none}
 #lab .sw{display:flex;align-items:center;gap:5px;font-size:11px;opacity:.85}
 #lab .sw input{width:22px;height:18px;padding:0;border:1px solid rgba(200,215,225,.3);background:none;cursor:pointer}
 #lab .note{font-size:11px;letter-spacing:.08em;opacity:.7;line-height:1.6;margin-top:6px}
+#lab .cv{margin-bottom:18px;padding:8px 10px 10px;border:1px solid rgba(200,215,225,.22);border-radius:2px;background:rgba(255,255,255,.03)}
+#lab .cv.over{border-color:rgba(224,176,96,.7)}
+#lab .cv.over .note{color:#e0b060;opacity:1}
+#lab .cv .row.it{margin:2px 0;min-height:16px;font-size:12px;opacity:.85}
+#lab .cv .row.it>span:first-child{width:auto;flex:1}
+#lab .cv button{flex:1}
+#lab .cv button[disabled]{opacity:.35;cursor:default}
 #lab .warn{font-size:11px;letter-spacing:.08em;line-height:1.6;margin-top:6px;color:#e0b060}
 #lab .warn.dim{color:rgba(224,176,96,.6)}
 #lab .btns{flex-wrap:wrap}

@@ -4781,3 +4781,61 @@ took the chase at 21 m, reached 10.6 m/s on its burst and had the picker 2.2 s l
 5. The small walkers (scuttle, wedge) a third slower; the rasp bolting at 3.2.
 6. How the big hunters read now that they answer at 0.4–0.6 of the old urgency (`ACC_REF`): heavier, or sluggish?
 
+
+## v11.72 — the editor at conception (21 Sep 2026)
+
+LINEAGE §13.4, the finback only (the other two clades' modes are §13.6). **Laying is the trip to the editor**: `x` on the floor, with the
+conditions v11.69 asked (a slowblood, grown, the cooldown past, the floor under you), opens the lab as the creator over the world — as `l` in
+play does — loaded with your own spec (line.js `conceiveOpen`). The clade is locked: the `from` row is gone, and `labLoad` refuses a spec of
+another clade (a saved creature of your own clade may be loaded; it is priced like any other change). `p` places nothing while the window is
+open. A block at the head of the panel is the bill — the generation, the total against the budget, the six dearest items, and two buttons.
+
+- **Close without changes = decline** (§4.2): the clutch is a copy of the parent, the brood is recorded with its generation, no sparkle —
+  a copy is what any animal lays. `decline: a copy` does the same from any state.
+- **Close with changes, within the budget**: the clutch carries the child's spec (its id the parent's with the generation, `fin-2`), the
+  young hatch as a kind of their own off that spec (`lineKind`, through v11.71's `defPhysics`), and **the sparkle plays** on the clutch
+  (§7: "when you successfully close the mutation window"; `sparkStart(at)` takes a place in the world now).
+- **Over the budget the lab will not commit** and says why: the hint and the panel name the total, the budget and the dearest item; `lay the
+  clutch` is disabled; `l` and esc stay in the window. Take something back, or decline. There is no way out that lays nothing — opening the
+  window was the mating.
+
+**The budget (line.js `BUDGET`, one table, a comment per key; first numbers, to be moved by play).** The diff between child and parent, both
+validated, priced off the v11.70 registry (`paramOf`): `param` 1 for a number moved across its whole believable band, pro rata, the stretch
+outside the band × `extreme` 2, under `eps` 0.005 free; `toggle` 0.25 for a switch, a choice, the beat, the pattern; `list` 0.5 for a
+profile redrawn; a part `add`ed 1 × its registry cost (twice mirrored), `remove`d 0.5 ×, its `style` swapped 0.75 × and then the numbers
+the two styles share priced as moves; the `core`'s kind changed 6; `size` 4 per doubling or halving of the scale or the claimed half-length,
+whichever moved more; the `coat` 0.3 for every colour across its whole range. Parts are paired by kind in order. The name, the depth and the
+floor switch are free. **The budget grows with the generation**: `conceiveBudget(gen)` = `base` 3 + `gen` 1.5 per generation behind the
+parent — 3 for the founder's child, 6 for the third life's (a new core), 16.5 for the tenth's. **No hard cap on the distance from the
+parent: the budget is the cap** — LINEAGE §11.5 is still the person's; this is the default until they answer.
+- **The fuel half of §6 is time, for now.** The body paid for by eating needs the player's hunger, which is not built; until it is, a clutch's
+  cooldown goes with the child's derived mass: `LINE.cool` 0.2 game days for a child of `LINE.coolM` 1.69 t (the finback preset's), in
+  proportion otherwise, floored at a quarter (`layClutch`; the life carries `coolS`). The knob says so where it lives.
+- **The child plays on its own numbers.** `lifeClade` takes the preset by the child's own spec (`presetFor`), and everything else is
+  v11.71's: speed, accel and turn off the build.
+- **Not this pass**: disposition and followers (they need derived `DEFS`, §8.2), the ringmouth's and the hingeshell's modes, a tuner for `BUDGET`.
+
+**Tests.** `test/player.js` §5: x opens the lab as the creator with nothing laid; the budget by generation; another clade refused; a declined
+conception (a copy, generation 2, no sparkle); the cooldown; a tail lengthened by 0.6 of its band priced 0.6 and committed, the clutch carrying
+it, the sparkle, the cooldown by mass; four times the scale (8 of 3) refused with nothing laid, then declined; a death with only the edited
+clutch continued as the child, grown on its own derived speed, accel and turn, and its own conception opening at generation 2's budget. §4's
+layings decline (what they laid before). **`test/live.js`'s hunt window is 180 s on the low tier** (`HUNT_S`): its check is 'anything was killed', and the
+low tier loads so few hunters that 60 s held exactly one kill at v11.70.1, one at v11.71 and none on this run — a coin flip, not a finding (the
+high tier's 60 s: 7, 4, 9). 180 s holds two or three. `--test` green on both tiers.
+
+**Seen** in the app's browser: x on the shelf at (300, 60) opening the panel with the conception block, no `from` row and no locks; the
+tail's lobe dragged to 1.3 m through the panel's own slider and the bill reading "tail lobe length 0.45 of 3.0, within the budget"; the scale
+at 4.2 turning the block amber — "8.45 of 3.0 … over the budget by 5.45: take something back, or decline", the lay button greyed, `l` refused
+with the same words on the hint; the scale put back and the clutch laid (`fin-2`, price 0.45); the death, and the child: a hatchling at
+0.55 of the body and 6.0 m/s, grown at 8.1 m/s (measured 8.3 over two seconds) against the parent's 6.2, its long tail on the body.
+
+**Found.** 0.45 points of tail bought +31% speed and no mass: `derive`'s tail lobes weigh nothing and drag almost nothing (`area` 0.05 of
+the lobe). The budget prices the move, not what it buys — honest only as far as the calculator is. A lobe's mass and drag are the next term.
+
+**Unseen, ask in this order:**
+1. **The sparkle on the clutch**: the pane reported no viewport and the harness's canvas was 500 px in an 800 px page, so the star's place
+   and size at 1600×900 were not judged (it drew). Does it read at the clutch under you in third person?
+2. §11.5, still yours: is the budget the only cap on how far a child may move, or is there a hard one?
+3. The first numbers: is 3 points enough to feel like a choice at generation 2 (a new pair of fins is 2–3; a longer tail 0.5)?
+4. The world runs while the window is open (as `l` in play always has): a predator can arrive while you edit. Pause it?
+5. The lab frames the child among the weed where you laid — the studio (CREATOR, size ceiling item 6) would fix that.

@@ -42,15 +42,16 @@ else if(!E.hatched)bad.push(E.laid+' clutches laid and none hatched');
 else console.log('  first clutch at game day '+first.toFixed(2)+', '+E.laid+' laid and '+E.hatched+' hatched by day '+E.day);
 // ---- 2. the hunt ----
 __step(600);const k0=__hunt().kills;
-for(let k=0;k<30;k++){__step(120);__samp();} // 60 s of play, sampled every 2 s
+const HUNT_S=process.env.TIER==='low'?180:60; // v11.72: the low tier loads so few hunters that 60 s held one kill at v11.70.1 and none or one since (a coin flip, and the check below is 'any'); 180 s holds two. The high tier's 60 s holds 4-9
+for(let k=0;k<HUNT_S/2;k++){__step(120);__samp();} // HUNT_S of play, sampled every 2 s
 const H=__hunt();
-console.log('\n  the hunters over 60 s of play (kills '+(H.kills-k0)+', starved '+H.starved+', carcasses '+H.carcasses+'):');
+console.log('\n  the hunters over '+HUNT_S+' s of play (kills '+(H.kills-k0)+', starved '+H.starved+', carcasses '+H.carcasses+'):');
 console.log('  kind          role      seen   hunger   at 1.00   hunting   nearest prey   detect');
 for(const r of H.rows)console.log('  '+r.kind.padEnd(13)+r.role.padEnd(9)+String(r.n).padStart(5)+r.hunger.toFixed(2).padStart(9)
   +(r.hi.toFixed(0)+'%').padStart(10)+(r.ch.toFixed(0)+'%').padStart(10)+(r.near<0?'-':r.near.toFixed(0)+' m').padStart(15)+r.det.toFixed(0).padStart(9));
 const hunters=H.rows.filter(r=>r.role==='hunter'),hi=hunters.reduce((a,b)=>a+b.hi*b.n,0)/Math.max(1,hunters.reduce((a,b)=>a+b.n,0));
 console.log('  '+hi.toFixed(0)+'% of the hunter role sat at hunger 1.00 (the cast, HUNT_SEEK/HUNT_CAST, took this from 13% to 9% on the shelf)');
-if(H.kills===k0)bad.push('nothing was killed in 60 s of play');
+if(H.kills===k0)bad.push('nothing was killed in '+HUNT_S+' s of play');
 if(!hunters.some(r=>r.ch>0))bad.push('no hunter chased anything in 60 s of play');
 if(hi>25)bad.push(hi.toFixed(0)+'% of hunters are starving and not eating (was 13% at v11.31.1)');
 if(bad.length){console.error('live: FAILED — '+bad.join('; '));process.exit(1);}

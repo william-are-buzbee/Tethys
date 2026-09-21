@@ -37,6 +37,7 @@ const lab = {
   open: {},
   hi: -1,
   sec: 'species',
+  conceive: null, // the editor at conception (v11.72, line.js conceiveOpen): {parent, gen, budget, at, price} while the window is open over a laying
   player: false // the creator (v11.47): opened from the menu's `creator` word; only the species, clades, cores and part styles the profile has seen are offered (save.js PROFILE.seen, labOk)
 };
 function labOk(k,v){return !lab.player||seen(k,v);} // k: 'sp' | 'cl' | 'co' | 'pt'
@@ -218,8 +219,10 @@ function labPanelHTML() {
     core = CORES[s.core.kind],
     gr = GRAMMAR[s.clade];
   let h =
+    (lab.conceive ? conceiveHTML() : '') + // the conception's bill, over everything (line.js, v11.72); not a .sec — labReadout counts those
     '<div class="nav">' + LAB_SECS.map(k => '<a data-go="' + k + '"' + (k === lab.sec ? ' class="on"' : '') + '>' + k + '</a>').join('') + '</div>';
   h += '<div class="sec" id="lab-species"><div class="hd">species</div>';
+  if (!lab.conceive) // at conception the body is the parent's: nothing else is loaded, and a child never changes clade (LINEAGE §12.8)
   h +=
     '<label class="row"><span>from</span><select data-act="load"><option value="">—</option>' +
     LAB_CLADES.filter(c => labOk('cl', c)).map(c => '<option value="new:' + c + '">new ' + c.replace(/s$/, '') + '</option>').join('') +
@@ -393,6 +396,8 @@ function labReadout() {
   tmp.innerHTML = labPanelHTML();
   const secs = tmp.querySelectorAll('.sec');
   if (secs[4] && el[4]) el[4].innerHTML = secs[4].innerHTML;
+  const cv = lab.conceive && labPanel.querySelector ? labPanel.querySelector('#lab-cv') : null;
+  if (cv) cv.outerHTML = conceiveHTML();
   const hd = el[2] && el[2].querySelector ? el[2].querySelector('.hd .v') : null;
   if (hd) hd.textContent = lab.d.cost + ' points';
 }
@@ -444,6 +449,10 @@ function labMsg(m) {
   if (el) el.textContent = m;
 }
 function labLoad(spec) {
+  if (lab.conceive && spec && spec.clade !== lab.conceive.parent.clade) {
+    labMsg('a child never changes clade');
+    return;
+  }
   lab.spec = labClone(spec);
   if (!lab.spec.core.beat) lab.spec.core.beat = [1.5, 0.9];
   lab.pend = true;
@@ -537,6 +546,10 @@ function labOnClick(e) {
   if (t.dataset.go) {
     const el = document.getElementById('lab-' + t.dataset.go);
     if (el && el.scrollIntoView) el.scrollIntoView({behavior: 'smooth', block: 'start'});
+    return;
+  }
+  if (act === 'cv-lay' || act === 'cv-decline') {
+    conceiveClose(act === 'cv-decline');
     return;
   }
   if (act === 'fold') {
@@ -768,6 +781,7 @@ function labLeave() {
     lab.b = null;
   }
   lab.player = false;
+  lab.conceive = null;
   if (mode === 'menu') {
     menuPage('main');
     layoutMenu();
@@ -850,12 +864,13 @@ addEventListener('keydown', e => {
     labEnter();
     return;
   }
-  if (mode === 'play' && e.code === 'KeyP' && lab.v) {
+  if (mode === 'play' && e.code === 'KeyP' && lab.v && !lab.conceive) {
     labDrop();
     return;
   }
   if (mode !== 'lab') return;
-  if (e.code === 'KeyL' || e.code === 'Escape') labLeave();
+  if ((e.code === 'KeyL' || e.code === 'Escape') && lab.conceive) conceiveClose(false); // closing the window is the laying (line.js, v11.72): refused over the budget
+  else if (e.code === 'KeyL' || e.code === 'Escape') labLeave();
   else if (e.code === 'Space') {
     e.preventDefault();
     if (lab.b) lab.act = 0;
@@ -864,7 +879,7 @@ addEventListener('keydown', e => {
     lab.spin = !lab.spin;
     const c = labPanel.querySelector ? labPanel.querySelector('[data-act=spin]') : null;
     if (c) c.checked = lab.spin;
-  } else if (e.code === 'KeyP') labDrop();
+  } else if (e.code === 'KeyP' && !lab.conceive) labDrop();
 });
 canvas.addEventListener('mousedown', e => {
   if (mode !== 'lab' || e.button !== 0) return;

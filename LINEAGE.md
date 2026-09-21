@@ -302,7 +302,7 @@ coordinates and days in a form that could be exported.
 3. **May a new founder** in the same slot be another clade? (A hatchling may not — decided.)
 4. **How far may a "preset, mutated" founder move** from its preset, and how fast does that loosen over generations (§5)?
 5. **How far may a child vary from its parent** (§5's "not allowed to vary too far") — a hard cap on the diff, or just what the budget
-   affords?
+   affords? *(v11.72 builds the default — no hard cap, the budget is the cap — until this is answered.)*
 6. **How is disposition expressed in the creator** (§5's followers)? It is the first thing in the editor that is behaviour rather than
    body, and `DEFS` has no term for it — the same gap as §8.2.
 7. **Drifters** (§3): later, or never?
@@ -361,7 +361,10 @@ Each step is playable and tells the person something; the expensive answers (§8
 4. **The editor at conception**: the parent's spec loaded, the diff priced as materials (§6), declining allowed, the child let go into
    the world. Needs the creator's registry pass to have landed first, or the bill prices nonsense.
    *(The registry pass landed v11.70: a parameter is `paramOf(owner, key, part, frame)` — label, unit, type, bands, default, value — creatures_spec.js.)*
+   *(Built v11.72, the finback: `x` opens the lab as the creator on the parent's spec, the clade locked; closing unchanged lays a copy, closing
+   changed within the budget lays the child and plays the sparkle, over the budget the lab will not commit. line.js `BUDGET` prices the diff off
+   the registry and grows with the generation; the fuel half of §6 is a cooldown by the child's derived mass until the player has hunger.)*
 5. **The sparkle** (§7) — small, and it should arrive with the first handover so the tell exists from the beginning. *(Built v11.69 for the
-   handover only: a screen-space four-point star, `starPath`, with a short trail.)*
+   handover; v11.72 for the closed mutation window, on the clutch: a screen-space four-point star, `starPath`, with a short trail.)*
 6. **The other two modes**: the ringmouth's one spawning and scheduled death; the hingeshell's brood and den.
 7. **§8.2's derived `DEFS`**, and with it variants as real ledger entries, marketshare, and the shrine's ecology tab.
