@@ -9,6 +9,11 @@
 // clearance: a buried trap sits low). reach is centre-to-centre: how far an animal can bite. Since v11.31.1 the bite test floors it
 // at the two bodies' own contact distance (creatures_ai.js reachOf, BITE_M), so a reach shorter than the biter's nose plus the
 // prey's body no longer means it can never bite what is in front of it — 45 of the 58 predator/prey pairs here are such a pair.
+// v11.71 (the person, 21 Sep 2026: "a universal logic of how fast an animal moves based on its size and mass and such"): no row carries a speed, an
+// accel or a turn — defPhysics below reads them off the build (creatures_spec.js derive) for every kind, as the player's are. What stays by hand is
+// behaviour: pace (the share of its top speed an animal goes about at when nothing hunts it and it hunts nothing — a hunter's chase is its top speed,
+// so a hunter has none; the filter feeders and the floor's grazers amble at a fifth), flee:true (it bolts, at its top speed), cruise, cruiseF, burst,
+// detect. Still absolute, and the next candidates: lunge and strike.speed (a burst over the top speed).
 // strike {tell, dur, speed, range}: the tell then the strike (creatures_ai.js); burst {on, off}: burst-and-coast; preyClade: the
 // player is prey only as that clade; calm: ignores threats; deep: keeps below the chemocline; stand: the watcher's standoff.
 // Two masses, and they are not the same number (v11.32). The cube of size was written six times between here,
@@ -20,55 +25,60 @@ const BODY_MIN=0.6;
 function bioMass(d){return d.size*d.size*d.size;}
 function bodyMass(d){return Math.max(BODY_MIN,bioMass(d));}
 const DEFS={
-  darter:{build:()=>compile(SPECS.darter),stock:8,size:0.6,speed:3.6,flee:5.5,hp:1,edible:true,food:14,role:'boid',turn:7},
-  glim:{build:()=>compile(SPECS.glim),size:0.55,speed:3.0,flee:5,hp:1,edible:true,food:12,role:'boid',turn:7},
-  arrow:{build:()=>compile(SPECS.arrow),size:1.0,speed:5.8,hp:1,edible:true,food:24,role:'hunter',prey:['darter','flicker','scuttle','sifter'],detect:14,reach:0.9,dmg:0,biteCD:1,home:26,cruise:8,turn:5,cruiseF:0.5,cool:2},
-  grazer:{build:()=>compile(SPECS.grazer),stock:3,size:2.6,venom:{kind:'sting'},speed:2.3,flee:4.2,hp:70,role:'graze',home:32,floor:true,turn:1.5}, // mortal since v11.26: the ridge's and the sickle's meal (it was 1e9 and every hunt ended bored)
-  veil:{build:()=>compile(SPECS.veil),size:16,speed:1.4,hp:1e9,role:'wander',home:200,cruise:70,turn:0.35,cruiseF:1},
-  great:{build:()=>compile(SPECS.great),size:6,speed:1.0,ram:5,dmg:12,radius:9,reach:5.2,hp:1e9,role:'coil',home:45,cruise:10,turn:0.8,cruiseF:1},
-  ridge:{build:()=>compile(SPECS.ridge),size:9,speed:7.8,hp:140,role:'hunter',prey:['player','grazer','picker','plough'],detect:46,reach:6.6,dmg:32,biteCD:1.5,home:240,cruise:60,turn:1.4,cruiseF:0.4,cool:5},
-  ortho:{build:()=>compile(SPECS.ortho),size:8,speed:9.5,hp:90,role:'hunter',prey:['player','needle','darter','grazer','picker'],detect:40,reach:5.6,dmg:24,biteCD:1.2,home:220,cruise:70,turn:1.6,cruiseF:0.4,cool:5},
-  abyssal:{build:()=>compile(SPECS.abyssal),size:15,immune:true,speed:9.2,hp:400,role:'hunter',prey:['player','comb'],cycle:10,detect:85,reach:10,dmg:55,biteCD:1.8,home:420,cruise:200,turn:1.0,cruiseF:0.45,cool:6},
-  eel:{build:()=>compile(SPECS.eel),size:4,speed:6.4,hp:55,role:'hunter',prey:['player','darter','flicker','sifter'],detect:17,reach:4.0,dmg:16,biteCD:1.1,home:40,cruise:14,turn:2.5,cruiseF:0.35,cool:4},
-  lurker:{build:()=>compile(SPECS.lurker),size:2.4,venom:{kind:'paralyse',t:7,against:{slowbloods:1,ringmouths:1}},hp:45,role:'ambush',prey:['player','darter','flicker','rasp','scuttle','needle','grazer','wedge','sifter'],radius:9,lunge:14,reach:3.2,dmg:20,turn:4,lodNear:75},
+  darter:{build:()=>compile(SPECS.darter),stock:8,size:0.6,pace:0.65,flee:true,hp:1,edible:true,food:14,role:'boid'},
+  glim:{build:()=>compile(SPECS.glim),size:0.55,pace:0.6,flee:true,hp:1,edible:true,food:12,role:'boid'},
+  arrow:{build:()=>compile(SPECS.arrow),size:1.0,hp:1,edible:true,food:24,role:'hunter',prey:['darter','flicker','scuttle','sifter'],detect:14,reach:0.9,dmg:0,biteCD:1,home:26,cruise:8,cruiseF:0.5,cool:2},
+  grazer:{build:()=>compile(SPECS.grazer),stock:3,size:2.6,venom:{kind:'sting'},pace:0.55,flee:true,hp:70,role:'graze',home:32,floor:true}, // mortal since v11.26: the ridge's and the sickle's meal (it was 1e9 and every hunt ended bored)
+  veil:{build:()=>compile(SPECS.veil),size:16,pace:0.19,hp:1e9,role:'wander',home:200,cruise:70,cruiseF:1},
+  great:{build:()=>compile(SPECS.great),size:6,pace:0.14,ram:5,dmg:12,radius:9,reach:5.2,hp:1e9,role:'coil',home:45,cruise:10,cruiseF:1},
+  ridge:{build:()=>compile(SPECS.ridge),size:9,hp:140,role:'hunter',prey:['player','grazer','picker','plough'],detect:46,reach:6.6,dmg:32,biteCD:1.5,home:240,cruise:60,cruiseF:0.4,cool:5},
+  ortho:{build:()=>compile(SPECS.ortho),size:8,hp:90,role:'hunter',prey:['player','needle','darter','grazer','picker'],detect:40,reach:5.6,dmg:24,biteCD:1.2,home:220,cruise:70,cruiseF:0.4,cool:5},
+  abyssal:{build:()=>compile(SPECS.abyssal),size:15,immune:true,hp:400,role:'hunter',prey:['player','comb'],cycle:10,detect:85,reach:10,dmg:55,biteCD:1.8,home:420,cruise:200,cruiseF:0.45,cool:6},
+  eel:{build:()=>compile(SPECS.eel),size:4,hp:55,role:'hunter',prey:['player','darter','flicker','sifter'],detect:17,reach:4.0,dmg:16,biteCD:1.1,home:40,cruise:14,cruiseF:0.35,cool:4},
+  lurker:{build:()=>compile(SPECS.lurker),size:2.4,venom:{kind:'paralyse',t:7,against:{slowbloods:1,ringmouths:1}},hp:45,role:'ambush',prey:['player','darter','flicker','rasp','scuttle','needle','grazer','wedge','sifter'],radius:9,lunge:14,reach:3.2,dmg:20,lodNear:75},
   // drifters (DRIFTERS.md): no eyes, no hunting; they sting what touches them. surface: rides the wave (ys under the crest's origin)
   jelly:{build:()=>compile(SPECS.jelly),size:1.4,hp:1e9,role:'drift',reach:1.4,dmg:4,noOrient:true},
   deepbell:{build:()=>compile(SPECS.deepbell),size:4.5,hp:1e9,role:'drift',reach:4.2,dmg:8,noOrient:true,lodNear:90},
   sailer:{build:()=>compile(SPECS.sailer),size:1.8,hp:1e9,role:'sail',dmg:6,noOrient:true,surface:true,ys:-0.15,lines:0.9,lodNear:130},
   greatsailer:{build:()=>compile(SPECS.greatsailer),size:4.5,hp:1e9,role:'sail',dmg:10,noOrient:true,surface:true,ys:-0.3,lines:1.4,lodNear:230},
   // legs: walks on the strand and the sea floor alike; the only thing that is at home out of the water
-  scuttle:{build:()=>compile(SPECS.scuttle),stock:4,size:0.7,speed:2.4,flee:3.8,hp:1,edible:true,food:10,role:'graze',home:18,floor:true,legs:true,turn:5,cruiseF:0.5,scav:30},
+  scuttle:{build:()=>compile(SPECS.scuttle),stock:4,size:0.7,pace:0.63,flee:true,hp:1,edible:true,food:10,role:'graze',home:18,floor:true,legs:true,cruiseF:0.5,scav:30},
   // The roster (PLANET.md), placed v10.7: size is the roster's half-length in metres; the stats are first guesses, tuned from what the
   // person sees. No temperature model yet (the basker is quick everywhere; PLANET Hooks), no moulting, no detection modes.
-  rasp:{build:()=>compile(SPECS.rasp),stock:8,size:0.5,speed:0.7,flee:1.2,hp:1,edible:true,food:8,role:'graze',home:10,floor:true,turn:2,cruiseF:0.6,scav:12},
-  watcher:{build:()=>compile(SPECS.watcher),size:1.8,speed:2.6,hp:1e9,role:'watch',home:30,floor:true,detect:26,stand:6,turn:2.5,cruiseF:0.4,scav:50},
-  pall:{build:()=>compile(SPECS.pall),size:9,speed:1.2,hp:1e9,role:'wander',home:160,cruise:60,turn:0.3,cruiseF:0.8,deep:true,lodNear:110},
-  needle:{build:()=>compile(SPECS.needle),size:0.9,speed:5.2,flee:6,hp:1,edible:true,food:16,role:'hunter',prey:['flicker','darter','sifter'],detect:12,reach:1.2,dmg:0,biteCD:1,home:24,cruise:6,turn:5,cruiseF:0.5,cool:2},
-  basker:{build:()=>compile(SPECS.basker),size:5,venom:{kind:'sting'},speed:7.2,hp:120,role:'hunter',prey:['player','picker','grazer','needle','cinder'],detect:32,reach:4.6,dmg:22,biteCD:1.4,home:70,cruise:25,turn:1.6,cruiseF:0.4,cool:5},
-  stone:{build:()=>compile(SPECS.stone),size:3,hp:200,role:'trap',prey:['player','picker','rasp','grazer','plough'],cycle:5,detect:2.8,reach:3.0,dmg:22,strike:{tell:0.15,dur:0.35},cool:2.5,turn:1.5,floor:true,clear:0.8},
-  crusher:{build:()=>compile(SPECS.crusher),size:4,speed:5.6,hp:110,role:'hunter',prey:['rasp','scuttle','player','wedge'],preyClade:'coil',scav:40,detect:24,reach:4.2,dmg:28,biteCD:1.5,strike:{tell:0.3,dur:0.35,speed:9,range:1.7},home:50,cruise:14,turn:2,cruiseF:0.4,cool:4},
-  trap:{build:()=>compile(SPECS.trap),size:2,hp:60,role:'trap',prey:['player','flicker','needle','darter','scuttle','sifter'],detect:4.5,reach:3.3,dmg:24,strike:{tell:0.35,dur:0.3},cool:3,turn:6,floor:true,clear:0.45},
-  hook:{build:()=>compile(SPECS.hook),size:2.5,hp:50,role:'ambush',prey:['player','flicker','darter','needle'],hang:true,radius:11,lunge:11,reach:2.8,dmg:18,turn:3},
-  tread:{build:()=>compile(SPECS.tread),size:7,speed:0.9,hp:1e9,role:'graze',calm:true,home:90,floor:true,legs:true,turn:0.5,cruiseF:1},
-  picker:{build:()=>compile(SPECS.picker),stock:3,size:1.5,speed:1.6,flee:2.6,hp:1,edible:true,food:10,role:'graze',home:40,floor:true,legs:true,turn:2.5,cruiseF:0.6,scav:90},
-  flicker:{build:()=>compile(SPECS.flicker),stock:8,size:0.4,speed:2.8,flee:5.5,hp:1,edible:true,food:6,role:'boid',turn:8},
-  hose:{build:()=>compile(SPECS.hose),size:1.5,speed:5.5,hp:30,role:'hunter',prey:['flicker','darter'],detect:14,reach:2.2,dmg:0,biteCD:1.2,strike:{tell:0.25,dur:0.25,speed:9,range:1.8},burst:{on:0.45,off:0.9},home:30,cruise:10,turn:2.2,cruiseF:0.5,cool:2},
-  sickle:{build:()=>compile(SPECS.sickle),size:5,speed:9.5,hp:150,role:'hunter',prey:['player','needle','grazer'],detect:42,reach:6.4,dmg:30,biteCD:1.8,strike:{tell:0.5,dur:0.4,speed:17,range:2.0},burst:{on:0.7,off:1.5},home:200,cruise:50,turn:1.0,cruiseF:0.4,cool:5},
+  rasp:{build:()=>compile(SPECS.rasp),stock:8,size:0.5,pace:0.22,flee:true,hp:1,edible:true,food:8,role:'graze',home:10,floor:true,cruiseF:0.6,scav:12},
+  watcher:{build:()=>compile(SPECS.watcher),size:1.8,pace:0.43,hp:1e9,role:'watch',home:30,floor:true,detect:26,stand:6,cruiseF:0.4,scav:50},
+  pall:{build:()=>compile(SPECS.pall),size:9,pace:0.15,hp:1e9,role:'wander',home:160,cruise:60,cruiseF:0.8,deep:true,lodNear:110},
+  needle:{build:()=>compile(SPECS.needle),size:0.9,pace:0.87,flee:true,hp:1,edible:true,food:16,role:'hunter',prey:['flicker','darter','sifter'],detect:12,reach:1.2,dmg:0,biteCD:1,home:24,cruise:6,cruiseF:0.5,cool:2},
+  basker:{build:()=>compile(SPECS.basker),size:5,venom:{kind:'sting'},hp:120,role:'hunter',prey:['player','picker','grazer','needle','cinder'],detect:32,reach:4.6,dmg:22,biteCD:1.4,home:70,cruise:25,cruiseF:0.4,cool:5},
+  stone:{build:()=>compile(SPECS.stone),size:3,hp:200,role:'trap',prey:['player','picker','rasp','grazer','plough'],cycle:5,detect:2.8,reach:3.0,dmg:22,strike:{tell:0.15,dur:0.35},cool:2.5,floor:true,clear:0.8},
+  crusher:{build:()=>compile(SPECS.crusher),size:4,hp:110,role:'hunter',prey:['rasp','scuttle','player','wedge'],preyClade:'coil',scav:40,detect:24,reach:4.2,dmg:28,biteCD:1.5,strike:{tell:0.3,dur:0.35,speed:9,range:1.7},home:50,cruise:14,cruiseF:0.4,cool:4},
+  trap:{build:()=>compile(SPECS.trap),size:2,hp:60,role:'trap',prey:['player','flicker','needle','darter','scuttle','sifter'],detect:4.5,reach:3.3,dmg:24,strike:{tell:0.35,dur:0.3},cool:3,floor:true,clear:0.45},
+  hook:{build:()=>compile(SPECS.hook),size:2.5,hp:50,role:'ambush',prey:['player','flicker','darter','needle'],hang:true,radius:11,lunge:11,reach:2.8,dmg:18},
+  tread:{build:()=>compile(SPECS.tread),size:7,pace:0.17,hp:1e9,role:'graze',calm:true,home:90,floor:true,legs:true,cruiseF:1},
+  picker:{build:()=>compile(SPECS.picker),stock:3,size:1.5,pace:0.62,flee:true,hp:1,edible:true,food:10,role:'graze',home:40,floor:true,legs:true,cruiseF:0.6,scav:90},
+  flicker:{build:()=>compile(SPECS.flicker),stock:8,size:0.4,pace:0.51,flee:true,hp:1,edible:true,food:6,role:'boid'},
+  hose:{build:()=>compile(SPECS.hose),size:1.5,hp:30,role:'hunter',prey:['flicker','darter'],detect:14,reach:2.2,dmg:0,biteCD:1.2,strike:{tell:0.25,dur:0.25,speed:9,range:1.8},burst:{on:0.45,off:0.9},home:30,cruise:10,cruiseF:0.5,cool:2},
+  sickle:{build:()=>compile(SPECS.sickle),size:5,hp:150,role:'hunter',prey:['player','needle','grazer'],detect:42,reach:6.4,dmg:30,biteCD:1.8,strike:{tell:0.5,dur:0.4,speed:17,range:2.0},burst:{on:0.7,off:1.5},home:200,cruise:50,cruiseF:0.4,cool:5},
   // the raptor family's other looks (v11.9.1), placed v11.66 (the person's default: all five looks live, one each, where the build says). COMBAT.md §7's
   // finding — the hood's, lash's and ram's claws get through neither the grazer's nor the finback's hide — is answered by prey they can open: the forage
   // (dies at the touch), the ringmouths' skin, and any hingeshell at its moult (creatures_ai.js MOULT: a soft body is prey to whatever is big enough).
   // v11.10: every species whose build is compile(SPECS.x) is a spec (creatures_spec.js); the lab (#lab) edits them. A hand builder is a species without one.
-  hood:{build:()=>compile(SPECS.hood),size:5,speed:8.5,hp:150,role:'ambush',prey:['player','flicker','darter','needle','scuttle','rasp','sifter'],radius:13,lunge:12,reach:6.4,dmg:30,strikeOnLunge:true,home:40,turn:1.2,clear:0.55}, // buried on the sand flats and the lagoon floor like the trap, it lunges like the lurker (the legs and the rear flaps: a short burst up from under)
-  lash:{build:()=>compile(SPECS.lash),size:3,speed:9.5,hp:90,role:'hunter',prey:['player','needle','darter','flicker','arrow','rasp','sifter'],detect:30,reach:5.0,dmg:20,biteCD:1.5,strike:{tell:0.4,dur:0.35,speed:17,range:2.0},burst:{on:0.6,off:1.2},home:60,cruise:20,turn:1.4,cruiseF:0.4,cool:4}, // on the ledges, whips out
-  ram:{build:()=>compile(SPECS.ram),size:4,speed:7.0,hp:200,role:'hunter',prey:['sifter','flicker','darter','arrow'],detect:38,reach:5.5,dmg:34,biteCD:2.0,strike:{tell:0.6,dur:0.5,speed:14,range:2.4},burst:{on:0.8,off:2.0},home:180,cruise:45,turn:0.8,cruiseF:0.4,cool:6}, // slow and big in the open water over the flank: its blow stuns a shoal (combat.js RAM), never the player's hunter
-  comb:{build:()=>compile(SPECS.comb),size:7,speed:1.8,hp:260,role:'wander',burst:{on:1.4,off:3},home:180,cruise:60,turn:0.4,cruiseF:1},
+  hood:{build:()=>compile(SPECS.hood),size:5,hp:150,role:'ambush',prey:['player','flicker','darter','needle','scuttle','rasp','sifter'],radius:13,lunge:12,reach:6.4,dmg:30,strikeOnLunge:true,home:40,clear:0.55}, // buried on the sand flats and the lagoon floor like the trap, it lunges like the lurker (the legs and the rear flaps: a short burst up from under)
+  lash:{build:()=>compile(SPECS.lash),size:3,hp:90,role:'hunter',prey:['player','needle','darter','flicker','arrow','rasp','sifter'],detect:30,reach:5.0,dmg:20,biteCD:1.5,strike:{tell:0.4,dur:0.35,speed:17,range:2.0},burst:{on:0.6,off:1.2},home:60,cruise:20,cruiseF:0.4,cool:4}, // on the ledges, whips out
+  ram:{build:()=>compile(SPECS.ram),size:4,hp:200,role:'hunter',prey:['sifter','flicker','darter','arrow'],detect:38,reach:5.5,dmg:34,biteCD:2.0,strike:{tell:0.6,dur:0.5,speed:14,range:2.4},burst:{on:0.8,off:2.0},home:180,cruise:45,cruiseF:0.4,cool:6}, // slow and big in the open water over the flank: its blow stuns a shoal (combat.js RAM), never the player's hunter
+  comb:{build:()=>compile(SPECS.comb),size:7,pace:0.14,hp:260,role:'wander',burst:{on:1.4,off:3},home:180,cruise:60,cruiseF:1},
   // v11.66, the variety pass: five forms by mechanism (creatures_spec.js SPECS; PLANET roster)
-  sifter:{build:()=>compile(SPECS.sifter),stock:6,size:0.6,speed:2.4,flee:4.5,hp:1,edible:true,food:8,role:'boid',turn:6,mid:true}, // mid (v11.66): a swarmer of the water column, its ribbons wander at their own depth, not over the floor
-  cinder:{build:()=>compile(SPECS.cinder),stock:3,size:1.2,speed:1.4,flee:2.4,hp:1,edible:true,food:10,role:'graze',home:30,floor:true,legs:true,turn:2.5,cruiseF:0.6,scav:60,clear:0.55},
-  wedge:{build:()=>compile(SPECS.wedge),stock:4,size:0.9,speed:1.5,flee:2.6,hp:1,edible:true,food:10,role:'graze',home:14,floor:true,legs:true,turn:4,cruiseF:0.5,scav:20},
-  plough:{build:()=>compile(SPECS.plough),stock:2,size:1.6,speed:1.2,flee:2.0,hp:60,role:'graze',home:40,floor:true,legs:true,turn:1.5,cruiseF:0.6,clear:0.62},
-  relict:{build:()=>compile(SPECS.relict),size:4,speed:3.2,hp:120,role:'hunter',prey:['picker'],detect:22,reach:5.7,dmg:14,biteCD:1.5,strike:{tell:0.5,dur:0.4,speed:7,range:1.8},burst:{on:0.9,off:2.5},home:120,cruise:30,turn:0.8,cruiseF:0.4,cool:5} // slow: a life below the light on a diet of pickers
+  sifter:{build:()=>compile(SPECS.sifter),stock:6,size:0.6,pace:0.53,flee:true,hp:1,edible:true,food:8,role:'boid',mid:true}, // mid (v11.66): a swarmer of the water column, its ribbons wander at their own depth, not over the floor
+  cinder:{build:()=>compile(SPECS.cinder),stock:3,size:1.2,pace:0.58,flee:true,hp:1,edible:true,food:10,role:'graze',home:30,floor:true,legs:true,cruiseF:0.6,scav:60,clear:0.55},
+  wedge:{build:()=>compile(SPECS.wedge),stock:4,size:0.9,pace:0.58,flee:true,hp:1,edible:true,food:10,role:'graze',home:14,floor:true,legs:true,cruiseF:0.5,scav:20},
+  plough:{build:()=>compile(SPECS.plough),stock:2,size:1.6,pace:0.6,flee:true,hp:60,role:'graze',home:40,floor:true,legs:true,cruiseF:0.6,clear:0.62},
+  relict:{build:()=>compile(SPECS.relict),size:4,hp:120,role:'hunter',prey:['picker'],detect:22,reach:5.7,dmg:14,biteCD:1.5,strike:{tell:0.5,dur:0.4,speed:7,range:1.8},burst:{on:0.9,off:2.5},home:120,cruise:30,cruiseF:0.4,cool:5} // slow: a life below the light on a diet of pickers
 };
+// The physics off the build (v11.71): top is derive's speed, speed is what the AI has always read (top × pace), flee the top speed where a kind bolts,
+// turn and accel derive's. A kind made later (the lab's, the line's young) goes through the same function. accel reaches the AI through seek
+// (creatures_ai.js ACC_REF): a heavy body closes on the speed it wants more slowly than a light one.
+function defPhysics(d,spec){const st=derive(spec);d.top=st.speed;d.speed=+(st.speed*(d.pace||1)).toFixed(2);if(d.flee)d.flee=st.speed;d.turn=st.turn;d.accel=st.accel;return d;}
+for(const k in DEFS)if(SPECS[k])defPhysics(DEFS[k],SPECS[k]);
 // The world's capacity (v11.26): n is the individuals per cell of a kind at full tolerance, scaled by the cell's mean tolerance for the
 // envelope (ecology.js ecoCap; chunks.js cellW) — it is the carrying capacity K of the ledger, not a spawn count. The ledger runs at
 // 60–90% of it where nothing eats a kind and lower where something does. grp: placed in groups of that many (packs of arrows,

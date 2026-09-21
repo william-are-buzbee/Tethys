@@ -3,8 +3,9 @@
 // The player is a spec (v11.68): the numbers come off the build (statsOf: derive with the spec's locks over it), and a preset is a spec plus the
 // few numbers derive has no term for — cam (the third-person arm, m), jetImp (a jet's squeeze, an impulse), sprint (a tail's burst, a multiple of
 // speed), venom (COMBAT.md §3b: the coilshell's beak paralyses what its short arms hold) and the ability (ink: predators lose you; stun: the
-// tail-strike; withdraw: hold, invulnerable, sinking). The three presets' old hand numbers are locks on their SPECS (stats), so they play as
-// they did. A spec that is no preset takes those few from the preset of its kind (presetFor), the arm scaled by its size; the ability only if
+// tail-strike; withdraw: hold, invulnerable, sinking). v11.71: the presets carry no locks — speed, accel and turn are derive's for the player as for
+// every animal (the person, 21 Sep 2026), the contact mass is every creature's rule (bodyMass: size cubed, floored), the bite's size the lab's rule.
+// A spec that is no preset takes those few from the preset of its kind (presetFor), the arm scaled by its size; the ability only if
 // the clade is the preset's. size: the spec's half-length (disturbance, flow, contact); mass: for contact with creatures (size³ for them).
 const CLADE_PRESETS=[
   {id:'soft',name:'soft-arm',spec:'soft',jetImp:10,cam:6.5,ability:'ink'},
@@ -15,7 +16,7 @@ function presetFor(spec){const id=spec.clade==='ringmouths'?(spec.core&&spec.cor
 function playerClade(spec,pre,j){ // the player's clade object from a spec (and its preset, if it is one): what player.js, combat.js and the rest read as player.clade. j: a hatchling's scale (v11.69: ECO.juv until grown), the numbers scaled as the world's juveniles' are (creatures_ai.js scaledDef)
   pre=pre||presetFor(spec);j=j||1;const st=statsOf(spec),base=SPECS[pre.spec],same=base&&base.clade===spec.clade,k=(base&&base.size?spec.size/base.size:1)*j,sq=Math.sqrt(j);
   return {id:pre.id,name:spec===base?pre.name:(spec.id&&spec.id!==pre.spec?spec.id:pre.name),spec:spec,preset:pre,build:j===1?()=>compile(spec):()=>compile(spec,j*(spec.s||1)),juv:j<1?j:0,
-    speed:st.speed*sq,accel:st.accel,turn:st.turn,mass:st.mass*j*j*j,bite:(st.bite!==undefined?st.bite:Math.round(st.mass*3))*j*j,size:spec.size*j,jet:!!st.jet,legs:!!st.legs, // bite for a spec without the lock: the lab's DEFS rule (specExport, dmg = mass × 3)
+    speed:st.speed*sq,accel:st.accel,turn:st.turn,mass:+(Math.max(BODY_MIN,spec.size*spec.size*spec.size)*j*j*j).toFixed(3),bite:Math.round(st.mass*3+2)*j*j,size:spec.size*j,jet:!!st.jet,legs:!!st.legs, // bite for a spec without the lock: the lab's DEFS rule (specExport, dmg = mass × 3)
     sprint:pre.sprint,jetImp:pre.jetImp,cam:pre.cam*k,venom:same?pre.venom:undefined,ability:same?pre.ability:null};
 }
 const CLADES=CLADE_PRESETS.map(p=>playerClade(SPECS[p.spec],p));

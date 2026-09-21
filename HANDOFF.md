@@ -1,5 +1,15 @@
 # HANDOFF — tethys
 
+**v11.71 (21 Sep 2026): one calculator for every animal.** The person: a child's speed is derived from its body like any animal's — "a universal
+logic of how fast an animal moves based on its size and mass and such" (LINEAGE §12.20; it replaces CREATOR's decision 2 for anything in the
+world). `derive` is the one source of speed, accel and turn: `DERIVE_K` names every term (the roster's fit per mode, a jet's thrust as
+volume^(2/3), a walker by Froude off its legs, the speed ceiling `ceilL` 60 m that is neutral under 30, `flex` for a bending body); `defPhysics`
+(creatures_defs.js) writes them onto every `DEFS` kind, which keeps only behaviour by hand (`pace`, new: the share of its top speed an animal
+goes about at); accel reaches the AI through `seek` (`ACC_REF`), the facing rate goes with the speed (`TURN_MIN`); the presets' locks are gone
+and a lock is the dev lab's only. CHANGELOG v11.71 has the table of every kind and each mover's cause. **Ask first** the finback at 6.2 m/s
+(10.9 sprinting; it was 8.8 and no longer out-cruises a ridge) — the game, or a change to the preset's build; then the relict's cold, the
+flicker's lost escape (3.0 against the hose's 6.6), the ram at 10, the small walkers, and how the big hunters' slower answer reads.
+
 **v11.70.1 (21 Sep 2026): the registry answered.** The person on v11.70: "much much better … a lot of fun this time making creatures". Their six
 answers built (CREATOR.md, Fifth round): the slit the hingeshells' only; `arms:hold` off, kept; **a style is one clade's** — `spines` split into the
 slowbloods' `row` and the hingeshells' `thorns` (same build for now, a first pass; old saves migrate by `was`); back and placed valves stay two
@@ -25,10 +35,8 @@ unhatched clutch runs the world on to its hatch; none, and the save is over (the
 to another hour with nothing said.
 
 **v11.68 (21 Sep 2026): the player as a spec.** `player.clade` is `playerClade(spec, preset)`: speed, accel, turn, mass and bite from `statsOf`, the
-few numbers derive has no term for (cam, jetImp, sprint, venom, the ability) on `CLADE_PRESETS`. The three presets' old hand numbers are
-`stats` locks on their SPECS, so they play identically (`test/player.js`); derive alone is loose (the finback 7.5 m/s and 1.7 t). The save
+few numbers derive has no term for (cam, jetImp, sprint, venom, the ability) on `CLADE_PRESETS`. (The presets' `stats` locks went in v11.71.) The save
 stores the spec (`SAVE_V` 2; a version 1 record loads as its preset). Visible only in the lab: the presets' readout shows their locks.
-**Ask first** whether anything in play feels different (it should not).
 
 **v11.67.3 (20 Sep 2026): the lineage answered further, and the size ceiling raised.** **A life only ends in a death**: there is no
 hatch moment and no stepping out of a healthy body — you breed, you live, and when the animal dies you continue as one of its children

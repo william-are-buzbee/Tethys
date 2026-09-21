@@ -148,11 +148,13 @@ function growUp(c){const ch=c.chunk,a=spawn(ch,c.kind,c.pos,Math.random,{ent:c.e
   if(c.school){a.school=c.school;c.school.members.push(a);}if(c.state==='sit'){a.state='sit';}removeCreature(c);return a;}
 
 // ---------- steering ----------
-function seek(c,target,speed,dt,accel){speed*=slowOf(c);T1.copy(target).sub(c.pos);const L=T1.length();if(L<0.001)return;T1.multiplyScalar(speed/L);curComp(c,T1,speed);c.vel.lerp(T1,1-Math.exp(-accel*dt));}
+const TURN_MIN=0.35; // the least share of its turn rate a slow body keeps (the veil at a fifth of its speed turns at 0.41 rad/s; its hand number was 0.35)
+const ACC_REF=2; // 1/s: the accel the behaviours' urgencies were tuned at (the roster's median derived accel; v11.71) — seek's rate is the behaviour's urgency × the body's accel over this, so the abyssal (0.8) answers at 0.4 of what the needle (3.6) does at 1.8
+function seek(c,target,speed,dt,accel){speed*=slowOf(c);accel*=(c.def.accel||ACC_REF)/ACC_REF;T1.copy(target).sub(c.pos);const L=T1.length();if(L<0.001)return;T1.multiplyScalar(speed/L);curComp(c,T1,speed);c.vel.lerp(T1,1-Math.exp(-accel*dt));}
 // the way through the water that gives the wanted way over the ground in this current, no faster than CUR_FIGHT times the speed asked
 const CUR_FIGHT=1.2;
 function curComp(c,v,speed){if(!c.carried||!c.cur)return;v.sub(c.cur);const l=v.length(),m=speed*CUR_FIGHT;if(l>m)v.multiplyScalar(m/l);}
-function seekAway(c,from,speed,dt){speed*=slowOf(c);T1.copy(c.pos).sub(from);T1.y*=0.3;const L=T1.length()||1;T1.multiplyScalar(speed/L);c.vel.lerp(T1,1-Math.exp(-2*dt));}
+function seekAway(c,from,speed,dt){speed*=slowOf(c);T1.copy(c.pos).sub(from);T1.y*=0.3;const L=T1.length()||1;T1.multiplyScalar(speed/L);c.vel.lerp(T1,1-Math.exp(-2*(c.def.accel||ACC_REF)/ACC_REF*dt));}
 function setWander(c){
   const d=c.def,R=d.home||30;let p,fh;
   for(let k=0;k<6;k++){ // swimmers steer for wet ground only; a legged creature goes where it likes
@@ -451,7 +453,7 @@ function updateCreatures(dt0){
     const wet=sub>0.5;if(wet!==c.wet){if(dp<160&&Math.abs(c.vel.y)>2.5)splash(c.pos,Math.abs(c.vel.y)*(0.5+d.size*0.12));c.wet=wet;}
     c.pos.x=clamp(c.pos.x,-HALF+12,HALF-12);c.pos.z=clamp(c.pos.z,-HALF+12,HALF-12);
     if(!d.noOrient){if(c.face){_m.lookAt(c.face,c.pos,UP);_q.setFromRotationMatrix(_m);c.g.quaternion.slerp(_q,1-Math.exp(-(d.turn||2)*(c.turnK||1)*2*dt));} // turning to a thing (the tell, the watcher's stare)
-      else if(c.vel.lengthSq()>0.02){T2.copy(c.pos).add(c.vel);_m.lookAt(T2,c.pos,UP);_q.setFromRotationMatrix(_m);c.g.quaternion.slerp(_q,1-Math.exp(-(d.turn||2)*(c.turnK||1)*dt));}}
+      else if(c.vel.lengthSq()>0.02){T2.copy(c.pos).add(c.vel);_m.lookAt(T2,c.pos,UP);_q.setFromRotationMatrix(_m);c.g.quaternion.slerp(_q,1-Math.exp(-(d.turn||2)*(c.turnK||1)*(d.top?clamp(c.vel.length()/d.top,TURN_MIN,1):1)*dt));}} // v11.71: d.turn is the rate at the top speed (derive); a turn is speed over a radius that goes as the length, so an ambling body comes round at its pace's share of it, floored at TURN_MIN
     c.g.position.copy(c.pos);
     // the action state the anim reads: the tell and the strike are set by the behaviours above and let go here
     const st=c.st;if(c.tellT<=0&&c.strikeT<=0){st.tell*=Math.exp(-4*dt);st.strike*=Math.exp(-7*dt);if(d.role==='ambush'&&c.state!=='lunge')st.strike*=Math.exp(-7*dt);}st.jet=c.state==='chase'&&d.jetter===true;

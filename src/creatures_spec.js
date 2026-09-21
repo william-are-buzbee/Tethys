@@ -420,7 +420,7 @@ const CORES = {
         area: Math.PI * Math.max(Rm, cR) * Math.max(Rm, cR) * 0.9,
         cd: 0.65,
         jet: true,
-        jetK: 0.25
+        jetK: 0.0625 // of a mantle's jet (DERIVE_K.jet)
       };
     }
   },
@@ -2009,7 +2009,7 @@ const PARTS = {
               0.1 * l,
               F.w1 * 0.12 * p.w
             );
-        return {legs: true, thrust: n * F.w1 * F.h1 * 2};
+        return {legs: true, leg: F.h1 * 1.5 * l, thrust: n * F.w1 * F.h1 * 2};
       }
       if (S === 'placed') {
         for (const sx of [1, -1])
@@ -2017,11 +2017,11 @@ const PARTS = {
             const z = p.z + k * p.dz;
             leg(ctx.P, pal, sx * p.x, p.y, z, sx * p.kx, p.ky, p.kz + z * p.kzk, sx * p.fx, p.fy, p.fz + z * p.fzk, p.wl, p.hook || undefined);
           }
-        return {legs: true, thrust: n * 2 * p.wl * (p.kx + p.fx) * 3};
+        return {legs: true, leg: Math.hypot(p.fx, p.fy), thrust: n * 2 * p.wl * (p.kx + p.fx) * 3};
       }
       if (S === 'swim') {
         for (const sx of [1, -1]) for (let k = 0; k < n; k++) ctx.P.push(part(G.box(p.wl, p.ll, p.th), sx * p.x, p.y, p.z + k * p.dz, pal.top, {r: [0, 0, sx * p.splay * DEG]}));
-        return {thrust: n * p.ll * p.wl * 4, area: n * p.ll * p.wl};
+        return {paddle: true, thrust: n * p.ll * p.wl * 4, area: n * p.ll * p.wl}; // paddle (v11.71): a row of swimming legs is a metachronal row, the flaps' mode
       }
       if (S === 'rock') {
         // two side meshes of n paddles each, pivoted at y, rocking against each other on the beat
@@ -2042,6 +2042,7 @@ const PARTS = {
             meshes[1].rotation.x = -a;
           },
           legs: true,
+          leg: p.ll,
           thrust: n * p.ll * p.wl * 3
         };
       }
@@ -2080,6 +2081,7 @@ const PARTS = {
               for (const m of groups) m.rotation.x = p.amp * k * Math.sin(ph + m.userData.ph);
             },
             legs: true,
+            leg: Math.hypot(p.fx, p.fy),
             reach: p.fx,
             thrust: n * 2 * p.wl * (p.kx + p.fx) * 3
           };
@@ -2095,6 +2097,7 @@ const PARTS = {
             }
           },
           legs: true,
+          leg: Math.hypot(p.fx, p.fy),
           reach: p.fx * 0.8,
           thrust: n * 2 * p.wl * (p.kx + p.fx) * 2
         };
@@ -2126,6 +2129,7 @@ const PARTS = {
           }
         },
         legs: true,
+        leg: Math.hypot(p.fx, p.floor),
         thrust: n * 2 * p.wl * (p.kx + p.fx) * 3,
         mass: n * 2 * p.wl * p.wl * (p.kx + p.fx) * 2
       };
@@ -2878,7 +2882,24 @@ function compileFrame(spec) {
 // propulsors (a tail, fins, a skirt, flap rows, a jet from the mantle's volume), each a number the roster calibrates; the speed as
 // sqrt(thrust/drag) scaled so the roster's finback reads its DEFS speed; turn against length and mass, plus what the fins add;
 // no hp since v11.55 (COMBAT.md: injury is a state). mode is what the propulsors say, never a menu. Everything is at the world scale (spec.s applied).
-const DERIVE_K = {speed: 3.8, accel: 1.4, turn: 8};
+const DERIVE_K = {
+  speed: 3.15, // m/s: the top speed of a 2 m body at thrust/drag 1 on a tail. v11.71: the roster's fit — the geometric mean of derived/hand over the ten tailed kinds that swim for their life or their meal (flee where a kind has one, else speed) was 1.21 at the old 3.8, spread ×1.21
+  tdExp: 0.35, // speed against thrust/drag: a steady body's goes as the square root (drag ∝ v²); the beat slowing under load flattens it, and the roster's tails fit 0.35 from the darter to the abyssal
+  lenExp: 0.4, // speed against length: stride per beat ∝ L, beat rate ∝ L^-0.6 (muscle strain rate; Bainbridge's fish sit near L^0.5)
+  mode: {undulate: 1, flap: 1, jet: 0.95, drift: 0.4, sail: 0.25}, // the propulsor against a tail at the same thrust/drag: a metachronal row matches it (fit 0.97 over seven paddlers), a jet wastes a little more in its refill (fit 1.00 over four), a bell's pulse and a sail's windage are slow by kind
+  jet: 4, // a jet's thrust per mantle volume^(2/3): the water per pulse goes as the volume and the pulse rate as 1/length. To v11.70 it was volume × 4, so thrust/drag grew with the body and the veil derived 11.7 m/s
+  walk: 1.0, // a walker's Froude number: speed = walk × sqrt(g × leg). A leg is a pendulum; the five walkers that flee fit 0.59 of this at the old 0.6
+  walkTD: 1.5, // a walker's grip on the ground, standing in for thrust/drag in its accel
+  chamber: 0.8, // a gas-chambered shell: the drag of a wheel carried flat, and no hard jetting against a shell's own buoyancy
+  flex: 1.8, // turn, a body that bends along its whole length (the chain core) against a stiff hull of the same length: the eel's hand turn was 1.9× derive's
+  ceilL: 60, // m: the length the speed ceiling bends at (CREATOR.md, The size ceiling, item 4). Power ∝ L³ against drag ∝ L²v³ has no ceiling, but a burst is an anaerobic store that lasts ~mass^0.25 while the time to reach speed grows faster (Hirt et al. 2017: the fastest animals are mid-sized) — past ceilL speed is flat in L
+  ceilN: 4, // how sharply: the factor is (1+(L/ceilL)^n)^(-lenExp/n) — 0.999 at the abyssal's 19 m, 0.994 at 30 m, 0.93 at 60, and a 600 m body does what a 60 m one does
+  accel: 1.4, // 1/s: the rate a body closes on the speed it wants, at thrust/drag 1 and 1 t (the three presets' hand numbers fit 0.97 of this)
+  accMass: 0.15, // accel against mass: falls with it, gently — no ceiling term: a 10⁶ t body is already at 0.12 of a 1 t one's
+  turn: 8, // rad/s at 1 m long (the roster's fit over thirty kinds: 1.04, spread ×1.5 — a facing rate, the loosest of the three)
+  turnExp: 0.85, // turn against length: 0.04 rad/s at 600 m needs no ceiling either
+  turnMax: 8 // rad/s: a body under a metre turns as fast as it likes
+};
 function derive(spec0) {
   const spec = fillSpec(spec0),
     s = spec.s || 1,
@@ -2906,6 +2927,7 @@ function derive(spec0) {
     armour = 0,
     chambered = false,
     legs = false,
+    legLen = 0,
     reach = 0,
     cost = 1,
     jet = F.jet,
@@ -2931,6 +2953,8 @@ function derive(spec0) {
     if (r.armour) armour += r.armour;
     if (r.chambered) chambered = true;
     if (r.legs) legs = true;
+    if (r.leg) legLen = Math.max(legLen, r.leg);
+    if (r.paddle) flaps = true;
     if (r.reach) reach = Math.max(reach, r.reach);
     if (r.streamline) cd *= r.streamline;
     if (r.extent) {
@@ -2954,23 +2978,27 @@ function derive(spec0) {
   area *= s2;
   const dens = gr.density + armour * 0.6,
     mass = vol * dens;
-  if (jet) thrust += F.volume * (F.jetK || 4); // the jet: the mantle's volume, pulsed (a sac pulses feebly: jetK)
+  if (jet) thrust += Math.pow(F.volume, 2 / 3) * DERIVE_K.jet * (F.jetK || 1); // the jet: the mantle's volume per pulse, and the pulse rate falling as 1/length (a sac pulses feebly: jetK)
   thrust *= s2;
   const drag = Math.max(0.02, area * cd);
   const mode = F.mode === 'sail' ? 'sail' : flaps ? 'flap' : tail ? 'undulate' : jet ? 'jet' : legs ? 'walk' : 'drift';
-  // speed: a body's steady speed goes as sqrt(thrust/drag); with the beat and the size the roster's fish follow v ~ (T/D)^0.35 L^0.5
-  const raw = Math.pow(thrust / drag, 0.35) * Math.pow(Math.max(0.2, L) / 2, 0.4);
-  let speed = DERIVE_K.speed * raw * (mode === 'flap' ? 0.95 : mode === 'undulate' ? 1 : mode === 'jet' ? 0.8 : mode === 'walk' ? 0.3 : mode === 'sail' ? 0.25 : 0.4);
-  if (chambered) speed *= 0.8;
-  const accel =
-    ((DERIVE_K.accel * Math.pow(thrust / drag, 0.35)) / Math.pow(Math.max(0.3, mass), 0.15)) * (mode === 'jet' ? 1.1 : mode === 'flap' ? 1.3 : 1);
+  // speed (v11.71, one calculator for every animal): a swimmer's top speed is K × efficiency(mode) × (thrust/drag)^tdExp × (L/2)^lenExp, under the
+  // ceiling; a walker's is Froude's, sqrt(g × leg) — a leg is a pendulum, and drag is not what stops it. Everything is a named term in DERIVE_K.
+  const K = DERIVE_K,
+    Lc = Math.max(0.2, L),
+    ceil = Math.pow(1 + Math.pow(Lc / K.ceilL, K.ceilN), -K.lenExp / K.ceilN), // neutral below ~30 m (0.994 at 30), and speed flat in L past ceilL
+    td = Math.pow(thrust / drag, K.tdExp);
+  let speed = mode === 'walk' ? K.walk * Math.sqrt(GRAV * Math.max(0.02, legLen * s)) : K.speed * K.mode[mode] * td * Math.pow(Lc / 2, K.lenExp) * ceil;
+  if (chambered) speed *= K.chamber;
+  const accel = ((K.accel * (mode === 'walk' ? K.walkTD : td)) / Math.pow(Math.max(0.3, mass), K.accMass)) * (mode === 'jet' ? 1.1 : mode === 'flap' ? 1.3 : 1);
   const turnK = Math.min(
-    8,
-    (DERIVE_K.turn / Math.pow(Math.max(0.5, L), 0.85)) *
+    K.turnMax,
+    (K.turn / Math.pow(Math.max(0.5, L), K.turnExp)) *
       (1 + 0.15 * turn) *
       (mode === 'jet' ? 1.5 : 1) *
       (chambered ? 0.5 : 1) *
-      (mode === 'flap' ? 0.7 : 1)
+      (mode === 'flap' ? 0.7 : 1) *
+      (F.mode === 'undulate' ? K.flex : 1)
   );
   const buoy = chambered ? 'floats' : mass > vol * 1.05 ? 'sinks' : 'neutral';
   const plausible = [];
@@ -3001,11 +3029,13 @@ function derive(spec0) {
     plausible: plausible
   };
 }
-// The stats a species runs on: derived, with the spec's locks (spec.stats: a hand value per key) over them.
-function statsOf(spec) {
+// The stats a species runs on: derive's. v11.71 (the person, 21 Sep 2026: one universal logic for every animal): a spec's locks (spec.stats: a hand
+// value per key, CREATOR decision 2) are a tuning tool of the dev lab and nothing else — they are read only when the caller asks (locks), and only
+// the dev lab's readout and its placed creature ask. Nothing that lives in the world, the player included, runs on a lock; no SPECS entry carries one.
+function statsOf(spec, locks) {
   const d = derive(spec),
     o = Object.assign({}, d);
-  if (spec.stats) for (const k in spec.stats) if (spec.stats[k] !== undefined && spec.stats[k] !== null) o[k] = spec.stats[k];
+  if (locks && spec.stats) for (const k in spec.stats) if (spec.stats[k] !== undefined && spec.stats[k] !== null) o[k] = spec.stats[k];
   return o;
 }
 
@@ -3252,7 +3282,6 @@ const SPECS = {
     clade: 'ringmouths',
     size: 1.6,
     s: 1.0,
-    stats: {speed: 7.0, accel: 3.2, turn: 7, mass: 5, bite: 9}, // v11.68: the player preset's hand numbers (CLADES to v11.67) as locks over derive; bite: the bite's size for the blood and the debris
     coat: 'softP',
     core: {kind: 'mantle', L: 2.5, R: 0.6, beat: [1.8, 0.45]},
     parts: [
@@ -3287,7 +3316,6 @@ const SPECS = {
     clade: 'ringmouths',
     size: 1.5,
     s: 1.0,
-    stats: {speed: 4.6, accel: 1.5, turn: 3, mass: 8, bite: 6}, // v11.68: the player preset's hand numbers (CLADES to v11.67) as locks over derive; bite: the bite's size for the blood and the debris
     coat: 'coilP',
     core: {kind: 'coilbody', R: 0.46, z: 0.15, beat: [2.2, 1]},
     parts: [
@@ -3365,7 +3393,6 @@ const SPECS = {
     clade: 'slowbloods',
     size: 1.8,
     s: 1.05,
-    stats: {speed: 8.8, accel: 2.6, turn: 4.5, mass: 7, bite: 26}, // v11.68: the player preset's hand numbers (CLADES to v11.67) as locks over derive; bite: the bite's size for the blood and the debris
     coat: 'finP',
     core: {kind: 'lathe', prof: FIN_PROF, segs: 8, beat: [1.5, 0.9]},
     parts: [
@@ -4175,7 +4202,7 @@ function specExport(spec) {
   const lines = [];
   if (typeof spec.coat !== 'string')
     lines.push('// PAL: ' + id + ':' + JSON.stringify(spec.coat, (k, v) => (typeof v === 'number' ? +v.toFixed(2) : v)));
-  const d = {size: spec.size, speed: st.speed, hp: 100, role: role, turn: st.turn, cruiseF: 0.45, home: Math.round(20 + spec.size * 20)};
+  const d = {size: spec.size, hp: 100, role: role, cruiseF: 0.45, home: Math.round(20 + spec.size * 20)}; // v11.71: no speed, no turn — defPhysics reads them off the build
   if (role === 'hunter') {
     d.prey = ['darter'];
     d.detect = Math.round(10 + spec.size * 6);

@@ -338,12 +338,15 @@ function labPanelHTML() {
       k +
       '</span><span class="v">' +
       d[k] +
-      '</span><input type="checkbox" data-lock="' +
-      k +
-      '"' +
-      (st[k] !== undefined && st[k] !== null ? ' checked' : '') +
-      ' title="hold a hand value">' +
-      (st[k] !== undefined && st[k] !== null ? labNum('stats.' + k, st[k], 0.1) : '') +
+      '</span>' +
+      (lab.player // v11.71: a lock is the dev lab's tuning tool; the creator has none, and nothing in the world reads one (creatures_spec.js statsOf)
+        ? ''
+        : '<input type="checkbox" data-lock="' +
+          k +
+          '"' +
+          (st[k] !== undefined && st[k] !== null ? ' checked' : '') +
+          ' title="hold a hand value (the dev lab only: nothing in the world reads it)">' +
+          (st[k] !== undefined && st[k] !== null ? labNum('stats.' + k, st[k], 0.1) : '')) +
       '</label>';
   h +=
     '<div class="note">' +
@@ -679,7 +682,7 @@ function labOnOver(e) {
 function labDrop() {
   const s = lab.v;
   if (!s) return;
-  const st = statsOf(s),
+  const st = statsOf(s, !lab.player), // the locks: the dev lab's only (v11.71)
     b = s.behaviour || {},
     role = b.role === 'player' ? 'hunter' : b.role || 'wander';
   const spec = labClone(s),

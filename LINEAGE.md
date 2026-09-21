@@ -340,6 +340,9 @@ coordinates and days in a form that could be exported.
 18. **At death you continue as the nearest living child** (21 Sep 2026, §11.1) — no list, no interface; distance from where you died.
 19. **An unhatched clutch counts as a living child** (21 Sep 2026, §11.2): at death the world runs on to its hatch, and you are one of what hatches
     — if the run-on leaves one alive. Built (v11.69) as every cell out, the clock to the hatch, and the ledger's model catching up the gap.
+20. **A child's speed is derived from its body, like any animal's** (21 Sep 2026): "The child's speed should be derived from the animal's body
+    map like any other. Not its parent's, but there should just be a universal logic of how fast an animal moves based on its size and mass
+    and such." Built v11.71: `derive` is the one calculator for every `DEFS` kind and the player; nothing in the world runs on a lock.
 
 ## 13. Build order
 

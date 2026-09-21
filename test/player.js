@@ -1,30 +1,40 @@
-// Headless check of the player as a spec (v11.68): the three presets play on today's numbers (CLADES to v11.67, hand-typed, now locks on
-// their SPECS), a spec that is no preset takes its numbers from derive, the save carries the spec (SAVE_V 2) and a version 1 record's
+// Headless check of the player as a spec (v11.68; v11.71: one calculator): the three presets' speed, accel and turn are derive's and no species
+// ships with a lock, every DEFS kind moves on derive's numbers, the ceiling is neutral at 30 m, a spec that is no preset takes its numbers from derive, the save carries the spec (SAVE_V 2) and a version 1 record's
 // clade id loads as its preset. Same bundle and stub as the smoke test. TIER=low runs the low tier.
 const fs=require('fs'),path=require('path');
 const ROOT=path.join(__dirname,'..');
 const ORDER=fs.readFileSync(path.join(ROOT,'src','order.txt'),'utf8').split('\n').map(s=>s.trim()).filter(s=>s&&s[0]!=='#');
 let js=ORDER.map(n=>fs.readFileSync(path.join(ROOT,'src',n+'.js'),'utf8')).join('\n');
-js+='\nglobal.__pl={CLADES,SPECS,statsOf,playerClade,player,startNew,startFrom,saveNow,saveRefresh,get saveList(){return saveList;},get curSave(){return curSave;},get mode(){return mode;},SAVE_V,specToJSON};';
+js+='\nglobal.__pl={CLADES,SPECS,DEFS,derive,statsOf,playerClade,player,startNew,startFrom,saveNow,saveRefresh,get saveList(){return saveList;},get curSave(){return curSave;},get mode(){return mode;},SAVE_V,specToJSON};';
 js+='\nglobal.__line={get t(){return t;},setT(v){t=v;clockH=t*CLOCK_RATE;},DAY_S,LINE,BROOD_SURVIVE,groundAt,lay:()=>playerLay(),eggs:()=>eggs,cur:()=>lineCur(),line:()=>curSave?curSave.line:null,die:(c)=>die(c),live:(b)=>broodLive(b),young:(b)=>creatures.filter(c=>c.alive&&c.brood===b),tick:(dt)=>lineTick(dt),children:()=>lineChildren(),clear:()=>worldClear(),cells:()=>cellsAround()};';
 const tmp=path.join(require('os').tmpdir(),'tethys_player.js');
 fs.writeFileSync(tmp,'(function(){"use strict";\n'+js+'\n})();');
 require('./stub.js');require(tmp);
 const X=global.__pl;let fails=0;
 function check(ok,msg){if(!ok){fails++;console.error('  FAIL '+msg);}else console.log('  ok   '+msg);}
-// ---- 1. the presets: every number CLADES hand-typed to v11.67, literally ----
-const OLD={
-  soft:{speed:7.0,jet:true,jetImp:10,accel:3.2,bite:9,cam:6.5,turn:7,size:1.6,mass:5,sprint:undefined,venom:undefined},
-  fin:{speed:8.8,sprint:1.75,accel:2.6,bite:26,cam:7.5,turn:4.5,size:1.8,mass:7,jet:false,jetImp:undefined,venom:undefined},
-  coil:{speed:4.6,jet:true,jetImp:7,accel:1.5,bite:6,cam:6.5,turn:3,size:1.5,mass:8,sprint:undefined,venom:{kind:'paralyse',t:5,against:{slowbloods:1,ringmouths:1}}}};
-for(const id in OLD){const C=X.CLADES.find(c=>c.id===id),o=OLD[id];if(!C){check(false,id+': no preset');continue;}
-  const bad=Object.keys(o).filter(k=>JSON.stringify(!!o[k]===o[k]?!!C[k]:C[k])!==JSON.stringify(o[k]));
-  check(!bad.length,id+': '+(bad.length?bad.map(k=>k+' '+JSON.stringify(C[k])+' (was '+JSON.stringify(o[k])+')').join(', '):'speed '+C.speed+' accel '+C.accel+' turn '+C.turn+' mass '+C.mass+' bite '+C.bite+' cam '+C.cam+' as CLADES had them'));
+// ---- 1. the presets (v11.71): speed, accel and turn are derive's, as every animal's; the contact mass is the creatures' rule; the fixed few are the preset's ----
+const FIXED={soft:{jet:true,jetImp:10,cam:6.5,size:1.6,sprint:undefined,venom:undefined,ability:'ink'},fin:{sprint:1.75,cam:7.5,size:1.8,jet:false,jetImp:undefined,venom:undefined,ability:'stun'},
+  coil:{jet:true,jetImp:7,cam:6.5,size:1.5,sprint:undefined,venom:{kind:'paralyse',t:5,against:{slowbloods:1,ringmouths:1}},ability:'withdraw'}};
+for(const id in FIXED){const C=X.CLADES.find(c=>c.id===id),o=FIXED[id];if(!C){check(false,id+': no preset');continue;}
+  const d=X.derive(X.SPECS[id]),bad=Object.keys(o).filter(k=>JSON.stringify(!!o[k]===o[k]?!!C[k]:C[k])!==JSON.stringify(o[k]));
+  check(C.speed===d.speed&&C.accel===d.accel&&C.turn===d.turn,id+': speed '+C.speed+' accel '+C.accel+' turn '+C.turn+' off derive ('+d.mode+', '+d.length+' m)');
+  check(Math.abs(C.mass-Math.pow(C.size,3))<0.01,id+': the contact mass is size cubed, as for any creature ('+C.mass.toFixed(2)+')');
+  check(!bad.length,id+': the numbers derive has no term for come from the preset'+(bad.length?' — '+bad.map(k=>k+' '+JSON.stringify(C[k])).join(', '):''));
   check(C.spec===X.SPECS[id],id+': built from SPECS.'+id);}
+{const locked=Object.keys(X.SPECS).filter(k=>X.SPECS[k].stats);check(!locked.length,'no species ships with a lock'+(locked.length?': '+locked.join(', '):' ('+Object.keys(X.SPECS).length+' specs)'));
+  const hand=Object.keys(X.DEFS).filter(k=>X.SPECS[k]&&(X.DEFS[k].top!==X.derive(X.SPECS[k]).speed||X.DEFS[k].turn!==X.derive(X.SPECS[k]).turn||X.DEFS[k].accel!==X.derive(X.SPECS[k]).accel));
+  check(!hand.length,'every kind in DEFS moves on the top speed, turn and accel derive gives'+(hand.length?' but '+hand.join(', '):''));
+  const over=Object.keys(X.DEFS).filter(k=>X.DEFS[k].top&&(X.DEFS[k].speed>X.DEFS[k].top+0.01||(X.DEFS[k].flee&&X.DEFS[k].flee!==X.DEFS[k].top)));
+  check(!over.length,'no kind goes about faster than its top speed, and what bolts bolts at it'+(over.length?' but '+over.join(', '):''));
+  const lk=JSON.parse(JSON.stringify(X.SPECS.fin));lk.stats={speed:99};
+  check(X.statsOf(lk).speed===X.derive(lk).speed&&X.playerClade(lk).speed===X.derive(lk).speed&&X.statsOf(lk,true).speed===99,'a lock is read only when asked for (the dev lab): the player ignores it');
+  const big=JSON.parse(JSON.stringify(X.SPECS.ridge)),v=[1,3,6,12,24,56].map(k=>{big.s=X.SPECS.ridge.s*k;const d=X.derive(big);return d.length.toFixed(0)+' m '+d.speed;});
+  big.s=X.SPECS.ridge.s*2.8;const a=X.derive(big);big.s=X.SPECS.ridge.s*56;const b=X.derive(big);
+  check(Math.abs(a.speed/(X.derive(X.SPECS.ridge).speed*Math.pow(2.8,0.4))-1)<0.02&&b.speed<a.speed*2.2,'the ceiling: neutral at 30 m, flat past it ('+v.join(', ')+')');}
 // ---- 2. a spec that is no preset: its numbers are derive's ----
 const sick=JSON.parse(JSON.stringify(X.SPECS.sickle));sick.id='mine';
 const Cs=X.playerClade(sick),st=X.statsOf(sick);
-check(Cs.speed===st.speed&&Cs.turn===st.turn&&Cs.mass===st.mass&&Cs.accel===st.accel,'a hingeshell spec: speed '+Cs.speed+' turn '+Cs.turn+' mass '+Cs.mass+' accel '+Cs.accel+' off derive');
+check(Cs.speed===st.speed&&Cs.turn===st.turn&&Cs.accel===st.accel&&Math.abs(Cs.mass-Math.pow(sick.size,3))<0.01,'a hingeshell spec: speed '+Cs.speed+' turn '+Cs.turn+' accel '+Cs.accel+' off derive, mass '+Cs.mass);
 check(Cs.ability===null&&!Cs.venom,'a hingeshell has no preset ability and no venom (none of the presets is its clade)');
 // ---- 3. the save: the spec on the record, back as it went; a version 1 record's clade id as its preset ----
 X.startNew(Cs);X.saveRefresh();

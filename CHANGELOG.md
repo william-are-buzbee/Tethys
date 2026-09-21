@@ -4657,3 +4657,127 @@ Fifth round). Built:
   and its tail spine drawn out. The first labels ("width, of the body") were cut off by the panel's column; the fraction moved into the unit.
 - **Unseen, ask in this order**: how a hingeshell's thorns should look against a slowblood's spines, now that they may differ; whether the
   ram's blow wants its numbers on the animal (per ram, from the part) rather than one `RAM` table.
+
+## v11.71 — one calculator for every animal (21 Sep 2026)
+
+**Decided (the person, 21 Sep 2026):** "The child's speed should be derived from the animal's body map like any other. Not its parent's, but
+there should just be a universal logic of how fast an animal moves based on its size and mass and such." This replaces CREATOR's decision 2
+(derived by default, a lock per stat) for anything that lives in the world; recorded in LINEAGE §12.20 and CREATOR's Decisions.
+
+**Measured first.** v11.70.1's `derive` against the hand numbers (the "derive v11.70" column below): the active swimmers ran 0.85–1.7 of their
+hand speeds, the tails consistently ~1.4 high, and thirteen kinds were out by 2–8×. Three of those were faults in the calculator, the rest
+were hand numbers that were never top speeds:
+- **a jet's thrust grew with the body** — `volume × 4` against an area, so thrust/drag went as the length and the veil derived 11.7 m/s. Now
+  `DERIVE_K.jet × volume^(2/3)`: the water per pulse goes as the volume and the pulse rate as 1/length.
+- **a walker's speed came off thrust/drag**, which is not what stops a leg (the picker's was 125). Now Froude's: `DERIVE_K.walk × sqrt(g × leg)`,
+  the leg's length returned by every walking style of the `legs` part (`leg`).
+- **the flicker was a drifter**: a row of swimming legs was no propulsor `derive` knew. `legs:swim` returns `paddle` and counts as the flaps' mode.
+- **the hand `speed` of anything that flees or ambles was its everyday pace**, and its `flee` the top speed. The fit is against the top speed
+  (flee where a kind has one), over the kinds that swim for their life or their meal; the filter feeders, the floor's amblers and the relict
+  were left out of the fit and are listed below.
+
+**The calculator (creatures_spec.js `DERIVE_K`, every term named with its reason on its line):** top speed = `speed` 3.15 × `mode` (tail 1,
+paddles 1, jet 0.95, a bell 0.4, a sail 0.25) × (thrust/drag)^`tdExp` 0.35 × (L/2)^`lenExp` 0.4 × the ceiling × `chamber` 0.8 for a
+gas-chambered shell. Fitted by geometric mean of derived/hand per mode: tails 1.00 over ten kinds (spread ×1.21), jets 1.00 over four (×1.12),
+paddlers 0.96 over seven (×1.34), walkers 0.98 over five (×1.42). **The ceiling** (CREATOR, The size ceiling, item 4): the factor
+`(1+(L/ceilL)^ceilN)^(-lenExp/ceilN)` with `ceilL` 60 m, `ceilN` 4 — 0.999 at the abyssal's 19 m, 0.994 at 30 m, flat past 60: the ridge's build
+scaled up reads 9.6 m/s at 11 m, 14.7 at 32, 18.0 at 64, 19.1 at 128 and 19.1 at 600. The reason is a burst's anaerobic store against the time
+to reach speed (Hirt et al. 2017: the fastest animals are mid-sized). **Turn and accel need no ceiling** — turn falls as L^-0.85 (0.04 rad/s at
+600 m) and accel as mass^-0.15 — and both fit the roster as they were (turn 1.04 over thirty kinds, spread ×1.5; accel 0.97 over the three
+presets). One new turn term: `flex` 1.8, a body that bends along its whole length (the chain core) — the eel's hand turn was 1.9× derive's.
+
+**The hand numbers are gone.** No `DEFS` row carries `speed`, `turn` or `accel`: `defPhysics` (creatures_defs.js) reads `top`, `turn` and
+`accel` off the build for every kind at load, and `speed = top × pace`, `flee = top`. What stays by hand is behaviour: **`pace`** (new — the
+share of its top speed an animal goes about at; a hunter has none, its chase is its top speed), `flee: true`, `cruise`, `cruiseF`, `burst`,
+`detect`. **Accel reaches the AI for the first time**: `seek` and `seekAway` scale their urgency by the body's accel over `ACC_REF` 2
+(creatures_ai.js), so the abyssal answers at 0.4 of the old rate and the needle at 1.8. The three presets' `stats` locks are deleted; the
+player's speed, accel and turn are derive's, its contact mass is every creature's rule (size cubed, `BODY_MIN`), its bite's size the lab's rule
+(mass × 3 + 2, cosmetic). `statsOf(spec, locks)` reads a lock only when asked, and only the dev lab asks (its readout and its placed creature);
+the creator shows no lock. `specExport` no longer emits `speed` or `turn`. Still absolute and the next candidates: `lunge` and `strike.speed`.
+
+| kind | mode | L m | hand speed / flee | derive v11.70 | now: goes about / top | top moved | hand turn | now | moved |
+|---|---|---|---|---|---|---|---|---|---|
+| darter | undulate | 0.83 | 3.6 / 5.5 | 5.1 | 2.79 / 4.3 | -22% | 7 | 8 | +14% |
+| glim | undulate | 0.76 | 3 / 5 | 5 | 2.46 / 4.1 | -18% | 7 | 8 | +14% |
+| arrow | jet | 1.53 | 5.8 | 5.3 | 6.1 / 6.1 | +5% | 5 | 8 | +60% |
+| grazer | undulate | 4.84 | 2.3 / 4.2 | 5.6 | 2.59 / 4.7 | +12% | 1.5 | 2.35 | +57% |
+| veil | jet | 17.43 | 1.4 | 11.7 | 1.43 / 7.5 | +436% | 0.35 | 1.17 | +234% |
+| great | jet | 10.32 | 1 | 7.3 | 0.99 / 7.1 | +610% | 0.8 | 0.86 | +7% |
+| ridge | undulate | 10.7 | 7.8 | 11.5 | 9.6 / 9.6 | +23% | 1.4 | 1.23 | -12% |
+| ortho | jet | 8.17 | 9.5 | 9 | 8.9 / 8.9 | -6% | 1.6 | 1.05 | -34% |
+| abyssal | undulate | 19 | 9.2 | 13.1 | 10.9 / 10.9 | +18% | 1 | 0.84 | -16% |
+| eel | undulate | 8.18 | 6.4 | 9.7 | 8 / 8 | +25% | 2.5 | 2.41 | -4% |
+| lurker | jet | 4.16 | – | – | – | – | 4 | 3.73 | -7% |
+| scuttle | walk | 1.84 | 2.4 / 3.8 | 1.1 | 1.45 / 2.3 | -39% | 5 | 4.76 | -5% |
+| rasp | jet | 1.41 | 0.7 / 1.2 | 2.5 | 0.7 / 3.2 | +167% | 2 | 4.68 | +134% |
+| watcher | jet | 2.23 | 2.6 | 6.7 | 2.62 / 6.1 | +135% | 2.5 | 6.61 | +164% |
+| pall | jet | 8.8 | 1.2 | 8.9 | 1.23 / 8.2 | +583% | 0.3 | 1.98 | +560% |
+| needle | undulate | 1.89 | 5.2 / 6 | 7.9 | 5.66 / 6.5 | +8% | 5 | 4.74 | -5% |
+| basker | undulate | 9.9 | 7.2 | 8.6 | 7.1 / 7.1 | -1% | 1.6 | 2.68 | +68% |
+| stone | drift | 2.52 | – | – | – | – | 1.5 | 3.64 | +143% |
+| crusher | undulate | 7.42 | 5.6 | 7.2 | 5.9 / 5.9 | +5% | 2 | 2.16 | +8% |
+| trap | walk | 3.83 | – | – | – | – | 6 | 2.56 | -57% |
+| hook | walk | 4.16 | – | – | – | – | 3 | 2.38 | -21% |
+| tread | walk | 17.36 | 0.9 | 4.7 | 0.9 / 5.3 | +489% | 0.5 | 0.71 | +42% |
+| picker | walk | 0.97 | 1.6 / 2.6 | 4.7 | 2.42 / 3.9 | +50% | 2.5 | 8 | +220% |
+| flicker | flap | 0.87 | 2.8 / 5.5 | 1.5 | 1.53 / 3 | -45% | 8 | 6.59 | -18% |
+| hose | flap | 3 | 5.5 | 7.6 | 6.6 / 6.6 | +20% | 2.2 | 2.56 | +16% |
+| sickle | flap | 11.4 | 9.5 | 10.8 | 9.4 / 9.4 | -1% | 1 | 0.77 | -23% |
+| hood | flap | 10.3 | 8.5 | 11.5 | 10 / 10 | +18% | 1.2 | 0.86 | -28% |
+| lash | flap | 6.6 | 9.5 | 8.8 | 7.7 / 7.7 | -19% | 1.4 | 1.26 | -10% |
+| ram | flap | 9.2 | 7 | 11.5 | 10 / 10 | +43% | 0.8 | 0.95 | +19% |
+| comb | flap | 11.9 | 1.8 | 14.7 | 1.81 / 12.9 | +617% | 0.4 | 0.79 | +98% |
+| sifter | flap | 1.25 | 2.4 / 4.5 | 4.5 | 2.07 / 3.9 | -13% | 6 | 5.19 | -13% |
+| cinder | walk | 2.2 | 1.4 / 2.4 | 2.3 | 1.62 / 2.8 | +17% | 2.5 | 4.09 | +64% |
+| wedge | walk | 1.73 | 1.5 / 2.6 | 1 | 1.04 / 1.8 | -31% | 4 | 5.01 | +25% |
+| plough | walk | 3.1 | 1.2 / 2 | 1.9 | 1.44 / 2.4 | +20% | 1.5 | 3.06 | +104% |
+| relict | flap | 8.3 | 3.2 | 9.8 | 8.6 / 8.6 | +169% | 0.8 | 1.04 | +30% |
+| P:soft | jet | 3.06 | 7 | 8.7 | 8.1 / 8.1 | +16% | 7 | 5.13 | -27% |
+| P:fin | undulate | 3.62 | 8.8 | 7.5 | 6.2 / 6.2 | -30% | 4.5 | 3.08 | -32% |
+| P:coil | jet | 2.94 | 4.6 | 3.8 | 4 / 4 | -13% | 3 | 2.51 | -16% |
+
+`facing`: a creature's `turn` is now its rate at the top speed, and the facing slerp takes the share `|v|/top` of it floored at `TURN_MIN` 0.35
+(creatures_ai.js) — a turn is speed over a radius that goes as the length, so the veil ambling at a fifth of its speed comes round at 0.41 rad/s
+(its hand number was 0.35) without a hand number.
+
+**Every kind whose top speed moved more than 25%, and which side was wrong:**
+- **veil, great, pall, comb, tread, watcher** (+135% to +617%): *the hand number was not a top speed.* It was the pace of an animal that never
+  bolts and never chases; `pace` (0.19, 0.14, 0.15, 0.14, 0.17, 0.43) keeps the everyday speed to the hundredth, and the top is never used
+  today. The comb's 12.9 m/s is still too quick for a filter feeder: *derive lacks the basket's drag* (the `comb` part returns no area).
+- **rasp** (flee 1.2 → 3.2): *the hand number was a crawl.* A 1.4 m chambered jetter beside the coilshell's 4.0 at 2.9 m; its everyday 0.7 is kept by `pace` 0.22.
+- **relict** (3.2 → 8.6): *derive lacks a term* — the cold. "Slow: a life below the light" is a metabolic rate, and there is no temperature
+  model (PLANET Hooks). It needed the speed anyway: the picker it lives on now bolts at 3.9.
+- **ram** (7.0 → 10.0): *the hand number was character* ("slow and big"); the build's thrust/drag (4.8) is its kin's.
+- **picker** (flee 2.6 → 3.9): *hand low* — the longest legs for its body in the roster, and Froude reads the legs.
+- **scuttle** (3.8 → 2.3) and **wedge** (2.6 → 1.8): *derive lacks a term* — a small walker cycles its legs faster than a pendulum (a ghost
+  crab runs at a Froude number over 1); `walk` is one number for every size.
+- **flicker** (5.5 → 3.0): *derive lacks a term* — the escape is the abdomen's flick, a burst, and `tailplate`'s `flick` is priced as a steady thrust.
+- **eel** (6.4 → 8.0, +25%): *hand low* against its kin at its length and thrust/drag.
+- **the finback preset** (8.8 → 6.2, turn 4.5 → 3.1) and **the soft-arm's turn** (7 → 5.1): *the hand numbers were the player's feel*, tuned
+  above its kin — the old finback out-cruised the ridge three times its length. Under one logic it does not: 6.2 (10.9 sprinting) against the
+  ridge's 9.6, the basker's 7.1, the eel's 8.0. The player's turn is the body's facing only (the heading is the camera's).
+- **turn** moved more than 25% on seventeen kinds, both ways (the table). It is a facing rate and the loosest fit (×1.5); the slow animals'
+  hand turns were character, and the facing rule above gives most of it back. The trap's 6 → 2.6 is *hand high* (a buried ambusher's snap
+  to its prey is its strike's, not its body's).
+
+**Tests.** `test/player.js` checks the presets against `derive` (not the old literals), that no species ships with a lock, that every `DEFS`
+kind moves on derive's top, turn and accel, that nothing goes about faster than its top, that a lock is read only when asked, and the ceiling's
+shape. **combat**: the matrix is unchanged; the pin times against the finback moved by its mass (7 → 5.83: the eel's kill 2.8 → 2.7 s, the
+lash 1.1 → 1.0, the hook 1.5 → 1.4), the basker's run-down of a grazer 3.0 → 3.2 s (the grazer bolts 12% faster), the crippled finback taken
+6.0 → 6.6 s later (it is slower; so is a fifth of it). **live**: 13 → 14 clutches by day 4, kills over the 60 s window 7 → 4 (the forage's
+everyday pace fell with its top: darter 3.6 → 2.8, flicker 2.8 → 1.5, so fewer ribbons wander into a needle), the hunters' hunger within
+0.02. **census** is on paper and reads no speed: unchanged. `--test` green on both tiers.
+
+**Seen** in the app's browser (the loop driven by hand): each preset swum for six seconds — soft-arm 7.9 m/s (8.1 less its jet's pulse),
+finback 6.0 and 10.6 sprinting, coilshell 3.7; a relict (the biggest mover that hunts) put 24 m from a picker on the shelf: it wandered 5 s,
+took the chase at 21 m, reached 10.6 m/s on its burst and had the picker 2.2 s later (`test/render/v71_relict_picker.png`).
+
+**Unseen, ask in this order:**
+1. **The finback at 6.2** (10.9 sprinting): it no longer out-cruises a ridge. Is that the game — you escape by the sprint, the turn and the
+   dodge — or should the preset's *build* change (a bigger tail, a slimmer hull) so the number comes honestly? Not a lock either way.
+2. The relict's cold: a metabolic term on `derive` by the spec's `depth`, or let it be quick?
+3. The flicker at 3.0 against a hose at 6.6: every chase is lost now. A burst term for the flick (and `lunge`, `strike.speed` with it)?
+4. The ram at 10: is "slow and big" wanted back, by shortening its rows?
+5. The small walkers (scuttle, wedge) a third slower; the rasp bolting at 3.2.
+6. How the big hunters read now that they answer at 0.4–0.6 of the old urgency (`ACC_REF`): heavier, or sluggish?
+

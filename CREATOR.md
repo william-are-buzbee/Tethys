@@ -127,7 +127,7 @@ What (3) asks for, and the thing that makes a free-form body honest. First versi
 | **volume, mass** | the core's profile integrated (a lathe: πΣr²dz; a trunk: Σw·h·dz; a mantle: the cylinder), plus shells and carapaces at a higher density, plus arms | density by clade: shelled and armoured heavier; gas chambers subtract (the coil floats) |
 | **frontal area, drag** | the core's max cross-section plus raised valves, spread arms, a hood; a streamlining factor from the profile's slope at the nose | a flat-carried wheel was slow for this reason; a knife swimmer is fast |
 | **thrust** | by propulsor: tail (fin area × beat amplitude × beat rate), fins (area), flap rows (pairs × area × wave rate), jet (mantle volume × pulse rate), legs (walking only), tail flick (a burst impulse) | one number each, summed; the clade caps the rate (slowbloods by temperature later, hingeshells burst-and-coast) |
-| **speed** | thrust / drag, scaled to the roster's numbers (a 1.8 m finback at 8.8) | `cruiseF`, `accel` from thrust / mass |
+| **speed** | thrust / drag, scaled to the roster's numbers (v11.71: fitted to the whole roster per mode, not to the finback; `DERIVE_K`) | `cruiseF`, `accel` from thrust / mass |
 | **turn** | inversely with length and mass; fins and oars add | the tread turns at 0.5, a darter at 7 |
 | **mode** | the propulsors decide, never a menu: a tail + lathe = undulate; a mantle + siphon = jet; flap rows = metachronal; legs = walk; a tail flick = burst | this answers "movement is free-form and undecided": the build says how it moves |
 | **buoyancy** | gas chambers vs mass | a coil sinks slowly when withdrawn (exists); a lab creature with no chambers and a heavy shell sinks |
@@ -207,6 +207,10 @@ Not in the first cut: converting every hand builder; the player-facing UI; unloc
 
 1. Saved creatures live in the URL hash (`#lab=<base64 json>`) and on the clipboard as JSON. **No localStorage.**
 2. Derived by default, a lock per stat (`spec.stats`); a locked value overrides the calculator and is what export emits.
+   **Replaced 21 Sep 2026 (the person) for anything that lives in the world:** "The child's speed should be derived from the animal's body map
+   like any other. Not its parent's, but there should just be a universal logic of how fast an animal moves based on its size and mass and
+   such." Built v11.71: `derive` is the one source of speed, accel and turn for every `DEFS` kind and the player; no species ships with a lock;
+   the lock survives as a tuning tool in the dev lab only (`statsOf(spec, locks)`), and the creator does not show it.
 3. Any core in the clade: a ringmouth may be a jetter (`mantle`) or a shelled coil (`coilbody`). Every existing species must be
    expressible and look identical — verified for 18 species by `test/ident.js` (tris, bounds, checksum, idle and action pose).
 4. Required parts are symmetrical. A placed part may be **mirrored** for twice the points. No cap; the cost is a count.
@@ -341,7 +345,7 @@ Ranked by what would bite first. None of this is worth building before there is 
 3. **The far plane is 1600 m** (`Q.far`, 1000 on low), and under water it is the end of the world — `lodFar` clamps to `FAR × 0.7`, so a
    240 m animal disappears at 1.1 km while still subtending a large angle. Above water horizon.js already draws past the far plane; a
    giant wants the same treatment, which means a coarse bake in the horizon tier rather than a creature draw.
-4. **`derive`'s speed has no upper term.** `speed ∝ L^0.4` with a scale-invariant thrust/drag gives a 600 m body roughly six times a 6 m
+4. *(Built v11.71: `DERIVE_K.ceilL` 60 m, `ceilN` 4 — neutral under 30 m, flat past 60; and `DEFS` speeds are derive's now.)* **`derive`'s speed has no upper term.** `speed ∝ L^0.4` with a scale-invariant thrust/drag gives a 600 m body roughly six times a 6 m
    body's speed — tens of metres a second, which water does not allow. A wave-drag or power-limited term would bind at giant scale;
    any such term must be neutral below 30 m or it moves the whole roster, and `DEFS` speeds are hand-set anyway, so this is a calculator
    honesty problem rather than a gameplay one.
