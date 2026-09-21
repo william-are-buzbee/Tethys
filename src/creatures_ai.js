@@ -119,6 +119,7 @@ function spawn(ch,kind,pos,rng,opt){
   for(const m of c.lodMeshes){if(d.size>=6&&m.material===MAT)m.material=MATBIG;patternOn(m.geometry,b.pat);b.g.add(m);} // a big animal's far LOD keeps the far ghost (scene.js, addTint)
   c.shM=[];b.g.traverse(o=>{if(o.isMesh)c.shM.push(o);});c.cast=false; // the meshes that cast into the shadow map when this body is among the nearest (scene.js updateShadow)
   c.lodNear=(d.lodNear||45+d.size*4)*Q.lodNear;c.lodFar=Math.min(FAR*0.7,120+d.size*40); // lodNear on the def (v11.18): the long-appendaged are simulated from further off; a veil is drawn to 760, an abyssal to 720
+  c.nearR=Math.max(90,d.size*5);c.stepR=Math.max(150,d.size*8); // the two radii the loop's fixed 90 and 150 were (v11.67.2, CREATOR.md the size ceiling): a body to push against and to change out of sight; the distance past which it steps every other frame. Both floor at the old number, so nothing under 18 m moves — the whole roster today. A 300 m animal is pushed against and animated at full rate out to where it is still drawn
   creatures.push(c);ch.creatures.push(c);return c;
 }
 function setLOD(c,level){
@@ -186,7 +187,7 @@ function updateCarcass(c,dt,dp){
   c.pos.addScaledVector(c.vel,dt);const fh=groundAt(c.pos.x,c.pos.z)+c.def.size*0.3;c.grounded=false;if(c.pos.y<fh){c.pos.y=fh;c.vel.y=0;c.grounded=true;}
   if(c.lieQ)c.g.quaternion.slerp(c.lieQ,1-Math.exp(-1.5*dt));c.g.position.copy(c.pos);
   const mass=bioMass(c.def);c.flesh-=mass*dt/(ECO.carc*DAY_S);
-  const vis=dp<c.lodFar;c.g.visible=vis;if(vis){visibleCreatures++;setLOD(c,dp<c.lodNear?0:1);if(dp<90)nearList.push(c);} // a body to push against
+  const vis=dp<c.lodFar;c.g.visible=vis;if(vis){visibleCreatures++;setLOD(c,dp<c.lodNear?0:1);if(dp<c.nearR)nearList.push(c);} // a body to push against (c.nearR: 90, or size×5 for a giant — v11.67.2)
   if(c.flesh<=0||c.deadT>ECO.carc*DAY_S*1.5){POP.eaten+=1;removeCreature(c);}
 }
 // eating at a carcass: a mouthful a second scaled to the eater; the eater's hunger falls with it
@@ -403,12 +404,12 @@ function updateCreatures(dt0){
   for(const c of creatures){
     const d=c.def,dp=c.pos.distanceTo(player.pos);
     if(!c.alive){if(c.dead&&!c.gone&&dp<400)updateCarcass(c,dt0,dp);continue;}
-    if(c.juv>0){c.juv-=dt0;if(c.juv<=0){if(dp>90||!c.g.visible){growUp(c);continue;}c.juv=0.001;}} // grows up out of sight
-    if(c.soft){if(updateSoft(c,dt0,dp))continue;}else if(c.moultT>0){c.moultT-=dt0;if(c.moultT<=0){if((dp>90||!c.g.visible)&&!c.hold&&!c.held&&c.state!=='feed'){moult(c);continue;}c.moultT=30;}} // the moult (v11.66): hardens, or sheds, out of sight
+    if(c.juv>0){c.juv-=dt0;if(c.juv<=0){if(dp>c.nearR||!c.g.visible){growUp(c);continue;}c.juv=0.001;}} // grows up out of sight
+    if(c.soft){if(updateSoft(c,dt0,dp))continue;}else if(c.moultT>0){c.moultT-=dt0;if(c.moultT<=0){if((dp>c.nearR||!c.g.visible)&&!c.hold&&!c.held&&c.state!=='feed'){moult(c);continue;}c.moultT=30;}} // the moult (v11.66): hardens, or sheds, out of sight
     if(dp>360&&dp>c.lodFar){c.g.visible=false;continue;} // the big ones keep swimming as far as they are drawn
-    // beyond 150 (past the near LOD of anything under 25 m) a creature moves every other frame with the two frames' time: the
-    // roster tripled the population (v10.7) and most of it is small things far off in the fog
-    let dt=dt0;if(dp>150){c.accT+=dt0;if((frameNo+c.par)&1)continue;dt=c.accT;c.accT=0;}
+    // past c.stepR (the old fixed 150: past the near LOD of anything under 25 m) a creature moves every other frame with the two
+    // frames' time: the roster tripled the population (v10.7) and most of it is small things far off in the fog
+    let dt=dt0;if(dp>c.stepR){c.accT+=dt0;if((frameNo+c.par)&1)continue;dt=c.accT;c.accT=0;}
     // the medium, as for the player: sub is the submerged fraction. Steering only works in the water.
     const R=d.size*0.4,sub=c.pos.y+R<TIDE-TIDE_A1-WAVE_AMP*2?1:clamp((waveH(c.pos.x,c.pos.z)-(c.pos.y-R))/(2*R),0,1),vx0=c.vel.x,vy0=c.vel.y,vz0=c.vel.z;c.sub=sub; // the wave is only read near the surface: a thousand creatures a frame
     if(c.paraT>0){c.vel.multiplyScalar(1-3*dt);c.pos.y-=0.2*dt;c.grab=null;} // paralysed (combat.js envenom, COMBAT.md §3b): no steering, sinking a little
@@ -452,7 +453,7 @@ function updateCreatures(dt0){
     const vis=dp<c.lodFar;c.g.visible=vis;
     if(vis){visibleCreatures++;if(dp<SEEN_R&&mode==='play')seeSpec(c.kind);if(dp<c.lodNear){setLOD(c,0);c.anim(t+c.t0,Math.min(4,c.vel.length()/(d.size*0.5)),st);T4.set(0,0,1).applyQuaternion(c.g.quaternion);bodyPose(c,dt,Math.atan2(T4.x,T4.z));}else setLOD(c,1);} // bodyPose (fx.js, v11.53): squash and stretch, banking, the stun's list // seen within SEEN_R (save.js, v11.47): the creator's parts
     if(vis&&dp<c.lodNear&&c.lod===0)simList.push(c);
-    if(vis&&dp<90)near.push(c);
+    if(vis&&dp<c.nearR)near.push(c);
   }
   // contact: bodies near the player push apart by their actual shapes (the player among them), the player is kept out
   // of every arm and tail near it, then the arms and tails of everything at near LOD are simulated against the bodies.

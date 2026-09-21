@@ -4406,3 +4406,40 @@ generations, is answered: the line is the animal's, not the world's).
   numbers); §12 records the person's ten answers of 20 Sep; §13 is the build order — the line and the track log first, then the whole
   loop on one clade with no creator work, then death's search for a descendant, then the creator at the hatch.
 - **Unseen, ask in this order**: nothing was built, so nothing was seen. The doc's own questions are §11.
+
+## v11.67.2 — conception, the children you let go, the home of the sparkle; the size ceiling (20 Sep 2026)
+
+The person's second round of answers on `LINEAGE.md`, and the first code against it. Docs, plus two knobs and three radii.
+
+- **The editor opens at conception, not at the hatch** (§4): mating is the trip to the creature editor, because the egg's genetic future
+  is fixed when it is fertilised. Declining to change anything is a legitimate move — you bred, the generation counts, the child is a copy.
+- **Grandchildren struck** (§4, misread on the first pass): only your own children are eligible. Their young are ordinary animals of the
+  world. The descent record collapses from a tree of nodes to a flat list of brood records per life, which is markedly cheaper (§8).
+- **Editing is not occupying** (§5, new): you may shape a child and let it go, and make several variants from one build — a radiation,
+  not a zoo. The ones built sociable follow you, which is the honest version of a party: the disposition is something you built at
+  conception, not a mode. **Your old body is just an animal**, running the ordinary AI over its own history — it may ignore you or attack
+  you. No kin system, and a creature arriving from another player's game needs nothing special either.
+- **The budget grows with the generation** (§6), pulling against the mass and materials the body must still be fuelled with: generations
+  buy licence, the ecology sends the bill, and a twenty-generation line looks like one.
+- **The home of the sparkle** (§7b): follow the wisp on a current to an island of creatures that mutate as the player does. Endgame, and
+  recorded now for what it does upstream — it is the box the larger-than-life animals go in, so everything outside stays under the 8 Sep
+  rule, and it is the natural first consumer of anything the creator learns to build.
+- **The size ceiling** (CREATOR.md, new section; the person: the creator must be made with large creatures in mind, "think Sin from FFX").
+  The audit's answer: expressing one is nearly free, hosting one is a real pass, and it is not needed yet. Built now:
+  - **`SPEC_SIZE_MAX` 120 and `SPEC_SCALE_MAX` 12** (creatures_spec.js), replacing two bare literals in lab.js that did not agree —
+    `size` (the half-length a spec *claims*) capped at 30 while `s` (the build scale the geometry is multiplied by) capped at 10, so any
+    large animal warned "longer than its size says" forever. The longest core (trunk `L`, extreme 20 m) × 12 is 240 m, half-length 120.
+  - **`c.nearR` and `c.stepR`** (creatures_ai.js) for the loop's bare 90 and 150: a body to push against and to change out of sight, and
+    the distance past which a creature steps every other frame. Both `Math.max(old, size × k)`, so **every number in the game today is
+    unchanged** (the roster's largest is 16 m) and a giant is pushed against and animated at full rate out to where it is still drawn.
+    Without this a giant would flicker to half-rate animation while filling the screen and would never grow up or moult, since
+    `!c.g.visible` is never true for something that large.
+- **Seen** (the lab in the pane, 20 Sep): the fields take the new maxima (`sMax` 12, `sizeMax` 120) and a scaled body compiles —
+  36.67 m and 3,870 t off the blank soft spec at `s` 12. Two findings from looking, both recorded in the doc: **the size field is a
+  claim, not the geometry** (setting it to 60 changed nothing; `derive` reads `s`), and **the lab's camera frames by that claim**, so at
+  `s` 12 the view is inside the animal — the studio should frame by the compiled bounds. The speed term confirms the audit's item 4:
+  23.5 m/s on a 36 m body, because `speed ∝ L^0.4` with a scale-invariant thrust/drag has no upper term.
+- Tests green on both tiers.
+- **Unseen, ask in this order**: nothing else was built. `LINEAGE.md` §11 is the open list, and its first question is the one that
+  matters — now that the editing happens at conception, is the hatch still a moment you may take a body at, or is occupying only ever
+  what happens when the current body dies?

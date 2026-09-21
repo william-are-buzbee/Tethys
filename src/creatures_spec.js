@@ -26,6 +26,13 @@ const GRAMMAR = {
   drifters: {cores: ['bell', 'float'], req: ['arms'], density: 1.01, shell: 1, eye: 'none'}
 };
 const CLADE_LIMIT = {ringmouths: 16, slowbloods: 16, hingeshells: 8, drifters: 5}; // half-length in metres a spec may claim before the calculator objects (PLANET; the veil is a 16 m ringmouth)
+// The creator's own ceiling (v11.67.2, CREATOR.md "The size ceiling"). Two numbers, and they have to agree: `size` is the half-length a
+// spec *claims* (DEFS reads it; derive warns when the geometry disagrees) and `s` is the build scale the geometry is actually multiplied
+// by. A core's own length is clamped by its extreme band (the longest is trunk L 20), so the longest body expressible is 20 × SPEC_SCALE_MAX
+// — 240 m, whose half-length is SPEC_SIZE_MAX. They were 30 and 10 as bare numbers in lab.js, which capped the geometry at 200 m while the
+// claim could not exceed 60, so a big animal always warned "longer than its size says". Past this the world cannot host the animal at all
+// (the doc's list: a creature belongs to one 215 m cell, and the far plane is 1600)
+const SPEC_SIZE_MAX = 120, SPEC_SCALE_MAX = 12;
 // a palette with every key any part reads, for the dry builds the defaults, the grammar and the calculator do
 const DRY_PAL = (() => {
   const o = {};

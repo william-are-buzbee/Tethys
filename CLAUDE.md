@@ -128,7 +128,7 @@ Docs, most upstream first. When a doc's Open list says a choice is the person's,
 | `REEF.md` | the reef as a landform (v11.20; the coat struck v11.22 — the head note says what stands) |
 | `CLADES.md` | the three clade signatures as built (v11.8–11.9.1) and the raptor family |
 | `DRIFTERS.md` | the fourth clade: bells, buttons, sailers (v11.16) |
-| `CREATOR.md` | the spec-compiled body plans and the lab (v11.10–11.25); the person's decisions at its end |
+| `CREATOR.md` | the spec-compiled body plans and the lab (v11.10–11.25); the person's decisions at its end; "The size ceiling" (20 Sep 2026) is what a monstrous animal costs — the two knobs built, the rest ranked |
 | `ARCHIPELAGO.md` | the chain (15 Sep 2026): the islands as records (built v11.61), the giant's record and its land term (built v11.62), the horizon tier (built v11.64), the world grown to 240 cells (built v11.65), the person's answers — read before building any second island |
 | `SEAFLOOR.md` | the chain's diversity and its underwater ground (15 Sep 2026, designed, not built): what can differ per island and why, the formations agreed by the person, ranked; §5 the surface (pumice, wind rows, carcasses, the neuston set); §6 the range term, open |
 | `PIXEL.md` | the de-res (14 Sep 2026, designed, not built): every surface in world/body-fixed texels at the pixel light's grain, one switch on `e`; the person's answers at its end (14 Sep) — ready to build |

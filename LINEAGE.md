@@ -77,32 +77,36 @@ the obvious and the strange loop, and it would need its own pass.
 This is the person's model of 20 Sep, and it replaces the death-triggered handover that the first draft of this doc had. The difference
 matters: **switching is a live choice you make while healthy, and death is the fallback that usually fails.**
 
-1. **You breed as you play.** A clutch is a real clutch — `layEggs` with your spec on it, on the floor, scavengeable, counted.
-2. **You keep playing.** The clutch runs its hatch clock whether you are there or not.
-3. **At the hatch there is a moment.** If you are present, you may take one of the hatchlings and become it. **The moment passes**: take
+1. **You breed as you play**, and **the editor opens at conception, not at the hatch** (the person, 20 Sep). Mating *is* the trip to the
+   creature editor: the egg is fertilised, the genetic future of that animal is fixed at that instant, and that is the only honest
+   moment to be choosing its DNA. Whether the thing is sentient or alive yet is a separate question and not this one's.
+2. **You may decline.** Opening the editor and changing nothing is a legitimate move — you bred, the generation counter goes up, the
+   child is a copy. The editor is the *opportunity* at conception, not a toll on it.
+3. **The clutch runs its hatch clock** whether you are there or not, carrying whatever DNA you gave it.
+4. **At the hatch there is a moment.** If you are present, you may take one of the hatchlings and become it. **The moment passes**: take
    it or carry on as you are. There is no menu later, no queue of unclaimed bodies waiting on you.
-4. **A switch is immediate and in place.** No skip, no pause, no summary screen: you are the hatchling, at the clutch, in the world as it
+5. **A switch is immediate and in place.** No skip, no pause, no summary screen: you are the hatchling, at the clutch, in the world as it
    stands, with whatever is around you still around you. The parent's body is simply no longer yours (§3: for a ringmouth it is dying
    anyway; for the others it is an animal now). What becomes of your loosed brood is decided the way every other species' fate is
    decided — by the off-screen model, over days, as time passes normally (ecology.js, `ECO_STEP`).
-5. **What you do not claim goes to nature.** r-selection is unkind and should be: most broods come to nothing, some establish, a few do
+6. **What you do not claim goes to nature.** r-selection is unkind and should be: most broods come to nothing, some establish, a few do
    well. **Occupying a child is not a guarantee of survival — it is a large thumb on the scale**, and that asymmetry is the whole reason
    the switch feels like something.
-6. **Death looks for your living descendants.** Find one and you become it, where it is. Find none — **the save is over** (the person:
+7. **Death looks for your living children.** Find one and you become it, where it is. Find none — **the save is over** (the person:
    "There is no grace. No clutch, the save is over.")
 
-**Only your own descent counts** (the person, 20 Sep): you may swap only into something the body you are wearing produced. **Siblings and
-parents are not eligible** — the clutch you hatched out of is not a reserve of spare bodies, and you cannot go back up the tree.
-**Grandchildren are**: descent is transitive, so a child you never claimed, living out there and breeding on its own, gives you
-grandchildren you may take. The eligible set is the subtree under the body you occupy, and nothing else.
+**Your own children, and only them** (the person, 20 Sep — grandchildren struck, misread on the first pass): the eligible set is what
+the body you are wearing produced itself. **Not siblings, not parents, not grandchildren.** A child you never claimed will breed out
+there and its young are ordinary animals of the world — they carry your work, they are not your line. The rule keeps the whole thing to
+one step, which is also what keeps it cheap (§8).
 
 Two things fall out of that, and both are the point:
 
 - **Every life must breed for itself.** "You must produce your own genetic line with each selection." Inheriting a good body buys you
-  nothing if you do not use it; a life that never lays is the end of the save whatever the rest of the line achieved.
-- **A switch rebases the tree and throws the rest away.** Take a hatchling and its clutch-mates — and the den you left them at, and
-  everything else the parent ever produced — are outside your line forever. The choice at the hatch is therefore not "which body is
-  better" but "am I done with everything this body made", which is a much better question to be asked while a clutch is opening.
+  nothing if you do not use it; a life that never mates is the end of the save whatever the rest of the line achieved.
+- **A switch throws away everything but the body you took.** The clutch-mates, the den you left them at, everything else that parent
+  made — outside your line from that moment. The choice at the hatch is therefore not "which body is better" but "am I done with
+  everything this body made", which is a much better question to be asked while a clutch is opening.
 
 The consequence is worth stating plainly, because it is the game: **your survival at death depends on whether the animals you designed
 and abandoned were good enough to live without you.** That is the simulation grading your creature work, in its own currency, with no
@@ -111,12 +115,35 @@ appeal. Nothing else in this project has that property.
 **New open questions this raises (§11): whether the hatch moment needs a warning (you must be near the clutch, so you must have chosen
 to go back for it — which is good, and is a door), and what happens to the body you leave at a switch while you are standing next to it.**
 
-## 5. Presets and founders
+## 5. The animals you do not become — your children, your old bodies, the founders
 
-A new game goes into the creator, and **there are many preset bodies and a randomiser** (the person, 20 Sep) — designing from nothing is
-an option, not a toll. Later, the founder may be "a preset, mutated": you start from a known animal and may move only so far from it,
-with the freedom growing over generations. **A hatchling never changes clade** (the person: "No, not a new clade"); whether a *new founder*
-in the same slot may be another clade is still open (§11).
+**Editing is not occupying** (the person, 20 Sep). The editor at conception belongs to the *parent*, so you may shape a child and then
+let it go: *"You have a kid, and you mutate them to look a little different and behave a little different — but then decide to let them
+be, rather than control them."* Three consequences, and they are what turn this from a respawn mechanic into a game:
+
+- **You can make a set.** Several matings, several children, each edited differently from the same build, none of them occupied. The
+  constraint is the budget of §6 and the rule that a child may not vary too far from its parent — so what you get is a *radiation*, not
+  a zoo: one body plan pushed a few ways at once, loose in the world, being tested by it.
+- **Some of them follow you.** *"If they have the disposition to follow, they can and will — which can look like a follower system."*
+  The disposition is a thing you built into them, not a mode you switch on: a child made sociable follows, a child made solitary does
+  not, and you find out which you made by watching. That is the honest version of a party, and it is earned at conception.
+- **They breed, and their young are ordinary.** Your children's children are not mutated and are not yours (§4). The wildness stops one
+  generation down unless you are the one mating.
+
+**Your old body is just an animal.** No kin flag, no special case, no retired-ancestor bookkeeping. The person's framing, which is the
+better one: *"Your own self would play the game the way you would if you found your own character naturally generated, or generated
+naturally but originating from someone else's game — just out and about, using the game's AI to detect what it did in its life and
+based on what the player did. It might ignore you or attack you or something else entirely."* So the body you leave behind runs the
+ordinary AI over its own history, and what it does about you is whatever that history says. If you were a hunter, you left a hunter
+behind. This is free — it is already what a creature is — and it is a better answer than any kin system would have been.
+
+It also means **a creature that arrives from someone else's game needs nothing special** (§10): it is a spec and a place, driven by the
+same AI, indistinguishable in kind from a creature of your own line.
+
+**Presets and founders.** A new game goes into the creator, and there are **many preset bodies and a randomiser** — designing from
+nothing is an option, not a toll. Later, the founder may be "a preset, mutated": you start from a known animal and may move only so far
+from it, the freedom growing over generations. **A hatchling never changes clade**; whether a *new founder* in the same slot may be
+another clade is still open (§11).
 
 ## 6. The mutation budget is physics, not points
 
@@ -131,6 +158,13 @@ genetic script and it will consume the resources it needs to produce that body p
   is the precedent and the model. `CREATOR.md`'s parked "mass budget and the mineral/pigment gates at growth stages" is this item.
 - **So a mutation is affordable or it is not**, by what the line has eaten and where it has been. A line that fed deep buys what a
   shallow grazer cannot. No points, no tiers, no unlock tree.
+- **The budget grows with the generation** (the person, 20 Sep): *"a 20 generation animal will have more budget for more parts and
+  complexity and size and cognitive ability. On top of the obvious mass constraint — you have to fuel that stuff."* So there are two
+  terms and they pull against each other: **generations buy licence, and the body still has to be paid for.** A deep line may attempt a
+  large, complex, clever animal; it will starve if it cannot feed what it built. That is the progression — the generation count is the
+  tech tree, and the ecology is the bill — and it is also what makes a twenty-generation line *look* like a twenty-generation line.
+- **This is where the giant comes from, eventually.** Size is one of the things generations buy, so the creator has to be able to
+  express an animal far past the roster (CREATOR.md, "The size ceiling", 20 Sep) long before the world can host one.
 - **The numbers are playtest numbers** (the person: "playtested a lot"). This doc sets no constants; the pass that builds it should put
   them in one table with a comment per key, the usual way, and expect to move them.
 - **A lost part is not inherited.** `lost[]` (v11.57) tracks what was torn off; the child is built from the parent's *spec*, not its
@@ -164,6 +198,28 @@ fx.js already runs for silt, bubbles and scraps (v11.53, POLISH pass B); it want
 The save icon means **the silhouette must read at 16 px**, which argues for a four-point star rather than anything soft, and it should be
 drawn once as a shape both uses so the icon and the effect are literally the same mark. It belongs in POLISH's pass C or beside it.
 
+### 7b. The home of the sparkle (the person, 20 Sep — the far end, and the reason the rest can stay strict)
+
+The sparkle eventually becomes a place to follow. *"The player can follow the 'sparkle' in-game. To 'home' or 'back' or some vague, far
+away, mystical place. It would follow on a current, leading you in the direction. Sometimes it would travel like a wisp ball, faster than
+any creature could follow, leaving a long trail of particulate behind."* And at the end of it: **an island of creatures that sparkle the
+way you do — animals capable of the same rapid, wild mutation.**
+
+This is endgame content and nothing about it is urgent, but it is recorded now because of what it does for everything upstream:
+
+- **It is a box for the fantastical.** The person's reason, in their words: it *"allows me to channel my urges for larger than life
+  creatures into a box without compromising the validity of the ecosystem around it."* The home island is where the impossible animals
+  are allowed to live, and the price of admission is that they sparkle — the same tell that marks the player, meaning the same thing.
+  Everything outside it stays under the 8 Sep rule, unbudged.
+- **It grows with the creator.** As the creator's technical limits expand, so do the creatures there; the home is the natural first
+  consumer of anything the creator learns to build, and the natural place to put a thing the roster has no room for. That is a real
+  development benefit: it means an ambitious creator feature never has to argue with PLANET to justify itself.
+- **The guide is a mechanic, not a cutscene.** A wisp on a current, outrunning anything that could follow, with a trail you can read
+  after it has gone — that is a *door* in DIRECTION's sense (a current you must be built to ride), and it is the only navigation aid the
+  game would have. It wants the same mark and the same emitter as everything else in §7.
+- **The one rule it must not break**: the sparkle still means the magic. An animal that sparkles is an animal outside the simulation's
+  rules, and the player learns that by meeting the home's inhabitants — which is exactly the lesson the tell was for.
+
 ## 8. The ledger: absorbing what the player looses
 
 The person, 20 Sep: *"the game needs to just find a way to absorb whatever 'added animals' the player throws into the game"* — and the
@@ -181,13 +237,11 @@ This is the one place where the doc's ambition meets the engine's arithmetic, so
 - **Entries are built once at `ecoInit`.** Adding one mid-game means growing `POP`'s tables and `SPAWN` at runtime; the save format
   (`popRows`, run-length coded) already handles arbitrary entries, but `ents` becomes a list of specs rather than a list of kind names.
 - **Each variant needs an envelope and a `DEFS`** — see §8.2, which is now unavoidable rather than deferrable.
-- **Descent has to be carried by populations, not individuals** — this is what §4's grandchild rule costs. The ledger counts; it does
-  not know who begat whom, and an unclaimed child is genetically its parent's spec, so it is not even a distinguishable variant. The
-  workable shape is a **tree of descent nodes**: a brood you lay is a node (`{cell, n, born, gen, parent, spec}`), the model grows or
-  kills its count as it does everything else, and a node that survives long enough spawns child nodes of its own — which are your
-  grandchildren, without any individual ever having been tracked. Eligibility is then "any node in the subtree under the node I am
-  wearing, with `n ≥ 1`", which is a walk of a list with tens of entries, not a search of the world. The same nodes are exactly what
-  the shrine's marketshare (§9) reads.
+- **Descent is carried by broods, not individuals, and only one step** — which is what the children-only rule of §4 buys. The ledger
+  counts; it does not know who begat whom, so per-individual parentage is not affordable. It does not have to be: a brood you lay is a
+  **record** (`{cell, n, born, spec}`) whose count the model grows and kills like anything else, and eligibility is "one of *my* brood
+  records still has `n ≥ 1`" — a walk of a handful of entries. Had grandchildren counted, this would have had to become a tree of nodes
+  spawning child nodes; they do not, so it stays a flat list per life. The same records are what the shrine's marketshare (§9) reads.
 - **The off-screen model is what makes it honest**: whether a loosed brood establishes is decided over days, in cells you are not in, by
   the same code that decides it for every other species — no bookkeeping shortcut, no special case for the player's animals.
 
@@ -233,16 +287,20 @@ coordinates and days in a form that could be exported.
 
 ## 11. Open (20 Sep 2026)
 
-1. **What happens to the body you leave** at a switch, in the second after you leave it? It is standing right there — an ordinary animal
-   of its kind from that frame on (the shark answer), or does it do something first?
+1. **Is the hatch still a moment at all, now that the editing happens at conception?** Two readings of 20 Sep and the doc needs one:
+   either you may take a hatchling at its hatch *and* fall back to a living child at death (what §4 assumes), or occupying is only ever
+   the thing you do when the current body dies and the hatch is just a birth you watch. The first gives the switch a price; the second
+   is simpler and makes every generation a full life.
 2. **Does the hatch moment need a warning**, or is being there the point (you must have gone back for the clutch — which is a door, and
    probably the right answer)?
 3. **May a new founder** in the same slot be another clade? (A hatchling may not — decided.)
 4. **How far may a "preset, mutated" founder move** from its preset, and how fast does that loosen over generations (§5)?
-5. **Do your own variants recognise each other or you?** Kin behaviour was to be derived from investment; with the brood model it mostly
-   matters for the hingeshells. Worth an answer before §8 is built, because it touches `DEFS`.
-6. **Drifters** (§3): later, or never?
-7. **The budget's constants** — playtest, so: what is the first guess, and does the pass that builds it ship a readout tuner for them?
+5. **How far may a child vary from its parent** (§5's "not allowed to vary too far") — a hard cap on the diff, or just what the budget
+   affords?
+6. **How is disposition expressed in the creator** (§5's followers)? It is the first thing in the editor that is behaviour rather than
+   body, and `DEFS` has no term for it — the same gap as §8.2.
+7. **Drifters** (§3): later, or never?
+8. **The budget's constants** — playtest, so: what is the first guess, and does the pass that builds it ship a readout tuner for them?
 
 ## 12. Decisions (answered 20 Sep 2026, the person)
 
@@ -258,8 +316,16 @@ coordinates and days in a form that could be exported.
 8. **No clade change** for a hatchling.
 9. **The shrine** is out-of-world, after the run (§9).
 10. **Many presets and a randomiser** at the founder.
-11. **Only your own descent** is eligible for a swap — not siblings, not parents; grandchildren yes, and any depth below them. Each life
-    must breed for itself, and a switch rebases the tree (§4).
+11. **Only your own children** are eligible for a swap — not siblings, not parents, **not grandchildren** (struck 20 Sep: misread on the
+    first pass). Each life must breed for itself.
+12. **The editor opens at conception**, not at the hatch: mating is the trip to the creature editor, and declining to change anything is
+    a legitimate move (§4).
+13. **Editing is not occupying** (§5): you may shape a child and let it go, make several variants from one build, and the ones built
+    sociable will follow you. Your old body is an ordinary animal running the ordinary AI over its own history — it may ignore you or
+    attack you, and there is no kin system.
+14. **The budget grows with the generation** (§6), against the mass and materials the body still has to be fuelled with.
+15. **The home of the sparkle** (§7b): an island of creatures that mutate as the player does, reached by following the wisp on a
+    current. Endgame, and the box the larger-than-life animals go in so the rest of the world stays strict.
 
 ## 13. Build order
 
@@ -270,11 +336,11 @@ Each step is playable and tells the person something; the expensive answers (§8
 2. **Player reproduction, one clade** (the slowblood — the current default start): a real clutch with your spec on it, surviving an
    unload as a record on the line. **The hatch moment and the switch**, with the parent's spec unchanged. The smallest complete loop,
    and it needs no creator work at all.
-3. **The descent tree and death's search** — the nodes of §8, the model growing and killing them, and the question "is anything in my
-   subtree alive, and where". This is the point at which the sparse-entry work has to be real, and the first version where an unclaimed
+3. **The brood records and death's search** — the records of §8, the model growing and killing them, and the question "is a child of
+   mine alive, and where". This is the point at which the sparse-entry work has to be real, and the first version where an unclaimed
    brood can outlive you.
-4. **The creator at the hatch**: the parent's spec loaded, the diff priced as materials (§6). Needs the creator's registry pass to have
-   landed first, or the bill prices nonsense.
+4. **The editor at conception**: the parent's spec loaded, the diff priced as materials (§6), decline allowed, the child let go or
+   occupied at the hatch. Needs the creator's registry pass to have landed first, or the bill prices nonsense.
 5. **The sparkle** (§7) — small, and it should arrive with the first switch so the tell exists from the beginning.
 6. **The other two modes**: the ringmouth's one spawning and scheduled death; the hingeshell's brood and den.
 7. **§8.2's derived `DEFS`**, and with it variants as real ledger entries, marketshare, and the shrine's ecology tab.

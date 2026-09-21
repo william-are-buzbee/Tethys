@@ -449,8 +449,8 @@ function labPanelHTML() {
     '</select></label>';
   h += '<label class="row"><span>name</span><input type="text" data-path="id" value="' + (s.id || '') + '"></label>';
   h += '<label class="row"><span>clade</span><span class="v">' + s.clade + '</span></label>';
-  h += '<label class="row"><span>half-length</span>' + labNum('size', s.size, 0.1, 0.1, 30) + '<b>m</b></label>';
-  h += '<label class="row"><span>scale</span>' + labNum('s', s.s || 1, 0.05, 0.1, 10) + '</label>';
+  h += '<label class="row"><span>half-length</span>' + labNum('size', s.size, 0.1, 0.1, SPEC_SIZE_MAX) + '<b>m</b></label>';
+  h += '<label class="row"><span>scale</span>' + labNum('s', s.s || 1, 0.05, 0.1, SPEC_SCALE_MAX) + '</label>';
   h += '<label class="row"><span>depth</span>' + labNum('depth', s.depth !== undefined ? s.depth : -30, 5, -800, 0) + '<b>m</b></label>';
   h +=
     '<label class="row"><span>on the floor</span><input type="checkbox" data-path="behaviour.floor"' +

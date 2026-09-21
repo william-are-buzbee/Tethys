@@ -270,3 +270,65 @@ species, clades, cores and part styles the profile has seen — any species draw
 (lab.js `lab.player`, `labOk`, `labStyles`; save.js `PROFILE.seen`). A `saved creatures` list in the lab's save section keeps the player's
 specs by name, with a file out and in. Still not done: the creator as the start of a new game (the finback starts it for now), the mass budget
 and the mineral/pigment gates at growth stages, the moult.
+
+## The size ceiling (20 Sep 2026) — what a monstrous animal costs
+
+The person, 20 Sep, planning the sparkle's home as endgame (LINEAGE.md §7): *"The creature creator must be made with large creatures in
+mind — think Sin from FFX."* This section is the audit that asked for. The short answer: **expressing one is nearly free and is done;
+hosting one in the world is a real pass, and it is not needed yet.** Nothing here is a blocker for the creator work that comes first.
+
+### Done in v11.67.2 (the cheap guards, no behaviour change at today's sizes)
+
+- **`SPEC_SIZE_MAX` = 120 and `SPEC_SCALE_MAX` = 12 (creatures_spec.js).** Two numbers decide how big a body can be *expressed*, and
+  they were bare literals in a markup string in lab.js: `size`, the half-length a spec **claims** (capped at 30), and `s`, the build
+  **scale** the geometry is actually multiplied by (capped at 10). They did not agree — the geometry could reach 200 m while the claim
+  could not exceed 60, so any large animal permanently warned *"longer than its size says"*. Now they are named knobs that match: the
+  longest core (trunk `L`, extreme band 20 m) × 12 is 240 m, whose half-length is 120. **Found by looking**: setting the size field to
+  60 in the lab changed nothing about the body, because `derive` reads `s`, not `size` — the size field is a claim checked against the
+  geometry, and the scale field is the lever. Worth knowing before anyone builds the creator's size control.
+- The rest of the chain needed no change: `validate` only *warns* past `CLADE_LIMIT` (it clamps part parameters, never size), and
+  `compile`, `derive` and the part registry are all written in terms of `s`.
+- **`c.nearR` and `c.stepR` (creatures_ai.js).** The update loop had two bare distances: 90 m (a body to push against; and the radius
+  past which a juvenile may grow up or a hingeshell moult "out of sight") and 150 m (past which a creature steps every other frame).
+  Both are now `Math.max(old, size × k)`. Every species in the roster is under 18 m, so **every number in the game today is unchanged**;
+  a 300 m animal is pushed against, and animated at full rate, out to where it is actually still drawn. The old constants would have had
+  a giant flickering to half-rate animation while filling the screen, and — worse — never growing up or moulting, because `!c.g.visible`
+  is false for something that large at any distance.
+
+### Already right, and why (no change needed)
+
+- **LOD distances scale with size**: `lodNear = (45 + size×4) × Q.lodNear`, `lodFar = min(FAR×0.7, 120 + size×40)`.
+- **`derive` is scale-invariant where it should be.** `thrust` and `area` both go as `s²`, so `thrust/drag` is constant under scaling and
+  only the length term moves: `speed ∝ L^0.4`. Turn collapses correctly — `min(8, 8/L^0.85)` is 0.04 rad/s at 600 m long, about 2°/s,
+  which is the right feel for something that size. Mass is `volume × density` with no clamp, so 10⁶ tonnes is just a number.
+- **Hit capsules, holds, the gape and the edge** (COMBAT) are all relative to the bodies involved, and `compile` clamps capsules at the
+  nose at any scale.
+- **A big body already takes the far fog**: `spawn` swaps `MAT` for `MATBIG` on the far LOD at `size ≥ 6`, so a giant does not vanish at
+  300 units the way a structure built with `MAT` does.
+
+### Known and deliberately left (what hosting one actually needs)
+
+Ranked by what would bite first. None of this is worth building before there is a reason to.
+
+1. **A creature belongs to one cell.** `c.chunk`, `ch.creatures`, spawning, and unloading all assume the animal is *in* a cell of 215 m.
+   Anything longer than a cell is in several, and unloading its home cell deletes it. The fix is the shape far.js already uses for big
+   structures: an oversize list owned by the world rather than by a cell, with the cell keeping only a reference. **This is the one real
+   architectural change**, and it is also the honest gate on raising `SPEC_SIZE_MAX` past a couple of hundred metres.
+2. **The ledger prices per cell.** `SPAWN.n` is a capacity per 215 m cell; one animal spanning twenty cells is not expressible in it.
+   This is the same mechanism `SEAFLOOR.md` §6 leaves open as "the range term" — a species whose individual occupies a range rather than
+   a cell. One design serves both, and the giant is the clearer motivation.
+3. **The far plane is 1600 m** (`Q.far`, 1000 on low), and under water it is the end of the world — `lodFar` clamps to `FAR × 0.7`, so a
+   240 m animal disappears at 1.1 km while still subtending a large angle. Above water horizon.js already draws past the far plane; a
+   giant wants the same treatment, which means a coarse bake in the horizon tier rather than a creature draw.
+4. **`derive`'s speed has no upper term.** `speed ∝ L^0.4` with a scale-invariant thrust/drag gives a 600 m body roughly six times a 6 m
+   body's speed — tens of metres a second, which water does not allow. A wave-drag or power-limited term would bind at giant scale;
+   any such term must be neutral below 30 m or it moves the whole roster, and `DEFS` speeds are hand-set anyway, so this is a calculator
+   honesty problem rather than a gameplay one.
+5. **Rig buffers cap at 39 chain points and 160 segments.** Not a blocker — a giant's appendage wants *longer* segments, not more, and
+   `len` is already a multiple of the core's reference length — but a kilometre-long tentacle at believable segment length would exceed it.
+6. **The lab shows the animal in the world**, and clamps it between the ground and the tide (`lab.o.y`): a 240 m animal does not fit in
+   the water column at the peak. **And the lab's camera frames by `size` — the claim — not by the built geometry** (`multiplyScalar(5 +
+   size × 2.5)`), so a big body is framed by a number that need not describe it: at `s` 12 the view is inside the animal (seen, 20 Sep).
+   The studio the person wants (a neutral room, a turntable) solves both, and should land before anyone seriously builds a monster;
+   whatever frames it should read the compiled bounds.
+7. **Physics**: the per-cell collider hash and `solidPush`'s 3×3 query assume a body far smaller than a cell.
