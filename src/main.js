@@ -95,4 +95,8 @@ setTimeout(()=>{fadeEl.style.opacity=0;},400);
 // is a negative absolute y), still, the camera with it, the cells round it loaded now. The bundle is one IIFE, so this is the one way in
 // from tethys.html; the map's stat line gives x,z in km under the mouse. A dev tool, not a feature: nothing saves it, nothing reads it.
 window.tp=function(x,z,y){if(mode!=='play'||!player.clade)return 'start a game first';const L=HALF-25,cx=clamp(x,-L,L),cz=clamp(z,-L,L),held=cx!==x||cz!==z;x=cx;z=cz;const g=groundAt(x,z),py=y===undefined?g+10:y<0?y:g+y;player.pos.set(x,py,z);player.vel.set(0,0,0);player.hold=null;camera.position.copy(player.pos).add(V3(-6,3,-6));cellsAround();return (held?'outside the world (±'+L+'): held at ':'at ')+x.toFixed(0)+', '+z.toFixed(0)+', y '+py.toFixed(0)+' (ground '+g.toFixed(0)+')';};
+// skip(days) from the console (v11.76): the world clock moved on by that many game days, in play — for looking at what a clock brings (a moult, a hatch, a
+// brood's losses) without waiting for it; the ledger's model catches up over its next ticks (ecology.js ECO_MAX_STEP), the broods lazily (line.js
+// broodCatchUp). A dev tool beside tp: nothing saves it, nothing reads it
+window.skip=function(days){if(mode!=='play'||!player.clade)return 'start a game first';t+=(+days||0)*DAY_S;clockH=t*CLOCK_RATE;TIDE=tideAt(clockH);return 'day '+(clockH/DAY_H).toFixed(2);};
 requestAnimationFrame(loop);

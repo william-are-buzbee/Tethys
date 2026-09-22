@@ -73,6 +73,10 @@ Iron blood, a skeleton, a long slow life. Several clutches, little invested in e
 - The feeling: a career. Death is the loss of everything you grew, if nothing of yours is left alive.
 
 ### Hingeshells — brood, and moult (iteroparous, invested, K)
+*Built v11.76 (line.js `BREED.hingeshells`, the moult section): few large eggs at a den — the sheltered water or against a solid — again and again,
+guarded as the soft-arm's brood is, the parent feeding meanwhile; the moult on the player by the world's `MOULT` clocks (soft, pale, skin to every edge,
+prey to the big, the cast left), the hatchling growing through its moults. The person's numbers to tune are the table's and `MOULT.every`.*
+
 Vanadium blood, an exoskeleton, `MOULT` already in the game (soft after a moult, hardening over `MOULT.soft` days × mass^¼).
 
 - Few large eggs, guarded at a den; a brooding parent is pinned to a place and vulnerable.
@@ -427,5 +431,5 @@ Each step is playable and tells the person something; the expensive answers (§8
    handover; v11.72 for the closed mutation window, on the clutch: a screen-space four-point star, `starPath`, with a short trail.)*
 6. **The other two modes**: the ringmouth's one spawning and scheduled death; the hingeshell's brood and den. *(The ringmouth half built v11.74: the
    soft-arm's one clutch, the brood — no feeding, the wasting, the guarding — the death at the hatch, and the age; the coilshell as the finback's mode. The
-   hingeshell's den is not built: a hingeshell has no mode and `x` refuses it.)*
+   hingeshell's den built v11.76: the den — the shel field or a solid — the guard on every clutch, the moult on the player and the growth through it.)*
 7. **§8.2's derived `DEFS`**, and with it variants as real ledger entries, marketshare, and the shrine's ecology tab.

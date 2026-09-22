@@ -1,5 +1,18 @@
 # HANDOFF — tethys
 
+**v11.76 (21 Sep 2026): the hingeshells' line (LINEAGE §13.6's other half, §12.31).** Any hingeshell of the roster is a founder through v11.75's path (the
+hose is the one to play: 1.5 m, framed from 6.4). The mode (line.js `BREED.hingeshells`): 3 eggs at 0.02 of the child's mass (0.68 of the hose's stomach),
+again and again, **at a den** — the sheltered water (`shel` ≥ 0.5) or against a solid within 2.5 m (`denAt`; `x` elsewhere says `at a den`) — guarded within
+12 m as v11.74's brooder guards (now every unhatched clutch of a guarding mode; off it, `survive` 0.9 a day and the scavengers), feeding meanwhile. **The
+moult on the player**: the world's own `MOULT` clocks by the world clock — every 20 × mass^¼ days (the hose 27, the sickle 67), soft 0.5 × mass^¼ after
+(0.68 / 1.67 days): the body pale with its valves clamped, skin to every edge, prey to whatever is big enough listed or not, the cast carapace left on the
+floor; free to move. A hatchling grows through 3 moults (0.55 → 0.70 → 0.85 → 1), soft a quarter of each interval at most. Everything by the clock (the
+life keeps `moults` and `hardAt`), through saves and run-ons; `skip(days)` from the console moves the clock for a look. **Found and fixed:** a save with
+young in view lost them on the load (save.js `lineOut` never stamped the brood's catch-up). Seen: the hose laying at a den, moulting (pale, the shed
+behind it), hardening — `test/render/v76_hose_*.png`. **Ask first** the cue that a moult is coming (proposed: the valves stop raising, the coat dulls, a
+hint at the last hour), then whether a soft body should be slowed, then the numbers (3 eggs, the den's shel 0.5 and 2.5 m, `MOULT.every` at 18 real hours
+for the hose — a player-only multiplier or the world's knob lowered), then the juvenile's three steps, then the den's look.
+
 **v11.75 (21 Sep 2026): any species can be the player (the person's decisions, LINEAGE §12.29–31).** New game lists the roster's three players and every
 species the profile has seen (as the creator is gated), drifters out, and starts the slot as the one clicked (menu.js `founderClade`: the spec copied
 with `founder` on it). The presets' hand numbers are gone: the third-person arm is the body's length (player.js `CAM_BODY`; the coilshell's 6.5 is 6.3,
@@ -48,7 +61,7 @@ clutch carries the child — the sparkle plays on it — and at your death you a
 the lab will not commit and says what costs what. line.js `BUDGET` prices the diff off the v11.70 registry (a number by how far it moves across
 its believable band, parts added, dropped and restyled by their registry cost, a core 6, size 4 a doubling) against 3 + 1.5 a generation. The
 No hard cap on the distance from the parent — the budget is the cap (answered for now, §12.22). (Its four asks were answered the same day: v11.72.1 above;
-the fuel and the tail term are v11.73.) Not built: disposition and followers (§8.2's derived `DEFS`), the other two clades' modes.
+the fuel and the tail term are v11.73.) Not built: disposition and followers (§8.2's derived `DEFS`).
 
 **v11.71 (21 Sep 2026): one calculator for every animal.** The person: a child's speed is derived from its body like any animal's — "a universal
 logic of how fast an animal moves based on its size and mass and such" (LINEAGE §12.20; it replaces CREATOR's decision 2 for anything in the

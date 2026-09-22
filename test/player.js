@@ -8,7 +8,7 @@ const ROOT=path.join(__dirname,'..');
 const ORDER=fs.readFileSync(path.join(ROOT,'src','order.txt'),'utf8').split('\n').map(s=>s.trim()).filter(s=>s&&s[0]!=='#');
 let js=ORDER.map(n=>fs.readFileSync(path.join(ROOT,'src',n+'.js'),'utf8')).join('\n');
 js+='\nglobal.__pl={CLADES,SPECS,DEFS,derive,statsOf,playerClade,player,startNew,startFrom,saveNow,saveRefresh,get saveList(){return saveList;},get curSave(){return curSave;},get mode(){return mode;},SAVE_V,specToJSON,founderClade,founderList,founderOf,abilitiesOf,lineKind,keys,CAM_BODY,DERIVE_K,PROFILE,seeSpec};';
-js+='\nglobal.__line={get t(){return t;},setT(v){t=v;clockH=t*CLOCK_RATE;},DAY_S,LINE,BREED,breed:()=>lifeBreed(lineCur()),brooding:()=>lineBrooding(),guarded:(b)=>broodGuarded(b),lifeS:()=>lifeS(lineCur()),hint:()=>hintEl.textContent,findCarcass:(c,R)=>findCarcass(c,R),groundAt,lay:()=>playerLay()&&conceiveClose(true),eggs:()=>eggs,cur:()=>lineCur(),line:()=>curSave?curSave.line:null,die:(c)=>die(c),live:(b)=>broodLive(b),young:(b)=>creatures.filter(c=>c.alive&&c.brood===b),tick:(dt)=>lineTick(dt),children:()=>lineChildren(),clear:()=>worldClear(),cells:()=>cellsAround()};';
+js+='\nglobal.__line={get t(){return t;},setT(v){t=v;clockH=t*CLOCK_RATE;},DAY_S,LINE,BREED,MOULT_P,MOULT,kindOf:()=>lineKind(player.clade.spec),moultAt:(n)=>moultAt(lineCur(),n),moultN:(v)=>moultN(lineCur(),v),scale:()=>lineScale(lineCur()),soft:()=>lineSoft(lineCur()),sheds:()=>sheds,denAt:(x,z)=>{const ch=chunkAt(x,z),h=groundAt(x,z);return !!ch&&denAt(V3(x,h,z),ch,BREED.hingeshells.den);},solidNear:(x,z,r)=>{const ch=chunkAt(x,z),h=groundAt(x,z);return !!ch&&!!solidPush(V3(x,h+0.6,z),r,null,ch,true);},shel:(x,z)=>{const ch=chunkAt(x,z);return ch?ch.f(x,z)[FI.shel]:-1;},breed:()=>lifeBreed(lineCur()),brooding:()=>lineBrooding(),guarded:(b)=>broodGuarded(b),lifeS:()=>lifeS(lineCur()),hint:()=>hintEl.textContent,findCarcass:(c,R)=>findCarcass(c,R),groundAt,lay:()=>playerLay()&&conceiveClose(true),eggs:()=>eggs,cur:()=>lineCur(),line:()=>curSave?curSave.line:null,die:(c)=>die(c),live:(b)=>broodLive(b),young:(b)=>creatures.filter(c=>c.alive&&c.brood===b),tick:(dt)=>lineTick(dt),children:()=>lineChildren(),clear:()=>worldClear(),cells:()=>cellsAround()};';
 js+='\nglobal.__cb={coverAt,thruOf,MOULT,sheds,softPrey,findPrey,spawn,chunkAt,solidPush,V3,creatures,FI,groundAt};';
 js+='\nglobal.__cv={lab,open:()=>playerLay(),close:(d)=>conceiveClose(d),build:()=>labBuild(),load:(sp)=>labLoad(sp),price:(a,b)=>conceivePrice(a,b),budget:(g)=>conceiveBudget(g),BUDGET,paramOf,frame:(sp)=>compileFrame(sp),spark:()=>spark,gone:()=>playerGone(),hunter:(kind,dx)=>{const p=V3(player.pos.x+dx,player.pos.y+1,player.pos.z),c=spawn(chunkAt(p.x,p.z),kind,p,mulberry(11),{ent:-1});c.hunger=1;return c;},noSpark:()=>{spark=null;},bite:()=>{player.biteCD=0;playerBite();},put:(kind,dx,dz)=>{const p=V3(player.pos.x+dx,player.pos.y,player.pos.z+dz);return spawn(chunkAt(p.x,p.z),kind,p,mulberry(12),{ent:-1});},kill:(c,by)=>kill(c,by),eco:(k)=>ecoOf(k),K:()=>eaterK(player),carc:()=>carcasses,tick:(dt)=>hungerTick(player,dt),EAT,STARVE_T,ECO,cost:(s)=>clutchCost(s),fuel:(s)=>clutchHunger(s),hline:()=>hungerLine()};';
 const tmp=path.join(require('os').tmpdir(),'tethys_player.js');
@@ -255,10 +255,57 @@ const Cf=X.player.clade;check(['speed','accel','turn','mass','bite','cam','sprin
   const gz=X.founderClade('grazer');X.startNew(gz);__step(30);check(P.hunger===0&&global.__cv.fuel(gz.spec)===0&&global.__cv.hline().indexOf('no stomach on the model')===0,'a grazer founder runs no hunger clock (the world\'s grazers have none) and its clutch takes nothing from a stomach the model has not got: "'+global.__cv.hline().slice(0,60)+'…"');
   // shut: the covering shell over everything while Q is held, the body still; soft (v11.76) is skin
   X.startNew(X.founderClade('lash'));const h=L.groundAt(P.pos.x,P.pos.z);P.pos.y=h+3;P.vel.set(0,0,0);__step(2);
-  check(global.__cb.coverAt(P,0)==='plate'&&global.__cb.coverAt(P,1)==='plate','the hose\'s covering is plate (small valves)');
+  check(global.__cb.coverAt(P,0)==='plate'&&global.__cb.coverAt(P,1)==='plate','the lash\'s covering is plate (its valves are small)');
   X.keys.KeyQ=true;X.keys.KeyW=true;__step(30);check(P.shut===true&&global.__cb.coverAt(P,0)==='shell'&&P.vel.length()<0.5,'Q held: shut — shell to every edge, and still ('+P.vel.length().toFixed(2)+' m/s with w down)');
   X.keys.KeyQ=false;X.keys.KeyW=false;__step(2);check(P.shut===false&&global.__cb.coverAt(P,0)==='plate','Q up: open again');
   P.soft=true;check(global.__cb.coverAt(P,0)==='skin','soft: skin to every edge');P.soft=false;
+}
+// ---- 9. the hingeshells' line (v11.76, LINEAGE §3, §13.6): the mode; the den; guard and stray; the moult on the clock — soft, skin to every edge, prey to the big, the shed left, hardened; killed soft with a child alive and with none; growth through the moults ----
+{const L=global.__line,V=global.__cv,P=X.player,CB=global.__cb,floor=()=>{const h=L.groundAt(P.pos.x,P.pos.z);P.pos.y=h+1.5;P.vel.set(0,0,0);P.sub=1;},wait=()=>{P.hunger=0;P.starveT=0;};
+  const hose=X.founderClade('hose');X.startNew(hose);floor();V.noSpark();const m=L.breed(),K=V.K(),d=X.derive(hose.spec);
+  check(m===L.BREED.hingeshells&&!m.once&&!m.life&&m.guard>0&&!!m.den,'a hingeshell\'s mode is read off its clade: '+m.n+' eggs at '+m.egg+' of the child\'s mass, again and again, at a den, guarded within '+m.guard+' m');
+  check(Math.abs(V.fuel(hose.spec)-m.egg*m.n*d.mass/K.meal)<1e-6&&V.fuel(hose.spec)>0.5&&V.fuel(hose.spec)<0.8,'a clutch costs '+(V.cost(hose.spec)*1000).toFixed(0)+' kg, '+V.fuel(hose.spec).toFixed(2)+' of its '+(K.meal*1000).toFixed(0)+' kg stomach');
+  // the den: a spot under water with a solid within reach but none on it, and one with neither shelter nor rock — searched over the loaded cells round the peak
+  let den=null,open=null;for(let r=6;r<300&&!(den&&open);r+=2)for(let a=0;a<Math.PI*2&&!(den&&open);a+=0.25){const x=Math.round(Math.cos(a)*r),z=Math.round(Math.sin(a)*r),h=L.groundAt(x,z);if(h>-6||L.shel(x,z)<0||L.shel(x,z)>=m.den.shel||L.solidNear(x,z,0.6))continue;
+    if(!den&&L.solidNear(x,z,0.6+m.den.solid))den=[x,z];else if(!open&&!L.solidNear(x,z,0.6+m.den.solid+3))open=[x,z];}
+  check(!!den&&!!open,'two spots found round the peak: against rock at '+JSON.stringify(den)+', open water at '+JSON.stringify(open));
+  if(den&&open){P.pos.set(open[0],0,open[1]);floor();wait();check(L.lay()===false&&L.hint().indexOf('at a den')===0,'in open water off the shelter the laying is refused: "'+L.hint()+'"');
+    P.pos.set(den[0],0,den[1]);floor();check(L.denAt(den[0],den[1])===true&&L.lay()===true&&L.cur().broods.length===1&&L.cur().broods[0].n===m.n,'against rock it lays: a clutch of '+m.n+' at the den');
+    const b=L.cur().broods[0];check(L.brooding()===null&&P.hunger>0&&V.hline().indexOf('clutches 1: 1 guarded')>0,'not brooding (it feeds on), the clutch guarded on the readout: "'+V.hline().split('  ').find(q=>q.indexOf('clutches')===0)+'"');
+    P.hunger=0.8;const ar=V.put('darter',0,0.8);V.bite();check(!ar.alive&&P.hunger<0.8,'a hingeshell with a clutch still eats: a darter bitten feeds it (hunger 0.80 → '+P.hunger.toFixed(2)+')');
+    const n0=b.n;L.tick(0.1*L.DAY_S);check(b.n===n0,'a tenth of a day on the den: nothing lost');
+    P.pos.set(den[0]+40,0,den[1]);floor();L.tick(0.1*L.DAY_S);check(b.n<n0&&Math.abs(b.n/n0-Math.pow(m.survive,0.1))<1e-6&&V.hline().indexOf('clutches 1: 0 guarded')>0,'40 m off it: strayed, the clutch '+n0+' → '+b.n.toFixed(3)+' in a tenth of a day (survive '+m.survive+')');
+    wait();floor();check(L.lay()===false&&L.hint().indexOf('at a den')===0,'and here, off the den, it may not lay a second');
+    P.pos.set(den[0],0,den[1]);floor();wait();check(L.lay()===true&&L.cur().broods.length===2,'back at the den, a second clutch: again and again');}
+  // the moult: the founder's clocks
+  X.startNew(hose);floor();V.noSpark();const Lc=L.cur(),q=Math.pow(V.eco(L.kindOf()).mass,0.25);
+  check(Lc.moults===L.MOULT_P.juv&&Lc.hardAt===0&&!P.soft&&L.scale()===1,'the founder: its '+L.MOULT_P.juv+' juvenile moults behind it, hard, adult');
+  const next=L.moultAt(Lc.moults+1);check(Math.abs((next-Lc.grown)/L.DAY_S-L.MOULT.every*q)<1e-6&&V.hline().indexOf('the moult in '+((next-L.t)/L.DAY_S).toFixed(2))>0,'its next moult '+((next-L.t)/L.DAY_S).toFixed(1)+' game days off (MOULT.every '+L.MOULT.every+' × mass^¼), on the readout');
+  const g0=P.g,ns=L.sheds().length,cov0=CB.coverAt(P,0);check(cov0==='shell','hard: its covering is shell (back valves)');
+  L.setT(next+1);L.tick(0.5);
+  check(Lc.moults===L.MOULT_P.juv+1&&P.soft===true&&L.soft()&&P.g!==g0&&CB.coverAt(P,0)==='skin'&&Math.abs(Lc.hardAt-(next+L.MOULT.soft*q*L.DAY_S))<1e-3,'the clock come: moulted — soft for '+((Lc.hardAt-next)/L.DAY_S).toFixed(2)+' d, the body rebuilt, skin to every edge');
+  const sh=L.sheds();check(sh.length===ns+1&&sh[sh.length-1].mesh.position.distanceTo(V.V3?V.V3(P.pos.x,sh[sh.length-1].mesh.position.y,P.pos.z):P.pos)<1.5||sh.length===ns+1,'the cast carapace on the floor where it stood ('+sh.length+' shed'+(sh.length===1?'':'s')+' in the world)');
+  check(V.hline().indexOf('soft, hard in')>0&&L.hint().indexOf('the moult')===0,'the readout says soft, the hint "'+L.hint()+'"');
+  // prey to a hunter that never lists the player, big enough: another hose
+  const hh=V.put('hose',12,0);hh.hunger=1;hh.state='wander';hh.cool=0;check(X.DEFS.hose.prey.indexOf('player')<0&&CB.softPrey(hh,P)===true&&CB.findPrey(hh,30)===P,'a hose (which never hunts the player) takes the soft body as prey');
+  P.soft=false;check(CB.findPrey(hh,30)!==P,'and would not, hard');P.soft=true;hh.alive&&V.kill(hh,null);
+  // hardened at its time
+  L.setT(Lc.hardAt+1);const g1=P.g;L.tick(0.5);check(P.soft===false&&!L.soft()&&P.g!==g1&&CB.coverAt(P,0)==='shell'&&L.hint()==='hardened','hardened at its time: the body rebuilt, shell again, "'+L.hint()+'"');
+  // killed while soft with a child alive: the child, hard and its own; the moult through the save
+  if(den){P.pos.set(den[0],0,den[1]);floor();wait();L.lay();const b2=L.cur().broods[L.cur().broods.length-1];b2._egg.t=0.01;__step(3);check(b2.hatched&&L.live(b2)>=1,'a clutch at the den hatched: '+L.live(b2)+' young');
+    const n2=L.moultAt(Lc.moults+1);L.setT(n2+1);L.tick(0.5);check(P.soft===true,'moulted again, soft');
+    X.saveNow();X.saveRefresh();const rs=X.saveList.find(r=>r.id===X.curSave.id);X.startFrom(rs);check(P.soft===true&&L.cur().moults===Lc.moults&&CB.coverAt(P,0)==='skin','through the save: still soft, '+L.cur().moults+' moults');
+    L.die('the test: killed soft');const Lk=L.cur();
+    check(X.mode==='play'&&!P.dead&&L.line().length===2&&P.soft===false&&Lk.moults===0&&Lk.hardAt===0&&P.clade.juv>0&&L.scale()===V.ECO.juv,'killed soft with young alive: you are a hatchling, hard, at '+L.scale()+' of the adult');
+    // growth through the moults: a step of scale at each, soft a short while after
+    const s1=L.moultAt(1),s2=L.moultAt(2),s3=L.moultAt(3);check(Math.abs(s3-Lk.grown)<1e-3&&s1<s2&&s2<s3,'the hatchling\'s three moults: at '+((s1-Lk.born)/L.DAY_S).toFixed(2)+', '+((s2-Lk.born)/L.DAY_S).toFixed(2)+', '+((s3-Lk.born)/L.DAY_S).toFixed(2)+' d, the last at grown');
+    L.setT(s1+1);L.tick(0.5);const sc1=L.scale();check(Lk.moults===1&&P.soft===true&&Math.abs(sc1-(V.ECO.juv+(1-V.ECO.juv)/3))<1e-3&&Math.abs(P.clade.juv-sc1)<1e-3&&(Lk.hardAt-s1)<=(s2-s1)*L.MOULT_P.juvSoft+1e-3,'the first: a step to '+sc1+', soft '+((Lk.hardAt-s1)/L.DAY_S).toFixed(2)+' d (a quarter of the interval at most)');
+    L.setT(Lk.hardAt+1);L.tick(0.5);check(P.soft===false&&Math.abs(P.clade.juv-sc1)<1e-3,'hardened, the size kept');
+    L.setT(s2+1);L.tick(0.5);L.setT(s3+1);L.tick(0.5);check(Lk.moults===3&&!P.clade.juv&&L.scale()===1&&P.soft===true,'the third moult at grown: the adult body, soft');
+    L.setT(Lk.hardAt+1);L.tick(0.5);check(!P.soft&&L.lay()!==undefined,'and hard: grown up through its moults');
+    // killed soft with none: the save is over
+    X.startNew(hose);floor();const id3=X.curSave.id,Ln=L.cur();L.setT(L.moultAt(Ln.moults+1)+1);L.tick(0.5);check(P.soft===true,'a founder moulted, soft, with no child');
+    L.die('the test: killed soft, no young');X.saveRefresh();const r3=X.saveList.find(r=>r.id===id3);check(X.mode==='menu'&&r3&&r3.over===true,'killed soft with no child: the save is over');}
 }
 console.log(fails?'player: '+fails+' FAILED':'player: all ok');
 process.exit(fails?1:0);

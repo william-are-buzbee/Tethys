@@ -5080,3 +5080,68 @@ hand numbers and opens new game to the roster.
 5. **Q with two abilities**: a ram has ram and shut and only the first is reachable. A second key, or the list on the readout only.
 6. **The crusher's `preyClade` and `PLAYER_GRIP`** read the kind of body (`presetFor`: coil, soft, fin), so a rasp founder is the crusher's meal and a
    hingeshell founder grips as the finback does.
+
+## v11.76 — the hingeshells' line (21 Sep 2026)
+
+LINEAGE §13.6's hingeshell half (§3: iteroparous, invested, K), on v11.75's path: any hingeshell of the roster is a founder, and the person's decision of
+21 Sep (§12.31) that the player moults, and that the moult is not a trip to the editor — the editor opens at conception only, as for everyone.
+
+- **The mode** (line.js `BREED.hingeshells`, `breedOf` by clade): few large eggs — `n` 3 at `egg` 0.02 of the child's adult derived mass (the hose's 58 kg,
+  0.68 of its 84 kg stomach; the sickle's 1.8 t of 3.1) — laid again and again (`once` false, no age), **at a den** (`den`: the sheltered water, the `shel`
+  field at 0.5 or more, or a solid within 2.5 m — a rock, a stalk, a structure's foot, as `MOULT`'s `hideSpot` finds one for the world's soft bodies;
+  `denAt`; `x` elsewhere says `at a den: sheltered water, or against rock`), **guarded** with v11.74's knob (`guard` 12 m: on it no scavenger takes the
+  clutch and nothing is lost; off it the losses run at `survive` 0.9 a day and any scavenger comes — now for every unhatched clutch of a guarding mode, so
+  a hingeshell with two dens guards one and strays from the other; `lineTick`), and the parent **feeds meanwhile** (not `once`: no brood, no wasting).
+  Nine in ten of an unloaded brood live a day (`survive`, the clade whose young survive best). The readout's hunger line has `clutches 2: 1 guarded`.
+- **The moult on the player** (line.js, the section over the track): the world's own `MOULT` rules by the clock — an adult moults every `MOULT.every`
+  20 × mass^¼ game days and is soft for `MOULT.soft` 0.5 × mass^¼ after each (the hose 27.1 days and 0.68, 27 real minutes; the sickle 66.9 and 1.67 —
+  an adult that never moults in a session; the person tunes `MOULT.every`, the world's knob). Soft: the body rebuilt pale in the soft coat (`softBuild`:
+  `coatChem` 'soft' on the whole coat, as `buildKind` builds the world's soft twin), its valves clamped (the anim's `soft`), **skin to every edge**
+  (combat.js `coverAt`: the player's state first) and **prey to whatever is big enough, listed or not** (creatures_ai.js `findPrey`: `softPrey` on the
+  player as on any soft body — a hose takes a soft hose, a lash or a hood a soft sickle, COMBAT §7's answer for the whole clade), with **the cast
+  carapace on the floor** where it stood (`dropShed` on the line kind — `shedGeo` and `buildKind` read `specOfKind`, so the player's kind sheds as a
+  roster kind does; `MOULT.shedT` 4 days, the cell's). It moves as it likes: the world's soft body lies hidden by its choice (`updateSoft`), not by a
+  rule, so the player is not held. Hardened at its time, the body rebuilt plain (`hardened`). Everything is a function of the clock — `moultN`, `moultAt`
+  off the life's `born` and `grown` — so an unload, a run-on or a save change nothing; the life keeps only `moults` (the count done) and `hardAt` (the
+  clock it hardens at, 0 hard), both on the record; a record from before gets its count by the clock. The readout's line: `the moult in 27.11 d`, then
+  `soft, hard in 0.58 d`; the hint `the moult: soft` / `the moult: a size bigger, and soft` / `hardened`. **Knowing it is coming** is the one
+  player-specific piece and is not built: the readout only (Unseen 1 proposes the cue).
+- **Growth through the moults** (the juvenile system allows it: `playerClade` takes any scale): a hingeshell hatchling grows a step at each of
+  `MOULT_P.juv` 3 moults from the hatch to grown (`lineScale`: ECO.juv 0.55 → 0.70 → 0.85 → 1, the last at `grown`), soft after each for `MOULT_P.juvSoft`
+  0.25 of its moult interval at most (the adult's soft days would outlast a juvenile's interval: the hose's steps are 0.45 days apart, soft 0.11 — 4.5
+  real minutes; the sickle's 1.11 and 0.28). The other clades grow in one step at `grown` as before (`lineScale` says which). A founder starts with its
+  juvenile moults behind it (`lineStart`: `moults` 3, hard); a child at a handover with none (its own line). `startFrom` and `lineContinue` build the
+  body at the line's scale and, soft, pale.
+- **Found by the test, fixed:** a save with a brood's young in view left the brood's catch-up stamp at the hatch (save.js `lineOut` set the count, not
+  `at`), so a continue took the unloaded losses off young that had been loaded the whole time — with the finback's 0.8 a day, a save a day after a hatch
+  lost a fifth of the loaded young on the load, and a 27-day jump lost them all. `lineOut` stamps `at` now, as `lineUnload` does.
+- **A dev hook** (main.js `skip(days)` beside `tp`): the world clock moved on by that many game days in play — for looking at what a clock brings (a
+  moult, a hatch, a brood's losses); the ledger's model catches up over its next ticks, the broods lazily. Nothing saves or reads it.
+- **Tests** (`test/player.js` §9, in `--test`): the mode off the clade; a clutch's cost; two spots found round the peak — against rock and open water
+  off the shelter — the laying refused in the open (`at a den…`) and taken against rock; not brooding, the clutch guarded on the readout; a darter bitten
+  feeds the parent; a tenth of a day on the den loses nothing, 40 m off it the clutch 3 → 2.969 (`survive` 0.9) and the readout says `0 guarded`; off the
+  den a second is refused, back at it laid — again and again; the founder's three juvenile moults behind it, its next 27.1 days off on the readout; the
+  clock come: soft 0.68 d, the body rebuilt, skin, the cast on the floor, the readout and the hint; a hose (which never hunts the player) takes the soft
+  body as prey and would not hard; hardened at its time — shell again, `hardened`; a clutch hatched, moulted again, through the save still soft with the
+  count kept; killed soft with young alive — a hatchling, hard, at 0.55; its three moults at 0.45, 0.90, 1.36 days, the last at grown; the first a step
+  to 0.70 and soft 0.11 d; hardened with the size kept; the third at grown the adult body; a founder moulted with no child, killed soft — the save over.
+  `--test` green on both tiers.
+- **Seen** in the app's browser (dev.html on serve.js, the loop driven by hand from the console, the clock by `skip`): a new game as the hose at the peak,
+  `tp(148,138,3)` to the test's den against the rocks on the shelf; `x` opened the bill (`the eggs 0.68 of 1.00 eaten … unchanged: the clutch will be a
+  copy`), `l` laid it — `v76_hose_clutch.png`: the hose over its pale clutch at the foot of the rocks, the readout `hunger 0.68 hungry … clutches 1: 1
+  guarded  the moult in 27.11 d  q: shut`; `skip(27.2)` — `v76_hose_moult.png`: the body bleached pale with its valves clamped, the cast carapace on the
+  sand behind it at its old size, the hint `the moult: soft`, the readout `soft, hard in 0.58 d`; `skip(0.7)` — `v76_hose_hard.png`: night now, the coat
+  back, the shed still lying there, the hint `hardened`. Not seen: a hunter taking the soft body in play (the test does), a juvenile's moults in play, a
+  hingeshell over 3 m as the player.
+
+**Unseen, ask in this order:**
+1. **The cue that a moult is coming** — proposed, not built: the body's own tell in the last tenth of the interval — the valves stop raising when it swims
+   (the anim's `soft` eased in from 0 over the last day), the coat dulls toward the soft coat's pale, the strand speed and the burst fall a little —
+   and a hint at the last hour (`the moult is near`). Or nothing but the readout, as now, if the surprise is the point of the siege.
+2. **The soft body's freedom**: it swims at full speed. The world's soft body hides and does nothing by choice; a real moulting arthropod can barely
+   move. A speed factor while soft (the wound's 0.8, or lower) would be one term.
+3. **The numbers**: 3 eggs at 0.02 (0.68 of the hose's stomach), a den at `shel` 0.5 or a solid within 2.5 m, guard 12 m, `survive` 0.9, and
+   `MOULT.every` 20 × mass^¼ (the hose's 27 game days is 18 real hours: no adult moults in a session at today's world knob — a player-only multiplier,
+   or the world's knob lowered for every hingeshell).
+4. **The juvenile's moult**: 3 steps, soft a quarter of the interval at most. And PLANET says juveniles are soft; the world's are not, nor the player's.
+5. **The den's look**: nothing marks it; a clutch against a rock reads as a clutch against a rock.

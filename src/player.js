@@ -57,6 +57,8 @@ function hungerLine(){const P=player,C=P.clade;if(!C||mode!=='play')return '';co
   const L=lineCur(),m=lifeBreed(L),b=lineBrooding();let ex=''; // v11.74: the age, and the brood
   if(L)ex+='  age '+((t-L.born)/DAY_S).toFixed(2)+' d'+(m&&m.life?' of '+(lifeS(L)/DAY_S).toFixed(2):'');
   if(b)ex+='  brooding '+Math.round(b.n)+' eggs, the hatch in '+(Math.max(0,b.hatch-t)/DAY_S).toFixed(2)+' d, '+(broodGuarded(b)?'guarded':'strayed')+', wasted '+(P.waste||0).toFixed(2)+' speed ×'+(P.speedK||1).toFixed(2);
+  else if(L&&m&&m.guard){const cl=L.broods.filter(q=>!q.hatched&&q._egg);if(cl.length)ex+='  clutches '+cl.length+': '+cl.filter(q=>broodGuarded(q)).length+' guarded';} // v11.76: the hingeshell's dens
+  if(L&&moulting(L))ex+=lineSoft(L)?'  soft, hard in '+((L.hardAt-t)/DAY_S).toFixed(2)+' d':'  the moult in '+((moultAt(L,(L.moults||0)+1)-t)/DAY_S).toFixed(2)+' d'; // v11.76
   ex+='  q: '+(C.abilities&&C.abilities.length?C.abilities.join(', '):'nothing'); // v11.75: the abilities the body has (the first is Q)
   if(!K.hunter)return 'no stomach on the model (the founder hunts nothing)  a clutch of '+(m?m.n:0)+' as you: '+hlCost.toFixed(2)+ex; // v11.75
   return 'hunger '+P.hunger.toFixed(2)+(P.hunger>ECO.hungry?' hungry':'')+'  '+left+'  stomach '+(K.meal*1000).toFixed(0)+' kg  cycle '+K.cycle.toFixed(2)+' d  a clutch of '+(m?m.n:0)+' as you: '+hlCost.toFixed(2)+' of it'+ex;}

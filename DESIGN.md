@@ -1553,6 +1553,7 @@ far LOD), `setLOD`, steering, one `updateX` per role, `updateCreatures()`.
   `tilt`, `per` max(1, capacity × `shedPer` 0.5) with `rare` the fraction under one, `envs` the kind's SPAWN envelopes, `top` 0.6 size,
   `maxSlope` 1). placeFloraType reads `envs` (the best of several, `envsW`) and `rare` for any entry.
 - **The stun** is every role's since v11.66 (updateCreatures, before the roles: the finback's blow, the ram's).
+- **The player moults too** (v11.76, line.js): the same clocks and the same soft state on the player's body, by the world clock — [The player](#the-player).
 - **Spawning:** from the ledger (v11.26, [The ecology](#the-ecology)): `spawnChunkCreatures` takes each entry's count from it and
   `placeKind` places it by kind in the entry's groups (`grp`); swimmers get proper water (floor under −5), not the surf; the strand's
   scuttles are an entry with `land`. Kills leave carcasses and nothing respawns; the ledger's births are laid as eggs.
@@ -1745,8 +1746,23 @@ clutch loses at `survive` 0.5 a day by the clock and any scavenger takes it), an
 hatched, loaded or by the clock — the handover to a hatchling at the clutch. `hatchK` 1 is the brooded clutch's hatch as a multiple of the world's (0.36 days:
 inside the starvation clock, 1.28–1.56 days from the laying, so the parent arrives hungry, wasted 0.1–0.3; 3 would bring it spent). `life` 4 × mass^¼ game
 days is its span (5.69, 3.8 real hours): `die('old')` — a founder is an adult hatched a growth ago (`lineStart`), a child dates from its hatch; nothing else
-ages. A hingeshell has no mode (`x`: `not this body`; the den is §13.6). `survive` is every mode's unloaded rate (`broodCatchUp`). The readout's hunger line
-carries the age and, brooding, the clutch, the hatch, guarded or strayed, the waste and the speed factor.
+ages. **A hingeshell (v11.76, `BREED.hingeshells`; LINEAGE §3: iteroparous, invested, K)** lays 3 eggs at 0.02 of the child's mass (the hose's 58 kg, 0.68 of
+its stomach), again and again, no age, **at a den** (`den`: the `shel` field at 0.5 or more, or a solid within 2.5 m — `denAt`; `x` elsewhere says so),
+guarded within `guard` 12 m as the soft-arm's brood is (now every unhatched clutch of a guarding mode: off the den the losses run at `survive` 0.9 a day
+and the scavengers come), feeding meanwhile; the readout says `clutches 2: 1 guarded`. `survive` is every mode's unloaded rate (`broodCatchUp`). The
+readout's hunger line carries the age and, brooding, the clutch, the hatch, guarded or strayed, the waste and the speed factor.
+
+**The moult on the player (v11.76, `line.js`; LINEAGE §12.31: not a trip to the editor).** The world's `MOULT` rules by the clock: an adult moults every
+`MOULT.every` 20 × mass^¼ game days (`moultAt`, `moultN` off the life's `born` and `grown`; the hose 27.1 days, the sickle 66.9) and is soft for
+`MOULT.soft` 0.5 × mass^¼ after each (0.68 and 1.67 days) — the body rebuilt pale (`softBuild`: `coatChem` 'soft' on the coat), the valves clamped (the
+anim's `soft`), skin to every edge (combat.js `coverAt`) and prey to any hunter big enough, listed or not (creatures_ai.js `findPrey`, `softPrey`), the cast
+carapace dropped where it stood (`dropShed` on the line kind; `shedGeo` and `buildKind` read `specOfKind`). It moves as it likes (the world's soft body
+hides by choice, not by a rule). Hardened at its time, rebuilt plain. A hatchling **grows through its moults**: `MOULT_P.juv` 3 from the hatch to grown, a
+step of scale each (`lineScale`: 0.55, 0.70, 0.85, 1 — the last at `grown`), soft for `MOULT_P.juvSoft` 0.25 of the interval at most; the other clades grow
+in one step as before. The life keeps `moults` and `hardAt` (on the record; a record from before gets its count by the clock); a founder starts with its
+juvenile moults behind it, a child at a handover with none. The readout: `the moult in 27.11 d` / `soft, hard in 0.58 d`; the hints `the moult: soft`,
+`the moult: a size bigger, and soft`, `hardened`. Knowing it is coming is not built (CHANGELOG v11.76, Unseen 1). `skip(days)` (main.js) moves the clock
+from the console for looking at it.
 
 **The line (v11.69, `line.js`; LINEAGE.md §13.1–2).** The slot carries `line`, a list of lives, the last the one played: `{spec, preset, born, grown, died,
 cause, playT, parent, track, lay, broods}` — times on the world clock `t`, `track` a sample every `LINE.trackS` 5 s of play run-length coded (`[x,y,z]`,

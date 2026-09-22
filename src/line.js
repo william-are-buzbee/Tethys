@@ -1,4 +1,4 @@
-// line.js — the line across generations (v11.69, LINEAGE.md §13.1–2): the lives on the slot and their tracks, the clutch by the body's mode (v11.74: the ringmouths' — BREED), the editor at conception and its budget (v11.72, §13.4), the broods, the handover at death, the sparkle
+// line.js — the line across generations (v11.69, LINEAGE.md §13.1–2): the lives on the slot and their tracks, the clutch by the body's mode (v11.74: the ringmouths' — BREED; v11.76: the hingeshells' den and the moult on the player), the editor at conception and its budget (v11.72, §13.4), the broods, the handover at death, the sparkle
 // A slot's `line` is a list of lives, the last the one being played: {spec, preset, born, grown, died, cause, playT, parent, track, lay, broods}.
 // born and died are the world clock `t` (seconds; DAY_S a game day), grown the clock at which the body is adult (a hatchling is ECO.juv of it
 // until then, as the world's juveniles are), parent the index of the life that laid it (−1 the founder), track the position every LINE.trackS
@@ -17,19 +17,23 @@ const LINE={trackS:5,near:3}; // trackS: s of play between the track's samples; 
 // it does not feed through (feeds), wasting as its stomach empties (wasteOf: the calculator's own speed off a live spec with less muscle, DERIVE_K.waste),
 // guarding the clutch or not (broodGuarded: a choice with a payoff, not a leash — off it, the losses run), and dead at the hatch (die('spent'): a death like
 // any other, the handover to a hatchling at the clutch). It ages, too, so a soft-arm that never spawns still ends (die('old')); nothing else ages yet. A
-// slowblood breeds again and again and cares for nothing (§3). The hingeshells' den is §13.6, not built: no mode, and x refuses the body.
+// slowblood breeds again and again and cares for nothing (§3). A hingeshell (v11.76, §3: iteroparous, invested, K) lays few large eggs at a den — the
+// sheltered water (the shel field) or against a solid, as MOULT's hideSpot finds one (den) — again and again, guards each clutch as v11.74's brooder does
+// (guard) and feeds meanwhile; its young survive best (survive). It moults (below).
 // r against K in the eggs: a clutch costs egg × n × the child's adult derived mass in tonnes, off the stomach over the parent's meal (clutchHunger, v11.73).
 // Per key — n: eggs a clutch. egg: an egg's material as a share of the child's adult derived mass. once: one clutch a life, then the brood. life: the lifespan
 // in game days × mass^¼ (the ledger's q, as every rate is; 0 never ages). survive: the share of a brood alive after a game day unguarded — its cell unloaded
 // (every mode), and loaded while the brooding parent is off it (a brooding mode). guard: m from the clutch within which the parent guards it — no scavenger
 // takes it and it loses nothing. gaunt: the share of the core's radius gone at full wasting (the look; the speed is DERIVE_K.waste's). hatchK: the brooded
-// clutch's hatch time as a multiple of the world's (ECO.hatch × mass^¼). First numbers, to be moved by play (the person tunes; §6: "playtested a lot"):
+// clutch's hatch time as a multiple of the world's (ECO.hatch × mass^¼). den: where a clutch may be laid — shel the field's least value, solid m within
+// which a solid will do instead. First numbers, to be moved by play (the person tunes; §6: "playtested a lot"):
 const BREED={
   soft:{n:30,egg:0.001,once:true,life:4,survive:0.5,guard:12,gaunt:0.25,hatchK:1}, // the octopus: 30 eggs at 2.24 t are 67 kg, 0.66 of the soft-arm's 102 kg stomach; a life of 4 × 1.42 = 5.7 game days (3.8 real hours); the brood 0.36 days at hatchK 1 — the parent reaches the hatch at hunger 0.6–0.9, wasted 0.1–0.3 (its starvation clock from the laying is 1.3–1.6 days, so the brood is well inside it); at 3 it would arrive spent; unguarded, half the clutch a day
   shelled:{n:2,egg:0.008,once:false,life:0,survive:0.8}, // the nautilus (the coilshell): 2 eggs at 3.3 t are 53 kg, 0.63 of its 84 kg stomach, again and again; no brood, no age
-  slowbloods:{n:4,egg:0.01,once:false,life:0,survive:0.8} // the finback (v11.69–73): 4 eggs at 1.77 t are 71 kg, 0.49 of its 146 kg stomach; 4 eggs unloaded are 3.2 after a day and under one living child after about six
+  slowbloods:{n:4,egg:0.01,once:false,life:0,survive:0.8}, // the finback (v11.69–73): 4 eggs at 1.77 t are 71 kg, 0.49 of its 146 kg stomach; 4 eggs unloaded are 3.2 after a day and under one living child after about six
+  hingeshells:{n:3,egg:0.02,once:false,life:0,survive:0.9,guard:12,den:{shel:0.5,solid:2.5}} // v11.76: 3 eggs at 0.02 — the hose's 58 kg, 0.68 of its 84 kg stomach; the sickle's 1.8 t of 3.1; again and again, at a den, guarded within 12 m (v11.74's knob) or losing a tenth a day; nine in ten of an unloaded brood live a day
 };
-function breedOf(spec){if(!spec)return null;if(spec.clade==='slowbloods')return BREED.slowbloods;if(spec.clade!=='ringmouths')return null;let ch=false;try{ch=derive(spec).buoyancy==='floats';}catch(e){}return ch?BREED.shelled:BREED.soft;} // the mode off the body
+function breedOf(spec){if(!spec)return null;if(spec.clade==='slowbloods')return BREED.slowbloods;if(spec.clade==='hingeshells')return BREED.hingeshells;if(spec.clade!=='ringmouths')return null;let ch=false;try{ch=derive(spec).buoyancy==='floats';}catch(e){}return ch?BREED.shelled:BREED.soft;} // the mode off the body
 function lifeBreed(L){if(!L)return null;if(L._m===undefined)L._m=breedOf(L.spec);return L._m;} // cached on the life (the runtime links, never saved)
 function broodBreed(b){if(b._m===undefined)b._m=breedOf(b.spec);return b._m||BREED.slowbloods;}
 function lifeS(L){const m=lifeBreed(L);return m&&m.life?m.life*Math.pow(ecoOf(lineKind(L.spec)).mass,0.25)*DAY_S:0;} // s: the life's span, or 0 for a body that does not age
@@ -45,13 +49,13 @@ function wasteTick(L,P,m){const w=wasteOf(P);if(Math.abs(w-(P.waste||0))<0.02&&!
   P.waste=w;const live=liveSpec(P);if(live){live.waste=w;rederive(P);}}
 function gauntClade(C,k){const sp=JSON.parse(specToJSON(C.spec)),core=CORES[sp.core.kind];if(k>0&&core&&core.params.R){const R0=sp.core.R!==undefined?sp.core.R:core.params.R.d;sp.core.R=+(R0*(1-k)).toFixed(4);}return Object.assign({},C,{build:()=>compile(sp)});} // the clade as it is, its body compiled thinner; spec stays the adult's (the save, the calculator's full body)
 function lineCur(){const L=curSave&&curSave.line;return L&&L.length?L[L.length-1]:null;}
-function lifeNew(spec,preset,parent,born,grown){return {spec:JSON.parse(specToJSON(spec)),preset:preset,born:r3(born),grown:r3(grown),died:null,cause:'',playT:0,parent:parent,track:[],lay:-1e9,broods:[]};}
-function lifeClade(L,k){const sp=specOk(L.spec),pre=sp?presetFor(sp):CLADE_PRESETS.find(p=>p.id===L.preset);return sp?playerClade(sp,pre,k):CLADES.find(c=>c.id===L.preset)||CLADES[1];}
-function lineStart(C){curSave.line=[lifeNew(C.spec,C.id,-1,t-growS(C.spec),t)];} // a new game: the founder, adult from the start — hatched a growth ago, so its age (v11.74) is an adult's
+function lifeNew(spec,preset,parent,born,grown){return {spec:JSON.parse(specToJSON(spec)),preset:preset,born:r3(born),grown:r3(grown),died:null,cause:'',playT:0,parent:parent,track:[],lay:-1e9,broods:[],moults:0,hardAt:0};} // moults, hardAt (v11.76): the moults done and the clock the body hardens at (0: hard) — a moulting clade's
+function lifeClade(L,k){const sp=specOk(L.spec),pre=sp?presetFor(sp):CLADE_PRESETS.find(p=>p.id===L.preset);if(!sp)return CLADES.find(c=>c.id===L.preset)||CLADES[1];const C=playerClade(sp,pre,k);if(lineSoft(L))C.build=softBuild(sp,k);return C;} // soft (v11.76): the body built pale through the moult
+function lineStart(C){curSave.line=[lifeNew(C.spec,C.id,-1,t-growS(C.spec),t)];const L=lineCur();if(moulting(L))L.moults=MOULT_P.juv;} // a new game: the founder, adult from the start — hatched a growth ago, so its age (v11.74) is an adult's; a moulting founder has its juvenile moults behind it (v11.76)
 function lineLoadRec(rec,C){ // the line from a record, or (a record from before v11.69) the animal on it as the founder
   const ok=Array.isArray(rec.line)&&rec.line.length&&rec.line.every(L=>L&&L.spec&&Array.isArray(L.broods)&&Array.isArray(L.track));
   curSave.line=ok?JSON.parse(JSON.stringify(rec.line)):[lifeNew(C.spec,C.id,-1,t,t)];
-  for(const L of curSave.line)for(const b of L.broods){b._ch=null;b._egg=null;}
+  for(const L of curSave.line){for(const b of L.broods){b._ch=null;b._egg=null;}if(L.hardAt===undefined)L.hardAt=0;if(L.moults===undefined)L.moults=moulting(L)?moultN(L,Math.min(t,L.grown)):0;} // a record from before v11.76: its moults by the clock, hard
   const L=lineCur();if(L&&lifeBreed(L)&&!(L.born<L.grown))L.born=L.grown-growS(L.spec); // a founder from before v11.74: adult at its start, so hatched a growth before it
 }
 // the kind the young of a spec are (a def per spec, as the lab's placed creature has one). v11.75: the founder's row (creatures_defs.js founderDef — the
@@ -67,6 +71,31 @@ function lineKind(spec){const k='line:'+hashStr(specToJSON(spec)).toString(36);i
   return k;}
 function growS(spec){return ecoOf(lineKind(spec)).grow*DAY_S;} // seconds from the hatch to adult: the world's rule (ECO.grow × mass^¼ days)
 function hatchS(spec){return ECO.hatch*Math.pow(ecoOf(lineKind(spec)).mass,0.25)*DAY_S;} // seconds from the laying to the hatch (layEggs' rule, without its jitter)
+// ---------- the moult (v11.76, LINEAGE §3 hingeshells; the person, 21 Sep 2026: the player moults, and the moult is not a trip to the editor) ----------
+// The world's own MOULT rules (creatures_ai.js) on the player, by the clock: an adult moults every MOULT.every × mass^¼ game days and is soft for
+// MOULT.soft × mass^¼ after each — pale (the body rebuilt in the soft coat, as the world's soft twin is: softBuild), its valves clamped (the anim's st.soft),
+// skin to every edge (combat.js coverAt) and prey to whatever is big enough, listed or not (creatures_ai.js findPrey, softPrey) — with its cast carapace
+// left on the floor where it was (dropShed: the world's shed, MOULT.shedT days). It moves as it likes: the world's soft body lies hidden by its choice
+// (updateSoft), not by a rule, so the player is not held. A hatchling grows through its moults (the person: if the juvenile system allows it — it does,
+// playerClade takes any scale): MOULT_P.juv moults from the hatch to grown, a step of scale at each, the last at grown; soft after each for a share of the
+// interval (juvSoft — the adult's soft days would outlast a juvenile's interval). Everything is a function of the clock (moultN, moultAt: the life's born and
+// grown), so an unload, a run-on or a save change nothing; the life keeps only the count done and the clock it hardens at. The hose: 27 game days between
+// moults, soft 0.68 (27 real minutes); the sickle 67 days and 1.67 (an adult that never moults in a session — the person tunes MOULT.every)
+const MOULT_P={juv:3,juvSoft:0.25}; // juv: moults from the hatch to grown, a step of scale each (ECO.juv → 1); juvSoft: a juvenile's soft time as a share of its moult interval
+function moulting(L){const g=L&&L.spec&&GRAMMAR[L.spec.clade];return !!(g&&g.moult);}
+function moultTimes(L){const q=Math.pow(ecoOf(lineKind(L.spec)).mass,0.25);return {step:Math.max(1,(L.grown-L.born)/MOULT_P.juv),every:MOULT.every*q*DAY_S,softA:MOULT.soft*q*DAY_S};} // the juvenile's interval, the adult's, the adult's soft span (s)
+function moultN(L,t0){const M=moultTimes(L);return t0<L.grown?Math.max(0,Math.floor((t0-L.born)/M.step+1e-6)):MOULT_P.juv+Math.floor((t0-L.grown)/M.every+1e-6);} // moults done by clock t0
+function moultAt(L,n){const M=moultTimes(L);return n<=MOULT_P.juv?L.born+n*M.step:L.grown+(n-MOULT_P.juv)*M.every;} // the clock of the n-th moult (the juv-th is grown)
+function moultSoft(L,n){const M=moultTimes(L);return n<=MOULT_P.juv?Math.min(M.softA,M.step*MOULT_P.juvSoft):M.softA;} // s soft after the n-th
+function lineScale(L){if(!L)return 1;if(!moulting(L))return t<L.grown?ECO.juv:1;const n=Math.min(MOULT_P.juv,L.moults||0);return n>=MOULT_P.juv?1:+(ECO.juv+(1-ECO.juv)*n/MOULT_P.juv).toFixed(4);} // the body's scale: a hatchling's until grown, or a moulting clade's steps
+function lineSoft(L){return !!(L&&moulting(L)&&L.hardAt>t);}
+function softBuild(sp,k){const pal=(typeof sp.coat==='string'?PAL[sp.coat]:sp.coat)||PAL.softP;return ()=>compile(sp,(k||1)*(sp.s||1),coatChem(pal,'soft',sp.clade));} // the body pale, the coat's every key (creatures_ai.js buildKind 'soft')
+function moultTick(L,P){ // in play: the moult when its clock comes (the last, if the clock jumped), the hardening after
+  const n=moultN(L,t);
+  if(n>(L.moults||0)){L.moults=n;L.hardAt=r3(moultAt(L,n)+moultSoft(L,n));const ch=chunkAt(P.pos.x,P.pos.z);if(ch&&P.g&&P.b)dropShed(ch,lineKind(L.spec),P.pos,P.g.quaternion,P.b.g.scale.x); // the cast where the body is, at the size it was
+    playerRebody(lifeClade(L,lineScale(L)));P.soft=lineSoft(L);const msg=P.clade.juv?'the moult: a size bigger, and soft':'the moult: soft';hintEl.textContent=msg;hintEl.style.opacity=1;setTimeout(()=>{if(hintEl.textContent===msg)hintEl.style.opacity=0;},4000);return;}
+  if(P.soft!==lineSoft(L)){playerRebody(lifeClade(L,lineScale(L)));P.soft=lineSoft(L);if(!P.soft){hintEl.textContent='hardened';hintEl.style.opacity=1;setTimeout(()=>{if(hintEl.textContent==='hardened')hintEl.style.opacity=0;},3000);}}
+}
 // ---------- the track ----------
 let lineAcc=0,lineCnt=0;
 function lineTick(dt){ // in play (save.js updateSave): the life's clock and track, the loaded broods counted, the hatchling grown
@@ -74,14 +103,15 @@ function lineTick(dt){ // in play (save.js updateSave): the life's clock and tra
   if(lineAcc>=LINE.trackS){lineAcc-=LINE.trackS;const s=[Math.round(P.pos.x),Math.round(P.pos.y),Math.round(P.pos.z)],T=L.track,q=T[T.length-1];
     if(q&&q[0]===s[0]&&q[1]===s[1]&&q[2]===s[2])q[3]=(q[3]||1)+1;else T.push(s);}
   lineCnt-=dt;if(lineCnt<=0){lineCnt=1;for(const M of curSave.line)for(const b of M.broods)if(b._ch&&b.hatched)b.n=broodLive(b);}
-  if(P.clade.juv&&t>=L.grown)playerRebody(lifeClade(L,1)); // grown: the adult body in one step, as a juvenile of the world's grows up (there out of sight; here in view — a stand-in)
-  // v11.74: the ringmouths' modes — the age, the brood, the wasting
+  if(moulting(L))moultTick(L,P);else if(P.clade.juv&&t>=L.grown)playerRebody(lifeClade(L,1)); // v11.76: a moulting body grows at its moults; else grown: the adult body in one step, as a juvenile of the world's grows up (there out of sight; here in view — a stand-in)
+  if(P.dead)return;
+  // v11.74: the ringmouths' modes — the age, the brood, the wasting; v11.76: the guard on every clutch of a guarding mode
   const m=lifeBreed(L);if(!m)return;
   if(m.life&&t-L.born>=lifeS(L)){die('old');return;} // old age: a death like any other (the handover, or the save over)
-  const b=m.once&&L.broods.length?L.broods[L.broods.length-1]:null;if(!b)return;
+  if(m.guard)for(const b of L.broods){if(b.hatched||!b._egg||broodGuarded(b))continue;b.n*=Math.pow(m.survive,dt/DAY_S);const g=b._egg,n=Math.round(b.n);if(n<g.n){g.n=n;if(n<=0)removeEgg(g);}} // strayed from a loaded clutch (the brooding soft-arm's one, a hingeshell's several dens): the mode's losses run, as they do unloaded (guarded, nothing is lost and no scavenger comes)
+  if(!m.once)return;const b=L.broods.length?L.broods[L.broods.length-1]:null;if(!b)return;
   if(!b._ch)broodCatchUp(b);if(!b.hatched&&t>=b.hatch&&!b._egg)b.hatched=true; // hatched by the clock: unloaded (broodCatchUp), or loaded and eaten to nothing — the brood is over all the same
   if(b.hatched){die('spent');return;} // the clutch has hatched (loaded: creatures_ai.js updateEggs → broodHatch put the young in the world a frame ago): the parent's brood is over, and so is it — the nearest child is a hatchling at the clutch
-  if(b._egg&&!broodGuarded(b)){b.n*=Math.pow(m.survive,dt/DAY_S);const g=b._egg,n=Math.round(b.n);if(n<g.n){g.n=n;if(n<=0)removeEgg(g);}} // strayed from a loaded clutch: the mode's losses run, as they do unloaded (guarded, nothing is lost and no scavenger comes)
   wasteTick(L,P,m);
 }
 function broodLive(b){let n=0;for(const c of creatures)if(c.alive&&c.brood===b)n++;return n;}
@@ -89,16 +119,18 @@ function broodLive(b){let n=0;for(const c of creatures)if(c.alive&&c.brood===b)n
 function playerLay(){
   const P=player,C=P.clade,L=lineCur();if(mode!=='play'||P.dead||!C||!L)return false;
   const h=groundAt(P.pos.x,P.pos.z),ch=chunkAt(P.pos.x,P.pos.z),m=lifeBreed(L);let why='';
-  if(!m)why='not this body'; // the slowbloods' and the ringmouths' modes (BREED, v11.74); the hingeshell's den is §13.6, not built
+  if(!m)why='not this body'; // every clade but the drifters has a mode (BREED, v11.74–76)
   else if(C.juv)why='not yet grown';
   else if(m.once&&L.broods.length)why='brooding'; // v11.74: the semelparous spawn once — after it the clutch is all it has, and it dies at the hatch
   else if(P.hunger>ECO.hungry)why='hungry'; // v11.73: the ledger's own line (ECO.hungry, where a hunter goes hunting) — a hungry animal does not lay
   else if(P.hunger+clutchHunger(C.spec)>=1)why='not fed enough'; // v11.73: a copy of yourself must be affordable before the window opens, so declining always can lay (what a heavier child costs is conceiveClose's)
   else if(P.sub<0.9||h>-4||P.pos.y-h>LINE.near+1.1||!ch)why='on the floor, under water';
   const at=V3(P.pos.x,h,P.pos.z);if(!why&&solidPush(at,0.6,null,ch))why='not here';
+  if(!why&&m.den&&!denAt(at,ch,m.den))why='at a den: sheltered water, or against rock'; // v11.76: the hingeshells lay at a den
   if(why){hintEl.textContent=why;hintEl.style.opacity=1;setTimeout(()=>{if(hintEl.textContent===why)hintEl.style.opacity=0;},1500);return false;}
   return conceiveOpen(L,at,ch);
 }
+function denAt(at,ch,den){const f=ch.f(at.x,at.z);if(f[FI.shel]>=den.shel)return true;T2.set(at.x,at.y+0.6,at.z);return !!solidPush(T2,0.6+den.solid,null,ch,true);} // a den (v11.76): the sheltered water (the shel field — a lagoon, a lee) or a solid within den.solid m — a rock, a stalk, a structure's foot, as MOULT's hideSpot finds one
 // ---------- conception (v11.72, LINEAGE §4.1–2, §6, §13.4) ----------
 // Laying opens the lab as the creator over the world, as `l` in play does, on the parent's spec: mating is the trip to the editor. The clade is locked
 // (lab.js: nothing else can be loaded, and labLoad refuses another clade). Closing the window is the laying: unchanged, the clutch is a copy and the
@@ -215,7 +247,7 @@ function lineContinue(x,cause){ // you are the child now, where and as it is (LI
   else{b.n=Math.max(0,b.n-1);pos=V3(b.pos[0],0,b.pos[2]);pos.y=groundAt(pos.x,pos.z)+2;}
   L.died=r3(t);L.cause=cause||'';
   curSave.line.push(lifeNew(spec,L.preset,curSave.line.length-1,born,grown));
-  const C=lifeClade(lineCur(),t<grown?ECO.juv:1);
+  const C=lifeClade(lineCur(),lineScale(lineCur()));
   playerBody(C,pos,yaw,0);if(x.c){player.hunger=x.c.hunger;player.starveT=x.c.starveT;}cellsAround();snapMed=true; // the child's stomach as it was (v11.73); a hatchling's is full
   setTimeout(()=>{fadeEl.style.opacity=0;},300);sparkStart();saveNow();
 }
