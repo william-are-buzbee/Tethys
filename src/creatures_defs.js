@@ -72,8 +72,24 @@ const DEFS={
   cinder:{build:()=>compile(SPECS.cinder),stock:3,size:1.2,pace:0.58,flee:true,hp:1,edible:true,food:10,role:'graze',home:30,floor:true,legs:true,cruiseF:0.6,scav:60,clear:0.55},
   wedge:{build:()=>compile(SPECS.wedge),stock:4,size:0.9,pace:0.58,flee:true,hp:1,edible:true,food:10,role:'graze',home:14,floor:true,legs:true,cruiseF:0.5,scav:20},
   plough:{build:()=>compile(SPECS.plough),stock:2,size:1.6,pace:0.6,flee:true,hp:60,role:'graze',home:40,floor:true,legs:true,cruiseF:0.6,clear:0.62},
-  relict:{build:()=>compile(SPECS.relict),size:4,hp:120,role:'hunter',prey:['picker'],detect:22,reach:5.7,dmg:14,biteCD:1.5,strike:{tell:0.5,dur:0.4,speed:7,range:1.8},burst:{on:0.9,off:2.5},home:120,cruise:30,cruiseF:0.4,cool:5} // slow: a life below the light on a diet of pickers
+  relict:{build:()=>compile(SPECS.relict),size:4,hp:120,role:'hunter',prey:['picker'],detect:22,reach:5.7,dmg:14,biteCD:1.5,strike:{tell:0.5,dur:0.4,speed:7,range:1.8},burst:{on:0.9,off:2.5},home:120,cruise:30,cruiseF:0.4,cool:5}, // slow: a life below the light on a diet of pickers
+  // The three players (v11.75): rows for the presets, which spawn nowhere (no SPAWN entry; role 'player' is dispatched by nothing). What a body carries
+  // that is not physics — its venom, what it eats, how it behaves — comes from its species' row here, for the player (player.js playerClade) and for the
+  // young of its line (line.js lineKind: the founder's row on the child's body), through founderDef below. The numbers are v11.69–74's line kind, so the
+  // presets' young are what they were: hp 100 (a body that fights), the player's food (DESIGN The player), detect 10 + 5 × size, home 20 + 10 × size.
+  // The coilshell's venom is COMBAT.md §3b's (player.js CLADE_PRESETS to v11.74)
+  soft:{build:()=>compile(SPECS.soft),size:1.6,hp:100,role:'player',prey:['arrow','needle','scuttle'],detect:18,biteCD:1.2,home:36,cruiseF:0.45,cool:3},
+  fin:{build:()=>compile(SPECS.fin),size:1.8,hp:100,role:'player',prey:['arrow','needle','scuttle'],detect:19,biteCD:1.2,home:38,cruiseF:0.45,cool:3},
+  coil:{build:()=>compile(SPECS.coil),size:1.5,hp:100,role:'player',prey:['arrow','needle','scuttle'],detect:17.5,biteCD:1.2,home:35,cruiseF:0.45,cool:3,venom:{kind:'paralyse',t:5,against:{slowbloods:1,ringmouths:1}}}
 };
+// The founder's row (v11.75, LINEAGE §8.2's seam): a player's spec carries `founder`, the species id its line began from (menu.js founderClade; a
+// child's spec inherits it through the editor at conception, which copies the parent's), and everything about the animal that the calculator does not
+// give — venom, immunity, its prey, its role and behaviour — is read off DEFS[founder] and carried down the line unchanged. A spec without the key (a
+// save from before v11.75) is its own id's row, or its id's root ('fin-3' → 'fin', the convention line.js conceiveClose names a child by), or the
+// preset of its kind. This is the seam §8.2's derived DEFS replaces: when role, prey, reach and diet are inferred from the build, founderDef goes and
+// lineKind reads the inference; until then a sickle's line eats what a sickle eats however its body is edited.
+function founderOf(spec){if(!spec)return null;if(spec.founder&&DEFS[spec.founder])return spec.founder;if(spec.id){if(DEFS[spec.id])return spec.id;const r=String(spec.id).replace(/-d+$/,'');if(DEFS[r])return r;}return spec.clade==='ringmouths'?(spec.core&&spec.core.kind==='coilbody'?'coil':'soft'):'fin';}
+function founderDef(spec){const k=founderOf(spec);return k?DEFS[k]:null;}
 // The physics off the build (v11.71): top is derive's speed, speed is what the AI has always read (top × pace), flee the top speed where a kind bolts,
 // turn and accel derive's. A kind made later (the lab's, the line's young) goes through the same function. accel reaches the AI through seek
 // (creatures_ai.js ACC_REF): a heavy body closes on the speed it wants more slowly than a light one.

@@ -57,7 +57,7 @@ const VARY={spread:0.15}; // ±: the adult size band as a fraction of the kind's
 const MOULT={frac:0.05,soft:0.5,every:20,hide:6,prey:0.5,shedT:4,shedPer:0.5,keep:0.85}; // frac: the share of a moulting clade's placed adults that start soft; soft: game days soft at unit mass (× mass^¼); every: game days between moults at unit mass (× mass^¼); hide: m a soft one looks about for a solid to lie against; prey: a hunter takes a soft body of any kind while its own mass is at least this share of the body's; shedT: game days a cast carapace dropped in play lasts; shedPer: sheds placed per cell per unit of the kind's capacity; keep: a shed's scale against the animal's (it grew at the moult)
 function moults(kind){const sp=specOfKind(kind),g=sp&&GRAMMAR[sp.clade];return !!(g&&g.moult);}
 // the kind built in a coat class: its PAL preset swapped for the shifted twin for the build and put back (the zoo's own trick for the variants)
-function buildKind(d,kind,cls){const sp=SPECS[kind],pk=sp&&typeof sp.coat==='string'?sp.coat:null;if(!cls||!pk||!PAL[pk])return d.build();const p0=PAL[pk];PAL[pk]=coatChem(p0,cls,sp.clade);try{return d.build();}finally{PAL[pk]=p0;}}
+function buildKind(d,kind,cls){const sp=specOfKind(kind),pk=sp&&typeof sp.coat==='string'?sp.coat:null;if(!cls||!pk||!PAL[pk])return d.build();const p0=PAL[pk];PAL[pk]=coatChem(p0,cls,sp.clade);try{return d.build();}finally{PAL[pk]=p0;}}
 // a def with the size-dependent numbers scaled by k (a juvenile at ECO.juv, an adult's band at VARY): chained to the kind's so every other read falls through
 function scaledDef(d,k){const j=Object.create(d),sq=Math.sqrt(k);j.size=d.size*k;if(d.speed)j.speed=d.speed*sq;if(d.top)j.top=d.top*sq;if(d.flee)j.flee=d.flee*sq;if(d.reach)j.reach=d.reach*k;if(d.dmg)j.dmg=d.dmg*k*k;if(d.radius)j.radius=d.radius*k;if(d.lunge)j.lunge=d.lunge*sq;if(d.detect)j.detect=d.detect*k;if(d.clear!==undefined)j.clear=d.clear*k;if(d.food)j.food=Math.max(1,Math.round(d.food*k));return j;}
 // a soft body's place: on the floor within MOULT.hide of p, clear of solids at its own radius but with one within 2 m (a rock, a stalk, a structure's foot); failing that, the floor where it is
@@ -79,7 +79,7 @@ function updateSheds(dt){for(let i=sheds.length-1;i>=0;i--){const s=sheds[i];s.t
 // the cast carapace of a kind: the body built in the shed coat with its valves clamped (st.soft) and flattened to one geometry, the rigs (whips,
 // lines: soft parts, not cuticle) left out, lifted so its underside sits at y 0 like any flora; null for a kind that does not moult or is glass
 const SHED_GEO={};
-function shedGeo(kind){if(kind in SHED_GEO)return SHED_GEO[kind];const sp=SPECS[kind],d=DEFS[kind];if(!sp||!d||sp.mat==='glass'||!moults(kind))return SHED_GEO[kind]=null;
+function shedGeo(kind){if(kind in SHED_GEO)return SHED_GEO[kind];const sp=specOfKind(kind),d=DEFS[kind];if(!sp||!d||sp.mat==='glass'||!moults(kind))return SHED_GEO[kind]=null; // specOfKind (v11.76): the player's line kind sheds too
   const b=buildKind(d,kind,'shed');b.anim(0,0,{soft:1});const rigM=new Set();if(b.rigs)for(const r of b.rigs)rigM.add(r.mesh);
   b.g.updateMatrixWorld(true);const pos=[],nor=[],col=[],v=new THREE.Vector3(),nm=new THREE.Matrix3(),lift=d.clear!==undefined?d.clear:d.size*0.35;
   b.g.traverse(o=>{if(!o.isMesh||rigM.has(o)||!o.geometry.attributes.color||o.material.transparent||o.visible===false)return;nm.getNormalMatrix(o.matrixWorld);const pa=o.geometry.attributes.position,na=o.geometry.attributes.normal,ca=o.geometry.attributes.color;
@@ -172,7 +172,7 @@ function wander(c,dt){c.wanderT-=dt;if(c.wanderT<=0||c.pos.distanceTo(c.wander)<
 function preyOn(d,o){if(d.prey.indexOf(o.kind)>=0)return true;return !!(o.def.line&&d.prey.indexOf('player')>=0&&(!d.preyClade||o.def.lineId===d.preyClade));}
 function findPrey(c,R){
   const d=c.def;let best=null,bd=1e9;if(R===undefined)R=d.detect;
-  if(d.prey.indexOf('player')>=0&&!playerGone()&&player.inkT<=0&&(!d.preyClade||(player.clade&&player.clade.id===d.preyClade))){const dp=c.pos.distanceTo(player.pos);if(dp<R){best=player;bd=dp*0.7;}}
+  if(!playerGone()&&player.inkT<=0&&((d.prey.indexOf('player')>=0&&(!d.preyClade||(player.clade&&player.clade.id===d.preyClade)))||(player.soft&&softPrey(c,player)))){const dp=c.pos.distanceTo(player.pos);if(dp<R){best=player;bd=dp*0.7;}} // v11.76: the player through its moult is a soft body like any other — prey to whatever is big enough (MOULT.prey), listed or not
   for(const o of creatures){if(!o.alive||o===c)continue;if(!preyOn(d,o)&&!(o.soft&&softPrey(c,o)))continue;const dd=c.pos.distanceTo(o.pos);if(dd<R&&dd<bd){bd=dd;best=o;}} // a soft body of any kind is prey to a hunter big enough (v11.66, MOULT)
   return best;
 }

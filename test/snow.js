@@ -21,7 +21,7 @@ require('./stub.js');
 require(tmp);
 const h=global.__h;
 for(let i=0;i<30;i++)__step(1);
-h['mnew:click'][0](); // v11.47: the menu's new game (the finback)
+h['mnew:click'][0]();h['mfounders:click'][0]({target:{dataset:{id:'fin'}}}); // v11.47: the menu's new game, then (v11.75) the finback from the founder's list
 let failed=false;
 function ok(c,msg){console.log((c?'  ok   ':'  FAIL ')+msg);if(!c)failed=true;}
 const LM=__sn.lm();

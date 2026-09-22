@@ -98,7 +98,7 @@ global.AudioContext=function(){this.sampleRate=48000;this.currentTime=0;this.sta
 global.__run=function(){
   let now=0;const frame=()=>{const f=raf;raf=null;__now+=16.7;now=__now;f(now);};
   for(let i=0;i<30;i++)frame();
-  const pick=+(process.env.PICK||1);if(pick===1)fire('mnew:click');else global.__start(pick); // v11.47: the menu's `new game` is the finback; the other clades start through the bare choose (smoke.js __start)
+  const pick=+(process.env.PICK||1);if(pick===1){fire('mnew:click');fire('mfounders:click',{target:{dataset:{id:'fin'}}});}else global.__start(pick); // v11.47: the menu's `new game`, then (v11.75) the finback from the founder's list; the other clades start through the bare choose (smoke.js __start)
   const key=(code,down)=>handlers['win:'+(down?'keydown':'keyup')].forEach(f=>f({code,preventDefault(){}}));
   // every listener, not the first (v11.31.4): zoo.js and lab.js register on the canvas and the window before input.js does, so
   // taking [0] meant the mouse never reached input.js at all — no bite, no look, for all of the fifteen hundred frames.

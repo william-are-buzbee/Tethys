@@ -15,7 +15,15 @@ function updateMenu(){ // the column's rise and the idle fade (main.js, every fr
   if(!menu.idle&&now-menu.wakeAt>MENU_IDLE&&!fxOpen&&!menu.busy){menu.idle=true;menuEl.classList.add('idle');}
 }
 addEventListener('mousemove',()=>{if(mode==='menu')menuWake();});addEventListener('touchstart',()=>{if(mode==='menu')menuWake();},{passive:true});addEventListener('keydown',()=>{if(mode==='menu')menuWake();});
-const mlistEl=document.getElementById('mlist'),msavesEl=document.getElementById('msaves'),mslotsEl=document.getElementById('mslots'),mcreatorEl=document.getElementById('mcreator'),mnoteEl=document.getElementById('mnote');
+const mlistEl=document.getElementById('mlist'),msavesEl=document.getElementById('msaves'),mslotsEl=document.getElementById('mslots'),mcreatorEl=document.getElementById('mcreator'),mnoteEl=document.getElementById('mnote'),mfoundEl=document.getElementById('mfound'),mfoundersEl=document.getElementById('mfounders');
+// The founder (v11.75, the person, 21 Sep 2026: "the founder is any existing species of the chosen clade — the roster is the presets"): new game lists
+// the roster's players and every species the profile has seen up close (save.js PROFILE.seen, as the creator is gated), drifters excluded (LINEAGE §3:
+// maybe later), in the bestiary's order; a click starts a new slot as that species — its spec copied with `founder` on it (creatures_defs.js founderDef:
+// what is not physics comes from its row), its numbers derive's, its ability its parts' (player.js). Nothing here judges what can be played: the roster's
+// sessile, buried and forage species are offered as they are (HANDOFF asks which should not be)
+function founderList(){return ROSTER.filter(r=>r.clade!=='drifters'&&SPECS[r.id]&&(r.player||seen('sp',r.id)));}
+function founderClade(id){const pre=CLADES.find(c=>c.id===id);if(pre)return pre;const sp=SPECS[id];if(!sp)return null;const spec=JSON.parse(specToJSON(sp));spec.founder=id;return playerClade(spec);} // a preset is itself; another species a copy that knows its founder
+function menuFounders(){mfoundersEl.innerHTML=founderList().map(r=>{const d=r.player?CLADES.find(c=>c.id===r.id):DEFS[r.id];return '<div class="slot" data-id="'+escH(r.id)+'"><b>'+escH(r.name||r.id)+'</b><span>'+escH(r.clade)+', '+escH(r.family)+'</span><span class="w">'+escH(r.niche)+'</span><span>'+(d?d.size:'')+' m</span></div>';}).join('');}
 // The title screen's camera (v11.47.2, the person's ask): a table of shots — the sea shot is the start (from the water 6 m up off the north-east
 // coast, the horizon in the middle, the ocean under it, the 48 m cone at (346,−346) in the background), the caldera shot is the v11.13.1 one over
 // the peak's shallows, kept — and after any game at all the title screen opens from the exact camera of the moment you left, died or last saved
@@ -25,7 +33,7 @@ function menuCam(shot){const p=shot.p,d=shot.d;menu.shot={p:p.slice(),d:d.slice(
 function camNow(){const d=V3(0,0,-1).applyQuaternion(camera.quaternion);return {p:[camera.position.x,camera.position.y,camera.position.z],d:[d.x,d.y,d.z]};}
 function layoutMenu(){menuCam(menu.shot);} // the current shot again (a resize; the bestiary and the lab moved the camera)
 menuCam(camRead()||MENU_SHOTS.sea);menuRise(MENU_RISE);
-function menuPage(p){menu.page=p;menu.confirm=null;mlistEl.style.display=p==='main'?'':'none';msavesEl.classList.toggle('on',p==='saves');if(p==='saves')menuSlots();menuWake();} // 'main' | 'saves' | 'none' (the bestiary and the lab)
+function menuPage(p){menu.page=p;menu.confirm=null;mlistEl.style.display=p==='main'?'':'none';msavesEl.classList.toggle('on',p==='saves');mfoundEl.classList.toggle('on',p==='found');if(p==='saves')menuSlots();if(p==='found')menuFounders();menuWake();} // 'main' | 'saves' | 'found' (the founder, v11.75) | 'none' (the bestiary and the lab)
 function menuRefresh(){mcreatorEl.style.display=PROFILE.creator?'':'none';saveRefresh(()=>{if(menu.page==='saves')menuSlots();});} // the profile and the slots read again (boot, main.js; the creator granted)
 function menuNote(s){mnoteEl.textContent=s;mnoteEl.style.opacity=s?1:0;if(s)setTimeout(()=>{if(mnoteEl.textContent===s)mnoteEl.style.opacity=0;},3000);}
 function fmtAgo(ms){const s=(Date.now()-ms)/1000;return s<90?'just now':s<5400?Math.round(s/60)+' min ago':s<172800?Math.round(s/3600)+' h ago':Math.round(s/86400)+' days ago';}
@@ -52,7 +60,9 @@ function toMenu(){ // play to the menu (esc with the pointer free): the game sav
   const shot=camNow(); // the camera as it is: the title screen opens from here (v11.47.2)
   menuGo(()=>{playerDrop();mode='menu';worldClear();menuCam(shot);cellsAround();menuEl.classList.remove('gone');menuPage('main');menuRise(MENU_RISE_BACK);hintEl.style.opacity=0;menuRefresh();});
 }
-document.getElementById('mnew').addEventListener('click',()=>{if(mode==='menu'&&menu.page==='main')menuGo(()=>{startNew(CLADES[1]);});}); // the finback until the creator is the start (DIRECTION: the smallest body the creator allows)
+document.getElementById('mnew').addEventListener('click',()=>{if(mode==='menu'&&menu.page==='main')menuPage('found');}); // v11.75: the founder's list (the finback was the start to v11.74)
+document.getElementById('mfback').addEventListener('click',()=>{if(mode==='menu')menuPage('main');});
+mfoundersEl.addEventListener('click',e=>{if(mode!=='menu'||menu.page!=='found')return;let el=e.target;while(el&&el!==mfoundersEl&&!(el.dataset&&el.dataset.id))el=el.parentNode;if(!el||el===mfoundersEl)return;const C=founderClade(el.dataset.id);if(C)menuGo(()=>{startNew(C);});});
 document.getElementById('mcont').addEventListener('click',()=>{if(mode==='menu')menuPage('saves');});
 document.getElementById('mopt').addEventListener('click',()=>{if(mode==='menu')fxShow(!fxOpen);});
 mcreatorEl.addEventListener('click',()=>{if(mode==='menu'&&menu.page==='main')labEnter(undefined,true);});
@@ -66,4 +76,4 @@ mslotsEl.addEventListener('click',e=>{
   else if(rec.over)menuNote('this line has ended'); // v11.69: no living child at the last death — the slot is kept to look at (the shrine, later), never continued
   else menuGo(()=>{startFrom(rec);});
 });
-addEventListener('keydown',e=>{if(e.code!=='Escape'||e.defaultPrevented)return;if(mode==='play'&&!locked&&!player.dead)toMenu();else if(mode==='menu'&&menu.page==='saves')menuPage('main');}); // effects.js takes esc first when its list is open (and prevents the default); with the pointer locked the browser keeps the first esc for the lock
+addEventListener('keydown',e=>{if(e.code!=='Escape'||e.defaultPrevented)return;if(mode==='play'&&!locked&&!player.dead)toMenu();else if(mode==='menu'&&(menu.page==='saves'||menu.page==='found'))menuPage('main');}); // effects.js takes esc first when its list is open (and prevents the default); with the pointer locked the browser keeps the first esc for the lock

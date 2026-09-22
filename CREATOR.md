@@ -163,7 +163,8 @@ The dev tool, built on the zoo (same camera, light, water, action keys, coats). 
   band with the extremes greyed, not forbidden — "design and go crazy" within it.
 - **Re-entering the editor**: the natural moment is the hingeshell moult (PLANET: the soft state) and, for the other clades, growth
   stages — `size` grows with food, and at a stage you may change parts. Nothing here needs building now, only that `size` stays a
-  spec field and the compiler is deterministic.
+  spec field and the compiler is deterministic. *Struck 21 Sep 2026 (the person, LINEAGE §12.31): the moult is not a trip to the editor — the editor
+  opens at conception only, as for everyone (built v11.72); the moult itself is v11.76's, a clock on the body.*
 - **Mirror by default, asymmetry as a choice** (the hose precedent).
 - The derived stats bind (**built v11.68**: `playerClade`, the presets' old numbers as `stats` locks; the save stores the spec): the player's speed, turn, mass, hp come from the calculator, and the *mode* (jet, undulate, flap, walk)
   from the propulsors — `player.js` already switches behaviour on `jet` and `legs`; the calculator sets those flags.
@@ -295,6 +296,18 @@ Creatures, The registry). **The person's answers (21 Sep 2026), built v11.70.1:*
 4. `valves:back` and `valves:placed`: "probably two, but only if that makes sense" — two: back follows the body in fractions, placed is in metres.
 5. A second mouth: allowed.
 6. "All pieces should have control." Every piece has controls but the two that build nothing (`tail:stub`, `weapon:ram`).
+
+## The ganglion (21 Sep 2026) — a design note for later, the person's
+
+Abilities are to come from a **universal ganglion model**: a neuron cluster that drives a motor cortex, which contracts muscles — or communicates —
+and a body will have **a long list of things it can do**, read off what it is made of rather than a key bound to a clade. Not this pass. What
+stands in (v11.75, player.js `ABILITIES`): each of the game's abilities tied to the one part that makes it physically possible — ink the mantle
+core, the stun a tail that swings, withdraw a coiled body with a shell wide enough to pull into, the ram's blow `weapon:ram`, shut the valves —
+the first that fits on Q, none when nothing fits, and the three roster players exactly as they were. What the model would change: the list per
+body instead of one key; the numbers of a blow from the muscle that delivers it (the finback's stun does not scale with the tail today — a darter's
+is the same blow); communication (a call, a display) as an act of the same cluster; and disposition (LINEAGE §5's followers, §11.6) as what the
+cluster does when nothing is asked of it. The ledger's `DEFS` for a custom body (LINEAGE §8.2) is the same gap from the other side: the model that
+says what a body can do is the one that says what it eats and how it behaves.
 
 ## The size ceiling (20 Sep 2026) — what a monstrous animal costs
 

@@ -1,29 +1,45 @@
-// player.js — the player as a spec and its presets (the three clades), movement in water / air / on land, camera, bite, abilities, damage and death
-// legs (derive's, off the spec: none of the presets has any) makes it walk on the strand (landSpeed, jump) instead of flopping.
-// The player is a spec (v11.68): the numbers come off the build (statsOf: derive with the spec's locks over it), and a preset is a spec plus the
-// few numbers derive has no term for — cam (the third-person arm, m), jetImp (a jet's squeeze, an impulse), sprint (a tail's burst, a multiple of
-// speed), venom (COMBAT.md §3b: the coilshell's beak paralyses what its short arms hold) and the ability (ink: predators lose you; stun: the
-// tail-strike; withdraw: hold, invulnerable, sinking). v11.71: the presets carry no locks — speed, accel and turn are derive's for the player as for
-// every animal (the person, 21 Sep 2026), the contact mass is every creature's rule (bodyMass: size cubed, floored), the bite's size the lab's rule.
-// A spec that is no preset takes those few from the preset of its kind (presetFor), the arm scaled by its size; the ability only if
-// the clade is the preset's. size: the spec's half-length (disturbance, flow, contact); mass: for contact with creatures (size³ for them).
+// player.js — the player as a spec (any species of the roster since v11.75), movement in water / air / on land, camera, bite, abilities, damage and death
+// legs (derive's, off the spec) makes it walk on the strand (landSpeed: the calculator's Froude speed, jump) instead of flopping.
+// The player is a spec (v11.68): the numbers come off the build (statsOf: derive with the spec's locks over it). v11.71: no preset carries a lock — speed,
+// accel and turn are derive's for the player as for every animal (the person, 21 Sep 2026), the contact mass is every creature's rule (bodyMass: size
+// cubed, floored), the bite's size the lab's rule. v11.75 (the person, 21 Sep 2026: the founder is any existing species of the chosen clade — the roster is
+// the presets): the presets' hand numbers are gone. The camera's arm is the body's length (CAM_BODY), the jet's squeeze and the sprint are derive's own
+// terms (DERIVE_K.jetImp, .burst), what is not physics — venom, immunity — is the founder species' DEFS row (creatures_defs.js founderDef, the seam
+// LINEAGE §8.2's derived DEFS replaces), and an ability is a part's (ABILITIES below: the table stands in for the ganglion model the person described —
+// a neuron cluster driving a motor cortex, a body with a long list of things it can do — CREATOR.md). CLADE_PRESETS names the three roster players and
+// the kind of body a spec is (presetFor: a coiled ringmouth, another ringmouth, anything else — combat.js PLAYER_GRIP and the crusher's preyClade read
+// the id). size: the spec's half-length (disturbance, flow, contact); mass: for contact with creatures (size³ for them).
 const CLADE_PRESETS=[
-  {id:'soft',name:'soft-arm',spec:'soft',jetImp:10,cam:6.5,ability:'ink'},
-  {id:'fin',name:'finback',spec:'fin',sprint:1.75,cam:7.5,ability:'stun'},
-  {id:'coil',name:'coilshell',spec:'coil',jetImp:7,cam:6.5,ability:'withdraw',venom:{kind:'paralyse',t:5,against:{slowbloods:1,ringmouths:1}}}
+  {id:'soft',name:'soft-arm',spec:'soft'},
+  {id:'fin',name:'finback',spec:'fin'},
+  {id:'coil',name:'coilshell',spec:'coil'}
 ];
-function presetFor(spec){const id=spec.clade==='ringmouths'?(spec.core&&spec.core.kind==='coilbody'?'coil':'soft'):'fin';return CLADE_PRESETS.find(p=>p.id===id);} // the preset whose fixed numbers a spec takes: a coiled ringmouth the coilshell's, another ringmouth the soft-arm's, anything else the finback's
-function playerClade(spec,pre,j){ // the player's clade object from a spec (and its preset, if it is one): what player.js, combat.js and the rest read as player.clade. j: a hatchling's scale (v11.69: ECO.juv until grown), the numbers scaled as the world's juveniles' are (creatures_ai.js scaledDef)
-  pre=pre||presetFor(spec);j=j||1;const st=statsOf(spec),base=SPECS[pre.spec],same=base&&base.clade===spec.clade,k=(base&&base.size?spec.size/base.size:1)*j,sq=Math.sqrt(j);
+const CAM_BODY={at:1.04,per:1.79}; // v11.75: the third-person arm, m, from the body's length (derive's, nose to tail with the parts): at + per × L — the soft-arm's hand 6.5 at 3.06 m and the finback's 7.5 at 3.62 (the coilshell's 6.5 at 2.94 lands at 6.3); a sickle at 11.4 m is framed from 21
+// An ability is a part's (v11.75): each of the game's abilities tied to the part that makes it physically possible, in this order — the first that fits
+// is Q, and a body with none of them has none. ink: the mantle (the ink sac is a mantle-cavity organ); stun: a tail that swings (the finback's blow);
+// withdraw: a coiled soft body with a shell wide enough to pull into (the shell's aperture at least the body's radius); ram: the ram's blow (combat.js
+// RAM, the world's rule for the striker); shut: the valves clamped (the hingeshells' hinge, PLANET: clamped shut when threatened — the covering reads
+// shell under them, combat.js coverAt, and the body is still; not invulnerable, the edge decides). The three roster players keep exactly the one they had
+const ABILITIES=[
+  {id:'ink',part:'the mantle',fits:sp=>sp.core.kind==='mantle'},
+  {id:'stun',part:'the tail',fits:sp=>sp.parts.some(p=>p.kind==='tail'&&p.style!=='stub')},
+  {id:'withdraw',part:'the shell',fits:sp=>sp.core.kind==='coilbody'&&sp.parts.some(p=>p.kind==='shell'&&(p.style==='coil'?p.R1:p.r0)>=(sp.core.R||0))},
+  {id:'ram',part:'the ram',fits:sp=>sp.parts.some(p=>p.kind==='weapon'&&p.style==='ram')},
+  {id:'shut',part:'the valves',fits:sp=>sp.parts.some(p=>p.kind==='valves')}
+];
+function abilitiesOf(spec){let sp;try{sp=fillSpec(spec);}catch(e){return [];}return ABILITIES.filter(a=>a.fits(sp)).map(a=>a.id);} // every ability the body has, in the table's order (fillSpec: the registry's defaults where the spec is silent)
+function presetFor(spec){const id=spec.clade==='ringmouths'?(spec.core&&spec.core.kind==='coilbody'?'coil':'soft'):'fin';return CLADE_PRESETS.find(p=>p.id===id);} // the kind of body a spec is: a coiled ringmouth the coilshell's, another ringmouth the soft-arm's, anything else the finback's
+function playerClade(spec,pre,j){ // the player's clade object from a spec (and its preset, if it is one): what player.js, combat.js and the rest read as player.clade. j: a hatchling's scale (v11.69: ECO.juv until grown; v11.76 a hingeshell's steps at its moults), the numbers scaled as the world's juveniles' are (creatures_ai.js scaledDef)
+  pre=pre||presetFor(spec);j=j||1;const st=statsOf(spec),base=SPECS[pre.spec],fd=founderDef(spec),ab=abilitiesOf(spec),sq=Math.sqrt(j);
   return {id:pre.id,name:spec===base?pre.name:(spec.id&&spec.id!==pre.spec?spec.id:pre.name),spec:spec,preset:pre,build:j===1?()=>compile(spec):()=>compile(spec,j*(spec.s||1)),juv:j<1?j:0,
-    speed:st.speed*sq,accel:st.accel,turn:st.turn,mass:+(Math.max(BODY_MIN,spec.size*spec.size*spec.size)*j*j*j).toFixed(3),bite:Math.round(st.mass*3+2)*j*j,size:spec.size*j,jet:!!st.jet,legs:!!st.legs, // bite for a spec without the lock: the lab's DEFS rule (specExport, dmg = mass × 3)
-    sprint:pre.sprint,jetImp:pre.jetImp,cam:pre.cam*k,venom:same?pre.venom:undefined,ability:same?pre.ability:null};
+    speed:st.speed*sq,accel:st.accel,turn:st.turn,mass:+(Math.max(BODY_MIN,spec.size*spec.size*spec.size)*j*j*j).toFixed(3),bite:Math.round(st.mass*3+2)*j*j,size:spec.size*j,jet:!!st.jet,legs:!!st.legs,landSpeed:st.legs?st.walk*sq:undefined, // bite for a spec without the lock: the lab's DEFS rule (specExport, dmg = mass × 3)
+    sprint:st.burst>1?st.burst:undefined,jetImp:st.jet?st.jetImp*sq:undefined,cam:+(CAM_BODY.at+CAM_BODY.per*st.length*j).toFixed(1),venom:fd?fd.venom:undefined,immune:!!(fd&&fd.immune),founder:founderOf(spec),abilities:ab,ability:ab[0]||null}; // v11.75: every number off the build or the founder's row; a hatchling's arm and kick with its scale
 }
 const CLADES=CLADE_PRESETS.map(p=>playerClade(SPECS[p.spec],p));
 let floor0=-1e9;for(let a=0;a<TAU;a+=0.3)for(let r=0;r<=16;r+=4)floor0=Math.max(floor0,sample(Math.cos(a)*r,Math.sin(a)*r).h);
 const dispY=floor0+4.5,spawnPos=V3(0,floor0+3,0);
 const player={clade:null,pos:V3(0,dispY,0),vel:V3(0,0,0),yaw:0,pitch:0,g:null,b:null,anim:null,inkT:0,withdrawn:false,cd:0,jetT:0,hurtT:0,lastHurt:-100,dead:true,pulse:0,spd:0,biteCD:0,sub:1,wet:true,grounded:false,flopT:0,camAbove:false,camFlipT:0,fp:false,
-  mass:6,bound:0,reach:0,shapesW:null,chainW:null,grab:null,grabT:0,heldT:0,heldK:1,holding:0,hold:null,held:0,grabKey:false,grabCD:0,bleed:0,woundL:null,paraT:0,stungT:0,sickT:0,hunger:0,starveT:0,waste:0,armsLost:0,regrow:null,cause:'',speedK:1,turnK:1,live:null,lost:null,cWith:null,onPad:null,def:{size:1.6},hitRk:0,hitFl:0,landV:0,wasGrounded:false}; // hitRk/hitFl: this frame's push was against rock / a plant; landV: the speed of the last landing on the floor (audio.js consumes both) // def.size: creatures read it when the player is their target
+  mass:6,bound:0,reach:0,shapesW:null,chainW:null,grab:null,grabT:0,heldT:0,heldK:1,holding:0,hold:null,held:0,grabKey:false,grabCD:0,bleed:0,woundL:null,paraT:0,stungT:0,sickT:0,hunger:0,starveT:0,waste:0,soft:false,shut:false,armsLost:0,regrow:null,cause:'',speedK:1,turnK:1,live:null,lost:null,cWith:null,onPad:null,def:{size:1.6},hitRk:0,hitFl:0,landV:0,wasGrounded:false}; // hitRk/hitFl: this frame's push was against rock / a plant; landV: the speed of the last landing on the floor (audio.js consumes both) // def.size: creatures read it when the player is their target
 // Out of the world (v11.72.1, the person, 21 Sep 2026: "the game should teleport the player out of existence temporarily or make them invis/invuln while
 // they edit"): while the editor at conception is open (line.js conceiveOpen) the body is hidden and nothing in the world can see, smell, chase, hold,
 // sting or flee it — every read of the player as a thing to react to in creatures_ai.js and combat.js asks playerGone(), which death answers too.
@@ -41,6 +57,8 @@ function hungerLine(){const P=player,C=P.clade;if(!C||mode!=='play')return '';co
   const L=lineCur(),m=lifeBreed(L),b=lineBrooding();let ex=''; // v11.74: the age, and the brood
   if(L)ex+='  age '+((t-L.born)/DAY_S).toFixed(2)+' d'+(m&&m.life?' of '+(lifeS(L)/DAY_S).toFixed(2):'');
   if(b)ex+='  brooding '+Math.round(b.n)+' eggs, the hatch in '+(Math.max(0,b.hatch-t)/DAY_S).toFixed(2)+' d, '+(broodGuarded(b)?'guarded':'strayed')+', wasted '+(P.waste||0).toFixed(2)+' speed ×'+(P.speedK||1).toFixed(2);
+  ex+='  q: '+(C.abilities&&C.abilities.length?C.abilities.join(', '):'nothing'); // v11.75: the abilities the body has (the first is Q)
+  if(!K.hunter)return 'no stomach on the model (the founder hunts nothing)  a clutch of '+(m?m.n:0)+' as you: '+hlCost.toFixed(2)+ex; // v11.75
   return 'hunger '+P.hunger.toFixed(2)+(P.hunger>ECO.hungry?' hungry':'')+'  '+left+'  stomach '+(K.meal*1000).toFixed(0)+' kg  cycle '+K.cycle.toFixed(2)+' d  a clutch of '+(m?m.n:0)+' as you: '+hlCost.toFixed(2)+' of it'+ex;}
 function playerAway(on){const P=player;P.away=!!on;if(P.g)P.g.visible=!on;if(on){P.hold=null;P.vel.set(0,0,0);for(const c of creatures)if(c.target===P)dropTarget(c);}}
 const keys={};let locked=false,drag=null,touchL=null,touchAbility=false;
@@ -69,6 +87,9 @@ function ability(){
   const P=player,C=P.clade;if(mode!=='play'||P.dead||!C||P.cd>0||P.paraT>0)return; // paralysed, nothing answers (v11.55)
   if(C.ability==='ink'){spawnInk(P.pos);P.inkT=6;P.cd=12;for(const c of creatures){if(c.target===player)dropTarget(c,6);}} // v11.31.1: dropTarget lets go of the arms too, not only the target
   else if(C.ability==='stun'){let hit=false;for(const c of creatures){if(!c.alive)continue;const r=c.def.role;if(!(r==='hunter'||r==='ambush'||r==='coil'))continue;if(c.pos.distanceTo(P.pos)<6+c.def.size*0.3){c.stun=2.5;T1.copy(c.pos).sub(P.pos).normalize();c.vel.addScaledVector(T1,9);dropTarget(c,5);hit=true;}}P.cd=hit?9:1.5;P.pulse=1;thump(0.7,60,25,null,0.25,0.12);}
+  else if(C.ability==='ram'){const tg=playerTarget(false);P.pulse=1;P.snapT=0.1; // v11.75: the ram's blow, the world's rule on the striker (combat.js combatBite, RAM): a knock on what is ahead in reach — stunned, thrown, nothing through
+    if(tg&&tg.alive){T1.set(0,0,1).applyQuaternion(P.g.quaternion);tg.stun=Math.max(tg.stun||0,RAM.stun);tg.vel.addScaledVector(T1,9);if(tg.target===P)dropTarget(tg,RAM.cool);wound(tg,C.bite,P,null,'snap');P.cd=RAM.cool;thump(0.7,70,30,null,0.3,0.1);}else{P.cd=1.5;thump(0.3,130,50,null,1.2,0.04);}}
+  // shut and withdraw are held, not fired (updatePlayer reads the key)
 }
 // ink clouds (soft-arm ability)
 const inks=[],INKG=new THREE.SphereGeometry(1,7,5);
@@ -112,7 +133,7 @@ function updateSplashes(dt){
 function updatePlayer(dt){
   const P=player,C=P.clade;
   P.cd=Math.max(0,P.cd-dt);P.biteCD=Math.max(0,P.biteCD-dt);P.inkT=Math.max(0,P.inkT-dt);P.hurtT=Math.max(0,P.hurtT-dt);
-  if(!P.dead&&!P.away&&C&&hungerTick(P,dt))return; // the stomach (v11.73): the ledger's clock on the player's line kind, and starvation is a death like any other
+  if(!P.dead&&!P.away&&C&&eaterK(P).hunter&&hungerTick(P,dt))return; // the stomach (v11.73): the ledger's clock on the player's line kind, and starvation is a death like any other. v11.75: a body whose founder hunts nothing (a grazer, a filter feeder) feeds off the model as the world's grazers do — no clock, as they have none
   const cp=Math.cos(P.pitch),sp=Math.sin(P.pitch),cy=Math.cos(P.yaw),sy=Math.sin(P.yaw);
   const fwd=T3.set(-sy*cp,sp,-cy*cp),right=T4.set(cy,0,-sy);
   let mx=0,mz=0,my=0,sprint=false;
@@ -121,9 +142,10 @@ function updatePlayer(dt){
     if(touchL){mx+=touchL.mx;mz+=touchL.mz;if(touchL.sprint)sprint=true;}
     if(keys.ShiftLeft||keys.ShiftRight)sprint=true;
     P.withdrawn=C.ability==='withdraw'&&(!!keys.KeyQ||touchAbility)&&!(P.paraT>0);
-    if(P.withdrawn)sprint=false;
+    P.shut=C.ability==='shut'&&(!!keys.KeyQ||touchAbility)&&!(P.paraT>0); // v11.75: the valves clamped while Q is held — still, sinking, shell to every edge (combat.js coverAt); not the withdraw's invulnerability
+    if(P.withdrawn||P.shut)sprint=false;
     P.sprint=sprint;
-  }else{P.withdrawn=false;P.sprint=false;}
+  }else{P.withdrawn=false;P.shut=false;P.sprint=false;}
   const move=T1.set(0,0,0).addScaledVector(fwd,mz).addScaledVector(right,mx);move.y+=my*0.8;if(move.lengthSq()>1)move.normalize();
   const moving=move.lengthSq()>0.001;
   let spd=C.speed;if(C.sprint&&sprint)spd*=C.sprint;
@@ -131,7 +153,7 @@ function updatePlayer(dt){
   spd*=P.heldK||1; // held (combat.js updateHolds sets it): in jaws or claws you thrash, in arms you barely swim
   spd*=slowOf(P); // bleeding, or stung (combat.js, v11.55)
   P.grabT=Math.max(0,P.grabT-dt);if(P.grabT<=0||(P.grab&&!P.grab.alive))P.grab=null;
-  if(P.withdrawn)move.set(0,0,0);
+  if(P.withdrawn||P.shut)move.set(0,0,0);
   if(P.paraT>0){move.set(0,0,0);sprint=false;} // paralysed (COMBAT.md §3b): the body does nothing you ask of it
   // The medium. sub is how much of the body is under the local water level: 1 swimming, 0 in the air or on the strand.
   // Thrust and water drag scale with it; gravity with what is left. Nothing stops you leaving the water except gravity.
@@ -156,7 +178,7 @@ function updatePlayer(dt){
   if(C.jet&&sprint&&!P.withdrawn&&!P.dead&&sub>0.3){P.jetT-=dt;if(P.jetT<=0){P.jetT=0.5;P.pulse=1;}
     const w=P.jetT-(0.5-JET_W);if(w>-dt){const f=Math.min(dt,w+dt)/JET_W;P.vel.addScaledVector(moving?move:fwd,C.jetImp*sub*f);}}
   else P.jetT=Math.min(P.jetT,0.1);
-  if(P.withdrawn){P.vel.y-=0.6*dt;P.vel.multiplyScalar(1-1.5*dt);}
+  if(P.withdrawn||P.shut){P.vel.y-=0.6*dt;P.vel.multiplyScalar(1-1.5*dt);}
   const vmax=C.speed*(C.sprint||1)*1.7;
   if(sub>=0.5){if(P.vel.length()>vmax)P.vel.setLength(vmax);}
   else{const hv=Math.hypot(P.vel.x,P.vel.z);if(hv>vmax){P.vel.x*=vmax/hv;P.vel.z*=vmax/hv;}if(P.vel.y<-30)P.vel.y=-30;}
@@ -176,7 +198,7 @@ function updatePlayer(dt){
   // crossing the surface at speed throws spray
   const wet=sub>0.5;if(wet!==P.wet){P.wet=wet;const v=Math.abs(P.vel.y)+P.spd*0.3;if(v>2.5&&!P.dead){splash(P.pos,v);thump(clamp(v/14,0.15,0.6),260,40,null,2.5,0.3);}} // the spray's hiss over the slap
   P.pos.x=clamp(P.pos.x,-HALF+25,HALF-25);P.pos.z=clamp(P.pos.z,-HALF+25,HALF-25);
-  if((moving||(sub<0.5&&P.spd>1.5))&&!P.withdrawn&&!P.dead){ // in the air the body follows its arc
+  if((moving||(sub<0.5&&P.spd>1.5))&&!P.withdrawn&&!P.shut&&!P.dead){ // in the air the body follows its arc
     const useVel=P.vel.length()>0.8&&(P.vel.dot(fwd)>-0.1||sub<0.5);
     T2.copy(useVel?P.vel:fwd).normalize();T2.add(P.pos);
     _m.lookAt(T2,P.pos,UP);_q.setFromRotationMatrix(_m);P.g.quaternion.slerp(_q,1-Math.exp(-C.turn*(P.turnK||1)*dt));
@@ -192,7 +214,7 @@ function finishPlayer(dt,near){
   const fwd=T3.set(-sy*cp,sp,-cy*cp);
   P.g.position.copy(P.pos);P.spd=P.vel.length();
   {const ro=P.sub>0.95?1:0;if(P.ro!==ro){P.ro=ro;P.g.traverse(o=>{if(o.isMesh)o.renderOrder=ro;});}} // the body's place in the opaque pass (v11.51, atmosphere.js refrMark): under water it draws after the refraction's copy of the frame, so the surface never samples it and smears its edge into the sky; in the air, or crossing, it is in the copy and seen through the surface refracted like the land
-  P.anim(t,P.spd,{jet:P.sprint&&C.jet,withdrawn:P.withdrawn,pulse:P.pulse,strike:P.hold?1:0}); // strike: the mouth stays open on what is held (the finback's ring blooms)
+  P.anim(t,P.spd,{jet:P.sprint&&C.jet,withdrawn:P.withdrawn,pulse:P.pulse,strike:P.hold?1:0,soft:(P.soft||P.shut)?1:0}); // strike: the mouth stays open on what is held (the finback's ring blooms); soft (v11.75–76): the valves clamped — shut by Q, or through the moult
   bodyPose(P,dt,P.yaw); // v11.53 (fx.js): squash and stretch, banking, the bite's snap — after the anim, before the rigs step
   stepRigs(P,near,dt);
   P.pulse=Math.max(0,P.pulse-dt*2);P.snapT=Math.max(0,(P.snapT||0)-dt);P.nudgeT=Math.max(0,(P.nudgeT||0)-dt);P.fovKickT=Math.max(0,(P.fovKickT||0)-dt); // v11.53 (fx.js): the bite's snap, the camera's nudge toward it, the hurt's fov kick; squash and stretch and banking

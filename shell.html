@@ -28,14 +28,15 @@ canvas{display:block;outline:none;touch-action:none}
    the whole menu fading away after MENU_IDLE seconds without the mouse moving (.idle on #menu), back on the first move — the caldera alone meanwhile */
 #mlist{margin:auto;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px;padding:44px 120px;opacity:0;transform:translateY(16px);transition:opacity 1.6s,transform 1.6s;background:radial-gradient(ellipse at center,rgba(3,8,15,.45) 0%,rgba(3,8,15,.24) 45%,rgba(3,8,15,0) 72%)} /* the halo: the words sit on the white sand in the centre; the fx panel's dark, as a soft ellipse the column's own size */
 #mlist.up{opacity:1;transform:none}
-#title,#msaves{transition:opacity 2.2s}
-#menu.idle #title,#menu.idle #mlist,#menu.idle #msaves{opacity:0;transition:opacity 2.2s}
+#title,#msaves,#mfound{transition:opacity 2.2s}
+#menu.idle #title,#menu.idle #mlist,#menu.idle #msaves,#menu.idle #mfound{opacity:0;transition:opacity 2.2s}
 #menu.idle .mi,#menu.idle .slot{pointer-events:none}
 .mi{pointer-events:auto;cursor:pointer;font-size:15px;font-weight:300;letter-spacing:.4em;text-indent:.4em;color:rgba(234,241,245,.92);transition:color .4s;text-shadow:0 0 8px rgba(0,0,0,.95),0 0 3px rgba(0,0,0,.9),0 1px 2px rgba(0,0,0,.95)} /* v11.47.2: the words read grey at .72 over the halo (the person); near white now */
 .mi:hover{color:#fff}
-#msaves{display:none;margin:auto;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:40px 90px;background:radial-gradient(ellipse at center,rgba(3,8,15,.45) 0%,rgba(3,8,15,.24) 45%,rgba(3,8,15,0) 72%)}
-#msaves.on{display:flex}
-#mslots{display:flex;flex-direction:column;gap:6px;max-height:52vh;overflow-y:auto;pointer-events:auto;background:rgba(3,8,15,.6);padding:10px 16px;scrollbar-width:thin;scrollbar-color:rgba(200,215,225,.25) transparent}
+#msaves,#mfound{display:none;margin:auto;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:40px 90px;background:radial-gradient(ellipse at center,rgba(3,8,15,.45) 0%,rgba(3,8,15,.24) 45%,rgba(3,8,15,0) 72%)} /* mfound (v11.75): the founder's list, the saves' shape */
+#msaves.on,#mfound.on{display:flex}
+#mslots,#mfounders{display:flex;flex-direction:column;gap:6px;max-height:52vh;overflow-y:auto;pointer-events:auto;background:rgba(3,8,15,.6);padding:10px 16px;scrollbar-width:thin;scrollbar-color:rgba(200,215,225,.25) transparent}
+.slot span.w{min-width:16em;opacity:.6}
 .slot{display:flex;align-items:baseline;gap:22px;padding:6px 14px;cursor:pointer;font-size:12px;letter-spacing:.18em;color:rgba(232,240,244,.92);text-shadow:0 0 6px rgba(0,0,0,.8);transition:color .3s;font-variant-numeric:tabular-nums;white-space:nowrap}
 .slot:hover{color:rgba(240,245,248,.95)}
 .slot b{font-weight:300;font-size:14px;letter-spacing:.3em;min-width:9em}
@@ -44,7 +45,7 @@ canvas{display:block;outline:none;touch-action:none}
 .slot i:hover{opacity:1}
 .slot i.warn{opacity:1;color:#e0b060}
 .mdim{font-size:12px;letter-spacing:.3em;color:rgba(200,212,220,.4)}
-#mrow{display:flex;gap:44px}
+#mrow,.mrow{display:flex;gap:44px}
 #mnote{position:fixed;bottom:26px;left:0;right:0;text-align:center;font-size:12px;letter-spacing:.25em;color:rgba(200,215,225,.55);text-shadow:0 0 6px rgba(0,0,0,.9);opacity:0;transition:opacity .6s;pointer-events:none}
 #zoo{position:fixed;left:0;right:0;bottom:9vh;text-align:center;pointer-events:none;opacity:0;transition:opacity .8s;color:rgba(222,230,236,.9);text-shadow:0 0 7px rgba(0,0,0,.95),0 1px 2px rgba(0,0,0,.95)}
 #zoo.on{opacity:1}
@@ -147,6 +148,7 @@ canvas{display:block;outline:none;touch-action:none}
     <div class="mi" id="mcreator" style="display:none">creator</div>
   </div>
   <div id="msaves"><div id="mslots"></div><div id="mrow"><span class="mi" id="mimport">import a file</span><span class="mi" id="mback">back</span></div></div>
+  <div id="mfound"><div id="mfounders"></div><div class="mrow"><span class="mi" id="mfback">back</span></div></div>
   <div id="mnote"></div>
 </div>
 <div id="fx"><div id="fxhd">effects</div><div id="fxlist"></div><div id="fxnote">e to close</div></div>

@@ -44,7 +44,6 @@ function wasteTick(L,P,m){const w=wasteOf(P);if(Math.abs(w-(P.waste||0))<0.02&&!
   const gs=Math.floor(w*10+1e-9);if(m.gaunt&&gs!==(L._gs||0)){L._gs=gs;playerRebody(gauntClade(P.clade,m.gaunt*gs/10));} // the look, in steps (playerBody starts a body whole: waste is set after)
   P.waste=w;const live=liveSpec(P);if(live){live.waste=w;rederive(P);}}
 function gauntClade(C,k){const sp=JSON.parse(specToJSON(C.spec)),core=CORES[sp.core.kind];if(k>0&&core&&core.params.R){const R0=sp.core.R!==undefined?sp.core.R:core.params.R.d;sp.core.R=+(R0*(1-k)).toFixed(4);}return Object.assign({},C,{build:()=>compile(sp)});} // the clade as it is, its body compiled thinner; spec stays the adult's (the save, the calculator's full body)
-const LINE_PREY=['arrow','needle','scuttle']; // what the young of the player's line hunt: the player's own food (DESIGN The player)
 function lineCur(){const L=curSave&&curSave.line;return L&&L.length?L[L.length-1]:null;}
 function lifeNew(spec,preset,parent,born,grown){return {spec:JSON.parse(specToJSON(spec)),preset:preset,born:r3(born),grown:r3(grown),died:null,cause:'',playT:0,parent:parent,track:[],lay:-1e9,broods:[]};}
 function lifeClade(L,k){const sp=specOk(L.spec),pre=sp?presetFor(sp):CLADE_PRESETS.find(p=>p.id===L.preset);return sp?playerClade(sp,pre,k):CLADES.find(c=>c.id===L.preset)||CLADES[1];}
@@ -55,9 +54,16 @@ function lineLoadRec(rec,C){ // the line from a record, or (a record from before
   for(const L of curSave.line)for(const b of L.broods){b._ch=null;b._egg=null;}
   const L=lineCur();if(L&&lifeBreed(L)&&!(L.born<L.grown))L.born=L.grown-growS(L.spec); // a founder from before v11.74: adult at its start, so hatched a growth before it
 }
-// the kind the young of a spec are (a def per spec, as the lab's placed creature has one): the player's numbers, a hunter of the player's food
-function lineKind(spec){const k='line:'+hashStr(specToJSON(spec)).toString(36);if(DEFS[k])return k;const C=playerClade(spec),st=statsOf(spec);
-  DEFS[k]=defPhysics({build:()=>compile(spec),spec:spec,line:true,lineId:C.id,size:spec.size,hp:100,role:'hunter',cruiseF:0.45,home:20+spec.size*10,prey:LINE_PREY.filter(p=>DEFS[p]),detect:10+spec.size*5,reach:st.reach,dmg:C.bite,biteCD:1.2,cool:3,legs:C.legs,jetter:C.jet},spec); // v11.71: speed, accel and turn off its own build, as every kind's (creatures_defs.js defPhysics) — a child edited at conception moves as its body says
+// the kind the young of a spec are (a def per spec, as the lab's placed creature has one). v11.75: the founder's row (creatures_defs.js founderDef — the
+// species the line began from; the three presets have rows of their own) re-derived on the child's body: what is not physics — the role and its
+// behaviour, the prey, venom, immunity, whether it is forage — comes down the line unchanged, the physics (speed, accel, turn, reach, the bite) is the
+// child's own build. The seam LINEAGE §8.2's derived DEFS replaces. A forage founder's young are a schoolless forage (graze: they wander and flee —
+// updateBoid wants a school), and the presets' rows are 'player', which the young run as hunters
+function lineKind(spec){const k='line:'+hashStr(specToJSON(spec)).toString(36);if(DEFS[k])return k;const C=playerClade(spec),st=statsOf(spec),fd=founderDef(spec)||DEFS.fin,d={};
+  for(const key in fd)if(key!=='build'&&key!=='spec'&&key!=='stock'&&key!=='top'&&key!=='speed'&&key!=='turn'&&key!=='accel')d[key]=fd[key];
+  Object.assign(d,{build:()=>compile(spec),spec:spec,line:true,lineId:C.id,size:spec.size,prey:(fd.prey||[]).filter(p=>p!=='player'&&DEFS[p]),reach:st.reach,dmg:C.bite,legs:C.legs,jetter:C.jet});
+  if(d.role==='player')d.role='hunter';else if(d.role==='boid')d.role='graze';if(d.flee)d.flee=true;
+  DEFS[k]=defPhysics(d,spec); // v11.71: speed, accel and turn off its own build, as every kind's (creatures_defs.js defPhysics) — a child edited at conception moves as its body says
   return k;}
 function growS(spec){return ecoOf(lineKind(spec)).grow*DAY_S;} // seconds from the hatch to adult: the world's rule (ECO.grow × mass^¼ days)
 function hatchS(spec){return ECO.hatch*Math.pow(ecoOf(lineKind(spec)).mass,0.25)*DAY_S;} // seconds from the laying to the hatch (layEggs' rule, without its jitter)
@@ -123,7 +129,7 @@ function conceiveBudget(gen){return BUDGET.base+BUDGET.gen*(gen-1);} // gen: the
 // off the parent's stomach as a share of its meal (ecology.js ecoOf on the line kind: the player's hunger runs on it, player.js). Refused when it would
 // leave the stomach starving (hunger 1): a big child wants a full parent. The materials — the mineral, the pigment — are §6's other half, proposed there, not built.
 function clutchCost(child){const m=lifeBreed(lineCur())||breedOf(child)||BREED.slowbloods;return m.egg*m.n*derive(child).mass;} // tonnes of food, by the parent's mode (v11.74)
-function clutchHunger(child){const P=player;return P.clade?clutchCost(child)/eaterK(P).meal:0;} // as hunger (of the parent's stomach)
+function clutchHunger(child){const P=player;if(!P.clade)return 0;const K=eaterK(P);return K.hunter?clutchCost(child)/K.meal:0;} // as hunger (of the parent's stomach); a body with no stomach on the model (v11.75: a founder that hunts nothing) pays nothing — the model has no account for it
 function priceMove(a,b,q){ // one parameter from a to b, against its registry line
   if(a===undefined||b===undefined||a===b)return 0;if(!q||q.k==='b'||q.k==='s')return JSON.stringify(a)===JSON.stringify(b)?0:BUDGET.toggle;
   if(q.k==='l'||typeof a!=='number'||typeof b!=='number')return JSON.stringify(a)===JSON.stringify(b)?0:BUDGET.list;

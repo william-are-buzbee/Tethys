@@ -2911,7 +2911,10 @@ const DERIVE_K = {
   accMass: 0.15, // accel against mass: falls with it, gently — no ceiling term: a 10⁶ t body is already at 0.12 of a 1 t one's
   turn: 8, // rad/s at 1 m long (the roster's fit over thirty kinds: 1.04, spread ×1.5 — a facing rate, the loosest of the three)
   turnExp: 0.85, // turn against length: 0.04 rad/s at 600 m needs no ceiling either
-  turnMax: 8 // rad/s: a body under a metre turns as fast as it likes
+  turnMax: 8, // rad/s: a body under a metre turns as fast as it likes
+  burst: {undulate: 1.75, flap: 1.6}, // v11.75: the sprint — an anaerobic burst over the top speed, by the propulsor. A tail's is the finback's hand 1.75 (player.js to v11.74); a metachronal row's from the roster's strikers, whose strike speeds run 0.8–2.2 of their derived top (median 1.6: PLANET, hingeshells — burst and coast, the terror is the strike). A jet has none: the squeeze is its burst (jetImp); a walker's Froude speed is its ceiling; a bell and a sail have no muscle for it
+  jetImp: 1.235, // v11.75: a jet's squeeze as a velocity kick, a share of the top speed (the soft-arm's hand 10 at 8.1 m/s: player.js JET_W delivers it over the first 0.18 s of each 0.5 s cycle)
+  jetShell: 1.417 // v11.75: × for a chambered body — its top speed is what the shell's drag and buoyancy leave (K.chamber), the squeeze is the muscle's (the coilshell's hand 7 at 4.0)
 };
 function derive(spec0) {
   const spec = fillSpec(spec0),
@@ -3017,6 +3020,9 @@ function derive(spec0) {
       (F.mode === 'undulate' ? K.flex : 1)
   );
   const buoy = chambered ? 'floats' : mass > vol * 1.05 ? 'sinks' : 'neutral';
+  const walk = legs ? K.walk * Math.sqrt(GRAV * Math.max(0.02, legLen * s)) : 0, // v11.75: the Froude speed of the legs whatever the mode (a hood swims on its flaps and walks on its legs; player.js landSpeed)
+    burst = K.burst[mode] || 1, // v11.75: the sprint over the top speed (player.js sprint), by the propulsor
+    jetImp = jet && !legs ? +(K.jetImp * speed * (chambered ? K.jetShell : 1)).toFixed(1) : 0; // v11.75: the squeeze's kick (player.js jetImp)
   const plausible = [];
   if (spec.size > CLADE_LIMIT[spec.clade]) plausible.push("past PLANET's size limit for the clade");
   if (spec.clade === 'hingeshells' && tail) plausible.push('a hingeshell cannot undulate');
@@ -3040,6 +3046,9 @@ function derive(spec0) {
     buoyancy: buoy,
     jet: jet && !legs,
     legs: legs,
+    walk: +walk.toFixed(2),
+    burst: burst,
+    jetImp: jetImp,
     reach: +(reach * s + L * 0.5).toFixed(1),
     cost: cost,
     length: +L.toFixed(2),

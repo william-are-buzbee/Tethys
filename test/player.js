@@ -7,8 +7,9 @@ const fs=require('fs'),path=require('path');
 const ROOT=path.join(__dirname,'..');
 const ORDER=fs.readFileSync(path.join(ROOT,'src','order.txt'),'utf8').split('\n').map(s=>s.trim()).filter(s=>s&&s[0]!=='#');
 let js=ORDER.map(n=>fs.readFileSync(path.join(ROOT,'src',n+'.js'),'utf8')).join('\n');
-js+='\nglobal.__pl={CLADES,SPECS,DEFS,derive,statsOf,playerClade,player,startNew,startFrom,saveNow,saveRefresh,get saveList(){return saveList;},get curSave(){return curSave;},get mode(){return mode;},SAVE_V,specToJSON};';
+js+='\nglobal.__pl={CLADES,SPECS,DEFS,derive,statsOf,playerClade,player,startNew,startFrom,saveNow,saveRefresh,get saveList(){return saveList;},get curSave(){return curSave;},get mode(){return mode;},SAVE_V,specToJSON,founderClade,founderList,founderOf,abilitiesOf,lineKind,keys,CAM_BODY,DERIVE_K,PROFILE,seeSpec};';
 js+='\nglobal.__line={get t(){return t;},setT(v){t=v;clockH=t*CLOCK_RATE;},DAY_S,LINE,BREED,breed:()=>lifeBreed(lineCur()),brooding:()=>lineBrooding(),guarded:(b)=>broodGuarded(b),lifeS:()=>lifeS(lineCur()),hint:()=>hintEl.textContent,findCarcass:(c,R)=>findCarcass(c,R),groundAt,lay:()=>playerLay()&&conceiveClose(true),eggs:()=>eggs,cur:()=>lineCur(),line:()=>curSave?curSave.line:null,die:(c)=>die(c),live:(b)=>broodLive(b),young:(b)=>creatures.filter(c=>c.alive&&c.brood===b),tick:(dt)=>lineTick(dt),children:()=>lineChildren(),clear:()=>worldClear(),cells:()=>cellsAround()};';
+js+='\nglobal.__cb={coverAt,thruOf,MOULT,sheds,softPrey,findPrey,spawn,chunkAt,solidPush,V3,creatures,FI,groundAt};';
 js+='\nglobal.__cv={lab,open:()=>playerLay(),close:(d)=>conceiveClose(d),build:()=>labBuild(),load:(sp)=>labLoad(sp),price:(a,b)=>conceivePrice(a,b),budget:(g)=>conceiveBudget(g),BUDGET,paramOf,frame:(sp)=>compileFrame(sp),spark:()=>spark,gone:()=>playerGone(),hunter:(kind,dx)=>{const p=V3(player.pos.x+dx,player.pos.y+1,player.pos.z),c=spawn(chunkAt(p.x,p.z),kind,p,mulberry(11),{ent:-1});c.hunger=1;return c;},noSpark:()=>{spark=null;},bite:()=>{player.biteCD=0;playerBite();},put:(kind,dx,dz)=>{const p=V3(player.pos.x+dx,player.pos.y,player.pos.z+dz);return spawn(chunkAt(p.x,p.z),kind,p,mulberry(12),{ent:-1});},kill:(c,by)=>kill(c,by),eco:(k)=>ecoOf(k),K:()=>eaterK(player),carc:()=>carcasses,tick:(dt)=>hungerTick(player,dt),EAT,STARVE_T,ECO,cost:(s)=>clutchCost(s),fuel:(s)=>clutchHunger(s),hline:()=>hungerLine()};';
 const tmp=path.join(require('os').tmpdir(),'tethys_player.js');
 fs.writeFileSync(tmp,'(function(){"use strict";\n'+js+'\n})();');
@@ -17,12 +18,12 @@ const X=global.__pl;let fails=0;
 function check(ok,msg){if(!ok){fails++;console.error('  FAIL '+msg);}else console.log('  ok   '+msg);}
 // ---- 1. the presets (v11.71): speed, accel and turn are derive's, as every animal's; the contact mass is the creatures' rule; the fixed few are the preset's ----
 const FIXED={soft:{jet:true,jetImp:10,cam:6.5,size:1.6,sprint:undefined,venom:undefined,ability:'ink'},fin:{sprint:1.75,cam:7.5,size:1.8,jet:false,jetImp:undefined,venom:undefined,ability:'stun'},
-  coil:{jet:true,jetImp:7,cam:6.5,size:1.5,sprint:undefined,venom:{kind:'paralyse',t:5,against:{slowbloods:1,ringmouths:1}},ability:'withdraw'}};
+  coil:{jet:true,jetImp:7,cam:6.3,size:1.5,sprint:undefined,venom:{kind:'paralyse',t:5,against:{slowbloods:1,ringmouths:1}},ability:'withdraw'}}; // v11.75: the numbers are the build's and the founder's row (player.js): the jet's kick and the sprint derive's terms, the arm the body's length (the coilshell's 6.5 is 6.3), the venom DEFS.coil's, the ability its parts'
 for(const id in FIXED){const C=X.CLADES.find(c=>c.id===id),o=FIXED[id];if(!C){check(false,id+': no preset');continue;}
   const d=X.derive(X.SPECS[id]),bad=Object.keys(o).filter(k=>JSON.stringify(!!o[k]===o[k]?!!C[k]:C[k])!==JSON.stringify(o[k]));
   check(C.speed===d.speed&&C.accel===d.accel&&C.turn===d.turn,id+': speed '+C.speed+' accel '+C.accel+' turn '+C.turn+' off derive ('+d.mode+', '+d.length+' m)');
   check(Math.abs(C.mass-Math.pow(C.size,3))<0.01,id+': the contact mass is size cubed, as for any creature ('+C.mass.toFixed(2)+')');
-  check(!bad.length,id+': the numbers derive has no term for come from the preset'+(bad.length?' — '+bad.map(k=>k+' '+JSON.stringify(C[k])).join(', '):''));
+  check(!bad.length,id+': the jet\'s kick, the sprint, the arm, the venom and the ability as v11.74 had them, off the build and the row (v11.75)'+(bad.length?' — '+bad.map(k=>k+' '+JSON.stringify(C[k])).join(', '):''));
   check(C.spec===X.SPECS[id],id+': built from SPECS.'+id);}
 {const locked=Object.keys(X.SPECS).filter(k=>X.SPECS[k].stats);check(!locked.length,'no species ships with a lock'+(locked.length?': '+locked.join(', '):' ('+Object.keys(X.SPECS).length+' specs)'));
   const hand=Object.keys(X.DEFS).filter(k=>X.SPECS[k]&&(X.DEFS[k].top!==X.derive(X.SPECS[k]).speed||X.DEFS[k].turn!==X.derive(X.SPECS[k]).turn||X.DEFS[k].accel!==X.derive(X.SPECS[k]).accel));
@@ -38,7 +39,7 @@ for(const id in FIXED){const C=X.CLADES.find(c=>c.id===id),o=FIXED[id];if(!C){ch
 const sick=JSON.parse(JSON.stringify(X.SPECS.sickle));sick.id='mine';
 const Cs=X.playerClade(sick),st=X.statsOf(sick);
 check(Cs.speed===st.speed&&Cs.turn===st.turn&&Cs.accel===st.accel&&Math.abs(Cs.mass-Math.pow(sick.size,3))<0.01,'a hingeshell spec: speed '+Cs.speed+' turn '+Cs.turn+' accel '+Cs.accel+' off derive, mass '+Cs.mass);
-check(Cs.ability===null&&!Cs.venom,'a hingeshell has no preset ability and no venom (none of the presets is its clade)');
+check(Cs.ability==='shut'&&!Cs.venom&&Cs.abilities.join()==='shut','the sickle\'s parts give it the valves\' shut and nothing else, and its row no venom (v11.75)');
 // ---- 3. the save: the spec on the record, back as it went; a version 1 record's clade id as its preset ----
 X.startNew(Cs);X.saveRefresh();
 const rec=X.saveList.find(r=>r.id===X.curSave.id);
@@ -223,6 +224,41 @@ const Cf=X.player.clade;check(['speed','accel','turn','mass','bite','cam','sprin
   check(d1.plausible.some(q=>q.indexOf('outrun')>=0)&&d1.speed/d0.speed<1.35,'a lobe 3.7 m tall on the fin outruns its stem: '+d0.speed+' → '+d1.speed+' (×'+(d1.speed/d0.speed).toFixed(2)+'; +48% before the cap) — "'+d1.plausible.find(q=>q.indexOf('outrun')>=0)+'"');
   const capped=Object.keys(X.SPECS).filter(k=>X.derive(X.SPECS[k]).plausible.some(q=>q.indexOf('outrun')>=0));
   check(!capped.length,'no roster kind is capped'+(capped.length?': '+capped.join(', '):''));
+}
+// ---- 8. any species as the player (v11.75): the abilities off the parts, appearing and going with them; the founder's list by what is seen; a founder of each clade boots and swims; its line's young on its row ----
+{const P=X.player,L=global.__line,copy=s=>JSON.parse(X.specToJSON(s));
+  const fin=copy(X.SPECS.fin),tl=fin.parts.findIndex(p=>p.kind==='tail');check(X.abilitiesOf(fin).join()==='stun','the finback\'s tail is its stun');
+  fin.parts.splice(tl,1);check(X.abilitiesOf(fin).join()==='','and without the tail it has nothing');fin.parts.push({kind:'tail',style:'stub'});check(X.abilitiesOf(fin).join()==='','a stub is no tail');
+  const soft=copy(X.SPECS.soft);check(X.abilitiesOf(soft).join()==='ink','the soft-arm\'s mantle is its ink');soft.core={kind:'coilbody',R:0.46,beat:[2,1]};check(X.abilitiesOf(soft).join()==='','on a coiled body without a shell it has none');
+  soft.parts.push({kind:'shell',style:'coil',R1:1.0});check(X.abilitiesOf(soft).join()==='withdraw','with a shell wide enough to hide in it withdraws');soft.parts[soft.parts.length-1].R1=0.3;check(X.abilitiesOf(soft).join()==='','a shell narrower than the body is no hiding place');
+  const sick=copy(X.SPECS.sickle);check(X.abilitiesOf(sick).join()==='shut','the sickle\'s valves shut');sick.parts=sick.parts.filter(p=>p.kind!=='valves');check(X.abilitiesOf(sick).join()==='','without them, nothing');
+  const ram=copy(X.SPECS.ram);check(X.abilitiesOf(ram).join()==='ram,shut'&&X.playerClade(ram).ability==='ram','the ram has the blow and the valves: '+X.abilitiesOf(ram).join(', ')+' — Q is the first');
+  check(X.abilitiesOf(copy(X.SPECS.rasp)).join()==='withdraw'&&X.abilitiesOf(copy(X.SPECS.lurker)).join()===''&&X.abilitiesOf(copy(X.SPECS.darter)).join()==='stun','the rasp withdraws into its shell, the lurker (no shell) has nothing, a darter\'s tail is a stun');
+  // the list: the roster's players first, and what has been seen; never a drifter
+  const seen0=X.PROFILE.seen.sp.slice();X.PROFILE.seen.sp.length=0;let fl=X.founderList().map(r=>r.id);
+  check(fl.join()==='soft,coil,fin','with nothing seen the founder\'s list is the three roster players ('+fl.join(', ')+')');
+  X.seeSpec('hose');X.seeSpec('jelly');X.seeSpec('arrow');fl=X.founderList().map(r=>r.id);
+  check(fl.indexOf('hose')>=0&&fl.indexOf('jelly')<0&&fl.length>=4,'seen species join it, a drifter never: '+fl.join(', '));
+  X.PROFILE.seen.sp.length=0;for(const id of seen0)X.PROFILE.seen.sp.push(id);
+  // the numbers: cam from the length, the kick from the speed, the sprint from the mode, the founder's row down the line
+  for(const id of ['arrow','needle','hose']){const C=X.founderClade(id),d=X.derive(C.spec),fd=X.DEFS[id];
+    check(C.spec.founder===id&&C.founder===id&&C.spec!==X.SPECS[id]&&C.name===id,id+': a founder copy that knows its species');
+    check(C.cam===+(X.CAM_BODY.at+X.CAM_BODY.per*d.length).toFixed(1)&&(d.jet?C.jetImp===d.jetImp&&C.jetImp>0:C.jetImp===undefined)&&(d.burst>1?C.sprint===d.burst:C.sprint===undefined),id+': cam '+C.cam+' from '+d.length+' m, kick '+C.jetImp+', sprint '+C.sprint+' ('+d.mode+')');
+    const k=X.lineKind(C.spec),ld=X.DEFS[k];
+    check(ld.role===(fd.role==='boid'?'graze':fd.role)&&ld.prey.join()===fd.prey.filter(p=>p!=='player'&&X.DEFS[p]).join()&&ld.hp===fd.hp&&JSON.stringify(ld.venom)===JSON.stringify(fd.venom)&&ld.top===d.speed&&ld.reach===d.reach,id+'\'s young run its row on their own body: role '+ld.role+', prey '+ld.prey.join('+')+', hp '+ld.hp+', top '+ld.top);}
+  // boots and swims, one founder a clade that was never a preset
+  for(const id of ['arrow','needle','hose']){const C=X.founderClade(id);X.startNew(C);const p0=P.pos.clone();X.keys.KeyW=true;X.keys.ShiftLeft=true;__step(240);X.keys.KeyW=false;X.keys.ShiftLeft=false;
+    check(X.mode==='play'&&!P.dead&&P.pos.distanceTo(p0)>20&&P.clade.spec.founder===id,'a new game as the '+id+' ('+C.spec.clade+'): four seconds of sprint took it '+P.pos.distanceTo(p0).toFixed(0)+' m, speed '+C.speed+(C.sprint?' × '+C.sprint:'')+(C.jetImp?', kick '+C.jetImp:''));}
+  // the record: continue brings the founder back as itself
+  X.saveRefresh();const rec=X.saveList.find(r=>r.id===X.curSave.id);X.startFrom(rec);check(P.clade.founder==='hose'&&P.clade.ability==='shut'&&P.clade.spec.founder==='hose','continued: the hose again, with its valves\' shut');
+  // a grazer founder: no stomach on the model, a clutch costs nothing of it
+  const gz=X.founderClade('grazer');X.startNew(gz);__step(30);check(P.hunger===0&&global.__cv.fuel(gz.spec)===0&&global.__cv.hline().indexOf('no stomach on the model')===0,'a grazer founder runs no hunger clock (the world\'s grazers have none) and its clutch takes nothing from a stomach the model has not got: "'+global.__cv.hline().slice(0,60)+'…"');
+  // shut: the covering shell over everything while Q is held, the body still; soft (v11.76) is skin
+  X.startNew(X.founderClade('lash'));const h=L.groundAt(P.pos.x,P.pos.z);P.pos.y=h+3;P.vel.set(0,0,0);__step(2);
+  check(global.__cb.coverAt(P,0)==='plate'&&global.__cb.coverAt(P,1)==='plate','the hose\'s covering is plate (small valves)');
+  X.keys.KeyQ=true;X.keys.KeyW=true;__step(30);check(P.shut===true&&global.__cb.coverAt(P,0)==='shell'&&P.vel.length()<0.5,'Q held: shut — shell to every edge, and still ('+P.vel.length().toFixed(2)+' m/s with w down)');
+  X.keys.KeyQ=false;X.keys.KeyW=false;__step(2);check(P.shut===false&&global.__cb.coverAt(P,0)==='plate','Q up: open again');
+  P.soft=true;check(global.__cb.coverAt(P,0)==='skin','soft: skin to every edge');P.soft=false;
 }
 console.log(fails?'player: '+fails+' FAILED':'player: all ok');
 process.exit(fails?1:0);

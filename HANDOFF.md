@@ -1,5 +1,17 @@
 # HANDOFF — tethys
 
+**v11.75 (21 Sep 2026): any species can be the player (the person's decisions, LINEAGE §12.29–31).** New game lists the roster's three players and every
+species the profile has seen (as the creator is gated), drifters out, and starts the slot as the one clicked (menu.js `founderClade`: the spec copied
+with `founder` on it). The presets' hand numbers are gone: the third-person arm is the body's length (player.js `CAM_BODY`; the coilshell's 6.5 is 6.3,
+the only number that moved), the jet's squeeze and the sprint are derive's (`DERIVE_K.jetImp`, `.burst`: undulate 1.75, flap 1.6), a walker's strand
+speed derive's `walk`, venom and immunity the founder species' `DEFS` row (creatures_defs.js `founderDef`, rows for the three presets; the line's young
+run the founder's row on their own body — **this is the seam LINEAGE §8.2's derived DEFS replaces**). An ability is a part's (`ABILITIES`, the stand-in
+for the ganglion model, CREATOR.md): ink the mantle, stun a tail, withdraw a shell wide enough, **ram** the ram's blow, **shut** the valves (Q held: still,
+shell to every edge, not invulnerable); the three presets keep exactly theirs. A founder that hunts nothing has no hunger clock. **Walking: not built** — a
+legged player walks on the strand and is a free swimmer under water; CHANGELOG v11.75 says what floor walking would take. **Ask first** which species
+should not be offered (the traps, the hood, the forage, the immortals, the big — the sickle is framed from 21 m), then the stun that does not scale,
+the camera's line, the flap burst, Q with two abilities.
+
 **v11.74 (21 Sep 2026): the ringmouths' reproduction (LINEAGE §13.6's ringmouth half, §12.26–28).** The mode is read off the body (line.js `BREED`,
 `breedOf`): a soft ringmouth is the octopus — one clutch of 30 cheap eggs (0.66 of the soft-arm's stomach), grown; then it broods: it kills and is not fed
 (`feeds`), it wastes as its stomach empties (`wasteOf` on the stomach's clock to starvation, the speed the calculator's off the live spec with

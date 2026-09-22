@@ -5000,3 +5000,83 @@ skeleton, so §3's reason does not hold for it — §3 amended); nothing else ag
    the collar thin with it?
 5. **A brooding parent's threat**: guarding keeps scavengers off by the parent's presence alone; whether a hunter should fear a brooding soft-arm over
    its clutch, or take it more easily as it wastes, is not built.
+
+## v11.75 — any species can be the player (21 Sep 2026)
+
+The person's decisions (21 Sep 2026, LINEAGE §12.29–31): the founder is any existing species of the chosen clade — the roster is the presets, the
+randomiser later; abilities will come from a universal ganglion model (a neuron cluster driving a motor cortex, a body with a long list of things it can
+do) — not this pass, a table stands in; the player moults, and the moult is not a trip to the editor (v11.76). This version retires the three presets'
+hand numbers and opens new game to the roster.
+
+- **The presets' hand numbers are gone** (player.js `CLADE_PRESETS` is three names). Every number the player runs on is the build's or the founder
+  species' row: the third-person arm is the body's length (`CAM_BODY`: 1.04 + 1.79 × derive's `length` — the soft-arm's 6.5 at 3.06 m and the finback's
+  7.5 at 3.62 to the digit; **the coilshell's 6.5 is 6.3**, the one number that moved; a sickle at 11.4 m is framed from 21); the jet's squeeze is
+  derive's (`DERIVE_K.jetImp` 1.235 × the top speed, × `jetShell` 1.417 for a chambered body — the soft-arm's 10 and the coilshell's 7 to the digit,
+  the arrow's 7.6); the sprint is derive's `burst` by the propulsor (`DERIVE_K.burst`: undulate 1.75 — the finback's; flap 1.6 — the roster's strikers
+  strike at 0.8–2.2 of their derived top, median 1.6, PLANET's burst and coast; a jet's burst is its squeeze, a walker's Froude speed its ceiling, a bell
+  and a sail have none); a legged body's strand speed is derive's `walk` (the Froude speed of its legs whatever its mode: the hood swims on flaps at 10
+  and walks at 3.9); venom and immunity are the founder's `DEFS` row. `derive` returns `walk`, `burst` and `jetImp`.
+- **The founder's row (creatures_defs.js `founderDef`, the seam LINEAGE §8.2 replaces):** a player's spec carries `founder`, the species id its line began
+  from (a child's spec inherits it: the editor at conception copies the parent's), and everything the calculator does not give — venom, immunity, prey,
+  role and behaviour — is read off `DEFS[founder]` and carried down the line unchanged. The three presets have rows of their own now (`DEFS.soft/fin/coil`,
+  role `player`, no `SPAWN` entry: v11.69–74's line kind — hp 100, the player's food, detect 10 + 5 × size, home 20 + 10 × size, the coilshell's venom).
+  **The line's young run the founder's row on their own body** (line.js `lineKind`): a sickle's young hunt needle and grazer with hp 150, an arrow's hunt
+  darter, flicker, scuttle and sifter with hp 1 (forage: they die at a touch), the presets' as before; the physics is the child's build. A forage founder's
+  young are a schoolless forage (`graze`: they wander and flee — the boid role wants a school). A spec without the key (a save from before) is its own id's
+  row, its id's root ('fin-3' → 'fin'), or the preset of its kind. **Where the seam is:** when §8.2's derived `DEFS` infers role, prey, reach and diet from
+  the build, `founderDef` goes and `lineKind` reads the inference; until then a sickle's line eats what a sickle eats however its body is edited.
+- **A founder that hunts nothing** (a grazer, a filter feeder: no prey on its row) runs no hunger clock — the world's grazers have none — and its clutch
+  takes nothing from a stomach the model has not got (`clutchHunger` 0); the readout says `no stomach on the model`.
+- **Abilities from parts** (player.js `ABILITIES`, the stand-in for the ganglion model): each existing ability tied to the part that makes it physically
+  possible, the first that fits is Q, none when nothing fits — **ink** the mantle core (an ink sac is a mantle-cavity organ); **stun** a tail that swings
+  (`tail`, not `stub`: the finback's blow); **withdraw** a coiled soft body with a shell wide enough to pull into (the shell's aperture at least the body's
+  radius: the coilshell, the rasp, the great, the ortho; a lurker has a coiled body and no shell — nothing); **ram** the ram's blow (`weapon:ram`); **shut**
+  the valves (any hingeshell with `valves`). The three roster players keep exactly the one they had (the test checks). Two new abilities: **ram** (Q) is
+  the world's rule on the striker (combat.js `RAM`): the nearest live body ahead in reach is stunned `RAM.stun` 2.5 s, thrown, dazed by a snap wound,
+  nothing through, `RAM.cool` 3 s; **shut** (Q held) clamps the valves — the body still and sinking as the withdraw is, the covering `shell` over every
+  capsule while the key is down (combat.js `coverAt` reads the player's state; a hold on the player re-reads its covering every frame, `h.thru` with it),
+  **not invulnerable**: the edge decides — a crusher's plate jaw is through a shell, a rasp drills it in time, everything else lets go at the pin. The
+  anim's `soft` flag clamps the valves for both shut and the moult. A ram has ram and shut; Q is the first.
+- **The founder picker** (menu.js `founderList`, `founderClade`, `menuFounders`; shell.html `#mfound`): new game lists the roster's three players and
+  every species the profile has seen up close (save.js `PROFILE.seen.sp`, as the creator is gated), drifters excluded, in the bestiary's order — name,
+  clade and family, niche, half-length — and a click starts a new slot as that species, its spec copied with `founder` on it. Nothing judges what can be
+  played (below). The slot list shows the founder's id (v11.68's rule). Esc or back returns.
+- **Walking, as it stands** (asked for a report, not a build): derive's `walk` mode gives a legged body the Froude speed of its legs as its top speed
+  (the scuttle 2.3, the trap 2.7, the hook 5.6, the tread 5.3) and the player controller does two things with `C.legs`: on the strand (grounded, mostly
+  out of the water) it walks at `landSpeed` and jumps at 5 m/s instead of flopping; **under water it is a free swimmer at that speed** — space rises, c
+  dives, the floor is the same clamp every body gets, and nothing keeps it on the ground. The legs' gait reads the speed. **Floor walking is not built.**
+  What it would take: a floor mode in `updatePlayer` for a legged body under water — the body held at `groundAt` plus its clearance while grounded, w/s
+  along the slope, no rise (space a hop), the turn about the up axis only, the camera's pitch bounded, and a switch by contact for a body with both legs
+  and flaps (the hood, the ram); some 40 lines in player.js and the camera. The AI's walkers (`d.floor`, `d.legs`) already live on the floor by their own
+  rule, so the world's side exists.
+- **Tests** (`test/player.js` §1, §2, §8; `test/smoke.js`): the presets' numbers as v11.74 had them off the build and the row (the coilshell's arm 6.3);
+  the sickle's parts give it shut and nothing else; the abilities appear and go with their parts (the finback's tail, a stub, the soft-arm's mantle, a
+  coiled body with and without a shell wide enough, the sickle's valves, the ram's two, the rasp, the lurker, a darter); the founder's list with nothing
+  seen is the three players, seen species join it and a drifter never; the arrow, the needle and the hose as founders (a copy that knows its species; cam
+  from the length, the kick from the speed, the sprint from the mode; their young on their rows with their own physics); a new game as each — four seconds
+  of sprint takes them 34–40 m; continue brings the hose back with its shut; a grazer founder with no clock and a free clutch; the lash shut (shell) and
+  open (plate). Smoke: picks 3–5 start as the sickle, the arrow and the needle through `founderClade` and check the founder, the ability and the young's
+  prey; new game in the stub, the audio and the snow tests goes through the founder list. `--test` green on both tiers.
+- **Seen** in the app's browser (dev.html on serve.js, the loop driven by hand): the founder list with fourteen species seeded as seen (`test/render/`
+  has no frame of the menu: it is HTML over the canvas) — the three players first, then the seen ringmouths, slowbloods and hingeshells, the jelly kept
+  out; a new game as the hose (v11.76's frames), as the arrow (`v75_arrow.png`: the little jetter with its collar of eyes at the peak's floor, the camera
+  3.8 m back — close, and right for a 1 m body), as the needle (`v75_needle.png`: the lobed tail, 4.4 m back); the readouts `q: ink` (the arrow, whose
+  hunger line also has an age and a span: the soft-arm's mode, as its body says), `q: stun`, `q: shut`.
+
+**Unseen, ask in this order:**
+1. **Which species should not be offered.** The picker judges nothing; these cannot honestly be played as they are: **the trap and the stone** (the
+   trap's legs walk it at 2.7 m/s, the stone has no propulsion at all — derive gives 0 — and both are buried sitters); **the hood** (a buried ambusher
+   that, as the player, swims on its flaps at 10 m/s); **the forage swarms** — darter, flicker, sifter, glim (no prey on their rows, so no stomach and a
+   free clutch; their young are forage); **the immortals** as bodies whose kind never dies — the watcher, the tread, the veil, the pall (the player dies
+   as any body; the mismatch is what hunts them: nothing); **too big for the camera** — with the arm the body's length, the sickle is framed from 21 m,
+   the ram 17.5, the eel 15.7, the crusher 14.3, the basker 18.8, the great 19.5, the ortho 15.7, the ridge 20, the comb 22, the abyssal 35, the veil 32:
+   at those distances the fog is most of the view. The person decides which stay, which go, and whether the camera's arm should stop growing past some
+   length.
+2. **The stun's blow does not scale**: a darter's tail (0.6 m) stuns an eel exactly as the finback's does (2.5 s, 9 m/s, within 6 m + 0.3 × its size),
+   and a ram's blow is the same on a 4 m body as the hose would deal. The table keeps the presets identical; the ganglion model is where the numbers
+   would come from.
+3. **The camera's fit**: the coilshell's arm 6.3 for 6.5, and whether 1.04 + 1.79 × L is the right line for a 0.5 m rasp (3.6 m) and a 3 m lash (12.9).
+4. **The flap burst at 1.6** (a sprint for every paddler): the hose at 10.6, the sickle at 15 — against their strike speeds of 9 and 17.
+5. **Q with two abilities**: a ram has ram and shut and only the first is reachable. A second key, or the list on the readout only.
+6. **The crusher's `preyClade` and `PLAYER_GRIP`** read the kind of body (`presetFor`: coil, soft, fin), so a rasp founder is the crusher's meal and a
+   hingeshell founder grips as the finback does.

@@ -47,7 +47,7 @@ const EDGE={
   ram:{skin:'no',hide:'no',plate:'no',shell:'no'} // a blow: the stun, nothing through
 };
 function edgeOf(o){return (o.b&&o.b.edge)||null;}
-function coverAt(o,i){const C=o.b&&o.b.cover;return C&&C.length?(C[i]||C[0]):'skin';}
+function coverAt(o,i){if(o===player){if(player.soft)return 'skin';if(player.shut)return 'shell';}const C=o.b&&o.b.cover;return C&&C.length?(C[i]||C[0]):'skin';} // the player's state first (v11.75–76): through the moult it is skin to every edge, as the world's soft body is (creatures_ai.js spawn); shut, its valves are shell over everything
 function thruOf(edge,cover){const E=EDGE[edge];return E?(E[cover]||'no'):'no';}
 let bpIdx=-1; // the capsule bodyPointNear last chose (an index into shapesW, which is the hit list's order)
 const HOLD_BIG=0.6; // a jaw lets go after a bite on prey heavier than this share of its own mass (bite and spit)
@@ -125,6 +125,7 @@ function updateHolds(dt){
     if(a===P){if(P.dead||mode!=='play'||!P.grabKey||P.withdrawn)drop=true;}else if(!a.alive||a.target!==b)drop=true;
     if(b===P){if(P.dead||mode!=='play')drop=true;}else if(!b.alive)drop=true;
     if(drop){releaseHold(h);continue;}
+    if(b===P){const cv=coverAt(P,h.ci);if(cv!==h.cover){h.cover=cv;h.thru=thruOf(h.edge,cv);}} // v11.75: the player's covering follows its state while held — shut under the jaws, or hardened in them
     const ma=massOf(a),mb=massOf(b),wa=ma===mb?0.5:mb/(ma+mb),wb=1-wa;
     const nearP=a===P||b===P||a.pos.distanceTo(P.pos)<95;
     // a holder does not run with what it holds: its steering still asks for the prey (the AI's seek, into a body it already has), so its

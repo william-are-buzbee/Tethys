@@ -156,7 +156,9 @@ same AI, indistinguishable in kind from a creature of your own line.
 **Presets and founders.** A new game goes into the creator, and there are **many preset bodies and a randomiser** — designing from
 nothing is an option, not a toll. Later, the founder may be "a preset, mutated": you start from a known animal and may move only so far
 from it, the freedom growing over generations. **A hatchling never changes clade**; whether a *new founder* in the same slot may be
-another clade is still open (§11).
+another clade is still open (§11). *Built v11.75 (§12.29): the founder is any existing species of the chosen clade — the roster is the presets,
+offered as the creator is gated (what the profile has seen), drifters excluded; the randomiser is later. What is not physics comes down the line from the
+founder's `DEFS` row (§8.2's seam: creatures_defs.js `founderDef`).*
 
 ## 6. The mutation budget is physics, not points
 
@@ -390,6 +392,14 @@ coordinates and days in a form that could be exported.
     knob, the person to tune — `BREED.life`, days × mass^¼), so a soft-arm that never spawns still ends. Nothing else ages yet. Built v11.74.
 28. **The coilshell breeds like the finback** (21 Sep 2026): the nautilus, not the octopus — §3's reason (soft, no skeleton) is not true of a shelled
     animal. §3 amended; built v11.74 (`BREED.shelled`, read off the body: a shell that floats on the calculator).
+29. **The founder is any existing species of the chosen clade** (21 Sep 2026) — the roster is the presets; the randomiser is later. Built v11.75: the
+    founder picker on new game (what the profile has seen, as the creator is gated; drifters excluded), the presets' hand numbers retired, the founder's
+    `DEFS` row carried down the line until §8.2's derived DEFS replaces it (creatures_defs.js `founderDef`).
+30. **Abilities will come from a universal ganglion model** (21 Sep 2026) — a neuron cluster driving a motor cortex that contracts muscles, or
+    communicates — and a body will have a long list of things it can do. Not this pass: v11.75 ties each existing ability to the part that makes it
+    physically possible (player.js `ABILITIES`) as the stand-in; CREATOR.md keeps the design note.
+31. **The player moults, and the moult is not a trip to the editor** (21 Sep 2026): the editor opens at conception only, as for everyone. Built v11.76:
+    the world's own `MOULT` rules on the player by the clock, the hatchling growing through its moults.
 
 ## 13. Build order
 

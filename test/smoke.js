@@ -15,14 +15,16 @@ js+='\nglobal.__eco=()=>{let s=0,nan=0;for(const N of POP.n)for(let c=0;c<N.leng
 js+='\nglobal.__fx=(k)=>{fxToggle(k);return FX[k];};'; // v11.40: the effects list's switch (the de-res on: fxApply, the shimmer hidden)
 js+='\nglobal.__mouse=()=>({yaw:player.yaw,pitch:player.pitch,biteCD:player.biteCD,grab:mouseGrab,locked:locked});'; // v11.31.4: the mouse reaches input.js at all
 js+='\nglobal.__zoo={n:()=>ROSTER.length,mode:()=>mode,specs:()=>Object.keys(SPECS),labLoad:(id)=>labLoad(SPECS[id]),labBlank:(c)=>labLoad(SPEC_BLANK[c]),labAdd:(k)=>{lab.spec.parts.push({kind:k,style:stylesFor(k,lab.spec.clade)[0]});labBuild();labRender();}};';
-js+='\nglobal.__start=(i)=>{if(i<CLADES.length){choose(i);return;}const sp=JSON.parse(JSON.stringify(SPECS.sickle));sp.id="smoke";choose(playerClade(sp));};'; // v11.47: the bare start (menu.js choose) for the clades the menu no longer offers; stub.js __run. v11.68: pick 3 is a spec that is no preset (the sickle, a hingeshell: no ability, derive's numbers)
-js+='\nglobal.__clade=()=>({id:player.clade.id,spec:player.clade.spec.id,speed:player.clade.speed,ability:player.clade.ability});';
+js+='\nglobal.__start=(i)=>{if(i<CLADES.length){choose(i);return;}choose(founderClade(["sickle","arrow","needle"][i-3]));};'; // v11.47: the bare start (menu.js choose) for the clades the menu no longer offers; stub.js __run. v11.68: pick 3 is a spec that is no preset (the sickle, a hingeshell); v11.75: as a founder (menu.js founderClade), and picks 4 and 5 are a ringmouth and a slowblood that were never presets
+js+='\nglobal.__clade=()=>({id:player.clade.id,spec:player.clade.spec.id,founder:player.clade.founder,speed:player.clade.speed,ability:player.clade.ability,kind:lineKind(player.clade.spec),prey:DEFS[lineKind(player.clade.spec)].prey.join("+")});';
 // the saves (v11.47): the slot the menu wrote, esc to the menu, continue from the list, and what came back
 js+='\nglobal.__save={slots:()=>saveList.map(r=>({id:r.id,name:r.name,clade:r.clade,playT:r.playT,deaths:(r.deaths||[]).length,over:!!r.over})),cur:()=>curSave&&curSave.id,now:()=>saveNow(),menu:()=>{const h=global.__h;h["win:keydown"].forEach(f=>f({code:"Escape",preventDefault(){}}));},cont:(id)=>{saveRefresh();const r=saveList.find(r=>r.id===id);if(!r)throw new Error("no slot "+id);return startFrom(r);},del:(id)=>{storeDel(id);saveRefresh();},t:()=>t,pop:()=>{let s=0;for(const N of POP.n)for(let c=0;c<N.length;c++)s+=N[c];return s;},seen:()=>PROFILE.seen.sp.length,creator:()=>PROFILE.creator,locked:()=>locked};';
+js+='\nglobal.DEFS_PREY=(id)=>DEFS[id].prey.filter(p=>p!=="player"&&DEFS[p]).join("+");';
 const tmp=path.join(require('os').tmpdir(),'tethys_bundle.js');
 fs.writeFileSync(tmp,'(function(){"use strict";\n'+js+'\n})();');
 let failed=false;
-for(const pick of [0,1,2,3]){
+const FOUNDERS={3:['sickle','shut'],4:['arrow','ink'],5:['needle','stun']}; // pick: the founder and the ability its parts give (player.js ABILITIES)
+for(const pick of [0,1,2,3,4,5]){
   for(const k of Object.keys(require.cache))delete require.cache[k];
   process.env.PICK=String(pick);
   try{
@@ -47,7 +49,7 @@ for(const pick of [0,1,2,3]){
       if(__zoo.mode()!=='menu')throw new Error('the lab did not return to the menu');
     }
     console.log('  short run:',__run(),JSON.stringify(__dbg()));
-    if(pick===3){const c=__clade();console.log('  as a spec:',JSON.stringify(c));if(c.spec!=='smoke')throw new Error('pick 3 is not the non-preset spec');}
+    if(pick>=3){const c=__clade(),F=FOUNDERS[pick];console.log('  as a founder:',JSON.stringify(c));if(c.spec!==F[0]||c.founder!==F[0])throw new Error('pick '+pick+' is not the '+F[0]);if(c.ability!==F[1])throw new Error('the '+F[0]+' has the ability '+c.ability+', not '+F[1]);if(c.prey!==DEFS_PREY(F[0]))throw new Error('the line kind does not carry the founder\'s prey: '+c.prey);}
     if(__dbg().visible<1)throw new Error('no creature is drawn after the short run (v11.18.1: an edit ate c.lodFar and every creature went invisible while still biting)');
     {const d=__dbg();if(!(d.visible>0))throw new Error('no creature drawn after the short run (v11.18 shipped with lodFar commented out: everything invisible, still biting)');}
     { // the mouse (v11.31.4): both ways of playing, since the test drove neither. Locked (how play starts): a move is the look, a
@@ -78,13 +80,14 @@ for(const pick of [0,1,2,3]){
       key('KeyL');__step(3);if(__zoo.mode()!=='lab')throw new Error('l in play did not open the lab');
       __zoo.labLoad('lash');__step(3);__zoo.labAdd('weapon');__step(4);key('Space');__step(20);key('KeyR');__step(3);h['win:keyup'].forEach(f=>f({code:'KeyR',preventDefault(){}})); // r up again: held, it is the grab (v11.31)
       key('KeyL');__step(3);if(__zoo.mode()!=='play')throw new Error('the lab did not return to play');console.log('  lab from play: ok');}
+    if(pick>=3&&__dbg().pos[2]>-40)throw new Error('the founder did not swim ('+JSON.stringify(__dbg().pos)+')');
     __hurt(1e4);__step(20);
     if(pick===1){ // a slot (v11.55, COMBAT.md §9): the death ends the animal — the menu comes back, the slot carries the death; since v11.69 (LINEAGE §4.5) a death with no young ends the slot, continue refuses it, and a new game goes on
       const S0=global.__save;if(__zoo.mode()!=='menu')throw new Error('the death did not return to the menu');
       const dead=S0.slots().find(r=>r.deaths>0);if(!dead)throw new Error('the death was not written to the slot');
       if(!dead.over)throw new Error('a death with no young did not end the slot (v11.69, LINEAGE §4.5)');
       if(S0.cont(dead.id)!==false||__zoo.mode()!=='menu')throw new Error('an ended slot was continued');
-      h['mnew:click'].forEach(f=>f({}));__step(3);if(__zoo.mode()!=='play')throw new Error('new game after the line ended did not start play');}
+      h['mnew:click'].forEach(f=>f({}));h['mfounders:click'].forEach(f=>f({target:{dataset:{id:'fin'}}}));__step(3);if(__zoo.mode()!=='play')throw new Error('new game after the line ended did not start play');}
     const d=__dbg();console.log('  killed and '+(pick===1?'the line ended; a new game':'respawned')+':',JSON.stringify(d));
     if(d.hp<=0||Math.hypot(d.pos[0],d.pos[2])>20)throw new Error('respawn did not put the player back at the peak alive');
     if(pick===1){
