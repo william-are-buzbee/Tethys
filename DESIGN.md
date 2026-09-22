@@ -1190,6 +1190,8 @@ strike's bite and its trigger range, the trap's strike, the lurker's lunge, the 
 and the player's own grab and bite target (`playerTarget`). The arms' reach is `armReach` (`max(reach·k, reachOf) + prey·0.5`), never
 narrower than it was.
 
+**A rigid part in a group** (v11.80.1) cannot lag the way a chain does, so its builder swings it at its root from the body's own eased turn rate and acceleration (`fx.js bodyPose` keeps `o.turnV`/`o.accV`; the anim's state carries them as `st.turn`/`st.acc`). The frontal combs do it by `COMB_LAG` (0.22 rad per rad/s of turn, 0.05 per m/s², stop 0.5 rad — 15° behind through a 1.2 rad/s curve, about where the chains sit at that turn). The spears, the claws and the tread's feeding plates do not yet.
+
 **Chains** (`makeChain/simChain`, the rigs `makeRig/rigSkin/stepRigs`; `parts.js` `armRing/ringPose/tailPose`). Every
 arm ring (soft-arm, coilshell, the great, ortho, arrow, the veil's skirt), the lurker's eight floor-arms, the eel's whole
 body and the jelly's tentacles are chains of `n` segments from a root welded to the creature. Each frame the creature's

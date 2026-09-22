@@ -79,6 +79,9 @@ const POSE_K={sq:0.02,sqMax:0.14,strike:0.12,snap:0.15,bank:0.09,bankMax:0.6,ban
 function bodyPose(o,dt,yaw){
   const b=o.b;if(!b||!b.frame||!(dt>1e-4))return;const spd=o.spd!==undefined?o.spd:o.vel.length(),acc=(spd-(o.lastSpd||0))/dt;o.lastSpd=spd;
   let dy=o.lastYaw===undefined?0:yaw-o.lastYaw;o.lastYaw=yaw;if(dy>Math.PI)dy-=TAU;else if(dy<-Math.PI)dy+=TAU;const rate=clamp(dy/dt,-6,6);
+  // the body's turn and its acceleration, kept on the body for the next frame's anim (v11.80.1): a part that is rigid geometry in a group — the combs —
+  // cannot lag the way a chain does, so its builder swings it at its root by these instead. Eased, or a part would jitter with the frame's own noise
+  o.turnV=(o.turnV||0)+(rate-(o.turnV||0))*(1-Math.exp(-8*dt));o.accV=(o.accV||0)+(acc-(o.accV||0))*(1-Math.exp(-6*dt));
   const strike=(o.st&&o.st.strike)||(o===player&&o.hold)?1:0;
   const sqT=clamp(acc*POSE_K.sq,-0.1,POSE_K.sqMax)+strike*POSE_K.strike+(o.snapT>0?POSE_K.snap:0);
   o.sq=(o.sq||0)+(sqT-(o.sq||0))*(1-Math.exp(-9*dt));

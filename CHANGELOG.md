@@ -5373,3 +5373,25 @@ The person's two odds and ends after v11.79, both about how it moves rather than
 **Unseen, ask in this order**: whether the side-to-side jitter is actually gone (this is the one that needs your eyes, not a measurement), then whether
 `SWAY` 0.5 is enough sway or too much — it is the one knob, and the arms' look at a hard turn is the thing to judge — then whether `camera shake` off
 feels better than on, then whether the constant 9° dip should instead ease in with speed.
+
+## v11.80.1 — the combs swing with the body (22 Sep 2026)
+
+The person looked at v11.80: the camera "seems to be fixed", and one part still does not move with the animal — "the top part of the hingeshell comb
+does not sway with the hingeshell" (a still of a hingeshell curving over the floor).
+
+- **Why that one could not sway.** The frontal combs (creatures_spec.js, weapon style `combs` — the `comb` species' 1.7 m appendages and the sifter's
+  0.14 m ones) are not a chain: they are merged geometry in a `THREE.Group`, turned by a slow sine of their own. v11.80's `SWAY` works on chains, so it
+  could not reach them. Making them a chain would mean rebuilding the segments and their teeth as a skinned rig; swinging the group at its root is what
+  a jointed appendage does anyway.
+- **The body's turn and acceleration now reach the builders** (fx.js `bodyPose`: `o.turnV`, `o.accV`, eased over 8 and 6 per second so a part does not
+  jitter with the frame's own noise; player.js and creatures_ai.js pass them in the anim's state as `st.turn` and `st.acc`). Any builder whose part is
+  rigid geometry in a group can use them; nothing else reads them yet.
+- **The combs trail** (`COMB_LAG` yaw 0.22 rad per rad/s, acc 0.05 rad per m/s², stop 0.5 rad): 15° behind through a 1.2 rad/s curve, about where the
+  chains sit at that turn, and folding back a little as the animal accelerates. The slow sweep they always had is untouched.
+- **Seen** (`test/render/v801_comb_straight.png`, `v801_comb_curve.png`): the comb species from above, straight — the pair even and symmetric — and
+  through a 1.2 rad/s curve, the pair clearly swung round after the body.
+- **Tests**: `node build.js --test` green on both tiers.
+
+**Unseen, ask in this order**: whether 15° at a hard turn is the right amount of swing (`COMB_LAG.yaw`), then whether the fold-back under acceleration
+reads at all (`COMB_LAG.acc` is small on purpose), then whether any other rigid part wants the same treatment — the spears, the claws and the tread's
+feeding plates are all still stiff.

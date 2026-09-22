@@ -1,5 +1,11 @@
 # HANDOFF — tethys
 
+**v11.80.1 (22 Sep 2026): the combs swing with the body.** The person on v11.80: the camera "seems to be fixed"; the frontal combs still did not move
+with the animal. They are merged geometry in a group, not a chain, so v11.80's `SWAY` could not reach them. fx.js `bodyPose` now keeps the body's eased
+turn rate and acceleration (`o.turnV`, `o.accV`) and both anim call sites pass them as `st.turn`/`st.acc`, so any builder with a rigid part in a group
+can swing it at its root; the combs do, by `COMB_LAG` (0.22 rad per rad/s, 15° through a 1.2 rad/s curve, stop 0.5). Seen: `test/render/v801_comb_*.png`.
+**Ask first** whether 15° is the right swing, then whether the other rigid parts — the spears, the claws, the tread's feeding plates — want it too.
+
 **v11.80 (22 Sep 2026): nothing about the animal moves the camera, and the arms feel the curve.** The camera's orientation is the heading's, dipped by
 a constant (player.js: `dip` from `CAM_LIFT`/`CAM_AIM`); it was a lookAt at the body from a lagging position, so a sidestep swung the view 3° after the
 animal and rocking a and d rocked the picture — the person's "awkward jittery … it also rotates the camera". `camera shake` on the effects list

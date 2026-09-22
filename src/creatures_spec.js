@@ -2545,11 +2545,18 @@ const PARTS = {
           }
         }
         if (whips) ringPose(whips, 0.35 - 0.2 * tell - 0.3 * strike, 0.08 * (1 - strike), t * 0.9);
-        if (combs)
+        // the combs (v11.80.1, the person on a hingeshell curving: "the top part of the hingeshell comb does not sway with the hingeshell"): rigid
+        // geometry in a group, so it cannot lag the way a chain does — it is swung at its root instead by the body's own turn and acceleration
+        // (COMB_LAG, st.turn and st.acc from fx.js bodyPose, eased there), on top of the slow sweep it always had. A pair of long frontal appendages
+        // in water trail the turn and fold back as the animal accelerates; nothing else about them changes.
+        if (combs) {
+          const tw = clamp((st.turn || 0) * COMB_LAG.yaw, -COMB_LAG.max, COMB_LAG.max),
+            aw = clamp((st.acc || 0) * COMB_LAG.acc, -COMB_LAG.max, COMB_LAG.max);
           for (const c of combs) {
-            c.C.rotation.x = -0.15 + 0.25 * Math.sin(t * 0.5);
-            c.C.rotation.y = c.sx * (0.1 + 0.15 * Math.sin(t * 0.5 + 1));
+            c.C.rotation.x = -0.15 + 0.25 * Math.sin(t * 0.5) + aw;
+            c.C.rotation.y = c.sx * (0.1 + 0.15 * Math.sin(t * 0.5 + 1)) - tw;
           }
+        }
       };
       return {
         anim: anim,
@@ -2890,6 +2897,9 @@ function compileFrame(spec) {
 // propulsors (a tail, fins, a skirt, flap rows, a jet from the mantle's volume), each a number the roster calibrates; the speed as
 // sqrt(thrust/drag) scaled so the roster's finback reads its DEFS speed; turn against length and mass, plus what the fins add;
 // no hp since v11.55 (COMBAT.md: injury is a state). mode is what the propulsors say, never a menu. Everything is at the world scale (spec.s applied).
+// How far a rigid appendage in a group is swung at its root by the body's own motion (v11.80.1, the combs): rad per rad/s of the body's turn, rad
+// per m/s² of its acceleration, and the stop on either. 0.22 puts a comb 15° behind through a 1.2 rad/s curve, about where the chains sit at that turn.
+const COMB_LAG={yaw:0.22,acc:0.05,max:0.5};
 const DERIVE_K = {
   speed: 3.15, // m/s: the top speed of a 2 m body at thrust/drag 1 on a tail. v11.71: the roster's fit — the geometric mean of derived/hand over the ten tailed kinds that swim for their life or their meal (flee where a kind has one, else speed) was 1.21 at the old 3.8, spread ×1.21
   tdExp: 0.35, // speed against thrust/drag: a steady body's goes as the square root (drag ∝ v²); the beat slowing under load flattens it, and the roster's tails fit 0.35 from the darter to the abyssal

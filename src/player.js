@@ -273,7 +273,7 @@ function finishPlayer(dt,near){
   const fwd=T3.set(-sy*cp,sp,-cy*cp); // the heading's direction: where the camera's arm runs back from, and (dipped) where it looks — its up is composed at the look, below
   P.g.position.copy(P.pos);P.spd=P.vel.length();
   {const ro=P.sub>0.95?1:0;if(P.ro!==ro){P.ro=ro;P.g.traverse(o=>{if(o.isMesh)o.renderOrder=ro;});}} // the body's place in the opaque pass (v11.51, atmosphere.js refrMark): under water it draws after the refraction's copy of the frame, so the surface never samples it and smears its edge into the sky; in the air, or crossing, it is in the copy and seen through the surface refracted like the land
-  P.anim(t,P.spd,{jet:P.sprint&&C.jet,withdrawn:P.withdrawn,pulse:P.pulse,strike:P.hold?1:0,soft:(P.soft||P.shut)?1:0}); // strike: the mouth stays open on what is held (the finback's ring blooms); soft (v11.75–76): the valves clamped — shut by Q, or through the moult
+  P.anim(t,P.spd,{jet:P.sprint&&C.jet,withdrawn:P.withdrawn,pulse:P.pulse,strike:P.hold?1:0,soft:(P.soft||P.shut)?1:0,turn:P.turnV||0,acc:P.accV||0}); // strike: the mouth stays open on what is held (the finback's ring blooms); soft (v11.75–76): the valves clamped — shut by Q, or through the moult
   bodyPose(P,dt,P.byaw); // v11.53 (fx.js): squash and stretch, banking, the bite's snap — after the anim, before the rigs step. v11.77: the bank from the body's own turn, not the heading's
   stepRigs(P,near,dt);
   P.pulse=Math.max(0,P.pulse-dt*2);P.snapT=Math.max(0,(P.snapT||0)-dt);P.nudgeT=Math.max(0,(P.nudgeT||0)-dt);P.fovKickT=Math.max(0,(P.fovKickT||0)-dt); // v11.53 (fx.js): the bite's snap, the camera's nudge toward it, the hurt's fov kick; squash and stretch and banking
