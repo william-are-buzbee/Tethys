@@ -12,7 +12,7 @@ const AU_LINE={enc:0,size:AU_REACH,floor:AU_REACH,lid:AU_REACH,wet:0,voices:0,fo
 // The twelve rays: up, down, four level, four level-up at 45°, two level-down at 30° (the world's axes; the taps are panned relative to the camera)
 const AU_DIRS=(function(){const d=[[0,1,0],[0,-1,0],[1,0,0],[-1,0,0],[0,0,1],[0,0,-1]],s=Math.SQRT1_2,c=Math.cos(Math.PI/6),n=Math.sin(Math.PI/6);
   d.push([s*s,s,s*s],[-s*s,s,s*s],[s*s,s,-s*s],[-s*s,s,-s*s],[c,-n,0],[-c,-n,0]);return d.map(v=>{const l=Math.hypot(v[0],v[1],v[2]);return [v[0]/l,v[1]/l,v[2]/l];});})();
-const AU={on:false,hit:new Float32Array(12),hitK:new Uint8Array(12),ems:[],voices:[],bodies:[],taps:[],t:0,pt:0,ph:0,jetT:0,rk:0,fl:0,lastH:0,wr:0,lastYaw:0,occI:0};
+const AU={on:false,hit:new Float32Array(12),hitK:new Uint8Array(12),ems:[],voices:[],bodies:[],taps:[],t:0,pt:0,ph:0,jetT:0,rk:0,fl:0,lastH:0,wr:0,occI:0};
 function auP(p,v,tau){if(p&&isFinite(v))p.setTargetAtTime(v,actx.currentTime,tau||0.08);} // every parameter goes through here: NaN never reaches the graph
 function auNoise(sec,kind){ // one looped buffer per kind: white, brown (the old bed's recipe), crackle (sparse spikes with a two-cycle ring; kind is the rate a second)
   const sr=actx.sampleRate,n=Math.floor(sec*sr),b=actx.createBuffer(1,n,sr),d=b.getChannelData(0);
@@ -151,7 +151,7 @@ function auTick(dt,P,play){
   auP(AU.heat.out.gain,B*0.05*heat*(1-k),0.3);
   const wind=Math.hypot(K.wind[0],K.wind[1])/WIND_U;auP(AU.wind.out.gain,B*0.1*wind*k,0.3);auP(AU.rainAir.out.gain,B*0.09*K.rainA*k,0.3);auP(AU.rainHush.out.gain,B*0.06*K.rainA*k,0.3);
   // the body: the flow past it (by speed, a swish on a turn), the finback's beat as a slow swell, the scrape on rock, the brush through weed
-  if(play&&P.clade){const C=P.clade,vmax=C.speed*(C.sprint||1),yr=Math.abs(P.yaw-AU.lastYaw)/Math.max(dt,0.01);AU.lastYaw=P.yaw;
+  if(play&&P.clade){const C=P.clade,vmax=C.speed*(C.sprint||1),yr=P.angV||0; // the body's own turn (player.js faceToward, v11.77)
     let s=clamp(P.spd/vmax,0,1.3)+clamp(yr*0.12,0,0.3);AU.ph+=dt*(1.1+P.spd*0.22);const beat=C.spec.clade==='slowbloods'?0.7+0.3*Math.sin(AU.ph*TAU):1;
     auP(AU.flow.out.gain,0.16*s*s*sub*beat,0.06);auP(AU.flow.f.frequency,180+1100*s,0.08);
     auP(AU.scrape.out.gain,P.hitRk&&P.spd>0.8?0.1*Math.min(1,P.spd/4)*(subK>0.5?1:0.6):0,0.05);auP(AU.scrape.f.frequency,subK>0.5?900:400,0.1);

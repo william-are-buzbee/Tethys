@@ -2,7 +2,7 @@
 let lockArrived=false; // the click that took the lock is not a bite
 document.addEventListener('pointerlockchange',()=>{locked=document.pointerLockElement===canvas;if(locked){lockArrived=true;drag=null;}});
 function tryLock(){try{if(canvas.requestPointerLock&&!isTouch)canvas.requestPointerLock();}catch(e){}}
-function look(dx,dy){player.yaw-=dx*0.0022;player.pitch=clamp(player.pitch-dy*0.0022,-1.35,1.35);}
+function look(dx,dy){player.yaw-=dx*0.0022;player.pitch=clamp(player.pitch-dy*0.0022,-PITCH_MAX,PITCH_MAX);} // the heading (v11.77): the body turns toward it at its own rate (player.js)
 // The mouse (v11.13.1, the person's ask): looking by default. Play starts locked (choose() asks for the lock in the pick's click); Tab
 // releases it and shows the cursor, Tab or a click on the canvas takes it back. A click while locked is the bite. Where the lock is refused
 // (an iframe, the app's browser) a held drag looks and a short click bites, as before. The lock is dropped on leaving play (syncLock).

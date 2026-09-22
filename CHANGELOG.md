@@ -5145,3 +5145,55 @@ LINEAGE §13.6's hingeshell half (§3: iteroparous, invested, K), on v11.75's pa
    or the world's knob lowered for every hingeshell).
 4. **The juvenile's moult**: 3 steps, soft a quarter of the interval at most. And PLANET says juveniles are soft; the world's are not, nor the player's.
 5. **The den's look**: nothing marks it; a clutch against a rock reads as a clutch against a rock.
+
+## v11.77 — the animal steers itself (22 Sep 2026)
+
+The person's decision (21 Sep 2026, DESIGN The player): every animal must be playable without feeling strange — steering by heading, no strafing for
+swimmers, backing up only where the body can; "if it's a problem I'll let you know, use your judgement". The bug behind it, found in player.js: the
+body was turned to face its velocity with a lookAt against world up — parallel to up (space or c held) the basis flipped and the body spun ("looking
+them in the eyes while they swim backwards"), a strafe turned the body sideways, a knockback turned it to the knock, and the surface branch always
+faced the velocity, which is why touching the water snapped it back.
+
+- **The heading and the facing** (player.js, the section over `updatePlayer`): the mouse sets the heading you want (`yaw`, `pitch`, the pitch to
+  `PITCH_MAX` 1.54 rad — 88°, nearly straight up or down); the body's own facing (`byaw`, `bpitch`) turns toward it at derive's turn rate by the
+  world's rule (creatures_ai.js: the rate at the top speed, an ambling body at its pace's share, floored at `TURN_MIN` 0.35 — `turnRateOf`), eased
+  within `STEER.ease` 0.3 rad of the heading and capped at the rate past it (`faceToward`; a radian's easing left the sickle settling for seconds).
+  So the finback comes round at 176°/s, the soft-arm 294, the coilshell 144, the hose 147, the sickle 44 — with no per-species code. **The orientation
+  is composed from the facing** (`faceQ`: Euler YXZ, the yaw about world up, the pitch about the body's own x), so the body's up tends to world up of
+  itself and nothing degenerates at vertical: no lookAt against UP anywhere in the player. `bodyPose`'s bank reads the body's own yaw now, not the
+  heading's.
+- **Thrust along the body** (`bodyFwd`): w along the body's axis at its speed; s backs at `STEER.rev` where the body can (a jetter turns its funnel:
+  `jet` 0.6 of the top speed, the jet's squeeze kicking backward too) and brakes a body that cannot (the coast's decay × `STEER.brake` 2.5, the fins
+  flared: the finback stops in a second); **a and d turn the heading** at the body's turn rate (`STEER.key` 1 — the keyboard's mouse, and the touch
+  stick's x; my call, the person offered roll or a tighter turn: the bank into a turn is already `bodyPose`'s, and a turn key keeps keyboard-only and
+  touch play whole) and **space and c pitch it** (the old rise and dive: up and down are the head's now; space stays the jump on the strand for a legged
+  body). Derive's buoyancy is a drift the pitch trims (`BUOY_V`: sinks −0.25 m/s, neutral 0, floats 0.15 — the coilshell rises when it rests, the
+  finback settles). The withdraw's and the shut's own sink stay.
+- **In the air** the body follows its arc (the facing toward the velocity at `STEER.air` 2 × its rate; a fish flopping on the strand too) and hands back
+  to the heading at its rate when it lands: no snap. A knockback is a push and a flinch (`rollV`), never a turn. A walker on the strand faces its
+  heading's yaw, level (v11.78 gives it the slope).
+- **The camera** (`finishPlayer`): behind the body's facing, led toward the heading by at most `STEER.lead` 1 rad — it turns with the body and is never
+  in front of the face; its up is composed from its own angles (`_m.lookAt` with that up, never `UP`), so a look straight up or down never rolls. First
+  person: the eyes are yours — the camera at the nose along the body, looking along the heading, the body following.
+- **Touch** on the same model: the left stick's x turns, y swims and brakes (the hint says so); the right side steers. The compass and the world map
+  show the way the body faces (`byaw`); the audio's turn swish reads the body's angular speed (`angV`).
+- **Tests**: `test/steer.js` (in `--test`, both tiers): scripted input through the real frame loop for the finback, the soft-arm, the coilshell, the hose
+  and the sickle — settle, straight up (8 s), straight down, level, a loop (the heading swept round in 6 s), a knockback, a and d, space and c, s, the
+  touch stick, a breach at a sprint (the surface both ways), first person. Fails on a flip (the body more than 3° off a held heading), a spike (any
+  frame faster than the body's turn rate — the arc's allowance in the air), a strafe (the velocity across the body on a held heading), a body upside down,
+  a NaN in the body, its orientation or the camera. The stub's `Vector3.applyQuaternion` is real now (it returned its input); `test/combat.js` faces the
+  player at +z by hand where its placements assumed the stub's identity facing. `--test` green on both tiers.
+- **Seen** in the app's browser (dev.html on serve.js, the loop driven by hand, the frames posted to `test/render/v77_*.png`): the finback level in the
+  weed from behind, straight up from below with the tail toward the camera and the surface ahead, in the air over its own foam ring, straight down
+  from above nose-first to the floor; the soft-arm the same (its jet threw it 8.6 m out of the water) and the sickle — vertical from below, and from
+  above at its 21 m arm, small in the fog (v11.75's Unseen 1 stands).
+
+**Unseen, ask in this order:**
+1. **The feel of the turn at rest**: the world's rule gives a resting body 0.35 of its rate (the finback 62°/s, the sickle 15), so looking round while
+   still is slow and the camera sits at the lead's 57° until the body comes; a fish pivots faster than it swims round. `STEER.min` is the knob, or a
+   rule of its own for a body at rest.
+2. **The camera's lead** at 1 rad: a flick of the mouse puts the view 57° off the tail and the body swings into it; more feels like looking, less like
+   riding. And whether first person should look along the body instead of the heading.
+3. **a and d as a turn** (my call) against roll or a tighter turn; **s as a brake** on a fish at 2.5 × the coast.
+4. **The buoyancy drift**: 0.25 m/s down for a sinker, 0.15 up for the coilshell — it drifts to the surface left alone.
+5. **The pitch limit** 88°: a loop is not a heading; whether the body should ever go past vertical.

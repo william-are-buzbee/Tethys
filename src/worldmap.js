@@ -40,7 +40,7 @@ function wmapDraw(){if(!wmap.open)return;const W=wmapC.width,g=wmapC.getContext(
   rect(-1720,-1720,1720,1720,'rgba(250,220,90,0.55)',[4,4]); // the island's square (v11.57's world)
   for(const R of ISLANDS){ring(R.x,R.z,R.reach*R.sc,'rgba(150,150,150,0.5)',[4,6]);if(R.land)ring(R.x,R.z,R.land.r*R.sc,'rgba(200,210,230,0.7)');} // the island records: the reach, the land
   g.fillStyle='rgba(240,240,230,0.9)';for(const p of LM.all){g.beginPath();g.arc(px(p.x),pz(p.z),2,0,TAU);g.fill();} // the landmarks
-  if(mode==='play'&&player.clade){const x=px(player.pos.x),y=pz(player.pos.z),fx=-Math.sin(player.yaw),fz=-Math.cos(player.yaw); // the player: a dot and the way it faces (player.js finishPlayer: forward is (-sin yaw, -cos yaw))
+  if(mode==='play'&&player.clade){const x=px(player.pos.x),y=pz(player.pos.z),fx=-Math.sin(player.byaw),fz=-Math.cos(player.byaw); // the player: a dot and the way its body faces (player.js bodyFwd, v11.77: forward is (-sin byaw, -cos byaw))
     g.strokeStyle='rgba(255,230,120,0.95)';g.lineWidth=1.5;g.beginPath();g.moveTo(x,y);g.lineTo(x+fx*14,y+fz*14);g.stroke();g.fillStyle='rgba(255,230,120,0.95)';g.beginPath();g.arc(x,y,3.5,0,TAU);g.fill();g.lineWidth=1;}
   if(wmap.hover){const x=px(wmap.mx),y=pz(wmap.mz);g.strokeStyle='rgba(240,240,230,0.7)';g.beginPath();g.moveTo(x-8,y);g.lineTo(x-3,y);g.moveTo(x+3,y);g.lineTo(x+8,y);g.moveTo(x,y-8);g.lineTo(x,y-3);g.moveTo(x,y+3);g.lineTo(x,y+8);g.stroke();} // the cursor
   const sb=S>=16000?5000:S>=6000?2000:S>=2500?1000:S>=1000?500:100,sw=sb/S*W;g.strokeStyle='rgba(240,240,230,0.85)';g.beginPath();g.moveTo(16,W-16);g.lineTo(16+sw,W-16);g.moveTo(16,W-21);g.lineTo(16,W-11);g.moveTo(16+sw,W-21);g.lineTo(16+sw,W-11);g.stroke(); // the scale bar

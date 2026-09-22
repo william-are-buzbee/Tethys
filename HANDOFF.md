@@ -1,5 +1,14 @@
 # HANDOFF — tethys
 
+**v11.77 (22 Sep 2026): the animal steers itself (the person's decision of 21 Sep, DESIGN The player).** The mouse sets a heading; the body's own facing turns toward
+it at derive's turn rate by the world's rule (player.js `turnRateOf`, `faceToward`; `STEER`: ease 0.3 rad, the camera's lead 1 rad, the arc in the air at 2×, a jetter backs
+at 0.6, a fish brakes at 2.5 × the coast, the keys turn at the body's rate) and the orientation is composed from that facing (`faceQ`) — no lookAt against up anywhere in the
+player, so nothing spins at vertical; w thrusts along the body, s backs or brakes, a/d turn the heading, space/c pitch it, derive's buoyancy drifts (`BUOY_V`). The camera
+sits behind the body, led toward the heading by at most a radian. `test/steer.js` (both tiers, in `--test`) drives five bodies through straight up and down, a loop, a
+knock, the keys, a breach and first person and fails on a flip, a spike, a strafe or a NaN. Seen: the finback, the soft-arm and the sickle straight up, through the surface
+and straight down (`test/render/v77_*.png`). **Ask first** the turn at rest (0.35 of the rate: the finback 62°/s, the sickle 15), then the camera's lead, then a/d as a turn
+and s as a brake, then the buoyancy drift (the coilshell rises when idle), then the 88° pitch limit.
+
 **v11.76 (21 Sep 2026): the hingeshells' line (LINEAGE §13.6's other half, §12.31).** Any hingeshell of the roster is a founder through v11.75's path (the
 hose is the one to play: 1.5 m, framed from 6.4). The mode (line.js `BREED.hingeshells`): 3 eggs at 0.02 of the child's mass (0.68 of the hose's stomach),
 again and again, **at a den** — the sheltered water (`shel` ≥ 0.5) or against a solid within 2.5 m (`denAt`; `x` elsewhere says `at a den`) — guarded within

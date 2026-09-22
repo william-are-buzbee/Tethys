@@ -20,11 +20,12 @@ const ch=X.chunkGrid[X.cellOf(0)*X.NCELL+X.cellOf(0)];
 const P=X.player;
 // one frame of the game's combat path: the player, the creatures (contact, holds, arms), the wounds and the blood
 function frame(){X.setT(X.t+dt);if(X.mode==='play')X.updatePlayer(dt);X.updateSchools(dt);X.updateCreatures(dt);if(X.mode==='play')X.finishPlayer(dt,X.bodies);X.updateWounds(dt);X.updateStates(dt);X.updateBlood(dt);}
+const choose=(c)=>{X.choose(c);P.yaw=P.byaw=Math.PI;P.pitch=P.bpitch=0;}; // v11.77: the body faces +z, as every placement below assumes (a yaw of 0 faces −z now: the body is composed from its facing, player.js faceQ)
 function clearAll(){for(const c of X.creatures.slice())X.removeCreature(c);for(const h of X.holds.slice())X.releaseHold(h);}
 function put(kind,pos,state,target){const c=X.spawn(ch,kind,pos,Math.random,{ent:-1});c.hunger=1;c.cool=0;c.scanT=0;if(state){c.state=state;c.target=target||null;c.chaseT=0;}c.home.copy(pos);return c;}
 function anchorGap(h){const A=X.localToWorld(h.a,h.la,X.V3()),B=X.localToWorld(h.b,h.lb,X.V3());return Math.hypot(A.x-B.x,A.y-B.y,A.z-B.z);}
 
-X.choose(1);P.pos.set(0,-12,0);P.vel.set(0,0,0);P.dead=false;
+choose(1);P.pos.set(0,-12,0);P.vel.set(0,0,0);P.dead=false;
 const groundY=-12;
 // ---- 1. a ridge on a grazer: the hold forms, the rope holds, the grazer dies in the hold, the ridge feeds ----
 {
@@ -169,13 +170,13 @@ const groundY=-12;
 // ---- 11. the ink lets go of the arms as well as the target (analysis_review 5) ----
 {
   let si=0;for(let i=0;i<X.CLADES.length;i++)if(X.CLADES[i].id==='soft')si=i;
-  X.choose(si);clearAll();P.pos.set(0,-30,30);P.vel.set(0,0,0);P.dead=false;P.cd=0;
+  choose(si);clearAll();P.pos.set(0,-30,30);P.vel.set(0,0,0);P.dead=false;P.cd=0;
   const c=put('sickle',X.V3(0,-30,36),'chase',P);
   let reached=false;for(let i=0;i<60*8;i++){frame();if(c.grab===P)reached=true;}
   console.log('  the sickle reached for the player with its arms: '+(reached?'yes':'no (no rig in range)'));
   c.grab=P;c.target=P;P.cd=0;X.ability();
   check(c.grab===null&&c.target===null&&!c.hold,'the ink drops the target, the arms and the hold at once (it left c.grab on the player before)');
-  X.choose(1);
+  choose(1);
 }
 // ---- 12. the edge against the covering (v11.54, COMBAT.md §2, pass 1): every capsule covered, every hunter edged, and the matrix ----
 {
@@ -197,7 +198,7 @@ const groundY=-12;
     for(const pr of preys){
       clearAll();let prey,pname;
       if(pr.kind!==undefined){prey=put(pr.kind,X.V3(0,-30,60),'wander');prey.vel.set(0,0,0);pname=pr.kind;}
-      else{X.choose(pr.player);prey=P;P.pos.set(0,-30,60);P.vel.set(0,0,0);P.dead=false;P.yaw=0;P.pitch=0;pname='you as '+X.CLADES[pr.player].id;}
+      else{choose(pr.player);prey=P;P.pos.set(0,-30,60);P.vel.set(0,0,0);P.dead=false;P.yaw=P.byaw=Math.PI;P.pitch=P.bpitch=0;pname='you as '+X.CLADES[pr.player].id;}
       const h=put(hk,X.V3(0,-30,0),'wander');h.vel.set(0,0,0); // no frame is run: a boid put by hand has no school, and the shapes are refreshed by hand below
       const reach=X.bodyExt(h).hitN+X.bodyExt(prey).hitB+X.BITE_M;h.pos.set(0,-30,60-reach);h.home.copy(h.pos);h.wander.copy(h.pos); // at contact, where a hold's rope ends up (the AI may take hold from its DEFS reach; the rope closes from there)
       X.freshShapes(h);if(prey===P){P.g.position.copy(P.pos);P.g.updateMatrix();X.worldShapes(P);}else X.freshShapes(prey);
@@ -214,7 +215,7 @@ const groundY=-12;
   const stuck=Object.keys(routes).filter(k=>routes[k].every(r=>r==='no'));
   console.log('  hunters with no route through any of their prey (a finding for the person, not a failure): '+(stuck.length?stuck.join(', '):'none'));
   check(far===0,'every grip is within 1 m of the body it would hold at contact ('+far+' further off)');
-  X.choose(1);clearAll();
+  choose(1);clearAll();
 }
 // ---- 13. pass 4 (v11.56, COMBAT.md §4–5): hunters read blood, the strike's miss rule, the poison by feeding ----
 {
@@ -247,7 +248,7 @@ const groundY=-12;
 }
 // ---- 14. pass 3 (v11.57, COMBAT.md §2): the wound as a spec edit — a tail torn off, the body slower for good; a stump that grows back ----
 {
-  clearAll();X.choose(1);const gy0=X.groundAt(0,30);P.pos.set(0,gy0+12,30);P.vel.set(0,0,0);P.dead=false;P.cause='';P.yaw=0; // at rest the body faces +z: its tail is toward −z; in open water, so the ridge comes level (on the floor its clearance keeps it 2 m up and it bites the joint from above)
+  clearAll();choose(1);const gy0=X.groundAt(0,30);P.pos.set(0,gy0+12,30);P.vel.set(0,0,0);P.dead=false;P.cause='';P.yaw=P.byaw=Math.PI; // at rest the body faces +z: its tail is toward −z; in open water, so the ridge comes level (on the floor its clearance keeps it 2 m up and it bites the joint from above)
   const r=put('ridge',X.V3(0,gy0+12,14),'chase',P);let lost=-1,ci=-1;
   for(let i=0;i<60*12;i++){frame();if(r.hold&&r.hold.b===P&&ci<0)ci=r.hold.ci;if(P.lost&&P.lost.length&&lost<0){lost=i;break;}if(P.cause)break;}
   check(lost>=0,'a ridge from behind takes the finback by the tail (capsule '+ci+', skin) and tears it off, not the life ('+(lost>=0?(lost*dt).toFixed(1):'-')+' s; cause "'+P.cause+'")');
@@ -257,7 +258,7 @@ const groundY=-12;
   let taken=-1;for(let i=0;i<60*12;i++){frame();if(P.cause){taken=i;break;}}
   console.log('  crippled, the finback '+(taken>=0?'is taken '+(taken*dt).toFixed(1)+' s later: '+P.cause:'is still alive 12 s later'));
   // the stump: the soft-arm drops an arm to a hook; one segment stays; halfway through five days half of it is back; then all of it
-  clearAll();let si=0;for(let i=0;i<X.CLADES.length;i++)if(X.CLADES[i].id==='soft')si=i;X.choose(si);P.pos.set(0,-30,30);P.vel.set(0,0,0);P.dead=false;P.cause='';
+  clearAll();let si=0;for(let i=0;i<X.CLADES.length;i++)if(X.CLADES[i].id==='soft')si=i;choose(si);P.pos.set(0,-30,30);P.vel.set(0,0,0);P.dead=false;P.cause='';
   const hk=put('hook',X.V3(0,-30,34),'lunge',P);hk.lungeT=3;hk.hunger=1;let dropped=-1;
   for(let i=0;i<60*8;i++){frame();if(P.armsLost>0){dropped=i;break;}if(P.cause)break;}
   const rig=P.b.rigs.find(r=>r.chains.length>=4),ch=rig&&rig.chains.find(c=>c.gone);
@@ -267,11 +268,11 @@ const groundY=-12;
   check(ch.gone&&ch.grow>0.45&&ch.grow<0.55,'halfway through '+X.AUTOTOMY.regrow+' days the arm is half back (grow '+ch.grow.toFixed(2)+')');
   X.setT(X.t+X.AUTOTOMY.regrow*X.DAY_S*0.51);frame();
   check(!ch.gone&&P.armsLost===0&&P.live.parts.some(p=>p.kind==='arms'&&p.n===8)&&P.speedK===1,'and whole after them: eight arms, the speed back (speedK '+P.speedK.toFixed(2)+')');
-  X.choose(1);clearAll();
+  choose(1);clearAll();
 }
 // ---- 15. the individual (v11.66, the hingeshell variety pass): the size band, the coat by chemistry, the moult and the shed, the ram's blow ----
 {
-  clearAll();X.choose(1);P.pos.set(0,-30,30);P.vel.set(0,0,0);P.dead=false;const gy=X.groundAt(0,60);
+  clearAll();choose(1);P.pos.set(0,-30,30);P.vel.set(0,0,0);P.dead=false;const gy=X.groundAt(0,60);
   // the size band: ledger sickles (ent 0) from seeded streams draw sizes within VARY.spread, the capsules and the reach following; a body outside the ledger is plain
   const ks=[],ratio=[];for(let i=0;i<40;i++){const c=X.spawn(ch,'sickle',X.V3(0,gy+6,60),X.mulberry(1000+i),{ent:0});ks.push(c.k);ratio.push(X.bodyExt(c).hitN/c.k);if(c.def.reach!==X.DEFS.sickle.reach*c.k)ratio.push(NaN);X.removeCreature(c);}
   const kmin=Math.min(...ks),kmax=Math.max(...ks),r0=ratio[0],rSame=ratio.every(r=>Math.abs(r-r0)<1e-6);
@@ -307,7 +308,7 @@ const groundY=-12;
   // the ram's blow: its strike on what its mouth cannot take whole is a knock — the body stunned, no hold, the ram off it
   clearAll();const g=put('grazer',X.V3(0,gy+2,60),'wander'),rm=put('ram',X.V3(0,gy+2,40),'chase',g);let stunned=-1,heldR=false;for(let i=0;i<60*12;i++){frame();g.vel.set(0,0,0);g.threat=null;if(rm.hold)heldR=true;if(g.stun>0){stunned=i;break;}}
   check(stunned>=0&&!heldR&&rm.target!==g,'the ram\'s blow stuns the grazer ('+(stunned>=0?(stunned*dt).toFixed(1):'-')+' s; RAM.stun '+X.RAM.stun+') and takes no hold');
-  clearAll();X.choose(1);
+  clearAll();choose(1);
 }
 let nanH=0;for(const h of X.holds)for(const v of [h.len,h.load,h.pull])if(!isFinite(v))nanH++;
 check(nanH===0,'no NaN in any hold');

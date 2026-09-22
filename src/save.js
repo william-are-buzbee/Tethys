@@ -105,7 +105,7 @@ function cellsAround(){const ci=cellOf(player.pos.x),cj=cellOf(player.pos.z);for
 function playerBody(C,pos,yaw,pitch){ // the player's body built and placed as the clade; the old one disposed
   const P=player;playerDrop();const b=C.build();castOn(b.g);scene.add(b.g);
   P.clade=C;P.b=b;P.g=b.g;P.anim=b.anim;P.mass=C.mass;P.def.size=C.size;P.paraT=0;P.stungT=0;P.sickT=0;P.hunger=0;P.starveT=0;P.waste=0;P.armsLost=0;P.regrow=null;P.cause='';P.live=null;P.lost=null;P.speedK=1;P.turnK=1;
-  P.pos.copy(pos);b.g.position.copy(pos);P.vel.set(0,0,0);P.yaw=+yaw||0;P.pitch=clamp(+pitch||0,-1.35,1.35);P.dead=false;P.cd=0;P.inkT=0;P.bleed=0;P.hold=null;P.held=0;P.grab=null;P.holding=0;P.withdrawn=false;P.shut=false;P.soft=false;P.fp=false;P.camAbove=false;P.camFlipT=0;P.wet=true;P.sub=1;P.hurtT=0;P.lastHurt=-100;P.jetT=0;P.pulse=0;P.biteCD=0;P.flopT=0;
+  P.pos.copy(pos);b.g.position.copy(pos);P.vel.set(0,0,0);P.yaw=+yaw||0;P.pitch=clamp(+pitch||0,-PITCH_MAX,PITCH_MAX);P.byaw=P.yaw;P.bpitch=P.pitch;P.angV=0;faceQ(P);P.dead=false;P.cd=0;P.inkT=0;P.bleed=0;P.hold=null;P.held=0;P.grab=null;P.holding=0;P.withdrawn=false;P.shut=false;P.soft=false;P.fp=false;P.camAbove=false;P.camFlipT=0;P.wet=true;P.sub=1;P.hurtT=0;P.lastHurt=-100;P.jetT=0;P.pulse=0;P.biteCD=0;P.flopT=0; // v11.77: the body faces its heading at the start (byaw, bpitch, faceQ)
   camera.position.copy(pos).add(V3(0,2,8));snapMed=true;seeSpec(C.spec.id);
 }
 function playerDrop(){const P=player;if(!P.g)return;releaseAll(P);for(const c of creatures)if(c.target===P)dropTarget(c);ghostBody(P.g,false);scene.remove(P.g);P.g.traverse(o=>{if(o.geometry)o.geometry.dispose();});P.g=null;P.b=null;P.anim=null;P.dead=true;P.fp=false;P.hold=null;P.held=0;P.grab=null;}

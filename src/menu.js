@@ -51,7 +51,7 @@ function choose(c,pos,yaw,pitch){ // into play as clade c (an index or the clade
   const C=typeof c==='number'?CLADES[c]:c;
   playerBody(C,pos||V3(0,dispY,0),yaw,pitch);cellsAround();
   mode='play';menuEl.classList.add('gone');fxShow(false);
-  hintEl.textContent=isTouch?'left side: drag to swim. right side: drag to look, tap to bite, hold to grab. two fingers: ability':'w a s d swim, space rise, c dive, shift burst, q ability, x lay, click bite, right button or r hold, f first person, tab cursor, m mute, esc menu';
+  hintEl.textContent=isTouch?'left side: drag up to swim, down to brake, sideways to turn. right side: drag to steer, tap to bite, hold to grab. two fingers: ability':'mouse steers, w swim, s brake, a d turn, space c up and down, shift burst, q ability, x lay, click bite, right button or r hold, f first person, tab cursor, m mute, esc menu';
   hintEl.style.opacity=1;setTimeout(()=>{hintEl.style.opacity=0;},10000);
   saveT=SAVE_EVERY;initAudio();tryLock();
 }

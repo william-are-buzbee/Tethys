@@ -583,7 +583,7 @@ let compT=0,lastHdg=-1,compOn=false;
 function updateCompass(dt){
   const P=player;
   if(mode!=='play'||P.dead){if(compOn){compassEl.style.opacity=0;compOn=false;}compT=0;return;}
-  let hdg=(-P.yaw*180/Math.PI)%360;if(hdg<0)hdg+=360;
+  let hdg=(-P.byaw*180/Math.PI)%360; // the way the body faces (v11.77), not the heading asked forif(hdg<0)hdg+=360;
   let dh=Math.abs(hdg-lastHdg);if(dh>180)dh=360-dh;
   const turned=lastHdg<0||dh>0.1;
   if(turned||P.spd>0.6)compT=3.5;else compT-=dt;

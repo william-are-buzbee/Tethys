@@ -1707,11 +1707,24 @@ lists, not 37 entries' worth. The paper census (`ecoGen`, 32 cells a frame) take
 `player.js`. Third person by default; `f` toggles first person (v11.18: the camera `F.nose`×scale + `FP_AHEAD` ahead of the nose, the body hidden, the surface-side rule kept). **The camera's field and arm (v11.48, `CAM_K` in scene.js):** `fov` 62° vertical in third person (~94° across at 16:9 — Subnautica's default, the number that made a 55 m reaper read as a shark your size on a flat screen: a wide field renders every animal at about half its true angular size and the screen reads as a window; in a headset the rendered angle is the real one), `fovFP` 62° in first person, `arm` 0 m added to the clade's `cam` (6.5–7.5) in third person. `applyCam` (player.js) sets the camera's field by mode, a compare when nothing changed. Live from the readout, `CAM_TUNE` (main.js): ←→ fov, pgdn-pgup fovFP, ↓↑ arm, Backspace resets with the fog's; the bestiary's arrows stand down while the readout is open. The choice is the person's (14 Sep 2026): 50–55 with the arm at +1.5–2 keeps the body's framing and grows a far animal by ~1.3×; a narrow field costs sight to the sides and can turn stomachs on a fast turn. Nothing is decided; the number in `CAM_K` is where it was. **The player is a spec (v11.68):** `player.clade` is `playerClade(spec, preset, j)` — speed, accel, turn, mass and `bite` from `statsOf(spec)`, `size` the spec's, `jet` and `legs` derive's, and since v11.75 the rest as above (the locks went in v11.71; the presets' hand numbers in v11.75 — `test/player.js` §1 checks the three still come out as v11.74 had them, off the build). j is a hatchling's scale. `CLADES` — soft-arm (ink: predators lose you), finback (tail-strike stun), coilshell
 (withdraw: hold; invulnerable, sinks slowly, predators get bored). The jet (soft-arm, coilshell: shift): a squeeze every 0.5 s,
 its impulse `jetImp` delivered as a thrust over the first `JET_W` 0.18 s of the cycle (v10.8; one frame before, which whipped the
-arms). Faces its velocity when moving (and its arc when
-airborne). Terrain: gentle slopes clamp you up, steep walls push you back horizontally (`solidPush`, then the floor clamp, then
+arms). Faces its heading (v11.77, the steering below; to v11.76 its velocity, and its arc when airborne). Terrain: gentle slopes clamp you up, steep walls push you back horizontally (`solidPush`, then the floor clamp, then
 the pads; bodies and arms in `creatures_ai.js` after the creatures have moved, then `finishPlayer`: pose, arms, camera). Death = fade to black; in a slot, you continue as a child (the line, below) or the save is over; without one (the tests, the lab) the respawn at the peak. The bite and the grab are [Combat](#combat) (v11.31): the bite gulps small forage (heals), eats
 at a carcass, or wounds; the grab (right mouse, r) holds. The player's food is arrow squid, needles and scuttlers, and what it kills. Open question, never answered: should clades differ in *what they can reach* (crevices for soft-arm,
 surface air for finback)? Any persistence, or is a clean cold start the point?
+
+**The steering (v11.77; the person's decision, 21 Sep 2026: every animal must be playable without feeling strange — steering by heading, no strafing for
+swimmers, backing up only where the body can; "if it's a problem I'll let you know, use your judgement").** The mouse sets the heading you want (`yaw`, `pitch` to
+`PITCH_MAX` 1.54 rad); the body's own facing (`byaw`, `bpitch`) turns toward it at derive's turn rate by the world's rule (`turnRateOf`: the rate at the top speed × the
+pace's share, floored at `TURN_MIN` 0.35), eased within `STEER.ease` 0.3 rad and capped at the rate past it (`faceToward`) — the finback 176°/s, the soft-arm 294, the
+coilshell 144, the hose 147, the sickle 44. The orientation is composed from the facing (`faceQ`, Euler YXZ: yaw about world up, pitch about the body's x), so the body's up
+tends to world up and nothing degenerates at vertical — no lookAt against UP anywhere in the player (to v11.76 the body faced its velocity with one: the spin at vertical,
+the sideways strafe, the turn to a knock, the snap at the surface). w thrusts along the body's axis (`bodyFwd`); s backs at `STEER.rev` where the body can (a jetter 0.6 —
+the funnel turned, the squeeze kicking back) and brakes one that cannot (the coast × `STEER.brake` 2.5); a and d turn the heading at the body's rate (`STEER.key` 1; the
+touch stick's x), space and c pitch it (space jumps a walker on the strand); derive's buoyancy is a drift the pitch trims (`BUOY_V` sinks −0.25, neutral 0, floats 0.15 m/s).
+In the air the facing follows the velocity at `STEER.air` 2 × the rate (a fish flopping on the strand too) and comes back to the heading at its rate: no snap; a knockback is
+a push and a flinch. The camera (`finishPlayer`) sits behind the body's facing, led toward the heading by at most `STEER.lead` 1 rad, never in front of the face; its up is
+its own angles' (`_m.lookAt` with that up); first person looks along the heading from the nose. `bodyPose`'s bank, the compass, the world map and the audio's swish read the
+body's own yaw and `angV`. `test/steer.js` is the proof. Open (CHANGELOG v11.77): the rate at rest, the lead, a/d as a turn, the drift, the pitch limit.
 
 **The editor at conception (v11.72, `line.js`; LINEAGE §13.4).** `x` no longer lays at once: `playerLay` checks the floor and the stomach (v11.73) and
 `conceiveOpen` opens the lab as the creator on the parent's spec (`lab.conceive = {parent, gen, budget, at, price}`; the clade locked, `p` off).
@@ -1890,7 +1903,7 @@ distance — a designed pass, not a knob. `render` is CPU submission; the GPU ru
   marine snow, rain, clouds, surface glow, vignette — in the lab panel's look, on the right. `options` on the menu (v11.47; the `effects` word
   at the bottom right is gone), or `e` on the menu and in play (the pointer is released while it is open, taken back on close; escape or a click on the canvas closes it).
   Saved in localStorage (`tethys.fx`). Each system reads `FX.key` where it draws; a switch is a key in `FX_DEF`, a row in `FX_LIST`, a read.
-- Controls (the hint, `menu.js`): w a s d swim, space rise, c dive, shift burst, q ability, click bite, m mute, esc menu (v11.47); mouse
+- Controls (the hint, `menu.js`; v11.77): mouse steers, w swim, s brake or back, a d turn, space c up and down, shift burst, q ability, click bite, m mute, esc menu; mouse
   look by pointer lock from the first frame of play (`choose` asks for it in the menu word's click), Tab releases it and shows the cursor, Tab or a click
   takes it back; a click while locked is the bite; drag-to-look if the lock is blocked (e.g. inside an iframe). v11.13.1: the invisible
   menu's picks were taking every click below the title (`pointer-events:auto` on a child beats the parent's `none`); `#menu.gone .pick` is none now. Touch: left side drag to swim,
