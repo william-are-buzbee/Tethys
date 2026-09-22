@@ -1449,7 +1449,10 @@ believable band and an extreme band, cost, whether it is paired — and `GRAMMAR
 with its reason: top speed = `speed` 3.15 × `mode` (tail 1, paddles 1, jet 0.95, bell 0.4, sail 0.25) × (thrust/drag)^`tdExp` 0.35 ×
 (L/2)^`lenExp` 0.4 × the ceiling `(1+(L/ceilL)^ceilN)^(-lenExp/ceilN)` (`ceilL` 60 m, `ceilN` 4: neutral under 30 m, flat past 60 — a burst's
 anaerobic store against the time to reach speed) × `chamber` 0.8; a jet's thrust is `jet` × volume^(2/3) (the pulse rate falls as 1/length); a
-walker's speed is Froude's, `walk` × sqrt(g × leg), the leg's length off the `legs` part; accel = `accel` × (thrust/drag)^0.35 / mass^`accMass`;
+walker's speed is Froude's, `walk` × sqrt(g × leg), the leg's length off the `legs` part; a `tail` part's lobes (v11.73) give thrust `lobeT` 4.3
+× lh × ll × amp × √beat and cost their volume (0.15 × lh × ll m³, the three boxes' 0.05 thickness) and two drags — `lobeF` 0.1 × lh × ll skin
+friction and `lobeI` 5 × ll² × amp² induced (a foil's lift costs C_L²/(π × aspect), so a broad lobe pays and a tall one does not); `lobeT` was
+refit so the tailed roster's geometric mean of speed held, and the roster moved within ±7% (CHANGELOG v11.73); accel = `accel` × (thrust/drag)^0.35 / mass^`accMass`;
 turn = `turn` / L^`turnExp`, × `flex` 1.8 for a body that bends along its length, capped at `turnMax`. Fitted to the roster by geometric mean
 per mode against the kinds that swim for their life or their meal (CHANGELOG v11.71 has the table and every mover). `defPhysics`
 (creatures_defs.js) writes `top`, `speed = top × pace`, `flee = top`, `turn` and `accel` onto every `DEFS` kind at load; no row carries a hand
@@ -1648,7 +1651,8 @@ debits. Nothing respawns. The unloaded cells run the model; the loaded cells run
   `need`, `meal` (the stone: `cycle` 5, torpid; the abyssal 10).
 - **Hunger, live** (`creatures_ai.js hungerTick`): `c.hunger` 0..1 over the cycle; hunts past `ECO.hungry` 0.4; the chase bursts
   (1.6× for 2 s, tired by 6) and gives up at `ECO_CHASE` 9 s on anything but the player; a kill takes `food/meal` off; `feed` state at
-  a carcass; starving at 1, dead at 1.2 cycles past. Ambushers `findPrey(c, radius)` when hungry; traps past 0.16.
+  a carcass; starving at 1, dead at `STARVE_T` 1.2 cycles past. Ambushers `findPrey(c, radius)` when hungry; traps past 0.16. **The player
+  runs the same three functions on its line kind (v11.73, `eaterK`)** — see The player, The stomach.
 - **The cast** (v11.31.2, `updateHunter`): the nearest animal a hunter eats sits 35–50 m off on the shelf against a `detect` of 9–17, so
   a hungry hunter's 0.4 s scan runs out to `HUNT_SEEK` 4 × detect; inside `detect` it chases, further out it steers its wander at the prey
   and swims at `HUNT_CAST` 0.8 of its speed instead of its cruise (0.45–0.5, which never closed on a school drifting at its own). Only at
@@ -1705,21 +1709,33 @@ the pads; bodies and arms in `creatures_ai.js` after the creatures have moved, t
 at a carcass, or wounds; the grab (right mouse, r) holds. The player's food is arrow squid, needles and scuttlers, and what it kills. Open question, never answered: should clades differ in *what they can reach* (crevices for soft-arm,
 surface air for finback)? Any persistence, or is a clean cold start the point?
 
-**The editor at conception (v11.72, `line.js`; LINEAGE §13.4).** `x` no longer lays at once: `playerLay` checks the floor and the cooldown and
+**The editor at conception (v11.72, `line.js`; LINEAGE §13.4).** `x` no longer lays at once: `playerLay` checks the floor and the stomach (v11.73) and
 `conceiveOpen` opens the lab as the creator on the parent's spec (`lab.conceive = {parent, gen, budget, at, price}`; the clade locked, `p` off).
 `conceivePrice(parent, child)` prices the diff off the registry (`BUDGET`: `param` 1 per believable band, `extreme` ×2 outside it, `toggle` 0.25,
 `list` 0.5, a part `add` 1 / `remove` 0.5 / `style` 0.75 × its registry cost, `core` 6, `size` 4 per doubling, `coat` 0.3) against
 `conceiveBudget(gen)` = `base` 3 + `gen` 1.5 per generation behind the parent. `conceiveClose`: unchanged or declined lays a copy; changed within
-the budget lays the child's spec and plays the sparkle on the clutch; over the budget it refuses and the lab stays. The cooldown goes with the
-child's derived mass (`LINE.cool` 0.2 days at `LINE.coolM` 1.69 t, the life's `coolS`) — the stand-in for §6's fuel until the player has hunger.
+the budget lays the child's spec and plays the sparkle on the clutch; over the budget it refuses and the lab stays. **The fuel (v11.73):** the
+clutch is paid from the stomach — `clutchCost(child)` = `LINE.egg` 0.01 × `LINE.n` × the child's adult derived mass in tonnes, `clutchHunger` that over
+the parent's meal (the finback's copy 71 kg, 0.49 of its 146 kg stomach; a child of twice the mass 0.97); the bill's `eggs` row shows it against
+what the stomach holds, and a child it cannot hold is refused at the close (the lab stays, `lay` greyed, `decline` live — a copy was checked
+affordable before the window opened). The cooldown of v11.72 (`LINE.cool`, `coolM`, `coolS`) is gone.
 No hard cap on the distance from the parent: the budget is the cap (LINEAGE §12.22, for now). While the window is open the parent is out of
 the world (v11.72.1, player.js `playerAway`: hidden, its hold and every creature's target on it dropped; `playerGone()` — dead or away — is what
 creatures_ai.js and combat.js ask wherever they mean "is the player there").
 
+**The stomach (v11.73, player.js; LINEAGE §6's fuel half, DIRECTION decision 3).** One rule for every animal (the person, 21 Sep 2026): `player.hunger`
+is the clock every hunter runs, on the player's line kind's numbers (creatures_ai.js `eaterK` → `ecoOf(lineKind(spec))`: the finback's cycle 0.78 game
+days, need 188 kg a day, meal 146 kg) through the same functions — `hungerTick` in `updatePlayer` (0 fed to 1 starving over the cycle, then `STARVE_T`
+1.2 cycles to `die('starved')`, which is a death like any other: the handover or the save over), `kill` (a gulp or the placed act takes the prey's
+`food` over the meal off — any prey on the finback's list fills it), `eatAt` (a bite at a carcass is `EAT.bite` 1 s of the world's rate, `min(mass/75,
+meal/20)`: 7.3 kg and 0.05 of hunger, twenty bites from starving; a poisoned body sickens instead). Not ticked while the parent is away in the editor.
+On the save as `hunger` and `starveT`, kept through a rebody, the child's own at a handover (a hatchling's full). Shown on the readout's `hunger` line
+only (main.js, `hungerLine`): no bar by the text rule; how the body itself might show it is the person's (CHANGELOG v11.73, Unseen 1).
+
 **The line (v11.69, `line.js`; LINEAGE.md §13.1–2).** The slot carries `line`, a list of lives, the last the one played: `{spec, preset, born, grown, died,
 cause, playT, parent, track, lay, broods}` — times on the world clock `t`, `track` a sample every `LINE.trackS` 5 s of play run-length coded (`[x,y,z]`,
 `[x,y,z,k]` for k equal ones). **Laying** (`x`, `playerLay`): a slowblood, grown, on the floor under water (`LINE.near` 3 m, the floor below −4 m, clear of
-solids), `LINE.cool` 0.2 game days since its last clutch — the cost is that cooldown until the player has hunger; `LINE.n` 4 eggs, the world's clutch mesh
+solids), not hungry (`hunger` ≤ `ECO.hungry` 0.4, v11.73) and fed enough for a copy of itself (the clutch's price, above); `LINE.n` 4 eggs, the world's clutch mesh
 (`eggGeo`, `MATT`) hatching after `ECO.hatch`·mass^¼ days (0.39 for the finback). **A brood** is a record on the life that laid it, `{cell, pos, n, born,
 hatch, spec, hatched, at}`, and the truth about the clutch: loaded, it is an egg outside the ledger (`ent` −1, eaten down by scavengers like any clutch) or
 its young — `ent` −1 creatures of a kind per spec (`lineKind`: `line:<hash>`, the player's numbers, a hunter of `LINE_PREY` arrow, needle, scuttle; hunted

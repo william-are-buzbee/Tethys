@@ -7,7 +7,7 @@ const ORDER=fs.readFileSync(path.join(ROOT,'src','order.txt'),'utf8').split('\n'
 let js=ORDER.map(n=>fs.readFileSync(path.join(ROOT,'src',n+'.js'),'utf8')).join('\n');
 js+='\nglobal.__pl={CLADES,SPECS,DEFS,derive,statsOf,playerClade,player,startNew,startFrom,saveNow,saveRefresh,get saveList(){return saveList;},get curSave(){return curSave;},get mode(){return mode;},SAVE_V,specToJSON};';
 js+='\nglobal.__line={get t(){return t;},setT(v){t=v;clockH=t*CLOCK_RATE;},DAY_S,LINE,BROOD_SURVIVE,groundAt,lay:()=>playerLay()&&conceiveClose(true),eggs:()=>eggs,cur:()=>lineCur(),line:()=>curSave?curSave.line:null,die:(c)=>die(c),live:(b)=>broodLive(b),young:(b)=>creatures.filter(c=>c.alive&&c.brood===b),tick:(dt)=>lineTick(dt),children:()=>lineChildren(),clear:()=>worldClear(),cells:()=>cellsAround()};';
-js+='\nglobal.__cv={lab,open:()=>playerLay(),close:(d)=>conceiveClose(d),build:()=>labBuild(),load:(sp)=>labLoad(sp),price:(a,b)=>conceivePrice(a,b),budget:(g)=>conceiveBudget(g),BUDGET,paramOf,frame:(sp)=>compileFrame(sp),spark:()=>spark,gone:()=>playerGone(),hunter:(kind,dx)=>{const p=V3(player.pos.x+dx,player.pos.y+1,player.pos.z),c=spawn(chunkAt(p.x,p.z),kind,p,mulberry(11),{ent:-1});c.hunger=1;return c;},noSpark:()=>{spark=null;}};';
+js+='\nglobal.__cv={lab,open:()=>playerLay(),close:(d)=>conceiveClose(d),build:()=>labBuild(),load:(sp)=>labLoad(sp),price:(a,b)=>conceivePrice(a,b),budget:(g)=>conceiveBudget(g),BUDGET,paramOf,frame:(sp)=>compileFrame(sp),spark:()=>spark,gone:()=>playerGone(),hunter:(kind,dx)=>{const p=V3(player.pos.x+dx,player.pos.y+1,player.pos.z),c=spawn(chunkAt(p.x,p.z),kind,p,mulberry(11),{ent:-1});c.hunger=1;return c;},noSpark:()=>{spark=null;},bite:()=>{player.biteCD=0;playerBite();},put:(kind,dx,dz)=>{const p=V3(player.pos.x+dx,player.pos.y,player.pos.z+dz);return spawn(chunkAt(p.x,p.z),kind,p,mulberry(12),{ent:-1});},kill:(c,by)=>kill(c,by),eco:(k)=>ecoOf(k),K:()=>eaterK(player),carc:()=>carcasses,tick:(dt)=>hungerTick(player,dt),EAT,STARVE_T,ECO,cost:(s)=>clutchCost(s),fuel:(s)=>clutchHunger(s),hline:()=>hungerLine()};';
 const tmp=path.join(require('os').tmpdir(),'tethys_player.js');
 fs.writeFileSync(tmp,'(function(){"use strict";\n'+js+'\n})();');
 require('./stub.js');require(tmp);
@@ -53,7 +53,7 @@ const Cf=X.player.clade;check(['speed','accel','turn','mass','bite','cam','sprin
 {const L=global.__line,P=X.player,fin=X.CLADES.find(c=>c.id==='fin'),floor=()=>{const h=L.groundAt(P.pos.x,P.pos.z);P.pos.y=h+1.5;P.vel.set(0,0,0);P.sub=1;};
   X.startNew(fin);floor();const t0=L.t;
   check(L.lay()===true&&L.eggs().some(g=>g.brood),'the finback lays a clutch on the floor ('+L.cur().broods[0].n+' eggs, hatch in '+((L.cur().broods[0].hatch-t0)/L.DAY_S).toFixed(2)+' game days)');
-  check(L.lay()===false,'a second clutch at once is refused (the cooldown, LINE.cool '+L.LINE.cool+' game days)');
+  check(L.lay()===false&&P.hunger>global.__cv.ECO.hungry,'a second clutch at once is refused: the first took '+P.hunger.toFixed(2)+' of the stomach and laying hungry (past '+global.__cv.ECO.hungry+') is refused (v11.73)');
   const b0=L.cur().broods[0];L.die('the test: only a clutch');
   const l1=L.line();
   check(X.mode==='play'&&!P.dead&&l1.length===2&&l1[1].parent===0&&l1[0].died!==null,'dead with only an unhatched clutch: you continue as its child (gen '+l1.length+', the parent\'s death "'+l1[0].cause+'")');
@@ -84,7 +84,7 @@ const Cf=X.player.clade;check(['speed','accel','turn','mass','bite','cam','sprin
 }
 // ---- 5. the editor at conception (v11.72, LINEAGE §13.4): declined, edited within the budget, refused over it, the child on its own derived numbers ----
 {const L=global.__line,V=global.__cv,P=X.player,fin=X.CLADES.find(c=>c.id==='fin'),floor=()=>{const h=L.groundAt(P.pos.x,P.pos.z);P.pos.y=h+1.5;P.vel.set(0,0,0);P.sub=1;};
-  const wait=()=>{L.setT(L.t+(L.cur().coolS||L.LINE.cool*L.DAY_S)+1);},tailOf=s=>s.parts.find(p=>p.kind==='tail');
+  const wait=()=>{P.hunger=0;P.starveT=0;},tailOf=s=>s.parts.find(p=>p.kind==='tail'); // v11.73: a fed stomach where the cooldown was
   X.startNew(fin);floor();V.noSpark();const par=X.specToJSON(L.cur().spec);
   check(V.open()===true&&X.mode==='lab'&&!!V.lab.conceive&&V.lab.player===true&&L.cur().broods.length===0,'x opens the lab as the creator on the parent\'s spec; nothing is laid while the window is open');
   check(V.lab.conceive.budget===V.budget(1)&&V.budget(3)>V.budget(1),'the budget grows with the generation: '+V.budget(1)+' for the founder\'s child, '+V.budget(3)+' for the third life\'s, '+V.budget(10)+' for the tenth\'s');
@@ -93,22 +93,22 @@ const Cf=X.player.clade;check(['speed','accel','turn','mass','bite','cam','sprin
   V.build();check(V.close(false)===true&&X.mode==='play','closing the window unchanged lays the clutch');
   let b=L.cur().broods[0];
   check(b&&X.specToJSON(b.spec)===par&&b.price===0&&b.gen===2&&!V.spark(),'declined: the clutch is a copy, generation '+(b&&b.gen)+', no sparkle');
-  check(V.open()===false&&X.mode==='play','the cooldown holds after a conception ('+(L.cur().coolS/L.DAY_S).toFixed(2)+' game days for a child of the parent\'s mass)');
-  // edited, within the budget: the tail's lobes longer by 0.6 of their believable band
-  wait();floor();V.open();let tl=tailOf(V.lab.spec),q=V.paramOf('tail','ll',tailOf(V.lab.v),V.frame(V.lab.v));tl.ll=+(tailOf(V.lab.v).ll+0.6*(q.b1-q.b0)).toFixed(3);V.build();
+  check(V.open()===false&&X.mode==='play'&&P.hunger>V.ECO.hungry,'after a conception the stomach is down by the eggs ('+P.hunger.toFixed(2)+') and laying hungry is refused');
+  // edited, within the budget: the tail's lobes taller by 0.6 of their believable band
+  wait();floor();V.open();let tl=tailOf(V.lab.spec),q=V.paramOf('tail','lh',tailOf(V.lab.v),V.frame(V.lab.v));tl.lh=+(tailOf(V.lab.v).lh+0.6*(q.b1-q.b0)).toFixed(3);V.build();
   const pr=V.price(V.lab.conceive.parent,V.lab.v);
   check(pr.total>0.3&&pr.total<=V.lab.conceive.budget&&pr.items[0].what.indexOf('tail')===0,'a longer tail is priced off its band: '+pr.total+' of '+V.lab.conceive.budget+' ('+pr.items.map(i=>i.what+' '+i.cost).join(', ')+')');
   check(V.close(false)===true&&X.mode==='play','within the budget the lab commits');
   b=L.cur().broods[1];const kid=b&&b.spec,dk=X.derive(kid),dp=X.derive(JSON.parse(par));
-  check(b&&X.specToJSON(kid)!==par&&tailOf(kid).ll===tl.ll&&b.price===pr.total&&kid.clade==='slowbloods'&&!!V.spark(),'the clutch carries the child\'s spec ('+kid.id+', tail '+tailOf(JSON.parse(par)).ll+' → '+tailOf(kid).ll+'), and the sparkle plays');
-  check(dk.speed!==dp.speed,'the child\'s body derives its own numbers: speed '+dp.speed+' → '+dk.speed+', mass '+dp.mass+' → '+dk.mass);
-  check(Math.abs(L.cur().coolS/(L.LINE.cool*L.DAY_S)-Math.max(0.25,dk.mass/L.LINE.coolM))<0.01,'the cooldown goes with the child\'s derived mass ('+(L.cur().coolS/L.DAY_S).toFixed(3)+' game days)');
+  check(b&&X.specToJSON(kid)!==par&&tailOf(kid).lh===tl.lh&&b.price===pr.total&&kid.clade==='slowbloods'&&!!V.spark(),'the clutch carries the child\'s spec ('+kid.id+', tail '+tailOf(JSON.parse(par)).lh+' → '+tailOf(kid).lh+'), and the sparkle plays');
+  check(dk.speed!==dp.speed&&dk.mass!==dp.mass,'the child\'s body derives its own numbers: speed '+dp.speed+' → '+dk.speed+', mass '+dp.mass+' → '+dk.mass+' (v11.73: a lobe weighs and drags)');
+  check(Math.abs(b.fuel-L.LINE.egg*L.LINE.n*dk.mass)<1e-3&&Math.abs(P.hunger-b.fuel/V.K().meal)<0.01,'the clutch cost the child\'s mass × '+L.LINE.n+' eggs × LINE.egg '+L.LINE.egg+' = '+b.fuel+' t, '+P.hunger.toFixed(2)+' of the stomach (v11.73)');
   // refused over the budget: four times the scale is 8 points against 3
   wait();floor();V.open();V.lab.spec.s=(V.lab.spec.s||1)*4;V.build();const n0=L.cur().broods.length;
   check(V.close(false)===false&&X.mode==='lab'&&L.cur().broods.length===n0,'over the budget the lab will not commit ('+V.price(V.lab.conceive.parent,V.lab.v).total+' of '+V.lab.conceive.budget+') and nothing is laid');
   check(V.close(true)===true&&X.mode==='play'&&X.specToJSON(L.cur().broods[n0].spec)===par,'declined from there: a copy is laid');
   // the child after the handover: a new line with only the edited clutch, the parent dead
-  X.startNew(fin);floor();V.open();tailOf(V.lab.spec).ll=tl.ll;V.build();V.close(false);const kid2=L.cur().broods[0].spec;
+  X.startNew(fin);floor();V.open();tailOf(V.lab.spec).ll=tl.lh;V.build();V.close(false);const kid2=L.cur().broods[0].spec;
   L.die('the test: an edited clutch');const C2=P.clade;
   check(X.mode==='play'&&!P.dead&&L.line().length===2&&X.specToJSON(C2.spec)===X.specToJSON(kid2),'dead with an edited clutch: you continue as the child you shaped ('+C2.spec.id+')');
   L.setT(L.cur().grown+1);__step(3);const C3=P.clade,d3=X.derive(kid2);
@@ -117,8 +117,46 @@ const Cf=X.player.clade;check(['speed','accel','turn','mass','bite','cam','sprin
   floor();L.setT(L.cur().grown+2);const eel=V.hunter('eel',7);V.open();__step(180);
   check(V.gone()&&P.g.visible===false&&eel.target!==P&&!P.hold&&!(P.bleed>0),'the window open: the parent is hidden and a hungry eel 7 m off leaves it alone for 3 s (its target: '+(eel.target?(eel.target===P?'the player':eel.target.kind):'none')+')');
   V.close(true);const vis=P.g.visible;let took=false;for(let i=0;i<40&&!took;i++){eel.pos.set(P.pos.x+7,P.pos.y+1,P.pos.z);eel.hunger=1;eel.state='wander';__step(15);took=eel.target===P;}
-  check(!V.gone()&&vis===true&&took,'the window closed: the body is back, and the eel takes it as prey');eel.alive&&(eel.target=null);L.setT(L.t+L.DAY_S);
+  check(!V.gone()&&vis===true&&took,'the window closed: the body is back, and the eel takes it as prey');eel.alive&&(eel.target=null);L.setT(L.t+L.DAY_S);wait();
   floor();V.open();check(V.lab.conceive&&V.lab.conceive.gen===2&&V.lab.conceive.budget===V.budget(2)&&X.specToJSON(V.lab.conceive.parent)===X.specToJSON(kid2),'and its own conception starts from its spec with generation 2\'s budget ('+V.budget(2)+')');V.close(true);
+}
+// ---- 6. the stomach (v11.73, LINEAGE §6's fuel half): fed by a gulp, a kill and a carcass on the ledger's numbers; starved to death with a child and with none; a clutch refused for want of reserves and one afforded; a child twice the mass costs twice ----
+{const L=global.__line,V=global.__cv,P=X.player,fin=X.CLADES.find(c=>c.id==='fin'),floor=()=>{const h=L.groundAt(P.pos.x,P.pos.z);P.pos.y=h+1.5;P.vel.set(0,0,0);P.sub=1;};
+  const wait=()=>{P.hunger=0;P.starveT=0;};X.startNew(fin);floor();const K=V.K(),Kc=V.eco(Object.keys(X.DEFS).find(k=>k.indexOf('line:')===0&&X.DEFS[k].spec===P.clade.spec));
+  check(K===Kc&&K.hunter&&K.cycle>0.5&&K.cycle<1&&K.meal>0.1&&K.meal<0.2,'the player runs on its line kind\'s numbers: cycle '+K.cycle.toFixed(2)+' game days, need '+(K.need*1000).toFixed(0)+' kg a day, meal '+(K.meal*1000).toFixed(0)+' kg');
+  P.hunger=0;V.tick(K.cycle*L.DAY_S*0.5);check(Math.abs(P.hunger-0.5)<1e-6,'the clock: half a cycle of play is hunger 0.50');
+  check(V.hline().indexOf('hunger 0.50 hungry')===0,'the readout\'s line: "'+V.hline()+'"');
+  // a gulp: an arrow at the mouth, the bite
+  P.hunger=0.8;const ar=V.put('arrow',0,0.8),fa=V.eco('arrow').food;V.bite();
+  check(!ar.alive&&Math.abs(P.hunger-Math.max(0,0.8-fa/K.meal))<1e-6,'a gulp: an arrow ('+fa+' t of food over a '+(K.meal*1000).toFixed(0)+' kg meal) takes hunger 0.80 → '+P.hunger.toFixed(2));
+  // a kill: the placed act's kill(c, player) — a picker is a carcass (too big to swallow), and the killer is fed by its food
+  P.hunger=1;P.starveT=50;const pk=V.put('picker',0,3);V.kill(pk,P);
+  check(!pk.alive&&pk.dead&&Math.abs(P.hunger-Math.max(0,1-V.eco('picker').food/K.meal))<1e-6&&P.starveT===0,'a kill: a picker ('+V.eco('picker').food+' t) fills it from starving and the starving clock resets');
+  // a carcass: a mouthful is EAT.bite seconds of the world's feeding rate (creatures_ai.js eatAt)
+  P.hunger=1;const c0=pk.flesh,rate=Math.min(pk.flesh/pk.flesh*Math.pow(pk.def.size,3)/75,K.meal/20)*V.EAT.bite;pk.pos.set(P.pos.x+0.4,P.pos.y,P.pos.z+0.8);pk.g.position.copy(pk.pos);V.bite();
+  check(Math.abs(c0-pk.flesh-rate)<1e-6&&Math.abs(P.hunger-(1-rate/K.meal))<1e-6,'a carcass: one bite is '+(rate*1000).toFixed(1)+' kg off the body and '+(rate/K.meal).toFixed(3)+' off hunger — '+Math.ceil(K.meal/rate)+' bites fill it');
+  for(let i=0;i<40;i++)V.bite();check(P.hunger===0,'forty bites: fed');
+  // a poisoned carcass sickens instead of feeding
+  P.hunger=1;pk.poison=1;P.sickT=0;V.bite();check(P.sickT>0&&P.hunger===1,'a body fed at the seeps: sick, and no meal');pk.poison=0;P.sickT=0;
+  // the stomach through the save
+  P.hunger=0.37;P.starveT=0;X.saveNow();X.saveRefresh();const rs=X.saveList.find(r=>r.id===X.curSave.id);X.startFrom(rs);
+  check(Math.abs(P.hunger-0.37)<1e-6,'the stomach through the save: '+P.hunger);
+  // starved with only a clutch: a death like any other — the world runs on to the hatch, and the hatchling is fed
+  floor();wait();V.noSpark();V.open();V.close(true);const b0=L.cur().broods[0];
+  P.hunger=1;P.starveT=K.cycle*L.DAY_S*V.STARVE_T;const dead=V.tick(0.5);
+  check(dead===true&&X.mode==='play'&&!P.dead&&L.line().length===2&&L.line()[0].cause==='starved'&&L.t>=b0.hatch&&P.hunger===0,'starved with only a clutch: the parent\'s death is "'+L.line()[0].cause+'", you continue as its child, fed');
+  // starved with none: the save is over
+  const id=X.curSave.id;L.setT(L.cur().grown+1);__step(3);P.hunger=1;P.starveT=K.cycle*L.DAY_S*V.STARVE_T;V.tick(0.5);X.saveRefresh();const ro=X.saveList.find(r=>r.id===id);
+  check(X.mode==='menu'&&ro&&ro.over===true&&ro.deaths[ro.deaths.length-1].cause==='starved','starved with no child: the save is over, the cause written');
+  // the clutch's price: refused hungry, refused for a child the stomach cannot hold, afforded fed; a child of twice the mass costs twice
+  X.startNew(fin);floor();V.noSpark();const par=L.cur().spec,cp=V.cost(par),fp=V.fuel(par);
+  P.hunger=V.ECO.hungry+0.05;check(V.open()===false&&X.mode==='play','laying at hunger '+P.hunger.toFixed(2)+' is refused (hungry)');
+  P.hunger=0.3;check(V.open()===true&&X.mode==='lab','at 0.30 the window opens (a copy costs '+fp.toFixed(2)+' of the stomach)');
+  V.lab.spec.s=(V.lab.spec.s||1)*Math.cbrt(2);V.build();const kid=JSON.parse(X.specToJSON(V.lab.v)),ck=V.cost(kid),n0=L.cur().broods.length;
+  check(Math.abs(ck/cp-2)<0.02&&V.price(par,kid).total<=V.lab.conceive.budget,'a child of twice the mass ('+X.derive(kid).mass+' t against '+X.derive(par).mass+') costs twice: '+ck.toFixed(3)+' t against '+cp.toFixed(3)+' (within the budget, '+V.price(par,kid).total.toFixed(2)+')');
+  check(V.close(false)===false&&X.mode==='lab'&&L.cur().broods.length===n0,'at 0.30 it is refused: '+V.fuel(kid).toFixed(2)+' of the stomach wanted, '+(1-P.hunger).toFixed(2)+' in it; nothing laid');
+  P.hunger=0.02;check(V.close(false)===true&&X.mode==='play'&&L.cur().broods.length===n0+1&&Math.abs(L.cur().broods[n0].fuel-ck)<1e-3&&Math.abs(P.hunger-(0.02+ck/K.meal))<1e-6,'at 0.02 it is afforded: the clutch cost '+L.cur().broods[n0].fuel+' t and the stomach is at '+P.hunger.toFixed(2));
+  P.hunger=0.3;floor();check(V.open()===true&&V.close(true)===true&&Math.abs(P.hunger-(0.3+fp))<1e-6,'a copy at 0.30 is afforded: '+P.hunger.toFixed(2)+' after');
 }
 console.log(fails?'player: '+fails+' FAILED':'player: all ok');
 process.exit(fails?1:0);

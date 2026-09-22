@@ -1,6 +1,6 @@
 # LINEAGE.md — the line across generations: a full life, the brood it leaves, the mutation, and the magic that is admitted
 
-**Status: §13.1–2 built, minimal (v11.69, 21 Sep 2026): the line on the slot with its track, the finback's clutch (a cooldown for its cost), broods as
+**Status: §13.1–2 built, minimal (v11.69, 21 Sep 2026): the line on the slot with its track, the finback's clutch (v11.73: paid from the stomach; to then a cooldown for its cost), broods as
 records that survive an unload, the handover at death to the nearest living child, the save ended with none, and the sparkle at the handover only.
 The player became a spec first (v11.68). Not built: the crude shrine page, §8's sparse entries (a survival knob stands in), the editor at conception,
 the other clades' modes. Design otherwise, 20 Sep 2026. The person's answers are in §12 and are folded through the body of this doc.** Written
@@ -153,6 +153,10 @@ another clade is still open (§11).
 
 ## 6. The mutation budget is physics, not points
 
+*Status (21 Sep 2026): the fuel half is built — v11.73, the player's hunger as the ledger's own model on the line kind, and a clutch paid from the
+stomach at `LINE.egg` of the child's mass per egg (one rule for every animal, §12.25). The materials half is proposed at the end of this section, not
+built. The budget's points (v11.72, `BUDGET`) still price the diff; §6's claim that they should be materials stands as the direction.*
+
 The person, 20 Sep: *"The budget is purely physics, the demands of the body + the materials needed. You create a small animal with that
 genetic script and it will consume the resources it needs to produce that body plan."* So it is not an abstract allowance:
 
@@ -175,6 +179,26 @@ genetic script and it will consume the resources it needs to produce that body p
   them in one table with a comment per key, the usual way, and expect to move them.
 - **A lost part is not inherited.** `lost[]` (v11.57) tracks what was torn off; the child is built from the parent's *spec*, not its
   corpse. Lamarck is not on the menu, and it is written here so it is never accidentally built.
+
+### 6b. The materials (proposed 21 Sep 2026 with v11.73, not built — the person decides)
+
+The fuel is built: the stomach pays for the eggs by mass. The other half is *what* was eaten, *where* — `coatFor` and `COAT_CHEM` are the
+precedent: a coat's carotenoid exists only if the diet reached the lit shallows, and a hingeshell's plates take the mineral of the water they grew
+in (rust, lime, sulfide, manganese; creatures_spec.js `coatClassAt`). The proposal is three stores on the life, in kilograms, credited at every
+gulp, kill and carcass bite by what the prey was and where it lived, and debited at conception by what the child's parts are made of:
+
+| store | the source (what the player eats) | credited | what it buys in the child | the finback would have to eat |
+|---|---|---|---|---|
+| **lime** (calcite) | a hingeshell that grew on the reef or the lit rock (`coatClassAt` lime or rust: scuttle, wedge, sifter, picker) | its plate mass: the exoskeleton's share of `bioMass`, ~0.1 | a coiled shell (`shell` part), plates, valves — the part's volume × `GRAMMAR.shell` 1.6 | a coilshell child's shell is ~0.5 t of lime: ~15 scuttles of the reef (34 kg each), or two pickers |
+| **iron** (sulfide) | a hingeshell fed below the chemocline or in the vents' heat (`coatClassAt` sulfide: cinder, the basker's field) | the same plate mass | black iron plates (PLANET: "black iron plates mean feeding in the basker's field"); the `armour` term at a higher density | the same tonnage from cinders — which are poison unless the line is `immune` (v11.56): the door is the poison, as DIRECTION says |
+| **pigment** (carotenoid) | a browser of the lit water (`COAT_DIET` browser: grazer, rasp, picker, darter), faded through a hunter (arrow, needle: a quarter) | ~1 g per tonne of browser, the coat's `sat` in the creator's `coat` item | a coat moved toward warmth or saturation (`BUDGET.coat` 0.3 → grams), the chromatophores of a later pass | one grazer for a coat's full range; a vent-line child stays melanin-grey with nothing to eat |
+
+Rules that fall out: the stores are the *life's*, not the line's (each life must eat for its own clutch, as §4 says of breeding); a store
+is spent only by the parts that need it, so a line that never builds a shell never needs lime; the lookup is the place the prey lived
+(its cached coat class at spawn) — nothing new is sampled; and the numbers are playtest numbers in one table (`MAT`, a comment per key).
+Open: whether the ledger's own model should carry the stores for the world's animals (a shelled species starving for lime would be a new
+term in `ecoModel`), or whether they are the player's alone — the one admitted wrench (§1). The cost of not building it: a shell is
+priced only in points and mass today, and the chemistry the person asked for ("you eat the parts directly") is still the coat's.
 
 ## 7. The sparkle: the magic, admitted but not explained
 
@@ -348,6 +372,9 @@ coordinates and days in a form that could be exported.
 23. **The budget's first numbers stand for now** (21 Sep 2026, §11.8): 3 points at generation 2 "seems OK for now, not a huge issue".
 24. **You are out of the world while you edit** (21 Sep 2026): "the game should teleport the player out of existence temporarily or make them
     invis/invuln while they edit." Built v11.72.1: hidden, and nothing can see, chase, hold or hurt the parent while the window is open.
+25. **The player's hunger is the model every creature runs — one rule, not a special case** (21 Sep 2026: "a universal logic"). Built v11.73:
+    `ecoOf` on the player's line kind through the same `hungerTick`, `kill` and `eatAt`; starvation a death like any other; a clutch paid
+    from the stomach.
 
 ## 13. Build order
 
@@ -368,7 +395,9 @@ Each step is playable and tells the person something; the expensive answers (§8
    *(The registry pass landed v11.70: a parameter is `paramOf(owner, key, part, frame)` — label, unit, type, bands, default, value — creatures_spec.js.)*
    *(Built v11.72, the finback: `x` opens the lab as the creator on the parent's spec, the clade locked; closing unchanged lays a copy, closing
    changed within the budget lays the child and plays the sparkle, over the budget the lab will not commit. line.js `BUDGET` prices the diff off
-   the registry and grows with the generation; the fuel half of §6 is a cooldown by the child's derived mass until the player has hunger.)*
+   the registry and grows with the generation; the fuel half of §6 was a cooldown by the child's derived mass until the player had hunger.)*
+   *(Built v11.73: the player's hunger on the ledger's own model, and the clutch paid from the stomach at `LINE.egg` of the child's mass per egg;
+   the cooldown is gone. The materials are §6b, proposed.)*
 5. **The sparkle** (§7) — small, and it should arrive with the first handover so the tell exists from the beginning. *(Built v11.69 for the
    handover; v11.72 for the closed mutation window, on the clutch: a screen-space four-point star, `starPath`, with a short trail.)*
 6. **The other two modes**: the ringmouth's one spawning and scheduled death; the hingeshell's brood and den.

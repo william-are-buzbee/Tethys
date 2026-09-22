@@ -4858,3 +4858,69 @@ in the world the frame the window closes.
   no hold, no wound, the eel wandered off to 16 m; the window closed and the eel had the player as its target on the first frame.
 - **Unseen, ask in this order**: whether coming back into the world beside something hungry wants a second of grace; the lab's creature standing
   where your body was (it is drawn ahead of you, as `l` in play draws it).
+
+## v11.73 — the player's hunger (21 Sep 2026)
+
+LINEAGE §6's fuel half, DIRECTION decision 3, and **one rule for every animal** (the person, 21 Sep: "a universal logic", not a special case).
+The player's stomach is the model every hunter already runs — `ecoOf` on the player's line kind (creatures_ai.js `eaterK`: the finback's
+cycle 0.78 game days, need 188 kg a day, meal 146 kg) — through the same three functions: `hungerTick` (the clock to 1, then `STARVE_T` 1.2
+cycles to the death: about 68 real minutes from full to dead), `kill` (a gulp or the placed act feeds the eater by the prey's `food` over its
+`meal`; the `by !== player` skips are gone) and `eatAt` (a bite at a carcass is `EAT.bite` 1 s of the world's feeding rate: 7.3 kg and 0.05
+of the finback's hunger — twenty bites fill it from starving; a poisoned body sickens instead, as it does a lurker). Any one prey on the
+player's list fills the finback: the model's food for an arrow is 1 t against a 146 kg meal. Starvation is `die('starved')`: the handover
+to the nearest living child, or the save is over (line.js, v11.69). The stomach rides the save (`hunger`, `starveT`), survives a rebody,
+is the child's own at the handover (a hatchling's is full), and is not ticked while the parent is out of the world in the editor.
+
+- **A clutch is paid from what the body has eaten.** `LINE.egg` 0.01 × `LINE.n` 4 eggs × the child's adult derived mass, in tonnes, off the
+  parent's stomach over its meal (line.js `clutchCost`, `clutchHunger`): the finback's copy is 71 kg, 0.49 of its stomach; **a child of twice
+  the mass costs twice** (0.97). `x` refuses `hungry` past `ECO.hungry` 0.4 (the line where the ledger's hunters go hunting) and `not fed enough`
+  when a copy of yourself would leave the stomach starving, so declining can always lay; a heavier child is refused at the close ("not fed
+  enough for this child: a smaller one, or decline"), and the bill has an `eggs` row — the cost against what the stomach holds — that turns
+  the block amber and greys `lay` when the stomach cannot hold it. **The cooldown is gone**: `LINE.cool`, `LINE.coolM` and the life's `coolS`
+  (v11.72's stand-in) are struck; the knob is `LINE.egg` in line.js, the price is `clutchHunger`, and the brood record keeps `fuel` in tonnes.
+- **Shown on the readout only** (the text rule): a `hunger` line — the clock, hungry or not, the time to starving (or the share of the way to
+  death past it), the stomach in kg, the cycle, and what a clutch of yourself costs of it. No bar; the body's own tell is the person's (Unseen 1).
+- **The tail term** (v11.72's finding: 0.45 points of tail bought +31% speed, the lobes weighing and dragging nothing). The `tail` part's lobes
+  now weigh (three boxes 0.05 thick: 0.15 × lh × ll m³ at the clade's density) and drag by two terms in `DERIVE_K`: `lobeF` 0.1 skin friction
+  per m² of lobe (six faces at Cf ~0.008 over a body cd ~0.45) and `lobeI` 5 induced drag per chord² × amp² (a foil's lift costs C_L²/(π ×
+  aspect), aspect = lh/ll, so the cost is ∝ ll²: a tall narrow lobe pays less than a broad one for the same thrust; the beat stays out, being
+  the animation's number). `lobeT` (the lobe's thrust per m², the old literal 3) is 4.3, refit so the nine tailed kinds' geometric mean of speed
+  holds (1.002). **Every species it moves** (speed, accel, mass): fin 6.2 → 6.1, 2.01 → 1.98, 1.69 → 1.77 t; ridge 9.6 → 9.5, 1.23 → 1.22,
+  43.4 → 45.5; abyssal 10.9 → 11.0, 0.83 → 0.84, 311 → 324; grazer 4.7 → 5.0, 1.05 → 1.11, 8.69 → 8.86; darter 4.3 → 4.1, 3.22 → 3.08;
+  needle 6.5 → 6.2, 3.56 → 3.38; basker 7.1 → 7.5, 0.94 → 0.99, 46.7 → 47.2; crusher 5.9 → 6.3, 0.92 → 0.97, 34.5 → 34.9; glim 4.1 → 3.9,
+  3.22 → 3.08 — the broad-lobed small boids down 5%, the tall-lobed big bodies up 6–7%, the presets within 2%. v11.72's move (lobe length 0.5
+  → 1.3) buys +3% now. The chain core's lobes (the eel) are untouched: its thrust is the body's, and its lobes add none.
+- **Found.** Lobe *height* is the cheap direction now: the test's move of 0.6 of its band (0.85 → 3.7 m on a 3.6 m body) buys +48% for 0.6
+  points, because a lobe's thrust grows with its area and only its friction and mass grow with its height — nothing in `derive` says the
+  stem's muscle has to swing it. The next term is a muscle cap: the lobes' thrust bounded by the stem's cross-section (the peduncle), which
+  `stem` already measures. Not built: the person's call whether the tail pays by muscle or by the budget's band price (`lh`'s band 0.1–2.5
+  is wide).
+- **Written, not built: §6's other half, the materials** — LINEAGE §6 "The materials" proposes the mineral for a shell or plates and the
+  pigment for a coat drawn from what was eaten where (`coatFor`, `COAT_CHEM` the precedent), with what a finback would have to eat for each.
+- **Tests** (`test/player.js` §6, in `--test`): the player runs on its line kind's numbers; half a cycle of play is hunger 0.50; the readout's
+  line; fed by a gulp (an arrow at the mouth through `playerBite`), by a kill (`kill(picker, player)`, the starving clock reset) and at a
+  carcass (one bite 7.3 kg and 0.050, forty bites fed; a poisoned body sickens and feeds nothing); the stomach through the save; starved to
+  death with only a clutch (the cause `starved`, the world run on to the hatch, the hatchling fed) and with none (the save over, the cause
+  written); laying refused hungry (0.45) and the window open at 0.30; a child of twice the mass (scale × ∛2, 1.33 points) costing twice,
+  refused at 0.30 (0.97 wanted, 0.70 held) with nothing laid and afforded at 0.02; a copy at 0.30 afforded. §4–5's cooldown checks are
+  stomach checks now, and §5's edited child has taller lobes instead of longer ones (a longer lobe no longer moves the derived speed at one
+  decimal — which is the tail term working). `--test` green on both tiers.
+- **Seen** in the app's browser (dev.html on serve.js; the pane's loop ran only while a screenshot was taken, so the clock was driven by
+  hand): the readout's line at a new game ("hunger 0.00  starving in 0.78 d  stomach 146 kg  cycle 0.78 d  a clutch of 4 as you: 0.49 of
+  it"); an arrow spawned at the mouth and bitten took hunger 0.80 → 0.00; on the floor at 0.30, `x` opened the bill with "the eggs 0.49 of
+  0.70" and "unchanged: the clutch will be a copy"; the scale at ∛2 turned it amber — "the eggs 0.97 of 0.70 … not fed enough for this
+  child: a smaller one, or eat first", `lay` greyed, `decline` live; declined, the clutch laid (71 kg) and the stomach at 0.79; `x` again
+  put "hungry" on the hint; hunger set to 1 and the starving clock past its end: the fade, the cause `starved` on the slot, the world run
+  on to the hatch (t 934, night), and the hatchling at the clutch among its siblings with the sparkle over it and a full stomach. A game day
+  of real play, eating as you go, was not played (40 real minutes).
+
+**Unseen, ask in this order:**
+1. **How the body shows hunger** — no bar, the person decides. Candidates, cheapest first: (a) the belly: the lathe's profile radius scaled
+   by (1 − 0.15 × hunger) over the trunk, as `bodyPose` squashes and stretches already (fx.js) — a gaunt fish, visible in third person;
+   (b) the pace: a hungry body's cruise falls (`speedK` × (1 − 0.1 × hunger past `ECO.hungry`)) and its idle sways slower, the way a starving
+   hunter's chase tires; (c) the sound: the heartbeat bed (audio.js) slower and thinner past 0.7; (d) the hint once at `ECO.hungry` and once
+   at 1 ("hungry", "starving"), the way the controls hint shows once. (a) and (d) are an hour; (b) touches the fight's balance.
+2. Whether the numbers play: 31 real minutes from full to hungry-enough-to-be-refused-a-clutch, 68 to death, and one arrow filling you from
+   starving (the model's number: a 146 kg meal against a tonne of arrow). A player-only `meal` multiplier is a special case and was not built.
+3. The tail's next term: the muscle cap on the lobes (Found, above), or leave it to the band price.
+4. The materials proposal (LINEAGE §6) — which of the three sources to build first, and whether a hingeshell's mineral rides its coat class.

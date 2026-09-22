@@ -1806,9 +1806,9 @@ const PARTS = {
           else tail.rotation.y = a;
           if (p.body) B.frame.rotation.y = p.body * Math.sin(ph + 0.5); // the whole frame: hull, fins, tail hinge and mouth (v11.18)
         },
-        thrust: (p.lh * p.ll * 3 + stem) * p.amp * Math.sqrt(ctx.beat[0] + ctx.beat[1]),
-        mass: stem * stem * 0.5,
-        area: p.lh * p.ll * 0.05,
+        thrust: (p.lh * p.ll * DERIVE_K.lobeT + stem) * p.amp * Math.sqrt(ctx.beat[0] + ctx.beat[1]),
+        mass: stem * stem * 0.5 + p.lh * p.ll * 0.15, // v11.73: the three lobes are boxes 0.05 thick (tailTrio) — their volume, at the clade's density
+        area: p.lh * p.ll * DERIVE_K.lobeF + p.ll * p.ll * p.amp * p.amp * DERIVE_K.lobeI, // v11.73: the lobes' skin friction (∝ their area) and their induced drag (∝ chord² × amp², the lift's cost — a tall narrow lobe pays less than a broad one for the same thrust; the beat stays out: it is the animation's number, and the size law is lenExp's). v11.72 found 0.45 points of tail buying +31% speed against no drag at all (0.05 of the lobe)
         extent: [p.z + p.lz - p.ll * 0.5, p.z]
       };
     }
@@ -2892,6 +2892,9 @@ const DERIVE_K = {
   walkTD: 1.5, // a walker's grip on the ground, standing in for thrust/drag in its accel
   chamber: 0.8, // a gas-chambered shell: the drag of a wheel carried flat, and no hard jetting against a shell's own buoyancy
   flex: 1.8, // turn, a body that bends along its whole length (the chain core) against a stiff hull of the same length: the eel's hand turn was 1.9× derive's
+  lobeT: 4.3, // a tail lobe's thrust per m² of lobe at amplitude 1 and beat 1 (the three lobes of tailTrio); 3 to v11.72 against no lobe drag — v11.73: refit with lobeF and lobeI so the nine tailed kinds' geometric mean of speed holds (1.002): the broad-lobed small boids −5%, the tall-lobed big bodies +6–7%
+  lobeF: 0.1, // the lobes' skin friction as frontal-equivalent area per m² of lobe: six faces at Cf ~0.008 against a body cd ~0.45
+  lobeI: 5, // the lobes' induced drag as frontal-equivalent area per (chord² × amp²): a lobe's lift coefficient goes with its amplitude, C_Di = C_L² / (π × aspect), aspect = lh/ll, so the cost per m² of lobe is ∝ ll/lh and the whole is ∝ ll²; the three lobes over a body cd ~0.45 at the roster's beats give 3 × 2.4/(π × 0.45)
   ceilL: 60, // m: the length the speed ceiling bends at (CREATOR.md, The size ceiling, item 4). Power ∝ L³ against drag ∝ L²v³ has no ceiling, but a burst is an anaerobic store that lasts ~mass^0.25 while the time to reach speed grows faster (Hirt et al. 2017: the fastest animals are mid-sized) — past ceilL speed is flat in L
   ceilN: 4, // how sharply: the factor is (1+(L/ceilL)^n)^(-lenExp/n) — 0.999 at the abyssal's 19 m, 0.994 at 30 m, 0.93 at 60, and a 600 m body does what a 60 m one does
   accel: 1.4, // 1/s: the rate a body closes on the speed it wants, at thrust/drag 1 and 1 t (the three presets' hand numbers fit 0.97 of this)

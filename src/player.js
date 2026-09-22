@@ -23,11 +23,22 @@ const CLADES=CLADE_PRESETS.map(p=>playerClade(SPECS[p.spec],p));
 let floor0=-1e9;for(let a=0;a<TAU;a+=0.3)for(let r=0;r<=16;r+=4)floor0=Math.max(floor0,sample(Math.cos(a)*r,Math.sin(a)*r).h);
 const dispY=floor0+4.5,spawnPos=V3(0,floor0+3,0);
 const player={clade:null,pos:V3(0,dispY,0),vel:V3(0,0,0),yaw:0,pitch:0,g:null,b:null,anim:null,inkT:0,withdrawn:false,cd:0,jetT:0,hurtT:0,lastHurt:-100,dead:true,pulse:0,spd:0,biteCD:0,sub:1,wet:true,grounded:false,flopT:0,camAbove:false,camFlipT:0,fp:false,
-  mass:6,bound:0,reach:0,shapesW:null,chainW:null,grab:null,grabT:0,heldT:0,heldK:1,holding:0,hold:null,held:0,grabKey:false,grabCD:0,bleed:0,woundL:null,paraT:0,stungT:0,sickT:0,armsLost:0,regrow:null,cause:'',speedK:1,turnK:1,live:null,lost:null,cWith:null,onPad:null,def:{size:1.6},hitRk:0,hitFl:0,landV:0,wasGrounded:false}; // hitRk/hitFl: this frame's push was against rock / a plant; landV: the speed of the last landing on the floor (audio.js consumes both) // def.size: creatures read it when the player is their target
+  mass:6,bound:0,reach:0,shapesW:null,chainW:null,grab:null,grabT:0,heldT:0,heldK:1,holding:0,hold:null,held:0,grabKey:false,grabCD:0,bleed:0,woundL:null,paraT:0,stungT:0,sickT:0,hunger:0,starveT:0,armsLost:0,regrow:null,cause:'',speedK:1,turnK:1,live:null,lost:null,cWith:null,onPad:null,def:{size:1.6},hitRk:0,hitFl:0,landV:0,wasGrounded:false}; // hitRk/hitFl: this frame's push was against rock / a plant; landV: the speed of the last landing on the floor (audio.js consumes both) // def.size: creatures read it when the player is their target
 // Out of the world (v11.72.1, the person, 21 Sep 2026: "the game should teleport the player out of existence temporarily or make them invis/invuln while
 // they edit"): while the editor at conception is open (line.js conceiveOpen) the body is hidden and nothing in the world can see, smell, chase, hold,
 // sting or flee it — every read of the player as a thing to react to in creatures_ai.js and combat.js asks playerGone(), which death answers too.
 function playerGone(){return player.dead||!!player.away;}
+// The stomach (v11.73, LINEAGE §6's fuel half; DIRECTION decision 3). One rule for every animal (the person, 21 Sep 2026): player.hunger is the
+// clock every hunter runs — 0 fed, 1 starving, over its kind's cycle (ecology.js ecoOf on the line kind: the finback's 0.78 game days), fed by a
+// gulp or a kill by the prey's food over the kind's meal (creatures_ai.js kill), by a mouthful at a carcass at the world's rate (eatAt: a
+// hunter's min(mass/75, meal/20) a second — a click is EAT.bite seconds of it), and dead STARVE_T cycles after it reaches 1 (hungerTick).
+// A clutch is paid from it (line.js clutchHunger). Shown on the readout only: the text rule has no bar, and how the body itself might show it is
+// the person's to decide (CHANGELOG v11.73, Unseen).
+const EAT={bite:1}; // s of the world's feeding rate one bite (click) at a carcass is worth — the player's jaw is deliberate: 20 bites fill a stomach from starving
+let hlSpec=null,hlCost=0;
+function hungerLine(){const P=player,C=P.clade;if(!C||mode!=='play')return '';const K=eaterK(P);if(hlSpec!==C.spec){hlSpec=C.spec;hlCost=clutchHunger(C.spec);}
+  const left=P.hunger>=1?'starving '+(P.starveT/(K.cycle*DAY_S*STARVE_T)).toFixed(2):'starving in '+((1-P.hunger)*K.cycle).toFixed(2)+' d';
+  return 'hunger '+P.hunger.toFixed(2)+(P.hunger>ECO.hungry?' hungry':'')+'  '+left+'  stomach '+(K.meal*1000).toFixed(0)+' kg  cycle '+K.cycle.toFixed(2)+' d  a clutch of '+LINE.n+' as you: '+hlCost.toFixed(2)+' of it';}
 function playerAway(on){const P=player;P.away=!!on;if(P.g)P.g.visible=!on;if(on){P.hold=null;P.vel.set(0,0,0);for(const c of creatures)if(c.target===P)dropTarget(c);}}
 const keys={};let locked=false,drag=null,touchL=null,touchAbility=false;
 const JET_W=0.18; // s of thrust per 0.5 s jet cycle
@@ -98,6 +109,7 @@ function updateSplashes(dt){
 function updatePlayer(dt){
   const P=player,C=P.clade;
   P.cd=Math.max(0,P.cd-dt);P.biteCD=Math.max(0,P.biteCD-dt);P.inkT=Math.max(0,P.inkT-dt);P.hurtT=Math.max(0,P.hurtT-dt);
+  if(!P.dead&&!P.away&&C&&hungerTick(P,dt))return; // the stomach (v11.73): the ledger's clock on the player's line kind, and starvation is a death like any other
   const cp=Math.cos(P.pitch),sp=Math.sin(P.pitch),cy=Math.cos(P.yaw),sy=Math.sin(P.yaw);
   const fwd=T3.set(-sy*cp,sp,-cy*cp),right=T4.set(cy,0,-sy);
   let mx=0,mz=0,my=0,sprint=false;

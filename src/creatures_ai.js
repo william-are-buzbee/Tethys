@@ -181,7 +181,7 @@ function findPrey(c,R){
 // killed it, by the scavengers it draws and by the water, ECO.carc days untouched. `by` is what killed it: it feeds
 function kill(c,by,whole){if(!c.alive)return;c.alive=false;c.target=null;c.grab=null;c.threat=null;c.scav=null;c.bleed=0;c.paraT=0;releaseAll(c);ecoDebit(c);POP.kills++;
   const mass=bioMass(c.def);
-  if(by&&by!==player){const K=ecoOf(by.kind),food=ecoOf(c.kind).food;if(c.poison>POISON.min&&!by.def.immune)sicken(by);else{by.hunger=Math.max(0,by.hunger-food/K.meal);by.starveT=0;}if(mass<=K.meal*0.35)whole=true;} // a body fed at the seeps is no meal: the eater is sick (combat.js POISON, v11.56)
+  if(by){const K=eaterK(by),food=ecoOf(c.kind).food;if(c.poison>POISON.min&&!by.def.immune)sicken(by);else{by.hunger=Math.max(0,by.hunger-food/K.meal);by.starveT=0;}if(mass<=K.meal*0.35)whole=true;} // a body fed at the seeps is no meal: the eater is sick (combat.js POISON, v11.56). v11.73: the player's stomach is fed by the same line — its kind's meal, the prey's food
   if(whole||c.def.role==='boid'&&c.def.size<0.5){removeCreature(c);return;}
   c.dead=true;c.flesh=mass;c.deadT=0;c.vel.multiplyScalar(0.3);carcasses.push(c);
   _q.setFromAxisAngle(V3(0,0,1),c.t0>50?HPI:-HPI);c.lieQ=c.g.quaternion.clone().multiply(_q); // rolled onto its side
@@ -199,7 +199,9 @@ function updateCarcass(c,dt,dp){
 }
 // eating at a carcass: a mouthful a second scaled to the eater; the eater's hunger falls with it
 function eatAt(o,c,dt){if(c.poison>POISON.min&&!o.def.immune){if(!(o.sickT>0))sicken(o);return;} // a poisoned carcass sickens its scavenger (v11.56)
-  const om=bioMass(o.def),K=ecoOf(o.kind),bite=(K.hunter?Math.min(om/75,K.meal/20):om/40)*dt;c.flesh-=bite;if(o.hunger>0){o.hunger=Math.max(0,o.hunger-bite/ecoOf(o.kind).meal);o.starveT=0;}}
+  const om=bioMass(o.def),K=eaterK(o),bite=(K.hunter?Math.min(om/75,K.meal/20):om/40)*dt;c.flesh-=bite;if(o.hunger>0){o.hunger=Math.max(0,o.hunger-bite/K.meal);o.starveT=0;}} // o may be the player (v11.73: a mouthful is EAT.bite seconds of this)
+// the eater's numbers in the ledger's terms (v11.73): a creature's kind, or the player's line kind — the player's stomach is the model every creature runs (the person, 21 Sep 2026: one rule, not a special case)
+function eaterK(o){return ecoOf(o===player?lineKind(o.clade.spec):o.kind);}
 // the nearest carcass within R of o, still worth eating
 function findCarcass(o,R){let best=null,bd=R;for(const c of carcasses){if(c.gone||c.flesh<=0)continue;const d=o.pos.distanceTo(c.pos);if(d<bd){bd=d;best=c;}}
   for(const g of eggs){if(g.gone||g.flesh<=0||g.kind===o.kind)continue;const d=o.pos.distanceTo(g.pos);if(d<bd*0.5){bd=d;best=g;}}return best;} // a clutch too (not its own kind's), from half the distance
@@ -254,7 +256,8 @@ const ECO_CHASE=9; // seconds a hunter keeps after prey that is not the player
 // whatever school the player is swimming in, and the chase that follows is inside the leash that drops one (1.9 of home, below): a cast
 // that ended outside it was dropped in the same frame it began.
 const HUNT_SEEK=4,HUNT_HOME=1.5,HUNT_CAST=0.8;
-function hungerTick(c,dt){const K=ecoOf(c.kind);c.hunger=Math.min(1,c.hunger+dt/(K.cycle*DAY_S));if(c.hunger>=1){c.starveT+=dt;if(c.starveT>K.cycle*DAY_S*1.2){POP.starved+=1;kill(c,null);return true;}}return false;}
+function hungerTick(c,dt){const K=eaterK(c);c.hunger=Math.min(1,c.hunger+dt/(K.cycle*DAY_S));if(c.hunger>=1){c.starveT+=dt;if(c.starveT>K.cycle*DAY_S*STARVE_T){if(c===player)die('starved');else{POP.starved+=1;kill(c,null);}return true;}}return false;} // the player too (v11.73): the same clock, the same end
+const STARVE_T=1.2; // cycles past hunger 1 before the body dies of it (the 1.2 of v11.26, named)
 function updateHunter(c,dt){
   const d=c.def;
   if(hungerTick(c,dt))return; // the stun is every role's now, before the roles (updateCreatures, v11.66)

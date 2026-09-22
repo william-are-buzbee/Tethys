@@ -10,7 +10,7 @@
 // children, not siblings or grandchildren); the earlier lives' broods still load and live as the world's animals. Nothing here is in the ledger.
 // Decided for this pass (the person, 21 Sep 2026): the player breeds alone, no mate; at death you continue as the nearest living child; an
 // unhatched clutch counts as a living child, and the world runs on to its hatch.
-const LINE={trackS:5,near:3,cool:0.2,coolM:1.69,n:4}; // trackS: s of play between the track's samples; near: m over the floor a clutch may be laid from; cool: game days between clutches for a child of coolM tonnes (derive's mass; the finback preset's) and in proportion to the child's mass otherwise (layClutch, floored at a quarter) — v11.72: the fuel half of LINEAGE §6 (the body paid for by eating) needs the player's hunger, which is not built, so until it is the bill of materials is time: a child of twice the mass is twice the wait; n: eggs a clutch (the slowblood's: several clutches, little in each, §3)
+const LINE={trackS:5,near:3,egg:0.01,n:4}; // trackS: s of play between the track's samples; near: m over the floor a clutch may be laid from; egg: an egg's material as a share of the child's adult derived mass — a clutch costs egg × n × derive(child).mass tonnes of what the body has eaten, charged to the stomach over its meal (clutchHunger, v11.73: LINEAGE §6's fuel half; the finback's 4 eggs at 1.77 t are 71 kg, 0.49 of its 146 kg stomach — a child of twice the mass costs twice, and needs a fuller stomach to afford). Until v11.73 the stand-in was a cooldown by the child's mass (LINE.cool 0.2 days at coolM 1.69 t, gone); n: eggs a clutch (the slowblood's: several clutches, little in each, §3)
 const BROOD_SURVIVE=0.8; // the share of a brood alive after a game day while its cell is unloaded (eggs and young alike) — the stand-in for §8's sparse entries: 4 eggs are 3.2 after a day and under one living child after about six
 const LINE_PREY=['arrow','needle','scuttle']; // what the young of the player's line hunt: the player's own food (DESIGN The player)
 function lineCur(){const L=curSave&&curSave.line;return L&&L.length?L[L.length-1]:null;}
@@ -44,7 +44,8 @@ function playerLay(){
   const h=groundAt(P.pos.x,P.pos.z),ch=chunkAt(P.pos.x,P.pos.z);let why='';
   if(C.spec.clade!=='slowbloods')why='not this body'; // the slowblood's mode alone (LINEAGE §13.2); the ringmouth's one spawning and the hingeshell's den are §13.6
   else if(C.juv)why='not yet grown';
-  else if(t-L.lay<(L.coolS||LINE.cool*DAY_S))why='not yet';
+  else if(P.hunger>ECO.hungry)why='hungry'; // v11.73: the ledger's own line (ECO.hungry, where a hunter goes hunting) — a hungry animal does not lay
+  else if(P.hunger+clutchHunger(C.spec)>=1)why='not fed enough'; // v11.73: a copy of yourself must be affordable before the window opens, so declining always can lay (what a heavier child costs is conceiveClose's)
   else if(P.sub<0.9||h>-4||P.pos.y-h>LINE.near+1.1||!ch)why='on the floor, under water';
   const at=V3(P.pos.x,h,P.pos.z);if(!why&&solidPush(at,0.6,null,ch))why='not here';
   if(why){hintEl.textContent=why;hintEl.style.opacity=1;setTimeout(()=>{if(hintEl.textContent===why)hintEl.style.opacity=0;},1500);return false;}
@@ -59,7 +60,7 @@ function playerLay(){
 // (player.js playerAway, v11.72.1): hidden, and nothing can see, chase, hold or hurt it — the world runs on, and the editor is not a place to be eaten.
 // The budget is the diff between the child and the parent, priced off the v11.70 registry (paramOf: a parameter's believable band is what a move is
 // measured against). First numbers, to be moved by play (§6: "playtested a lot"). There is no hard cap on the distance from the parent — the budget
-// is the cap (§11.5: a default, not the person's answer yet). The fuel half of §6 is LINE.cool's.
+// is the cap (§11.5: a default, not the person's answer yet). The fuel half of §6 is the stomach's (v11.73): clutchHunger, below the budget.
 const BUDGET={
   base:3, // points the founder's child may spend
   gen:1.5, // more for every generation of the line behind the parent (§6: the budget grows with the generation) — the tenth life's child has 16.5
@@ -76,6 +77,11 @@ const BUDGET={
   coat:0.3 // every colour of the coat moved across the whole of its range (pigment is cheap; §6's pigment gate is the eating, not built)
 };
 function conceiveBudget(gen){return BUDGET.base+BUDGET.gen*(gen-1);} // gen: the parent's place in the line (the founder 1)
+// the fuel (v11.73, LINEAGE §6): a clutch is paid from what the body has eaten — the child's adult derived mass × the eggs × LINE.egg, in tonnes, taken
+// off the parent's stomach as a share of its meal (ecology.js ecoOf on the line kind: the player's hunger runs on it, player.js). Refused when it would
+// leave the stomach starving (hunger 1): a big child wants a full parent. The materials — the mineral, the pigment — are §6's other half, proposed there, not built.
+function clutchCost(child){return LINE.egg*LINE.n*derive(child).mass;} // tonnes of food
+function clutchHunger(child){const P=player;return P.clade?clutchCost(child)/eaterK(P).meal:0;} // as hunger (of the parent's stomach)
 function priceMove(a,b,q){ // one parameter from a to b, against its registry line
   if(a===undefined||b===undefined||a===b)return 0;if(!q||q.k==='b'||q.k==='s')return JSON.stringify(a)===JSON.stringify(b)?0:BUDGET.toggle;
   if(q.k==='l'||typeof a!=='number'||typeof b!=='number')return JSON.stringify(a)===JSON.stringify(b)?0:BUDGET.list;
@@ -101,20 +107,22 @@ function conceiveOpen(L,at,ch){ // x, with the floor under you: the lab as the c
   const gen=curSave.line.length;lab.conceive={parent:JSON.parse(specToJSON(L.spec)),gen:gen,budget:conceiveBudget(gen),at:at.clone(),price:{total:0,items:[]}};
   labEnter(lab.conceive.parent,true);if(mode!=='lab'){lab.conceive=null;return false;}lab.player=true;playerAway(true); // v11.72.1: out of the world while the window is open; labLeave brings the body back
   hintEl.textContent='the child: change it, or not — l lays the clutch';hintEl.style.opacity=1;return true;}
-function conceiveHTML(){const cv=lab.conceive,pr=cv.price=conceivePrice(cv.parent,lab.v||cv.parent),over=pr.total>cv.budget+1e-9;
-  let h='<div id="lab-cv" class="cv'+(over?' over':'')+'"><div class="hd">conception<span class="v">generation '+(cv.gen+1)+'</span></div><div class="row"><span>the bill</span><span class="v">'+pr.total.toFixed(2)+' of '+cv.budget.toFixed(1)+'</span></div>';
+function conceiveHTML(){const cv=lab.conceive,pr=cv.price=conceivePrice(cv.parent,lab.v||cv.parent),over=pr.total>cv.budget+1e-9,fuel=clutchHunger(lab.v||cv.parent),lean=player.hunger+fuel>=1;
+  let h='<div id="lab-cv" class="cv'+(over||lean?' over':'')+'"><div class="hd">conception<span class="v">generation '+(cv.gen+1)+'</span></div><div class="row"><span>the bill</span><span class="v">'+pr.total.toFixed(2)+' of '+cv.budget.toFixed(1)+'</span></div>';
   for(const it of pr.items.slice(0,6))h+='<div class="row it"><span>'+it.what+'</span><b>'+it.cost.toFixed(2)+'</b></div>';if(pr.items.length>6)h+='<div class="note">and '+(pr.items.length-6)+' more</div>';
-  h+='<div class="note">'+(over?'over the budget by '+(pr.total-cv.budget).toFixed(2)+': take something back, or decline':pr.total>0?'within the budget':'unchanged: the clutch will be a copy')+'</div>';
-  return h+'<div class="row"><button data-act="cv-lay"'+(over?' disabled':'')+'>lay the clutch</button><button data-act="cv-decline">decline: a copy</button></div></div>';}
+  h+='<div class="row"><span>the eggs</span><span class="v">'+fuel.toFixed(2)+' of '+(1-player.hunger).toFixed(2)+' eaten</span></div>'; // v11.73: the fuel — LINE.n eggs of the child's mass, against what the stomach holds
+  h+='<div class="note">'+(over?'over the budget by '+(pr.total-cv.budget).toFixed(2)+': take something back, or decline':lean?'not fed enough for this child: a smaller one, or eat first':pr.total>0?'within the budget':'unchanged: the clutch will be a copy')+'</div>';
+  return h+'<div class="row"><button data-act="cv-lay"'+(over||lean?' disabled':'')+'>lay the clutch</button><button data-act="cv-decline">decline: a copy</button></div></div>';}
 function conceiveClose(decline){ // the window closed: the clutch laid as the child, as a copy (declined, or unchanged), or refused over the budget (the lab stays)
   const cv=lab.conceive;if(!cv||mode!=='lab')return false;const pr=decline?{total:0,items:[]}:conceivePrice(cv.parent,lab.v||cv.parent);
   if(pr.total>cv.budget+1e-9){const m='over the budget ('+pr.total.toFixed(2)+' of '+cv.budget.toFixed(1)+')'+(pr.items[0]?': '+pr.items[0].what+' costs '+pr.items[0].cost.toFixed(2):'')+'; take something back, or decline';hintEl.textContent=m;hintEl.style.opacity=1;labRender();labMsg(m);return false;}
   const child=pr.total>0?JSON.parse(specToJSON(lab.v)):cv.parent;if(pr.total>0&&(!child.id||child.id===cv.parent.id))child.id=(cv.parent.id||'line').replace(/-\d+$/,'')+'-'+(cv.gen+1);
+  const fuel=clutchHunger(child);if(player.hunger+fuel>=1){const m='not fed enough for this child ('+fuel.toFixed(2)+' of the stomach, '+(1-player.hunger).toFixed(2)+' in it): a smaller one, or decline';hintEl.textContent=m;hintEl.style.opacity=1;labRender();labMsg(m);return false;} // v11.73: the fuel half of the bill (LINEAGE §6) — the stomach must hold the eggs; a copy always can (playerLay checked)
   lab.conceive=null;labLeave();return layClutch(child,pr,cv);}
 function layClutch(child,pr,cv){ // the clutch on the floor where the window opened, carrying the child's spec
   const L=lineCur(),P=player,ch=chunkAt(cv.at.x,cv.at.z);if(!L||!ch)return false;
   const b={cell:ch.i*NCELL+ch.j,pos:[r3(cv.at.x),r3(cv.at.y),r3(cv.at.z)],n:LINE.n,born:r3(t),hatch:r3(t+hatchS(child)),spec:child,gen:cv.gen+1,price:pr.total,hatched:false,at:r3(t),_ch:ch,_egg:null};
-  L.broods.push(b);L.lay=r3(t);L.coolS=r3(LINE.cool*DAY_S*Math.max(0.25,derive(child).mass/LINE.coolM));broodEgg(ch,b);P.pulse=1;thump(0.3,90,40,null,0.6,0.05);
+  L.broods.push(b);L.lay=r3(t);b.fuel=r3(clutchCost(child));P.hunger=Math.min(1,P.hunger+clutchHunger(child));broodEgg(ch,b);P.pulse=1;thump(0.3,90,40,null,0.6,0.05); // v11.73: the eggs' material off the stomach (the record keeps it in tonnes)
   if(pr.total>0)sparkStart(cv.at);saveNow();return true;} // the sparkle: only a changed child is the magic (§7); a copy is what any animal lays
 // ---------- the broods in the world ----------
 function broodEgg(ch,b){ // the clutch on the floor: the world's own egg (creatures_ai.js layEggs), outside the ledger (ent −1), its brood on it
@@ -159,7 +167,7 @@ function lineContinue(x,cause){ // you are the child now, where and as it is (LI
   L.died=r3(t);L.cause=cause||'';
   curSave.line.push(lifeNew(spec,L.preset,curSave.line.length-1,b.hatch,grown));
   const C=lifeClade(lineCur(),t<grown?ECO.juv:1);
-  playerBody(C,pos,yaw,0);cellsAround();snapMed=true;
+  playerBody(C,pos,yaw,0);if(x.c){player.hunger=x.c.hunger;player.starveT=x.c.starveT;}cellsAround();snapMed=true; // the child's stomach as it was (v11.73); a hatchling's is full
   setTimeout(()=>{fadeEl.style.opacity=0;},300);sparkStart();saveNow();
 }
 // ---------- the sparkle (LINEAGE §7): the one mark of the magic, and here only at the handover ----------

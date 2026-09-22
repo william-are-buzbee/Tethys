@@ -1,5 +1,18 @@
 # HANDOFF — tethys
 
+**v11.73 (21 Sep 2026): the player's hunger (LINEAGE §6's fuel half).** One rule for every animal (the person, 21 Sep): `player.hunger` is the
+ledger's own model on the player's line kind (creatures_ai.js `eaterK` — the finback's cycle 0.78 game days, meal 146 kg) through the same
+`hungerTick`, `kill` and `eatAt`: a gulp or a kill feeds by the prey's food over the meal (one arrow fills a finback), a bite at a carcass is one
+second of the world's feeding rate (`EAT.bite`: twenty bites from starving), a poisoned body sickens, and `STARVE_T` 1.2 cycles past hunger 1 is
+`die('starved')` — the handover or the save over, like any death. A clutch is paid from the stomach: `LINE.egg` 0.01 × 4 eggs × the child's derived
+mass (71 kg, 0.49 of the finback's stomach; twice the mass costs twice); `x` refuses `hungry` past `ECO.hungry` and `not fed enough` for a copy, the
+bill's `eggs` row greys `lay` for a child the stomach cannot hold. The cooldown (`LINE.cool`, `coolM`, `coolS`) is gone. The readout has a `hunger`
+line; no bar. **The tail term**: the lobes weigh and drag (`DERIVE_K.lobeF`, `lobeI`; `lobeT` refit so the tailed roster's mean held; every kind
+within ±7%, CHANGELOG has the table); v11.72's long lobe buys +3% now, but a *tall* lobe buys +48% for 0.6 points — the stem's muscle is not a term
+yet. LINEAGE §6b proposes the materials (lime, iron, pigment as stores on the life, fed by what was eaten where), not built. **Ask first** how the
+body should show hunger (the four candidates in CHANGELOG v11.73, Unseen 1), then whether 31 real minutes to hungry and 68 to dead play, then the
+tail's muscle cap, then which material to build first.
+
 **v11.72.1 (21 Sep 2026): out of the world while you edit.** The person on v11.72: "a lot of fun"; the sparkle on the clutch is in, the budget
 as the only cap works for now (§11.5), 3 points is OK for now (LINEAGE §12.21–24). Built their fourth answer: while the editor at conception is
 open the parent is hidden and nothing can see, chase, hold or hurt it (player.js `playerAway`, `playerGone()` wherever the AI or combat asks
@@ -10,9 +23,8 @@ spec, the clade locked. Close unchanged (or `decline`) and the clutch is a copy,
 clutch carries the child — the sparkle plays on it — and at your death you are that child, on its own derived numbers (v11.71); over the budget
 the lab will not commit and says what costs what. line.js `BUDGET` prices the diff off the v11.70 registry (a number by how far it moves across
 its believable band, parts added, dropped and restyled by their registry cost, a core 6, size 4 a doubling) against 3 + 1.5 a generation. The
-fuel half of §6 waits on the player's hunger: until then a clutch's cooldown goes with the child's derived mass (`LINE.cool`, `LINE.coolM`).
-No hard cap on the distance from the parent — the budget is the cap (answered for now, §12.22). Found: 0.45 points of tail
-buys +31% speed, because `derive`'s tail lobes weigh and drag nothing — the next term. (Its four asks were answered the same day: v11.72.1 above.) Not built: disposition and followers (§8.2's derived `DEFS`), the other two clades' modes.
+No hard cap on the distance from the parent — the budget is the cap (answered for now, §12.22). (Its four asks were answered the same day: v11.72.1 above;
+the fuel and the tail term are v11.73.) Not built: disposition and followers (§8.2's derived `DEFS`), the other two clades' modes.
 
 **v11.71 (21 Sep 2026): one calculator for every animal.** The person: a child's speed is derived from its body like any animal's — "a universal
 logic of how fast an animal moves based on its size and mass and such" (LINEAGE §12.20; it replaces CREATOR's decision 2 for anything in the
@@ -42,10 +54,10 @@ with a smoothing term, then direct manipulation and the studio (the lab's camera
 
 **v11.69 (21 Sep 2026): the first loop, the finback only (LINEAGE §13.1–2).** `src/line.js`: the slot carries the line — lives with their
 tracks (a sample every 5 s, run-length coded, from now on) and their broods. `x` lays a clutch on the floor (a slowblood, grown; the cost is a
-0.2-day cooldown until the player has hunger). A brood is a record that survives an unload (`BROOD_SURVIVE` 0.8 a day, the stand-in for §8); its young
+clutch is paid from the stomach since v11.73). A brood is a record that survives an unload (`BROOD_SURVIVE` 0.8 a day, the stand-in for §8); its young
 are `ent` −1 creatures of a kind per spec, hunted by what hunts you. At death you continue as the nearest living child, where and as it is; an
 unhatched clutch runs the world on to its hatch; none, and the save is over (the slot kept, never continued). The sparkle at the handover only.
-**Ask first** whether the handover reads as the magic (the star is small on purpose), then the cooldown and the clutch size, then the run-on
+**Ask first** whether the handover reads as the magic (the star is small on purpose), then the clutch size, then the run-on
 to another hour with nothing said.
 
 **v11.68 (21 Sep 2026): the player as a spec.** `player.clade` is `playerClade(spec, preset)`: speed, accel, turn, mass and bite from `statsOf`, the

@@ -126,7 +126,8 @@ channel) → the archipelago (the chain, the saddles, the sill and its gaps) →
 2. **A physiology model: temperature, pressure, "all that".** Yes. `temp(x,z,y)` (PLANET Hooks) and pressure with depth, read by the
    creatures (the slowbloods scale speed, turn and detect by temperature; gigantotherms and mixotherms with a floor) and by the player
    (the loop's cold and depth doors).
-3. **Player hunger.** Yes, to build; the first piece of the loop.
+3. **Player hunger.** Yes, to build; the first piece of the loop. **Built v11.73 (21 Sep 2026)** as the ledger's own model on the player's line
+   kind — one rule for every animal — with the clutch paid from it (LINEAGE §6).
 4. **Eggs, mating and reproduction are real mechanics**: a mate of your kind, a clutch at the den, the hatchlings. The egg system
    (v11.26) is the start. ~~within one life (not generations)~~ — **20 Sep 2026: across generations too; the clutch is how the line
    continues and how you change bodies (`LINEAGE.md` §4).**

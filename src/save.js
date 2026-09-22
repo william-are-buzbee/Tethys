@@ -73,7 +73,7 @@ function popLoad(p){ // the ledger from a record; a save from another roster (SP
 }
 function saveRecord(){ // the game as it stands, as a record for the store
   const P=player,s=curSave;
-  return {id:s.id,kind:'save',v:SAVE_V,name:s.name,made:s.made,played:Date.now(),playT:Math.round(playT),clade:P.clade.id,spec:JSON.parse(specToJSON(P.clade.spec)),pos:[r3(P.pos.x),r3(P.pos.y),r3(P.pos.z)],yaw:r3(P.yaw),pitch:r3(P.pitch),deaths:s.deaths||[],arms:P.armsLost||0,regrow:(P.regrow||[]).map(r3),bleed:r3(P.bleed||0),lost:(P.lost||[]).slice(),t:r3(t),line:lineOut(),over:!!s.over,pop:popRows()}; // arms, regrow, bleed (v11.56): the animal's injuries — a dropped arm is still dropped when you come back, and regrows by the world's clock // deaths (v11.55): the slot's animals that died, {cause, day, playT}
+  return {id:s.id,kind:'save',v:SAVE_V,name:s.name,made:s.made,played:Date.now(),playT:Math.round(playT),clade:P.clade.id,spec:JSON.parse(specToJSON(P.clade.spec)),pos:[r3(P.pos.x),r3(P.pos.y),r3(P.pos.z)],yaw:r3(P.yaw),pitch:r3(P.pitch),deaths:s.deaths||[],arms:P.armsLost||0,regrow:(P.regrow||[]).map(r3),bleed:r3(P.bleed||0),lost:(P.lost||[]).slice(),hunger:r3(P.hunger||0),starveT:r3(P.starveT||0),t:r3(t),line:lineOut(),over:!!s.over,pop:popRows()}; // hunger, starveT (v11.73): the stomach as it was // arms, regrow, bleed (v11.56): the animal's injuries — a dropped arm is still dropped when you come back, and regrows by the world's clock // deaths (v11.55): the slot's animals that died, {cause, day, playT}
 }
 function lineOut(){const L=curSave.line;if(!L)return [];for(const M of L)for(const b of M.broods)if(b._ch)b.n=b.hatched?broodLive(b):b._egg?b._egg.n:0;return JSON.parse(JSON.stringify(L,(k,v)=>k[0]==='_'?undefined:v));} // the line as data (line.js): the loaded broods counted first, the runtime links dropped
 function saveNow(){if(!curSave||mode!=='play'||player.dead||!player.clade)return false;camNote();const rec=saveRecord();curSave.played=rec.played;curSave.playT=rec.playT;storePut(rec);if(profileDirty)profileSave();saveT=SAVE_EVERY;return true;}
@@ -104,7 +104,7 @@ function worldClear(){ // every cell out (the living written into the ledger), a
 function cellsAround(){const ci=cellOf(player.pos.x),cj=cellOf(player.pos.z);for(let dj=-1;dj<=1;dj++)for(let di=-1;di<=1;di++){const i=ci+di,j=cj+dj;if(i>=0&&j>=0&&i<NCELL&&j<NCELL)loadChunkNow(i,j);}shadowDirty();} // the 3×3 round the player before the first frame (boot, a game starting, the menu); the rest streams
 function playerBody(C,pos,yaw,pitch){ // the player's body built and placed as the clade; the old one disposed
   const P=player;playerDrop();const b=C.build();castOn(b.g);scene.add(b.g);
-  P.clade=C;P.b=b;P.g=b.g;P.anim=b.anim;P.mass=C.mass;P.def.size=C.size;P.paraT=0;P.stungT=0;P.sickT=0;P.armsLost=0;P.regrow=null;P.cause='';P.live=null;P.lost=null;P.speedK=1;P.turnK=1;
+  P.clade=C;P.b=b;P.g=b.g;P.anim=b.anim;P.mass=C.mass;P.def.size=C.size;P.paraT=0;P.stungT=0;P.sickT=0;P.hunger=0;P.starveT=0;P.armsLost=0;P.regrow=null;P.cause='';P.live=null;P.lost=null;P.speedK=1;P.turnK=1;
   P.pos.copy(pos);b.g.position.copy(pos);P.vel.set(0,0,0);P.yaw=+yaw||0;P.pitch=clamp(+pitch||0,-1.35,1.35);P.dead=false;P.cd=0;P.inkT=0;P.bleed=0;P.hold=null;P.held=0;P.grab=null;P.holding=0;P.withdrawn=false;P.fp=false;P.camAbove=false;P.camFlipT=0;P.wet=true;P.sub=1;P.hurtT=0;P.lastHurt=-100;P.jetT=0;P.pulse=0;P.biteCD=0;P.flopT=0;
   camera.position.copy(pos).add(V3(0,2,8));snapMed=true;seeSpec(C.spec.id);
 }
@@ -121,11 +121,11 @@ function startFrom(rec){ // continue a slot (menu.js): the clock and the ledger 
   curSave={id:rec.id,name:rec.name,made:rec.made,played:rec.played,playT:+rec.playT||0,deaths:Array.isArray(rec.deaths)?rec.deaths.slice():[]};playT=curSave.playT;
   lineLoadRec(rec,C);const L=lineCur();if(L&&t<L.grown)C=lifeClade(L,ECO.juv); // the line (line.js); a hatchling still small
   const p=Array.isArray(rec.pos)?V3(+rec.pos[0]||0,+rec.pos[1]||0,+rec.pos[2]||0):V3(0,dispY,0);if(Math.abs(p.x)>HALF+1500||Math.abs(p.z)>HALF+1500)p.set(0,dispY,0);
-  choose(C,p,rec.yaw,rec.pitch);injuriesLoad(rec);return true;
+  choose(C,p,rec.yaw,rec.pitch);injuriesLoad(rec);player.hunger=clamp(+rec.hunger||0,0,1);player.starveT=Math.max(0,+rec.starveT||0);return true; // the stomach (v11.73); a record from before it comes back fed
 }
 // the body swapped in place (v11.69: a hatchling grown, line.js lineTick): where it is, moving as it was, its wounds kept, the camera left where it is
-function playerRebody(C){const P=player,pos=P.pos.clone(),vel=P.vel.clone(),cam=camera.position.clone(),fp=P.fp,inj={arms:P.armsLost,regrow:P.regrow?P.regrow.slice():[],bleed:P.bleed,lost:P.lost?P.lost.slice():[]};
-  playerBody(C,pos,P.yaw,P.pitch);P.vel.copy(vel);camera.position.copy(cam);injuriesLoad(inj);if(fp){P.fp=true;ghostBody(P.g,true);}}
+function playerRebody(C){const P=player,pos=P.pos.clone(),vel=P.vel.clone(),cam=camera.position.clone(),fp=P.fp,inj={arms:P.armsLost,regrow:P.regrow?P.regrow.slice():[],bleed:P.bleed,lost:P.lost?P.lost.slice():[]},hun=P.hunger,stv=P.starveT;
+  playerBody(C,pos,P.yaw,P.pitch);P.vel.copy(vel);camera.position.copy(cam);injuriesLoad(inj);P.hunger=hun;P.starveT=stv;if(fp){P.fp=true;ghostBody(P.g,true);}} // the stomach stays what it was (v11.73)
 // the player's body from a record (v11.68): its spec when it has one that compiles, else (a version 1 record, or a spec that no longer compiles) the preset its clade id names
 function specOk(sp){if(!sp||typeof sp!=='object'||!sp.core||!sp.clade||!Array.isArray(sp.parts))return null;try{const b=compile(sp);b.g.traverse(o=>{if(o.geometry)o.geometry.dispose();});statsOf(sp);return sp;}catch(e){console.warn('save: the player spec does not compile ('+e.message+'); the preset instead');return null;}}
 function cladeOfRec(rec){const pre=CLADE_PRESETS.find(p=>p.id===rec.clade),sp=specOk(rec.spec);if(sp)return playerClade(sp,pre);return CLADES.find(c=>c.id===rec.clade)||CLADES[1];}

@@ -326,8 +326,8 @@ function playerTarget(dead){const P=player;T3.set(0,0,1).applyQuaternion(P.g.qua
 function playerBite(){
   const P=player;if(mode!=='play'||P.dead||P.withdrawn||P.biteCD>0)return;P.biteCD=0.5;thump(0.35,120,50,null,1.6,0.03);P.pulse=Math.max(P.pulse,0.6);P.snapT=0.1;
   const best=P.hold?P.hold.b:playerTarget(true);if(!best)return;const d=best.def;P.nudgeT=0.15;(P.nudgeD||(P.nudgeD=V3())).copy(best.pos).sub(P.pos).normalize(); // the camera nudged toward the bite (v11.53)T3.set(0,0,1).applyQuaternion(P.g.quaternion);
-  if(best.dead){const m=Math.min(best.flesh,P.clade.size*0.5);best.flesh-=m;bloodBurst(best.pos,5,cladeOf(best),0.5);if(best.poison>POISON.min)sicken(P);return;} // a carcass: a mouthful (it feeds nothing yet — growth is what eating will buy, DIRECTION)
-  if(gulps(best)){bloodBurst(best.pos,4,cladeOf(best));if(best.poison>POISON.min)sicken(P);kill(best,player,true);return;} // eaten whole (v11.26: no respawn; the ledger is debited; v11.55: by the finback's gape, the beaks by mass)
+  if(best.dead){eatAt(P,best,EAT.bite);bloodBurst(best.pos,5,cladeOf(best),0.5);return;} // a carcass: a mouthful at the world's rate (v11.73: creatures_ai.js eatAt feeds the stomach, or sickens you on a poisoned body)
+  if(gulps(best)){bloodBurst(best.pos,4,cladeOf(best));kill(best,player,true);return;} // eaten whole (v11.26: no respawn; the ledger is debited; v11.55: by the finback's gape, the beaks by mass; v11.73: kill feeds the stomach, or sickens you)
   if(P.b.rigs&&!P.hold){P.grab=best;P.grabT=0.6;} // the arms close on what you bite
   const held=P.hold&&P.hold.b===best,at=held&&P.hold.near?P.hold.at:T1.copy(best.pos).sub(P.pos).multiplyScalar(0.5).add(P.pos);
   if(held){const h=P.hold;if(h.pinned&&(h.thru==='yes'||h.thru==='nape'||h.thru==='thrash')){actOn(h,h.thru==='thrash'?'thrash':actOf(h.edge));return;} // the player's placed act: pinned, and the edge through where it holds (v11.55)
