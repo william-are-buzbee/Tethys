@@ -5338,3 +5338,38 @@ The person answered the whole stack of movement asks. Four of them are code, and
 **Unseen, ask in this order**: whether the lift reads as "a little over it" or as too high a camera (`CAM_LIFT`), then whether the animal wants to sit
 higher in the frame (`CAM_AIM`, lower = the camera looks down more and the body rides higher), then the reverse speeds — a fish sculling backwards at a
 third of its cruise is the guess, and nothing measured it — then whether an awkward backer should also be slower to turn while it backs.
+
+## v11.80 — nothing about the animal moves the camera, and the arms feel the curve (22 Sep 2026)
+
+The person's two odds and ends after v11.79, both about how it moves rather than what it does.
+
+- **The camera's orientation no longer has the animal in it** (player.js, the look block in `finishPlayer`). The person: "the screen does some
+  awkward jittery sort of v-sync looking screen tearing stuff when you move side to side — it's the turning or rotating of the animal that was added.
+  It also rotates the camera and I think it does something to the pixel representation that comes across like a lack of antialiasing." Measured, it is
+  real and it is not vsync: the camera looked *at the body* from a position that lags it, so any sideways move swung the view after it — holding `a`
+  with the mouse untouched rolled the camera 3° off the heading and rocking a and d rocked the picture, which on a low-poly scene reads as edges
+  crawling. Now the look is the heading's, dipped by a constant `dip` = atan(lift·(1−`CAM_AIM`) / (arm+3)) — the same angle the v11.79 framing implied,
+  9.4° for the finback — and its up is that dipped angle's, so the camera points exactly where the mouse points and nothing else can turn it. Measured
+  after: 0.00° of yaw off the heading through the same sidestep, the pitch a flat −9.37°. The body now drifts within the frame as it sidesteps, which
+  is what a free camera means.
+- **`camera shake` on the effects list** (effects.js `FX.camFx`, on by default). The person: "maybe we can remove the camera shake, or make the camera
+  effects something modular you can mess with, like the free camera setting." One row now covers the three things that move the camera on their own:
+  the shake when you are hurt, the nudge toward a bite (v11.53) and the fov kick. The steering's own camera is `freeLook`, next to it.
+- **The arms feel a sustained curve** (physics.js `SWAY` 0.5). The person: "the creature parts do not sway with them when they curve at an angle while
+  moving." The cause: `simChain` measured drag against the *whole* rest velocity, which carries translation, rotation and the swim stroke alike, so a
+  body in a steady turn dragged nothing — the arms lagged the moment the turn rate changed and settled back to their cruise offset while it went on
+  curving. A body's own travel must still be carried (or a straight swim streams the arms back for ever, and a squid swimming arms-first would not),
+  but the body turning under them is water they have to push. `SWAY` of the rest's motion that is *not* the body's travel is left out of the drag
+  reference, which parks a tip damp/ks × SWAY × that speed — 0.09 s of it — behind its rest for as long as the curve lasts. Measured on the finback's
+  petals through a 69°/s curve with w down: cruise 0.07 m, curve 0.11–0.23 m (0.10–0.14 before); the soft-arm's arms 0.30–0.35 m in the curve against
+  0.05–0.15 cruising, about a fifth of an arm's length swung out.
+- **The body's travel is read off the frame's origin**, not `o.vel` (physics.js `o.rigO`, over 50 m/s ignored as a teleport). Found by the test:
+  `test/physics.js` moves a body by hand without touching its velocity, and with SWAY reading `o.vel` the arms streamed back hard enough to stretch
+  the segments past 3%. A creature's velocity and where its group actually is need not agree — a hold drags one, a spawn teleports one.
+- **Tests**: `node build.js --test` green on both tiers; `test/anim.js`'s tip jerk unchanged through accelerate/cruise/turn/sprint/coast (the coilshell's
+  coast max fell 0.29 → 0.20), `test/physics.js`'s segment lengths hold at 9 m/s, `test/steer.js` unchanged.
+- **Seen** (`test/render/v80_fin_cam.png`, `v80_soft_curve.png`): the framing of v11.79 with the orientation now rigid to the mouse; the soft-arm mid-curve.
+
+**Unseen, ask in this order**: whether the side-to-side jitter is actually gone (this is the one that needs your eyes, not a measurement), then whether
+`SWAY` 0.5 is enough sway or too much — it is the one knob, and the arms' look at a hard turn is the thing to judge — then whether `camera shake` off
+feels better than on, then whether the constant 9° dip should instead ease in with speed.

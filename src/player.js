@@ -110,7 +110,7 @@ function faceToward(P,ty,tp,rate,dt){ // the facing toward a yaw and a pitch at 
   const step=Math.min(d,d*(1-Math.exp(-rate*dt/STEER.ease)),rate*dt),k=step/d;P.byaw=wrapA(P.byaw+dy*k);P.bpitch+=dp*k;P.angV=step/dt;}
 function faceQ(P){P.g.quaternion.setFromEuler(_E.set(-P.bpitch,P.byaw+Math.PI,0,'YXZ'));} // the body's orientation from its facing: forward (−sin byaw·cos bpitch, sin bpitch, −cos byaw·cos bpitch), as the heading's fwd is from yaw and pitch
 function bodyFwd(P,out){const cp=Math.cos(P.bpitch);return out.set(-Math.sin(P.byaw)*cp,Math.sin(P.bpitch),-Math.cos(P.byaw)*cp);}
-function applyCam(){const f=(mode==='play'&&player.fp?CAM_K.fovFP:CAM_K.fov)+(player.fovKickT>0?2*player.fovKickT/0.2:0);if(camera.fov===f)return;camera.fov=f;camera.updateProjectionMatrix();if(mode==='menu')layoutMenu();} // v11.48: the field by mode (CAM_K, scene.js); cheap when nothing changed, so every frame may ask
+function applyCam(){const f=(mode==='play'&&player.fp?CAM_K.fovFP:CAM_K.fov)+(player.fovKickT>0&&FX.camFx?2*player.fovKickT/0.2:0);if(camera.fov===f)return;camera.fov=f;camera.updateProjectionMatrix();if(mode==='menu')layoutMenu();} // v11.48: the field by mode (CAM_K, scene.js); cheap when nothing changed, so every frame may ask
 function toggleFP(){const P=player;P.fp=!P.fp;if(P.g)ghostBody(P.g,P.fp);applyCam();hintEl.textContent=P.fp?'first person':'third person';hintEl.style.opacity=1;setTimeout(()=>{hintEl.style.opacity=0;},1500);} // the camera's clearance from the water on its side (> the near plane), and the least time between its side changing
 
 function hurtPlayer(dmg,from){
@@ -270,7 +270,7 @@ function finishPlayer(dt,near){
   // angles, so the look never degenerates however steep the pitch
   const cyaw=P.yaw,cpit=P.pitch;
   const cp=Math.cos(cpit),sp=Math.sin(cpit),cy=Math.cos(cyaw),sy=Math.sin(cyaw);
-  const fwd=T3.set(-sy*cp,sp,-cy*cp),cup=T4.set(sp*sy,cp,sp*cy); // the camera's direction and its up
+  const fwd=T3.set(-sy*cp,sp,-cy*cp); // the heading's direction: where the camera's arm runs back from, and (dipped) where it looks — its up is composed at the look, below
   P.g.position.copy(P.pos);P.spd=P.vel.length();
   {const ro=P.sub>0.95?1:0;if(P.ro!==ro){P.ro=ro;P.g.traverse(o=>{if(o.isMesh)o.renderOrder=ro;});}} // the body's place in the opaque pass (v11.51, atmosphere.js refrMark): under water it draws after the refraction's copy of the frame, so the surface never samples it and smears its edge into the sky; in the air, or crossing, it is in the copy and seen through the surface refracted like the land
   P.anim(t,P.spd,{jet:P.sprint&&C.jet,withdrawn:P.withdrawn,pulse:P.pulse,strike:P.hold?1:0,soft:(P.soft||P.shut)?1:0}); // strike: the mouth stays open on what is held (the finback's ring blooms); soft (v11.75–76): the valves clamped — shut by Q, or through the moult
@@ -288,10 +288,17 @@ function finishPlayer(dt,near){
   const cw=waveH(T2.x,T2.z);P.camFlipT=Math.max(0,(P.camFlipT||0)-dt);
   if(P.camAbove){if(T2.y<cw-CAM_FLIP&&P.camFlipT<=0){P.camAbove=false;P.camFlipT=CAM_DWELL;}}
   else{if(T2.y>cw+CAM_FLIP&&P.camFlipT<=0){P.camAbove=true;P.camFlipT=CAM_DWELL;}}
-  applyCam();if(P.fp)camera.position.copy(T2);else{solidPush(T2,0.6,null,null,true);camera.position.lerp(T2,1-Math.exp(-8*dt));if(P.nudgeT>0&&P.nudgeD)camera.position.addScaledVector(P.nudgeD,P.nudgeT*2.0);}
-  if(P.hurtT>0){camera.position.x+=rnd(-1,1)*P.hurtT*0.3;camera.position.y+=rnd(-1,1)*P.hurtT*0.3;}
-  // the look rises by CAM_AIM of the lift (v11.79): at 1 the camera looks along the heading and the body hangs low in the frame, at 0 it looks straight at the body and the heading is off the top — 0.45 puts the animal about a sixth of the frame below centre with the heading a little above it
-  if(P.fp)T2.copy(camera.position).add(fwd);else T2.copy(P.pos).addScaledVector(fwd,3).addScaledVector(UP,lift*CAM_AIM);
-  _m.lookAt(camera.position,T2,cup);camera.quaternion.setFromRotationMatrix(_m); // the look with the camera's own up (v11.77): never a lookAt against UP
+  applyCam();if(P.fp)camera.position.copy(T2);else{solidPush(T2,0.6,null,null,true);camera.position.lerp(T2,1-Math.exp(-8*dt));if(P.nudgeT>0&&P.nudgeD&&FX.camFx)camera.position.addScaledVector(P.nudgeD,P.nudgeT*2.0);}
+  if(P.hurtT>0&&FX.camFx){camera.position.x+=rnd(-1,1)*P.hurtT*0.3;camera.position.y+=rnd(-1,1)*P.hurtT*0.3;} // v11.80: the effects list's `camera shake` covers the three camera effects (the shake, the nudge, the fov kick)
+  // The look is the heading's, dipped by a constant (v11.80). Until here it was a lookAt at the *body*, from a camera position that lags it: any
+  // sideways move of the animal swung the camera after it — a alone rolled the view 3° off the heading with the mouse untouched, and rocking a and d
+  // rocked the picture (the person, 22 Sep 2026: "the screen does some awkward jittery … it's the turning or rotating of the animal … it also rotates
+  // the camera"). Now nothing about the animal enters the camera's orientation: it looks exactly where the mouse points, dipped by `dip` — the angle
+  // the lift and CAM_AIM imply over the arm — so the body sits low in the frame by construction and drifts within it as it sidesteps, which is what a
+  // free camera means. Its up is that same dipped angle's, so the look never degenerates and never rolls.
+  const dip=P.fp?0:Math.atan2(lift*(1-CAM_AIM),arm+3),lp=cpit-dip,lcp=Math.cos(lp),lsp=Math.sin(lp);
+  T1.set(-sy*lcp,lsp,-cy*lcp);T4.set(lsp*sy,lcp,lsp*cy);
+  T2.copy(camera.position).add(T1);
+  _m.lookAt(camera.position,T2,T4);camera.quaternion.setFromRotationMatrix(_m); // the look with the camera's own up (v11.77): never a lookAt against UP
   plight.position.copy(P.pos).add(V3(0,1,0));
 }

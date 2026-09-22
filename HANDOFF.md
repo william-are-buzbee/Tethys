@@ -1,5 +1,14 @@
 # HANDOFF — tethys
 
+**v11.80 (22 Sep 2026): nothing about the animal moves the camera, and the arms feel the curve.** The camera's orientation is the heading's, dipped by
+a constant (player.js: `dip` from `CAM_LIFT`/`CAM_AIM`); it was a lookAt at the body from a lagging position, so a sidestep swung the view 3° after the
+animal and rocking a and d rocked the picture — the person's "awkward jittery … it also rotates the camera". `camera shake` on the effects list
+(`FX.camFx`) covers the hurt shake, the bite nudge and the fov kick in one row. In physics.js `SWAY` 0.5 leaves that share of the rest's motion that is
+not the body's own travel out of the chains' drag reference, so arms and tails lag for as long as a curve lasts instead of only when the turn rate
+changes (the finback's petals 0.11–0.23 m through a 69°/s curve against 0.07 cruising; the soft-arm's arms 0.30–0.35). The body's travel is read off the
+frame's origin (`o.rigO`), not `o.vel`. **Ask first** whether the side-to-side jitter is gone — that one needs eyes, not a measurement — then whether
+`SWAY` 0.5 is the right amount of sway, then `camera shake` off against on.
+
 **v11.79 (22 Sep 2026): the camera off the body's axis, free look by default, s the reverse.** The person answered the movement stack: free look is
 the default now (effects.js `FX_DEF`, with `FX_V`/`FX_NEW` carrying a changed default past a browser that has already saved its choices) — the mouse
 spins the camera round a body that holds until a movement key is down; the clamped mode (`HEAD_MAX`, the mouse dragging the animal round) is the switch

@@ -224,7 +224,14 @@ function resolveBodies(list){
 function makeChain(n,sign,upx,upy,upz,o){
   o=o||{};return {n:n,sign:sign,pts:new Float32Array((n+1)*3),vel:new Float32Array((n+1)*3),restL:new Float32Array((n+1)*3),L:new Float32Array(n),r:new Float32Array(n),rl:new Float32Array(n),rr:new Float32Array(n),up:[upx,upy,upz],ks:o.ks||50,damp:o.damp||9,cosMax:o.cosMax||0.55,fresh:true,touch:0,lastT:-1};
 }
-const SIM={shapes:[],grab:null,self:null,ch:null},JOINT_SOFT=0.2; // the joint limit's ramp width in cos: 0.55 -> 0.75 is 57 -> 41 degrees
+// How much of the rest's *own* motion is not carried (v11.80, the person, 22 Sep 2026: "the creature parts do not sway with them when they curve at an
+// angle while moving"). The drag was measured against the whole rest velocity, which carries translation, rotation and the swim stroke alike — so a
+// body in a *steady* turn dragged nothing: the arms lagged the moment the turn rate changed (0.3 m on the finback, measured) and then settled back to
+// their cruise offset (0.07 m) while it went on curving. A body's own translation must still be carried (or a straight swim streams the arms back for
+// ever), but the part of the rest's motion that is the body turning under them, and the stroke moving them, is water they have to push: SWAY of it is
+// left out of the drag reference, which parks the tip damp/ks × SWAY × that speed behind its rest — 0.18 s of it — for as long as the curve lasts.
+const SWAY=0.5;
+const SIM={shapes:[],grab:null,self:null,ch:null,vx:0,vy:0,vz:0},JOINT_SOFT=0.2; // the joint limit's ramp width in cos: 0.55 -> 0.75 is 57 -> 41 degrees
 const CPT={x:0,y:0,z:0};
 function chainGround(x,z){const ch=SIM.ch;return ch&&x>=ch.x0&&x<ch.x0+CELL&&z>=ch.z0&&z<ch.z0+CELL?ch.h(x,z):groundAt(x,z);}
 function simChain(c,e,s,dt){
@@ -240,7 +247,8 @@ function simChain(c,e,s,dt){
   P[0]=RW[0];P[1]=RW[1];P[2]=RW[2];
   const G=SIM.grab,kd=Math.exp(-c.damp*dt),ks=c.ks*dt*(G?0.3:1);
   const Q=simChain.Q||(simChain.Q=new Float32Array(3*40));
-  for(let k=1;k<=n;k++){const i=k*3;const rvx=(RW[i]-RP[i])/dt,rvy=(RW[i+1]-RP[i+1])/dt,rvz=(RW[i+2]-RP[i+2])/dt;
+  const bvx=SIM.vx,bvy=SIM.vy,bvz=SIM.vz,kw=1-SWAY; // the owner's own travel (carried whole) and the share of the rest's motion under it that is carried (v11.80: SWAY of the turn and the stroke is not)
+  for(let k=1;k<=n;k++){const i=k*3;const rvx=bvx+((RW[i]-RP[i])/dt-bvx)*kw,rvy=bvy+((RW[i+1]-RP[i+1])/dt-bvy)*kw,rvz=bvz+((RW[i+2]-RP[i+2])/dt-bvz)*kw;
     let vx=rvx+(V[i]-rvx)*kd,vy=rvy+(V[i+1]-rvy)*kd,vz=rvz+(V[i+2]-rvz)*kd;
     vx+=(RW[i]-P[i])*ks;vy+=(RW[i+1]-P[i+1])*ks;vz+=(RW[i+2]-P[i+2])*ks;
     let x=P[i]+vx*dt,y=P[i+1]+vy*dt,z=P[i+2]+vz*dt;
@@ -321,6 +329,11 @@ function rigRest(rig){for(const c of rig.chains){for(let k=0;k<=c.n;k++){c.pts[k
 function stepRigs(o,near,dt){
   const b=o.b,g=b.g;if(!b.rigs)return;g.updateMatrix();const e=g.matrix.elements,s=len3(e[0],e[1],e[2]);
   SIM.self=o;SIM.ch=chunkAt(g.position.x,g.position.z);const S=SIM.shapes;S.length=0;
+  // the body's own travel (SWAY: the one part of the rest's motion the chains are carried by whole), read off the frame's origin rather than o.vel —
+  // a creature's velocity and where its group actually is need not agree (the tests move a body by hand, a hold drags one, a spawn teleports it)
+  {const px=o.rigO||(o.rigO=new Float32Array(3)),ox=e[12],oy=e[13],oz=e[14];let vx=(ox-px[0])/dt,vy=(oy-px[1])/dt,vz=(oz-px[2])/dt;
+   if(!(vx*vx+vy*vy+vz*vz<2500))vx=vy=vz=0; // over 50 m/s is a teleport, a respawn or the first frame: carry nothing this frame
+   px[0]=ox;px[1]=oy;px[2]=oz;SIM.vx=vx;SIM.vy=vy;SIM.vz=vz;}
   if(o.shapesW)for(const w of o.shapesW)S.push(w);
   if(near)for(const q of near){if(q===o||!q.shapesW)continue;if(q.pos.distanceTo(o.pos)>o.reach+q.bound+1)continue;for(const w of q.shapesW)S.push(w);}
   const G=o.grab;if(G&&G.pos){SIM.grab=stepRigs.G;stepRigs.G.x=G.pos.x;stepRigs.G.y=G.pos.y;stepRigs.G.z=G.pos.z;stepRigs.G.own=G;if(G.shapesW&&(!near||near.indexOf(G)<0))for(const w of G.shapesW)S.push(w);}else SIM.grab=null;
