@@ -80,15 +80,15 @@ const FP_AHEAD=0.35;
 // no per-species code. The orientation is composed from the facing (faceQ: yaw about world up, pitch about the body's own x), so the body's up tends to
 // world up of itself and nothing degenerates at vertical: no lookAt against UP anywhere in the player. To v11.76 the body turned to face its velocity
 // with a lookAt — parallel to up it spun, a strafe turned it sideways, a knock turned it to the knock, and touching the water snapped it back.
-// The keys (v11.77.1, the person, 22 Sep 2026: "pressing c and space should function like before … left and right should also move the animal left or
-// right … nothing was really broken about how it worked before, except the whole turn around thing"): w and s along the body's axis (s brakes, or
-// backs at STEER.rev where the body can), a and d sidestep along the body's right, space and c rise and dive — every key a thrust on a body that keeps
-// its facing, which is what v11.76 could not do (the body turned to face the thrust). Space is the jump on the strand and the hop off the floor for a
-// legged body. Derive's buoyancy is a drift the pitch trims (BUOY_V). In the air the body follows its arc and comes back to the heading at its rate,
-// without a snap. The camera is the mouse's, as before v11.77 ("moving the camera is useless, it just disorients"), held within HEAD_MAX of the body's
+// The keys (v11.77.1–2, the person, 22 Sep 2026: "pressing c and space should function like before … left and right should also move the animal left or
+// right … nothing was really broken about how it worked before, except the whole turn around thing"; then "the animal just moves without changing
+// direction when going down, up, left or right"): w, a, d, space and c together are a direction in the camera's frame; the body turns into it at its
+// own rate and swims where it faces — v11.76's keys with the body turning into them by the composition, so straight up is a body pointing up and never
+// a flip. s alone brakes, or backs at STEER.rev where the body can. Space is the jump on the strand and the hop off the floor for a legged body.
+// Derive's buoyancy is a drift the pitch trims (BUOY_V). In the air the body follows its arc and comes back to the heading at its rate, without a snap. The camera is the mouse's, as before v11.77 ("moving the camera is useless, it just disorients"), held within HEAD_MAX of the body's
 // facing so it never looks the animal in the face: a flick past it stops there and the body comes round under it.
 const PITCH_MAX=1.54; // rad (88°): the heading's pitch limit — nearly straight up or down; a loop is not a heading
-const HEAD_MAX=1.4; // rad (80°): how far the heading (the mouse, the camera) may run ahead of the body's facing in yaw and in pitch; the body turns toward it at its rate and the mouse drags it round
+const HEAD_MAX=1.6; // rad (92°): how far the heading (the mouse, the camera) may run ahead of the body's facing in yaw and in pitch; the body turns toward it at its rate and the mouse drags it round. Past a right angle, so a alone (the body a right angle off the camera) does not drag the camera with it (v11.77.2)
 const STEER={ease:0.3,air:2,rev:{jet:0.6,legs:0.5},brake:2.5,min:TURN_MIN}; // ease: within this angle (rad) of the heading the turn eases in exponentially (a radian left a slow body settling for seconds, test/steer.js); air: the body follows its arc at this × its turn rate; rev: backing as a share of the top speed where the body can — a jetter turns its funnel, a legged body steps back on the floor (v11.78), a fish cannot; brake: s on a body that cannot back is the coast's decay × this (the fins flared); min: the turn's floor at rest, the world's (TURN_MIN)
 const BUOY_V={sinks:-0.25,neutral:0,floats:0.15};
 // Walking on the floor (v11.78, CHANGELOG v11.75's scope on v11.77's model): a legged body on the ground, wet or dry, is a walker — held at the ground
@@ -195,15 +195,21 @@ function updatePlayer(dt){
   P.yaw=P.byaw+clamp(wrapA(P.yaw-P.byaw),-HEAD_MAX,HEAD_MAX);P.pitch=clamp(P.bpitch+clamp(P.pitch-P.bpitch,-HEAD_MAX,HEAD_MAX),-PITCH_MAX,PITCH_MAX);
   // the facing: toward the heading in the water; a walker's yaw to the heading, its pitch and lean the ground's slope under it (v11.78); in the air (and a fish flopping on the strand) along the arc; held while still or lying
   let ty=P.yaw,tp=P.pitch;P.rollBias=0;
-  if(walker){const hx=-Math.sin(P.byaw),hz=-Math.cos(P.byaw),g=groundGrad(P.pos.x,P.pos.z,GG);tp=Math.atan(g.x*hx+g.z*hz);P.rollBias=Math.atan(g.x*-Math.cos(P.byaw)+g.z*Math.sin(P.byaw))*WALK.lean;} // the slope along the facing, and across it (the body's right is (−cos byaw, 0, sin byaw))
+  // the keys' direction (v11.77.2, the person: the animal changes direction when it goes left, right, up or down): w, a, d, space and c together are a
+  // direction in the heading's frame — the camera's — and the body turns into it at its own rate and swims where it faces. a alone turns it a right
+  // angle left and away, w with space is a 39° climb, space alone straight up. s alone is the brake or the back, never a turn. Off the floor only (a walker's pitch is the slope's, its hop the key's)
+  const fz=mz>0?1:0,dirK=!still&&!P.dead&&(fz||mx||(my&&!walker));
+  if(dirK){const cp=Math.cos(P.pitch),hx=-Math.sin(P.yaw)*cp*fz+Math.cos(P.yaw)*mx,hy=Math.sin(P.pitch)*fz+(walker?0:my*0.8),hz=-Math.cos(P.yaw)*cp*fz-Math.sin(P.yaw)*mx,hl=len3(hx,hy,hz); // the heading's forward × w, its right (cos yaw, 0, −sin yaw) × a/d, up × space/c
+    if(hl>1e-6){tp=Math.asin(clamp(hy/hl,-1,1));ty=hx*hx+hz*hz>1e-8?Math.atan2(-hx,-hz):P.byaw;}}
+  if(walker){const hx=-Math.sin(P.byaw),hz=-Math.cos(P.byaw),g=groundGrad(P.pos.x,P.pos.z,GG);tp=Math.atan(g.x*hx+g.z*hz);P.rollBias=Math.atan(g.x*-Math.cos(P.byaw)+g.z*Math.sin(P.byaw))*WALK.lean;} // the slope along the facing, and across it (the body's local +x — its left, facing +z — is (−cos byaw, 0, sin byaw); a positive roll lifts it)
   else if(airborne||strand){const v=P.vel.length();if(v>1.2){ty=Math.atan2(-P.vel.x,-P.vel.z);tp=Math.asin(clamp(P.vel.y/v,-1,1));rate*=STEER.air;}else{ty=P.byaw;tp=P.bpitch;}}
   if(still||P.dead){ty=P.byaw;tp=P.bpitch;}
   faceToward(P,ty,tp,rate,dt);faceQ(P);
-  const bf=bodyFwd(P,T3),br=T4.set(-Math.cos(P.byaw),0,Math.sin(P.byaw)); // the body's own axis (what w thrusts along) and its right, level (a and d)
+  const bf=bodyFwd(P,T3); // the body's own axis: what the thrust runs along (v11.77.2: the keys turn the body, above; the thrust follows the body)
   const rev=walker?(C.legsBack?STEER.rev.legs:0):C.jet?STEER.rev.jet:0,swims=walker||C.canSwim||sub<0.5; // s: back where the body can (a jetter's funnel, jointed legs on the ground), else the brake; a legs-only body off the floor under water has no thrust
-  const th=still||!swims?0:mz>0?1:mz<0?-rev:0,brake=!still&&mz<0&&!rev&&!walker&&!mx&&!my;
-  const move=T1.set(0,0,0).addScaledVector(bf,th).addScaledVector(br,still||!swims?0:mx);if(!walker)move.y+=(still||!swims?0:my)*0.8;if(move.lengthSq()>1)move.normalize(); // v11.77.1: the thrust — along the body, across it, up and down; the body keeps its facing
-  const moving=move.lengthSq()>0.001;
+  const th=still||!swims?0:dirK?1:mz<0?-rev:0,brake=!still&&mz<0&&!rev&&!walker&&!dirK; // any direction key drives it forward along the body it is turning; s alone backs or brakes
+  const move=T1.copy(bf).multiplyScalar(th);
+  const moving=th!==0;
   let spd=walker?(C.landSpeed||4):C.speed;if(!walker&&C.sprint&&sprint)spd*=C.sprint; // a walker's Froude speed is its ceiling (v11.75)
   P.heldT=Math.max(0,P.heldT-dt);if(P.heldT>0)spd*=0.8; // brushed by something's arms
   spd*=P.heldK||1; // held (combat.js updateHolds sets it): in jaws or claws you thrash, in arms you barely swim
@@ -225,7 +231,7 @@ function updatePlayer(dt){
   // the jet: every 0.5 s a squeeze, its impulse (jetImp) delivered as a thrust over the first JET_W of the cycle — the same
   // push, but a velocity that ramps over ten frames rather than jumps, so the body and the arms behind it aren't whipped. Along the body's axis (v11.77), back at the funnel's share with s
   if(C.jet&&sprint&&!still&&!P.dead&&sub>0.3){P.jetT-=dt;if(P.jetT<=0){P.jetT=0.5;P.pulse=1;}
-    const w=P.jetT-(0.5-JET_W);if(w>-dt){const f=Math.min(dt,w+dt)/JET_W;P.vel.addScaledVector(moving?move:bf,C.jetImp*sub*f);}} // the squeeze the way the keys ask (v11.77.1: sideways or up too — the funnel turns), else along the body
+    const w=P.jetT-(0.5-JET_W);if(w>-dt){const f=Math.min(dt,w+dt)/JET_W;P.vel.addScaledVector(bf,C.jetImp*sub*f*(th<0?-rev:1));}} // the squeeze along the body, back at the funnel's share with s
   else P.jetT=Math.min(P.jetT,0.1);
   if(P.withdrawn||P.shut){P.vel.y-=0.6*dt;P.vel.multiplyScalar(1-1.5*dt);}
   const vmax=C.speed*(C.sprint||1)*1.7;

@@ -5259,3 +5259,21 @@ to face whatever the keys pushed it toward.
 **Unseen, ask in this order:**
 1. `HEAD_MAX` at 80°: whether the stop at the flick reads as a drag or a wall, and whether 90° (the animal's flank) is better.
 2. The sidestep at the full speed, as v11.76 had it, on every body — a fish crabbing sideways as fast as it swims.
+
+## v11.77.2 — the body turns into the keys (22 Sep 2026)
+
+The person looked at v11.77.1: "a little odd. The animal just moves without changing direction when going down, up, left or right. And when you hit A for
+left and D for right, the movement is swapped." Two faults, both mine: the right vector had its sign flipped (the body's local +x is its left when it
+faces +z; the world right of a heading is (cos yaw, 0, −sin yaw), as v11.76's `right` had it), and I had made the keys pure thrusts on a body that
+kept its facing, where the person wanted the animal to turn into the movement as it did before — only without the flip.
+
+- **The keys are a direction in the camera's frame** (player.js `updatePlayer`, `dirK`): w the heading's forward, a and d its right, space and c up
+  and down at 0.8, summed as v11.76 summed them; **the body turns into that direction at its own rate and swims where it faces** (the thrust along the
+  body, as v11.77). a alone turns it a right angle left and away, w with a is 45° off the camera, w with space a 39° climb, space alone straight up —
+  a body pointing up, never a flip, since the facing is composed. s alone brakes or backs, never a turn. The jet's squeeze along the body again.
+  A walker's pitch stays the slope's and its hop stays the key's; a and d turn it on its legs.
+- **`HEAD_MAX` 1.6 rad (92°)**, from 80: a alone puts the body a right angle off the camera and must not drag the camera with it.
+- **Tests** (`test/steer.js`): a and d turn the body 45° left and right of the heading with w, swimming where it faces, the heading untouched; space and c
+  pitch it ±39° with w and put 60% of the velocity vertical; the touch stick turns it into its sidestep; a flick stops 86–89° off the body. Green on both tiers.
+- **Seen** (`test/render/v772_fin_*.png`): the finback turned left of the camera under w and a, climbing under w and space, and the flick stopped at
+  its flank.

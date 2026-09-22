@@ -1,9 +1,10 @@
 # HANDOFF — tethys
 
-**v11.77.1 (22 Sep 2026): the keys as before, the camera the mouse's.** The person looked at v11.77: dizzying. a and d sidestep and space and c rise and dive again
-(thrusts on a body that keeps its facing — the old keys on the new model), the camera is the heading's as it was, and the heading is held within `HEAD_MAX` 80° of the
-body's facing so the camera never looks the animal in the face; v11.77's turn keys and camera lead are struck. **Ask first** whether the 80° stop reads as a drag or a
-wall, then the sidestep at full speed.
+**v11.77.2 (22 Sep 2026): the body turns into the keys.** The person looked at v11.77.1 (a and d swapped — my sign; the body not turning into a sidestep or a climb):
+w, a, d, space and c are together a direction in the camera's frame (player.js `dirK`) and the body turns into it at its rate, swimming where it faces — a alone a right
+angle left and away, w with space a 39° climb, space alone straight up, never a flip; s alone brakes or backs. The camera is the heading's as before v11.77, held within
+`HEAD_MAX` 92° of the body's facing so it never looks the animal in the face and a alone does not drag it; v11.77's turn keys and camera lead are struck. **Ask first**
+whether the 92° stop on a flick reads as a drag or a wall.
 
 **v11.78 (22 Sep 2026): walking on the floor (CHANGELOG v11.75's scope on v11.77's model).** A legged body with its feet on the ground, wet or dry, walks
 (player.js `WALK`): held at its kind's clearance (the world's rule, `C.clear`), along its facing at derive's walk speed, back where its legs are jointed pairs

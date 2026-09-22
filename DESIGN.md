@@ -1719,13 +1719,14 @@ pace's share, floored at `TURN_MIN` 0.35), eased within `STEER.ease` 0.3 rad and
 coilshell 144, the hose 147, the sickle 44. The orientation is composed from the facing (`faceQ`, Euler YXZ: yaw about world up, pitch about the body's x), so the body's up
 tends to world up and nothing degenerates at vertical — no lookAt against UP anywhere in the player (to v11.76 the body faced its velocity with one: the spin at vertical,
 the sideways strafe, the turn to a knock, the snap at the surface). w thrusts along the body's axis (`bodyFwd`); s backs at `STEER.rev` where the body can (a jetter 0.6 —
-the funnel turned, the squeeze kicking the way the keys ask) and brakes one that cannot (the coast × `STEER.brake` 2.5); **a and d sidestep along the body's right, space and
-c rise and dive** (v11.77.1, the person, 22 Sep 2026: "c and space should function like before … left and right should also move the animal" — the move vector as v11.76 had it,
-a thrust on a body that keeps its facing; v11.77's turn keys struck; space jumps or hops a walker); derive's buoyancy is a drift the pitch trims (`BUOY_V` sinks −0.25, neutral 0,
+the funnel turned, the squeeze kicking the way the keys ask) and brakes one that cannot (the coast × `STEER.brake` 2.5); **w, a, d, space and c are together a direction in the camera's
+frame and the body turns into it at its rate, swimming where it faces** (v11.77.1–2, the person, 22 Sep 2026: "c and space should function like before … left and right should
+also move the animal", then "the animal just moves without changing direction" — v11.76's move vector, `dirK`, with the body turning into it by the composition: a alone a
+right angle left and away, w with space a 39° climb, space alone straight up and never a flip; s alone brakes or backs; v11.77's turn keys struck; space jumps or hops a walker); derive's buoyancy is a drift the pitch trims (`BUOY_V` sinks −0.25, neutral 0,
 floats 0.15 m/s).
 In the air the facing follows the velocity at `STEER.air` 2 × the rate (a fish flopping on the strand too) and comes back to the heading at its rate: no snap; a knockback is
 a push and a flinch. The camera (`finishPlayer`) is the mouse's — the heading's angles, as before v11.77 (v11.77.1: "moving the camera is useless, it just disorients"; the
-lead of v11.77 struck) — and the heading is held within `HEAD_MAX` 1.4 rad (80°) of the body's facing in yaw and pitch, so a flick round the back stops there and the mouse
+lead of v11.77 struck) — and the heading is held within `HEAD_MAX` 1.6 rad (92°; 80 in v11.77.1, raised so a alone does not drag the camera) of the body's facing in yaw and pitch, so a flick round the back stops there and the mouse
 drags the animal round at its rate: the camera never looks it in the face and never moves on its own; its up is its own angles' (`_m.lookAt` with that up); first person
 looks along the heading from the nose. `bodyPose`'s bank, the compass, the world map and the audio's swish read the
 body's own yaw and `angV`. `test/steer.js` is the proof. Open (CHANGELOG v11.77, v11.77.1): the rate at rest, `HEAD_MAX`, the sidestep at full speed, the drift, the pitch limit.

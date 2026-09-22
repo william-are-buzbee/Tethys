@@ -35,7 +35,7 @@ function phase(name,n,ks,head,cap,capAir){ // cap, capAir: the turn allowed a fr
     if(!fin(P.pos)||!fin(P.vel)||!isFinite(P.g.quaternion.x+P.g.quaternion.y+P.g.quaternion.z+P.g.quaternion.w)||!fin(X.camera.position))nan++;
     if(i>0){maxTurn=Math.max(maxTurn,turn);if(turn>(P.sub<0.5&&!P.grounded?capAir:cap))over++;}maxAngV=Math.max(maxAngV,(P.angV||0)*DEG);minUp=Math.min(minUp,u.y);
     const v=P.vel.length();if(i===n-1&&v>1&&P.sub>=0.5&&!P.grounded){const along=P.vel.dot(f)/v;strafe=Math.sqrt(Math.max(0,1-along*along));} // the steady state: the share of the velocity across the body on the phase's last frame
-    if(i===n-1){const rt={x:-Math.cos(P.byaw),y:0,z:Math.sin(P.byaw)};side=v>0.5?Math.abs(P.vel.dot(rt))/v:0;rise=v>0.5?P.vel.y/v:0;} // the velocity's share across the body and up, on the last frame
+    if(i===n-1){side=((P.byaw-P.yaw+Math.PI)%(2*Math.PI)+2*Math.PI)%(2*Math.PI)-Math.PI;rise=v>0.5?P.vel.y/v:0;} // the body's yaw off the heading (left positive) and the velocity's share up, on the last frame
     if(P.sub<0.5&&!P.grounded){airFrames++;if(v>2.5&&airFrames>10){const vv={x:P.vel.x/v,y:P.vel.y/v,z:P.vel.z/v};arcOff=Math.max(arcOff,ang(f,vv));}}
     subMin=Math.min(subMin,P.sub);subMax=Math.max(subMax,P.sub);yMin=Math.min(yMin,P.pos.y);yMax=Math.max(yMax,P.pos.y);
   }
@@ -58,7 +58,7 @@ function run(C,label){
   R.push(phase('after the loop',300,{KeyW:true},null,cap,capAir));
   let knock=null;R.push(phase('a knockback',150,{KeyW:true},i=>{if(i===10){const from=P.pos.clone();from.x+=2;X.hurtPlayer(10,from);knock=fwdQ(P.g.quaternion);}},cap,capAir));
   const yA=P.yaw;R.push(phase('a and d',120,{KeyW:true,KeyA:true},null,cap,capAir));const turnedA=P.yaw-yA;const sideA=R[R.length-1].side;
-  const yD=P.yaw;R.push(phase('d',120,{KeyW:true,KeyD:true},null,cap,capAir));const turnedD=P.yaw-yD,sideD=R[R.length-1].side,offD=R[R.length-1].off;
+  const yD=P.yaw;R.push(phase('d',240,{KeyW:true,KeyD:true},null,cap,capAir));const turnedD=P.yaw-yD,sideD=R[R.length-1].side,offD=R[R.length-1].off;
   const pS=P.pitch;R.push(phase('space and c',90,{KeyW:true,Space:true},null,cap,capAir));const pitchedS=P.pitch-pS,upS=R[R.length-1].vup,bpS=P.bpitch;
   const pC=P.pitch;R.push(phase('c',180,{KeyW:true,KeyC:true},null,cap,capAir));const pitchedC=P.pitch-pC,upC=R[R.length-1].vup,bpC=P.bpitch;
   R.push(phase('s',300,{KeyS:true},i=>{P.pitch=0;},cap,capAir));
@@ -85,10 +85,10 @@ function run(C,label){
   check(R.every(r=>r.minUp>-0.01),label+': never upside down (body up.y ≥ '+Math.min(...R.map(r=>r.minUp)).toFixed(2)+')');
   check(held.every(r=>r.strafe<0.2),label+': no strafe — a held heading swum, the velocity is along the body (across share '+held.map(r=>r.strafe.toFixed(2)).join(' ')+')');
   const kb=R.find(r=>r.name==='a knockback');check(kb.off<6&&kb.maxTurn<=cap,label+': a knockback does not turn the body to the knock (off '+kb.off.toFixed(1)+'° after it)');
-  check(Math.abs(turnedA)<0.01&&Math.abs(turnedD)<0.01&&sideA>0.4&&sideD>0.4&&offD<3,label+': a and d sidestep — the velocity runs '+(sideD*100).toFixed(0)+'% across the body, which keeps its facing ('+offD.toFixed(1)+'° off the heading, the heading untouched)');
-  check(Math.abs(pitchedS)<0.01&&Math.abs(pitchedC)<0.01&&upS>0.3&&upC<-0.3&&Math.abs(bpS)<0.1&&Math.abs(bpC)<0.1,label+': space rises and c dives ('+(upS*100).toFixed(0)+'% and '+(upC*100).toFixed(0)+'% of the velocity vertical) with the body level ('+(bpC*DEG).toFixed(0)+'°), the heading untouched');
+  check(Math.abs(turnedA)<0.01&&Math.abs(turnedD)<0.01&&Math.abs(sideA*DEG-45)<8&&Math.abs(sideD*DEG+45)<8&&R.find(r=>r.name==='d').strafe<0.2,label+': a and d turn the body into the sidestep — '+(sideA*DEG).toFixed(0)+'° left and '+(sideD*DEG).toFixed(0)+'° right of the heading with w, swimming where it faces, the heading (the camera) untouched');
+  check(Math.abs(pitchedS)<0.01&&Math.abs(pitchedC)<0.01&&upS>0.3&&upC<-0.3&&Math.abs(bpS*DEG-39)<8&&Math.abs(bpC*DEG+39)<8,label+': space climbs and c dives with w — the body pitched '+(bpS*DEG).toFixed(0)+'° and '+(bpC*DEG).toFixed(0)+'°, '+(upS*100).toFixed(0)+'% and '+(upC*100).toFixed(0)+'% of the velocity vertical, the heading untouched');
   const sP=R.find(r=>r.name==='s');check(P.clade.jet?sP.spd>0.5:sP.spd<0.5,label+': s '+(P.clade.jet?'backs a jetter ('+sP.spd.toFixed(1)+' m/s)':'brakes a body that cannot back ('+sP.spd.toFixed(2)+' m/s)'));
-  const tc=R.find(r=>r.name==='touch');check(Math.abs(turnedT)<0.01&&tc.spd>1&&tc.side>0.4,label+': the touch stick swims and sidesteps ('+tc.spd.toFixed(1)+' m/s, '+(tc.side*100).toFixed(0)+'% across) on the same model');
+  const tc=R.find(r=>r.name==='touch');check(Math.abs(turnedT)<0.01&&tc.spd>1&&Math.abs(tc.side*DEG+45)<8,label+': the touch stick swims and turns into its sidestep ('+tc.spd.toFixed(1)+' m/s, '+(tc.side*DEG).toFixed(0)+'° off the heading) on the same model');
   P.yaw+=Math.PI;global.__step(1);const ahead=Math.abs(((P.yaw-P.byaw+Math.PI)%(2*Math.PI)+2*Math.PI)%(2*Math.PI)-Math.PI);check(ahead<=X.HEAD_MAX+0.01,label+': a flick of the mouse round the back stops '+(ahead*DEG).toFixed(0)+'° off the body (HEAD_MAX '+(X.HEAD_MAX*DEG).toFixed(0)+'°): the camera never looks it in the face');global.__step(120);
   return R;
 }
