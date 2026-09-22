@@ -64,20 +64,16 @@ function tidalAt(x,z,out){const r=Math.hypot(x,z),ex=Math.cos(TIDE_A),ez=Math.si
   const q=Math.max(r,TIDE_R),R2=TIDE_R*TIDE_R/(q*q),rx=x/r,rz=z/r,d=ex*rx+ez*rz; // inside the cylinder the surface flow: 2U tangential
   const ox=TIDE_U*(ex+R2*(ex-2*d*rx)),oz=TIDE_U*(ez+R2*(ez-2*d*rz)),k=smooth(RIM_R+RIM_W,RIM_R-RIM_W,r); // k: 1 inside the rim
   out.set(lerp(ox,ex*TIDE_U*0.5,k),0,lerp(oz,ez*TIDE_U*0.5,k));return out;}
-// ---------- the depth curves: one definition each, for the JS and the GLSL (v11.32) ----------
-// Both of these were written six times between atmosphere.js, chunks.js and scene.js's shader strings, and both had drifted.
+// ---------- the depth curve: one definition, for the JS and the GLSL (v11.32) ----------
+// This was written six times between atmosphere.js, chunks.js and scene.js's shader strings, and had drifted.
 // The daylight curve — how much of the surface's light is left at a depth, the number the fog's veil, the ambient, the sun's
 // own scale and the shadows all read — measured depth from the tide in the JS and from sea level in the GLSL. The difference
 // is the tide over DL_REF: at most 2.2% of the light at spring, nothing below -302 where the curve clamps, so this fixes a
 // disagreement nobody could see rather than a look. The person's call (12 Sep): depth is from the water's surface, so the
 // shader follows the JS. The shader reads TIDE as uFogW.x (scene.js; main.js writes it each frame with the other clock uniforms).
-// The canopy fade — how much of the mats' water a point takes — was a smoothstep over [-90,-60] in the shader and a hard cut
-// at -70 in the JS, so between those depths the ambient light and the fog colour disagreed with the veil actually drawn.
-// The shader's ramp is the right one (the person, 12 Sep) and the JS follows it.
+// The canopy fade (CAN_LO/CAN_HI, canopyFade) that sat here to v11.80 went with the canopy's paint (v11.81, PLANKTON.md §12).
 const DL_REF=420,DL_MIN=0.28; // the depth the daylight curve would reach zero at, and its floor
 function daylightAt(y){return clamp(1+Math.min(0,y-TIDE)/DL_REF,DL_MIN,1);}
-const CAN_LO=-90,CAN_HI=-60; // the canopy's water reaches this far down, faded over the band
-function canopyFade(y){return smooth(CAN_LO,CAN_HI,y);}
 // The chemocline (PLANET): one depth, and the bands the water's look and the sessile life take from it. It was a bare -450
 // in a dozen places with -444/-446/-448/-452/-455/-458/-462/-464/-465/-470 around it, so moving it meant finding all of them.
 const CHEMO=-450,CHEMO_PLATE=2,CHEMO_TINT=[CHEMO+4,CHEMO-12]; // the milky plate's half-thickness; the band the water browns over
@@ -376,24 +372,27 @@ function envW(env,h,sl,f){let w=1;
   for(const k in env){const r=env[k],v=k==='h'?h:k==='slope'?sl:f[FI[k]],lo=r[0],hi=r[1],e=r[2]!==undefined?r[2]:k==='h'?Math.min(10,(hi-lo)*0.15):(hi-lo)*0.15;
     if(v<lo)w*=clamp(1-(lo-v)/e,0,1);else if(v>hi)w*=clamp(1-(v-hi)/e,0,1);if(w<=0)return 0;}
   return w;}
-// The canopy is a surface mask, not a floor: patches of the outer world where floating colonies and rafts cover the water. They
-// sit in the seamount's wake — downstream of the current, where the eddies retain what drifts (PLANET, the colony). Three
-// patches [angle, radius, size], each a dense core (mask 1 inside 0.55*size) with a halo that thins to 0 at size, edges
-// warped by noise. canopyW(x,z) is the mask, 0..1; flora density scales with it, so the halo is the thinner fringe.
-const CANOPY=[[2.3,1440,470],[1.35,1400,300],[3.25,1420,300]].map(p=>({x:Math.cos(p[0])*p[1],z:Math.sin(p[0])*p[1],R:p[2]}));
-function canopyW(x,z){
+// The retention field (v11.81, PLANKTON.md §12; the canopy mask `canopyW` to v11.80): three eddies in the seamount's wake — downstream of
+// the current, where a Taylor-column lee retains what drifts into it (PLANET, the colony). What is retained is productive (the island mass
+// effect), so the crop is higher here (plank, below), and the drifting colonies pile up in the convergence: the sailer fleets (chunks.js
+// spawnChunkCreatures) and the buttons' `leePer` (flora.js). Three patches [angle, radius, size], each a core (1 inside 0.55*size) with a
+// halo thinning to 0 at size, edges warped by noise; leeW(x,z) is 0..1. The positions are the v9 canopy's: they are in the wake, which is
+// where the eddy belongs. What the mask no longer does: tint the water green (WATER_CANOPY), shade the floor, thicken the snow's floc, act
+// as a lid for the light, the shafts and the sound — a patch of green with nothing above it was exactly what the rule of 8 Sep forbids.
+const EDDY=[[2.3,1440,470],[1.35,1400,300],[3.25,1420,300]].map(p=>({x:Math.cos(p[0])*p[1],z:Math.sin(p[0])*p[1],R:p[2]}));
+function leeW(x,z){
   if(Math.hypot(x,z)<900)return 0;
   let w=0;
-  for(const c of CANOPY){const d=Math.hypot(x-c.x,z-c.z);if(d>c.R*1.3)continue;
+  for(const c of EDDY){const d=Math.hypot(x-c.x,z-c.z);if(d>c.R*1.3)continue;
     const dw=d*(1+0.28*(fbm(x*0.0045+120,z*0.0045+66,2)-0.5)*2),v=smooth(c.R,c.R*0.55,dw);if(v>w)w=v;}
   return w;
 }
 // The colour of the lit water column over a point, *before* depth darkens it: by the floor's depth (the approved v5-v7 shelf
-// look at the shallow end, holding the deep blue below 250: the darkness of the deep is the light's, v11.28), toward a silty green-grey with turbidity, greener where
-// there is plankton (food in the light), brown in a vent's plume. Under the canopy: WATER_CANOPY at full weight (v5's, approved).
+// look at the shallow end, holding the deep blue below 250: the darkness of the deep is the light's, v11.28), toward a silty green-grey with turbidity,
+// brown in a vent's plume. The plankton's green is not here since v11.81: it is the crop's, by kind, from the bloom map (plank, below; the veil
+// applies it at the ray's own depth). To v11.80 this held a guess at it (nut × the floor's light × 0.3, greener) and the canopy's WATER_CANOPY.
 const WCOL=[[0,[0.10,0.46,0.58]],[20,[0.10,0.42,0.52]],[60,[0.09,0.34,0.40]],[150,[0.07,0.26,0.36]],[250,[0.05,0.20,0.32]]]; // v11.28: the table ends at the deep blue. It went on to (0.03,0.08,0.16) at 400 and (0.006,0.01,0.03) at 451 — "dark on purpose over the deep and the void" — a black water. Water is not black: the deep is dark because little light reaches it, and that is the daylight term (dl in the fog block and updateAtmosphere), not the colour. The person, 10 Sep: no deliberately black fog.
 const WCOL_D=WCOL[WCOL.length-1][0];
-const WATER_CANOPY=[0.09,0.37,0.34];
 // The table at a depth (the JS and the GLSL of the same curve — the veil reads it by the ray's own depth since v11.27, see FLOOR_H)
 function wcolAt(d){d=clamp(d,0,WCOL_D);let c=WCOL[WCOL.length-1][1];
   for(let i=1;i<WCOL.length;i++)if(d<=WCOL[i][0]){const a=WCOL[i-1],b=WCOL[i],t=(d-a[0])/(b[0]-a[0]);c=[lerp(a[1][0],b[1][0],t),lerp(a[1][1],b[1][1],t),lerp(a[1][2],b[1][2],t)];break;}
@@ -410,8 +409,78 @@ const WCOL_GLSL='vec3 wcol(float d){vec3 c=vec3('+WCOL[0][1].map(v=>v.toFixed(3)
 // water map); updateAtmosphere does the same on the CPU for the ambient. Not on the tuner: the readout's keys are all taken.
 const FLOOR_H=80,FLOOR_FREE=30,OPEN_D=150;
 function waterColor(s,out){const c=wcolAt(-s.h);
-  const f=s.f,tb=f[FI.turb]*0.45,pk=f[FI.nut]*smooth(-150,-10,s.h)*0.3,ht=f[FI.heat]*0.6,o=out||[0,0,0];
-  o[0]=lerp(lerp(c[0],0.16,tb)*(1+0.1*pk),0.09,ht);o[1]=lerp(lerp(c[1],0.40,tb)*(1+0.22*pk),0.06,ht);o[2]=lerp(lerp(c[2],0.36,tb)*(1-0.08*pk),0.05,ht);return o;}
+  const f=s.f,tb=f[FI.turb]*0.45,ht=f[FI.heat]*0.6,o=out||[0,0,0];
+  o[0]=lerp(lerp(c[0],0.16,tb),0.09,ht);o[1]=lerp(lerp(c[1],0.40,tb),0.06,ht);o[2]=lerp(lerp(c[2],0.36,tb),0.05,ht);return o;}
+// ---------- the plankton (v11.81, PLANKTON.md §3–4, §7; pass 1 of §13) ----------
+// The water's own life as a field, never organisms: a standing stock C in mg/m³ of pigment, the product of where (the column, from the
+// world's fields) and how deep (the vertical shape, from the light and the nutricline), in three pigment kinds (TAXA: the open ocean's
+// plankton came in three, each keeping its slice of the spectrum, each the ancestor of a sessile line) — green (the greens': bright,
+// shallow, fed), gold (the floaters': the opportunist that blooms on a nutrient pulse — stirred water, the flank, days after a storm) and
+// red (the reds': the dim deep maximum under the mixed layer). The colour of the water is which kind is winning here.
+//   the column (plank, static per place, written into the water and floor maps' free channels — far.js wmFill, scene.js floorMap):
+//     C = c0·10^(cexp·nutP), nutP the food less the vents' share (chemosynthetic, not pigment): the basin's 0.12 → 0.06 (a gyre's 0.03–0.08),
+//     the sides' 0.45 → 0.3 (island water 0.2–0.5), the fed flank's 0.67–0.97 → 0.9–3.8 (an upwelling flank 1–3); × (1 + shallow·(the floor
+//     within the lit layer)·(1 + 0.6·shel)) — benthic regeneration: over a shallow floor the nutrients come back within the light (the shelf,
+//     the lagoon); × (1 + lee·leeW) — the retention field. The lit layer's crop is split green/gold by the stirred share (the current and the
+//     waves); the red is the column's under it, where the floor is deep enough to hold a maximum and the column is not mixed.
+//   the front (the water map's alpha): X = log10(depth/u³), Simpson–Hunter's criterion with u the tidal stream at full flood on a spring (tidalAt).
+//     Mixed top to bottom where X is small, stratified where it is large, and the front between them — the richest water of a shelf sea —
+//     is a Gaussian on X about xc (2.1: at springs the break, ~125 m, where the stream round the rim's cylinder is 1 m/s, and the shelf's ~55 m where it is 0.75) of width xs. The shader and
+//     bloomC apply it by the clock: the stream scales with the tide's amplitude, so X shifts by 3·log10(amp/springAmp) and the ring moves
+//     onto the shelf at neaps (h ∝ u³: 0.3× the depth) and out to the break at springs — the 13-day breathing of §4. The stream is a
+//     potential flow round the rim's cylinder, so u is ~0 on the current's axis and the ring is broken at the two stagnation points:
+//     the fed flank's centre and the lee. The front feeds the lit layer (× (1 + front·fr)) and unmakes the deep maximum (× (1 − 0.7·fr)).
+//   the pulse (uFogB.z, far.js bloomTick): the gold's crop × (1 + storm·pulse), pulse the rain of the past four days through a kernel that
+//     rises over a day and decays over three (weatherAt; the shower is the storm's proxy — the wind that mixed the nutricline up came with
+//     it), less the pulse a shower most days keeps (calm — the trades' climatology is not a storm). The bloom of §7: gold on the flank days after a storm, olive to brown at its peak.
+//   the vertical (bloomC): green 1 to 45 m fading out by 85 (the mixed layer to the thermocline at 64), gold to 60 fading by 110 (it sinks),
+//     red a Gaussian at 95 ± 35 — the deep chlorophyll maximum on the nutricline, gone by the 1% light level (~165 in clear water: TAXA's
+//     deep rind stops there, so the flora and the water share one floor). The mixed layer's depth by season is pass 3.
+//   the colour (bloomTint): a kind's crop at the point's depth saturates twice, w1 = C/(C+k1) for the kind's tint (pigment absorbs blue and
+//     red and leaves green; the reds keep blue and red and leave a dimmer plum) and w2 = C/(C+k2) for the heavy stage (olive, brown) — each
+//     a multiplier on the column's colour so depth's darkening stands. Every number is a start, to be tuned after a look (the person, 22 Sep:
+//     "go with what is ecologically plausible … then see if it looks good").
+// The maps hold the lit layer's two crops on a log scale (plankEnc: cmin → 0, cmax → 1) in the floor map's blue and alpha and X as (X−1)/5 in
+// the water map's alpha (far.js wmFill/wmBlur, beside the colour and the floor: the fragment shaders were at WebGL's 16 texture units, so
+// a third map could not be bound — seen, 22 Sep: every tinted material failed to compile and the world was the veil alone). The red is not
+// stored: it is the lit crop's under the mixed layer, derived in bloomC from the two crops and the floor's depth, the floor map's red, the
+// same way in the JS and the GLSL below, generated from these tables so the shader and bloomC cannot drift. plankAt(x,y,z) is the field
+// exactly (from sample), for the snow (pass 2) and the tests.
+const PLK={c0:0.035,cexp:2.1,shallow:1.5,lee:1.5,red:0.5,xc:2.1,xs:0.3,front:2.0,storm:4.0,calm:0.15,k1:0.8,k2:6.0,cmin:0.03,cmax:20}; // mg/m³ and log10 units; front, storm, shallow, lee are multipliers (+1); calm: the pulse the trades' own showers keep (a shower most days), below which the gold is not fed
+const PIGK=[{m1:[1.05,1.06,0.62],m2:[1.15,0.92,0.70]},{m1:[1.35,1.06,0.58],m2:[1.20,0.88,0.60]},{m1:[0.90,0.70,0.83],m2:[1,1,1]}]; // green, gold, red: the tint at saturation, and the heavy stage
+const PLK_ENC=Math.log2(PLK.cmax/PLK.cmin); // the log scale's span
+function plankEnc(C){return clamp(Math.log2(Math.max(C,PLK.cmin)/PLK.cmin)/PLK_ENC,0,1);}
+const _plkV=new THREE.Vector3();
+// the column at a place: out = [green, gold (mg/m³, the lit layer's standing stock), X]; s = sample(x,z)
+function plank(x,z,s,out){const f=s.f,h=s.h,o=out||[0,0,0];
+  const nutP=clamp(f[FI.nut]-0.5*f[FI.heat],0,1),sh=smooth(-60,-8,h);
+  const C=PLK.c0*Math.pow(10,PLK.cexp*nutP)*(1+PLK.shallow*sh*(1+0.6*f[FI.shel]))*(1+PLK.lee*leeW(x,z));
+  const stir=clamp(0.9*f[FI.flow]+0.3*f[FI.expo],0,1),gold=stir*(1-0.5*sh);
+  o[0]=C*(1-gold);o[1]=C*gold;
+  tidalAt(x,z,_plkV);const u=Math.max(Math.sqrt(_plkV.x*_plkV.x+_plkV.z*_plkV.z),0.05);o[2]=h>-2?6:clamp(Math.log10(Math.max(-h,1)/(u*u*u)),1,6);
+  return o;}
+// the maps' texel for a place (0..1 ×3: the two crops encoded, X), as wmFill writes it
+function plankTexel(x,z,s,out){const o=plank(x,z,s,out);o[0]=plankEnc(o[0]);o[1]=plankEnc(o[1]);o[2]=(o[2]-1)/5;return o;}
+// the clock's part, shared by the shader (uFogB) and the JS: x = xc + 3·log10(amp/spring), y = 1/xs, z = storm·pulse
+const FOG_B=new Float32Array([PLK.xc,1/PLK.xs,0,0]);
+// the crops at a depth d (from the tide) over a floor fd deep, from a texel b (0..1 ×3, bilinear), by the clock: out = [green, gold, red] mg/m³.
+// The red: the lit crop's share under the mixed layer — where the floor is deep enough to hold a maximum and the column is not stirred
+// (the stirred share read back off the gold's share of the lit crop, the shallow term undone)
+function bloomC(b,fd,d,out){const o=out||[0,0,0],X=b[2]*5+1,fx=(X-FOG_B[0])*FOG_B[1],fr=Math.exp(-fx*fx),lit=1+PLK.front*fr;
+  const Cg=PLK.cmin*Math.pow(2,b[0]*PLK_ENC),Cf=PLK.cmin*Math.pow(2,b[1]*PLK_ENC),sh=smooth(60,8,fd),stir=clamp(Cf/(Cg+Cf)/(1-0.5*sh),0,1);
+  o[0]=Cg*lit*(1-smooth(45,85,d));o[1]=Cf*lit*(1+FOG_B[2])*(1-smooth(60,110,d));
+  const r=(d-95)/35;o[2]=(Cg+Cf)*PLK.red*smooth(60,140,fd)*(1-0.6*stir)*(1-0.7*fr)*Math.exp(-r*r);return o;}
+// the column's colour c tinted by the crops C (bloomC's), in place
+function bloomTint(c,C){for(let k=0;k<3;k++){const P=PIGK[k],w1=C[k]/(C[k]+PLK.k1),w2=C[k]/(C[k]+PLK.k2);for(let i=0;i<3;i++)c[i]*=lerp(1,P.m1[i],w1)*lerp(1,P.m2[i],w2);}return c;}
+const _plkT=[0,0,0];
+// the field at a point in the world, exactly (the snow and the tests): out = [green, gold, red] mg/m³ at that depth, now
+function plankAt(x,y,z,out){const s=sample(x,z);return bloomC(plankTexel(x,z,s,_plkT),-s.h,TIDE-y,out);}
+const _v3=v=>'vec3('+v.map(n=>n.toFixed(3)).join(',')+')';
+const BLOOM_GLSL='vec3 bloomC(vec3 b,float fd,float d){float fx=(b.z*5.0+1.0-uFogB.x)*uFogB.y;float fr=exp(-fx*fx);float lit=1.0+'+PLK.front.toFixed(2)+'*fr;float r=(d-95.0)/35.0;'+
+  'vec2 C='+PLK.cmin.toFixed(3)+'*exp2(b.xy*'+PLK_ENC.toFixed(4)+');float sh=1.0-smoothstep(8.0,60.0,fd);float stir=clamp(C.y/(C.x+C.y)/(1.0-0.5*sh),0.0,1.0);'+
+  'return vec3(C.x*lit*(1.0-smoothstep(45.0,85.0,d)),C.y*lit*(1.0+uFogB.z)*(1.0-smoothstep(60.0,110.0,d)),(C.x+C.y)*'+PLK.red.toFixed(2)+'*smoothstep(60.0,140.0,fd)*(1.0-0.6*stir)*(1.0-0.7*fr)*exp(-r*r));}\n'+
+  'vec3 bloomTint(vec3 c,vec3 C){vec3 w1=C/(C+'+PLK.k1.toFixed(2)+'),w2=C/(C+'+PLK.k2.toFixed(2)+');'+
+  PIGK.map((P,k)=>{const s='w1.'+'rgb'[k],t='w2.'+'rgb'[k];return 'c*=mix(vec3(1.0),'+_v3(P.m1)+','+s+')'+(P.m2.every(v=>v===1)?'':'*mix(vec3(1.0),'+_v3(P.m2)+','+t+')')+';';}).join('')+'return c;}\n'; // the same curves as bloomC and bloomTint above, from the same tables
 // The water. One density everywhere (there is no per-biome fog: WATER is a colour that belongs to the place, not a veil you
 // walk into). Transmittance with distance d is share*exp(-(dens*d)^2) + (1-share)*exp(-far*d): the near haze as it always was
 // (share 1 is exactly the pre-v8 fog) plus a slow extinction that leaves a ghost of things far off, so the far layer reads

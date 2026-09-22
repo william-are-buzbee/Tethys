@@ -100,7 +100,6 @@ function auProbe(lx,ly,lz,under){
       if(y<groundAt(x,z)||auSolid(x,y,z)){hd=s;hk=1;break;}}
     H[r]=hd;K[r]=hk;if(hk){hitN+=hk===2?0.5:1;sumD+=hd;}}
   AU_LINE.enc=hitN/12;AU_LINE.size=hitN>0?sumD/Math.max(1,Math.round(hitN)):AU_REACH;AU_LINE.floor=H[1];AU_LINE.lid=K[0]===2?H[0]:AU_REACH;
-  if(under&&underCanopy(lx,lz,ly)&&AU_LINE.lid>AU_REACH-1){AU_LINE.lid=Math.max(2,TIDE-ly);} // the mats over you are a lid too
 }
 // Occlusion (each voice, ~5 Hz): the line from the source to the listener in steps; every step under the ground or in a solid counts (solids within 6 m of
 // the source don't: the vent sits in its own chimney). 1 − 0.85ⁿ: one boulder is a shadow, a ridge a rumble. Smoothed where it is applied.
@@ -140,9 +139,8 @@ function auTick(dt,P,play){
   auP(AU.shelf.gain,3*smooth(4,1,AU_LINE.floor)+5*hurt+2*press,0.15);
   // the self beds: the column, the deep, the pressure, the current, the crackle, the heat, the wind and the rain in air
   const ch=chunkAt(lx,lz),f=ch?ch.f(lx,lz):null,nut=f?f[FI.nut]:0,heat=f?f[FI.heat]:0,expo=f?f[FI.expo]:0,subK=f?f[FI.sub]:0.5;
-  const uc=underCanopy(lx,lz,ly)?1:0;
   const B=AU_K.bed;
-  auP(AU.col.out.gain,B*(0.05*smooth(150,10,depth)*(0.75+0.25*K.skyL)*(1-0.35*uc)+0.015)*(1-k),0.2);
+  auP(AU.col.out.gain,B*(0.05*smooth(150,10,depth)*(0.75+0.25*K.skyL)+0.015)*(1-k),0.2);
   auP(AU.deep.out.gain,B*(0.06+0.11*smooth(30,220,depth))*(1-k),0.3);
   auP(AU.press.gain,B*0.05*press*(1-k),0.5);
   currentAt(lx,lz,ly,CURV);const cur=Math.hypot(CURV.x,CURV.z);AU_LINE.cur=cur;
@@ -158,7 +156,7 @@ function auTick(dt,P,play){
     auP(AU.brush.out.gain,P.hitFl?0.09*Math.min(1,P.spd/3)+0.02:0,0.06);}
   else{auP(AU.flow.out.gain,0,0.1);auP(AU.scrape.out.gain,0,0.1);auP(AU.brush.out.gain,0,0.1);}
   // the placed beds. 3 the slosh: the surface point over the listener, the wave's rate, the lid (in the chop: louder and brighter), the rain's patter through it
-  const lid=smooth(3.5,1,AU_LINE.lid),dk=1/(1+depth/6),sl=under?dk*wm*(1+1.2*lid)*(1-0.6*uc):0.5*wm; // in air the same source is the water lapping under you
+  const lid=smooth(3.5,1,AU_LINE.lid),dk=1/(1+depth/6),sl=under?dk*wm*(1+1.2*lid):0.5*wm; // in air the same source is the water lapping under you
   AU.slosh.x=AU.sloshB.x=AU.rain.x=lx;AU.slosh.z=AU.sloshB.z=AU.rain.z=lz;AU.slosh.y=AU.sloshB.y=AU.rain.y=wh;
   AU.slosh.a=B*0.22*sl;AU.slosh.c0=under?1800*(1+lid):5000;AU.sloshB.a=B*0.28*sl;AU.rain.a=B*K.rainA*(under?0.16*dk:0.08); // under: a bed the slosh's size (0.22), fading with depth; in air the surface's own hiss is small beside the patter
   // 4 the breakers: where the shore lies (uphill), at the surface, by the exposure and the shallowness, swelling on the first wave's period

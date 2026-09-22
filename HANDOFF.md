@@ -1,5 +1,16 @@
 # HANDOFF — tethys
 
+**v11.81 (22 Sep 2026): the plankton — PLANKTON.md §13 pass 1.** The water's own life as a field (world.js `plank`, `bloomC`, `bloomTint`, the
+knobs `PLK` and `PIGK`): a standing stock in mg/m³ from the food, the shallow floor's return and the retention field, in three pigment kinds —
+green (the shelf, the lagoon), gold (the stirred flank, the front, days after a storm) and red (the deep maximum at 95 ± 35) — and the water's colour
+is which kind is winning, applied in the veil at each sample's own depth. The tidal front is Simpson–Hunter's ring: on the shelf break at springs,
+onto the shelf at neaps, broken on the current's axis (`xc` 2.1, `front` 2.0). The crops and the front's X ride the water and floor maps' free
+channels (far.js `wmFill`): a map of their own put the shaders past WebGL's 16 texture units and nothing tinted compiled. The canopy ghost is
+stripped (§12): `leeW` places the fleets and the buttons and feeds the crop, and nothing else is painted. Seen: `test/render/v81_before_*.png`
+against `v81_after_*.png` at the flank, the lagoon, the thermocline, the basin and the man-o'-war's patch. **Ask first** whether the fed flank's
+olive is right or too heavy (`PLK.k1`, `k2`, the gold's tint), then whether the ring at the side break reads as richer water or a wall (`front`,
+`xs`), then the lagoon's green, then the thermocline's plum. Next: pass 2, the snow off the field (`plankAt` is there for it).
+
 **v11.80.1 (22 Sep 2026): the combs swing with the body.** The person on v11.80: the camera "seems to be fixed"; the frontal combs still did not move
 with the animal. They are merged geometry in a group, not a chain, so v11.80's `SWAY` could not reach them. fx.js `bodyPose` now keeps the body's eased
 turn rate and acceleration (`o.turnV`, `o.accV`) and both anim call sites pass them as `st.turn`/`st.acc`, so any builder with a rigid part in a group

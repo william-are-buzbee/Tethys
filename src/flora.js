@@ -956,7 +956,7 @@ function darkrindB(rg,k){const P=[],n=1+(k%2);
 // point, and anything that would stand into the air is shortened in y or skipped (rigid things, ladder, ribbon).
 // field: noise scale that modulates density (thick and thin forests). rim: extra chance around the pit.
 // maxSlope: steepest ground an instance may stand on (default 0.9; rocks 1.9; structures unlimited, they sink on slopes).
-// canopyPer: density where the canopy mask is 1 (surface rafts). ys: y for surface flora (default -0.45).
+// leePer: density where the retention field (world.js leeW) is 1 (v11.81; canopyPer to v11.80). ys: y for surface flora (default -0.45).
 // pocket: noise scale; the base density applies fully only inside pockets of that noise (~15% of area) and at 10% elsewhere.
 // minH: lowest ground an instance may stand on (land plants stay above the wet sand).
 // col: colliders per instance in local units: {s:[x,y,z,r]} a sphere, {a:[..],b:[..],r} a capsule, {e:[cx,cy,cz,ax,ay,az]} an
@@ -1096,7 +1096,7 @@ const FLORA = [
       per: 4,
       env: {h: [-800, -30], shel: [0, 0.1]},
       pocket: 0.006,
-      canopyPer: 60
+      leePer: 60
     },
     buttonB
   ),

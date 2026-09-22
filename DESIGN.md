@@ -15,7 +15,7 @@ holds the reasons, the numbers and what the person asked for. History and what h
 9. [Flora and materials](#flora-and-materials) — the `FLORA` table, geometry kit, sway
 10. [Structures, solids and cliffs](#structures-solids-and-cliffs)
 11. [Contact](#contact) — colliders, hitboxes, pads, chains (arms, tails, tentacles), the bend, the snow
-12. [The canopy](#the-canopy)
+12. [The canopy](#the-canopy) — struck v11.81: the retention field
 13. [Creatures](#creatures) — roles, predators, LOD, spawning, what was removed
 14. [The player](#the-player)
 14a. [The body's effects](#the-bodys-effects) — silt, bubbles, scraps; squash and stretch, banking, the stun; the flinch, the flush, the snap
@@ -75,7 +75,36 @@ Static instances (rafts, colonies) do not drift yet.
 map for cheap 3×3 lookups. `genChunk` is a generator run under a per-frame budget in `manageChunks()`. Chunk seams: positions
 are computed from integer grid indices so they match exactly. `terrainColor` (by substrate, young rock, lime in clear bright
 water, sulfur at the fissure, the shore by height, bare rock on steep ground) is shared with the far terrain; `waterColor`
-(world.js: by the floor's depth, toward silt with turbidity, green with plankton, brown in the plume) fills the water map.
+(world.js: by the floor's depth, toward silt with turbidity, brown in the plume; the plankton's green left it in v11.81) fills the water map.
+
+**The plankton** (v11.81, PLANKTON.md §3–4, §7, §12; world.js the plankton section, far.js the maps, scene.js the fog block). The water's own
+life is a field, never organisms: a standing stock C in mg/m³ of pigment, in three kinds — green (the greens' ancestor: bright, shallow, fed),
+gold (the floaters': stirred, freshly fed — the flank, the front, days after a storm) and red (the reds': the dim deep maximum under the
+mixed layer) — and the water's colour is which kind is winning. `plank(x,z,s)` is the column per place: C = `PLK.c0` 0.035 × 10^(`cexp` 2.1 ×
+the food less the vents' share), × (1 + `shallow` 1.5 × a floor within the lit layer × (1 + 0.6 shel)) for the benthic return, × (1 + `lee` 1.5
+× `leeW`) for the retention field (§12: the v9 canopy mask renamed for what it is — three eddies in the wake — and stripped of its paint; the sailer
+fleets and the buttons' `leePer` still pile up in it); the lit crop split green/gold by the stirred share (0.9 flow + 0.3 expo, halved over a
+shallow floor); X = log10(depth/u³), Simpson–Hunter's criterion with u the tidal stream on a spring (`tidalAt`). The numbers it lands on: the
+basin 0.06 (a gyre), the shelf 0.32, the fed flank's break 3.8 (gold 2.7), the lagoon 0.2 (green), the lee's eddy 0.25 against 0.10 past it, the
+gap's jet 0.33 (gold). **The maps**: the two crops on a log scale (`plankEnc`, 0.03–20) in the floor map's blue and alpha, X as (X−1)/5 in the
+water map's alpha — filled and blurred with the colour and the floor (`wmFill`/`wmBlur`, one sample() per texel), because the fragment shaders
+were at WebGL's 16 texture units and a third map could not be bound (seen: the world was the veil alone). **The clock** (`uFogB`, `FOG_B`,
+far.js `bloomTick` per frame): the front is a Gaussian on X about `xc` 2.1 (width `xs` 0.3), shifted by 3·log10(amp/springAmp) — the ring sits
+on the shelf break (~125 m where the stream round the rim's cylinder is 1 m/s, ~55 m where it is 0.75) at springs and moves onto the shelf
+(~38 m) at neaps, and is broken at the two stagnation points on the current's axis; it feeds the lit layer × (1 + `front` 2.0) and unmakes the
+deep maximum × (1 − 0.7). The storm's pulse: the rain of the past four days (`weatherAt`, 2 h steps) through a kernel rising over a day and
+decaying over three, less `calm` 0.15 (the trades' own showers — one most days — are the climatology, not a storm), × `storm` 4 on the gold:
+×1.7 at the peak of a 24-day run. **The vertical** (`bloomC`, from a texel, the floor's depth and the point's depth): green to 45 m fading
+out by 85, gold to 60 fading by 110, red a Gaussian at 95 ± 35 (the deep chlorophyll maximum; gone by ~165, TAXA's deep-rind floor); the red is
+not stored but derived — the lit crop × `red` 0.5 × a floor deeper than 60–140 × (1 − 0.6 stirred). **The colour** (`bloomTint`, `PIGK`): a
+kind's crop saturates twice, w1 = C/(C+`k1` 0.8) toward the kind's multiplier (green 1.05/1.06/0.62, gold 1.35/1.06/0.58, red 0.90/0.70/0.83:
+pigment absorbs blue and red; the reds leave a dimmer plum) and w2 = C/(C+`k2` 6) toward the heavy stage (green olive 1.15/0.92/0.70, gold brown
+1.20/0.88/0.60) — multipliers on the column's colour, applied in `fogVeil` at each of its two samples' own depth and on the CPU for the ambient
+(`bloomAt`, updateAtmosphere), so depth's darkening stands. The GLSL is generated from the same tables (`BLOOM_GLSL`). Every number is a start
+(the person, 22 Sep: plausible first, then tune). Seen (`test/render/v81_*.png`): the fed flank's break olive-green, the side break's ring
+olive, the lagoon a faint green over the flats, the thermocline over the fed slope a dim grey-green, the basin blue, the lee's patch its
+ordinary blue-teal with the fleets over it (the green ghost gone). Not built (passes 2–6): the snow off the field, the day and the year, the
+swarms, filter feeding, the bloom night.
 
 ## Landmarks
 
@@ -591,8 +620,9 @@ before anything compiles:
    at that depth, whatever lies below. The light scattered into the eye comes from the water within a few
    extinction lengths of it, so this is both the physics and the fix for the horizon: in v8 the fragment's own sample was
    used, and beyond the rim the map is the void's colour, so 30% of near-black was painted into every horizon — the
-   "runs into black" the person saw. Then: the canopy's colour (`WATER[12]`, baked into the GLSL) mixed in by the alpha
-   for water above −70 and shaded by `1−0.28·cw`; **daylight read at the bounded point** (`dlAt` 1: `0.3+0.7·dl`, `dl`
+   "runs into black" the person saw. Then: the plankton's tint (v11.81, [The plankton](#world-shape): `bloomTint` of `bloomC` at each sample's own depth,
+   from the floor map's blue and alpha and the water map's alpha; to v11.80 the canopy's colour `WATER[12]` mixed in by the alpha above −70 and
+   shaded by `1−0.28·cw`); **daylight read at the bounded point** (`dlAt` 1: `0.3+0.7·dl`, `dl`
    linear to `DL_REF` 420 deep with a `DL_MIN` 0.28 floor — one definition since v11.32, `daylightAt(y)` in world.js for the JS
 and `DL_GLSL(y)` in scene.js for the four shader sites, both measuring depth from the tide), so the veil is darker looking down
 into the deep and lighter looking up;
@@ -650,7 +680,7 @@ fog does the job and the tint is off. Applied to `MAT`, `MATBIG`, `MATFAR`, `GLO
 not to points, jellies or ink.
 
 **Light by place** (`atmosphere.js` `updateAtmosphere`): after the medium, biome and depth set the hemisphere/sun and
-the player glow; the canopy applies a 0.72 light factor. **The sun is lit by the fragment's own depth** (v8.4,
+the player glow (the canopy's 0.72 light factor went in v11.81). **The sun is lit by the fragment's own depth** (v8.4,
 `scene.js`, the sun-by-depth patch next to the fog block): `sun.intensity` is the surface value (1.2 × flicker × canopy)
 and three's directional-light call in `lights_lambert_vertex` (Lambert, per vertex, world height from `mvPosition`)
 and `lights_fragment_begin` (Phong, per fragment, `vFogPos.y`) is patched to scale `directLight.color` by the same
@@ -1408,6 +1438,11 @@ matrix (every hunter at contact behind each of its prey, the player as all three
 would hold; its findings are COMBAT.md §7.
 
 ## The canopy
+
+**Struck in v11.81 (PLANKTON.md §12): the mask is the retention field `leeW` (world.js, the `EDDY` table) and places only the sailer fleets and
+the buttons (`leePer`); the green water, the floor's shade, the snow's floc boost, the light's 0.72, the shafts' and the sound's lid, `underCanopy`,
+`canopyFade` and `WATER_CANOPY` are gone — the water there is a little greener because it is productive (the crop's `lee` term), not because it is
+under something. The rest of this section is the history.**
 
 Biome 12 is a *surface* biome. `canopyW(x,z)` (world.js) is a soft mask: three patches (`CANOPY` table: angle, radius,
 size — over the outer plain/void, the lantern fields, the vent field), each a dense core inside 0.55×size and a halo

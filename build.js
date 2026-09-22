@@ -2,7 +2,7 @@
 // build.js — the build in Node (a port of build.py, so one runtime builds and tests; the outputs are byte-identical).
 //
 //   node build.js          tethys.html (single file, everything inlined), dev.html (loads src/*.js separately), src/INDEX.md
-//   node build.js --test   the same, then node test/lint.js, node test/physics.js, node test/anim.js, node test/steer.js, node test/audio.js, node test/snow.js, node test/combat.js, node test/pool.js, node test/registry.js, node test/census.js 40, node test/player.js, node test/live.js and node test/smoke.js (player, live and smoke on both tiers); exit 1 on any failure
+//   node build.js --test   the same, then node test/lint.js, node test/physics.js, node test/anim.js, node test/steer.js, node test/audio.js, node test/snow.js, node test/plankton.js, node test/combat.js, node test/pool.js, node test/registry.js, node test/census.js 40, node test/player.js, node test/live.js and node test/smoke.js (player, live and smoke on both tiers); exit 1 on any failure
 //
 // Build order comes from src/order.txt. src/INDEX.md is generated: every top-level name, its file and line. Do not edit
 // INDEX.md by hand; it is rewritten on every build. build.py is kept for the sandbox sessions; keep the two in step.
@@ -81,7 +81,7 @@ console.log('built tethys.html, dev.html, src/INDEX.md ('+ORDER.length+' files, 
 // ---------- tests ----------
 if(process.argv.includes('--test')){
   let ok=true;
-  const runs=[[['test/lint.js'],{}],[['test/physics.js'],{}],[['test/anim.js'],{}],[['test/steer.js'],{}],[['test/steer.js'],{TIER:'low'}],[['test/audio.js'],{}],[['test/snow.js'],{}],[['test/combat.js'],{}],[['test/pool.js'],{}],[['test/registry.js'],{}],[['test/player.js'],{}],[['test/player.js'],{TIER:'low'}],[['test/census.js','40'],{}],[['test/live.js'],{}],[['test/live.js'],{TIER:'low'}],[['test/smoke.js'],{}],[['test/smoke.js'],{TIER:'low'}]];
+  const runs=[[['test/lint.js'],{}],[['test/physics.js'],{}],[['test/anim.js'],{}],[['test/steer.js'],{}],[['test/steer.js'],{TIER:'low'}],[['test/audio.js'],{}],[['test/snow.js'],{}],[['test/plankton.js'],{}],[['test/combat.js'],{}],[['test/pool.js'],{}],[['test/registry.js'],{}],[['test/player.js'],{}],[['test/player.js'],{TIER:'low'}],[['test/census.js','40'],{}],[['test/live.js'],{}],[['test/live.js'],{TIER:'low'}],[['test/smoke.js'],{}],[['test/smoke.js'],{TIER:'low'}]];
   for(const [args,env] of runs){
     console.log('\n$ '+Object.entries(env).map(([k,v])=>k+'='+v+' ').join('')+'node '+args.join(' '));
     const r=spawnSync(process.execPath,args,{cwd:ROOT,stdio:'inherit',env:Object.assign({},process.env,env)});

@@ -15,9 +15,7 @@ function groundAt(x,z){const ch=chunkAt(x,z);return ch?ch.h(x,z):sample(x,z).h;}
 // every cell line, one-sided — the face above the point never registered). Deterministic where groundAt is not: it never asks
 // whether a neighbour happens to be loaded. The same rule buildTerrain's hAt1 uses for the cavity term.
 function hOut(ch,x,z){return x<ch.x0||x>ch.x0+CELL||z<ch.z0||z>ch.z0+CELL?sample(x,z).h:ch.h(x,z);}
-// Under the canopy near the surface: the one place the water's look is not the floor's. "Mats" until v11.33 — the raft colonies
-// went in v11.16 and the canopy is buttons and sailers now (DRIFTERS.md), which are discs in fleets, not a ceiling.
-function underCanopy(x,z,y){return canopyW(x,z)*canopyFade(y)>0.5;} // v11.32: the shader's ramp (world.js canopyFade), not a cut at -70
+// underCanopy (v11.13–v11.80: the water's look, the light, the shafts and the sound under the canopy mask) went with the canopy's paint (v11.81, PLANKTON.md §12).
 
 function makeChunk(i,j){
   const x0=i*CELL-HALF,z0=j*CELL-HALF,hg=new Float32Array(GR*GR),fg=new Float32Array(GR*GR*NF);
@@ -71,7 +69,6 @@ function terrainColor(x,z,h,f,sl,tc,n){
       const kl=smooth(6,18,h)*(0.4+0.6*m),kr=smooth(0.55,0.8,fbm(x*0.05+21,z*0.05+8,2))*0.7;r=lerp(r,lerp(land[0],rust[0],kr)*k,kl);g=lerp(g,lerp(land[1],rust[1],kr)*k,kl);bl=lerp(bl,lerp(land[2],rust[2],kr)*k,kl);}
     const q=smooth(0.9,1.9,sl);
     r=lerp(r,rock[0]*k,q);g=lerp(g,rock[1]*k,q);bl=lerp(bl,rock[2]*k,q);
-    {const cf=canopyFade(h);if(cf>0){const cw=canopyW(x,z)*cf;if(cw>0){const sd=1-0.22*cw;r*=sd;g*=sd;bl*=sd;}}} // the shade under the canopy (v11.13): the floor darker under the rafts, by the same mask that places them; the far terrain colours through here too, so they match. cf first: it is a smooth and canopyW is fbm, and it is 0 below CAN_LO (v11.32)
     tc[n*3]=r;tc[n*3+1]=g;tc[n*3+2]=bl;
 }
 // a generator (v11.12): the colouring is 2401 vertices with three or four fbm each, ~10 ms in one step against a 6 ms budget; eight rows a step
@@ -171,14 +168,14 @@ function poolCull(){ // after cullChunks has set every cell's visible and near: 
     P.nVis=n;P.im.count=n;}
 }
 function poolStats(){let draws=0,inst=0;for(const P of POOLS.values()){if(P.n>0)draws++;inst+=P.n;}return {pools:POOLS.size,draws:draws,inst:inst};} // the readout (main.js)
-function cellCanopy(ch){return Math.max(canopyW(ch.cx,ch.cz),canopyW(ch.x0,ch.z0),canopyW(ch.x0+CELL,ch.z0),canopyW(ch.x0,ch.z0+CELL),canopyW(ch.x0+CELL,ch.z0+CELL));}
+function cellLee(ch){return Math.max(leeW(ch.cx,ch.cz),leeW(ch.x0,ch.z0),leeW(ch.x0+CELL,ch.z0),leeW(ch.x0,ch.z0+CELL),leeW(ch.x0+CELL,ch.z0+CELL));} // the retention field over the cell (v11.81; cellCanopy to v11.80)
 // a generator (v11.12): turf is 1200 tries a cell and the strap 2400, an envW and an fbm each; a yield every 200 keeps a step under the budget (the rng is untouched by a yield)
 function* placeFloraType(ch,rng,f){
   if(f.big)return; // structures are placed and drawn once for the whole world (far.js); placeBigSolids adds their collision
   const rock=f.mat===MATROCK; // the rock is placed first (genChunk) and never asks; everything after it does
   let maxN=f.per||0; // the density at full tolerance (per cell); the envelope scales it per try
   if(f.rim){const pd=Math.hypot(ch.cx-PIT[0],ch.cz-PIT[1]);if(pd<300)maxN=Math.max(maxN,60);}
-  const cw=f.canopyPer?cellCanopy(ch):0;if(cw>0.03)maxN=Math.max(maxN,f.canopyPer);
+  const cw=f.leePer?cellLee(ch):0;if(cw>0.03)maxN=Math.max(maxN,f.leePer);
   if(!maxN)return;
   const tries=Math.round(maxN*Q.flora),list=[],d=new THREE.Object3D(),maxSlope=f.maxSlope!==undefined?f.maxSlope:(f.big?9:0.9);
   const hAt=(x,z)=>hOut(ch,x,z); // settleOn's probes reach past the cell line (v11.31.3); ch.h alone clamps there
@@ -188,7 +185,7 @@ function* placeFloraType(ch,rng,f){
     let p=(f.per||0)/maxN*(f.envs?envsW(ch,f.envs,x,z):f.env?ch.w(f.env,x,z):1);if(f.rare)p*=f.rare; // envs, rare (v11.66): the best of several envelopes (a shed lies where its kind lives), and a chance under one for a thing rarer than one try a cell
     if(f.rim){const pd=Math.hypot(x-PIT[0],z-PIT[1]);if(pd>98&&pd<150)p=Math.max(p,f.rim);}
     if(f.pocket)p*=0.1+smooth(0.6,0.72,fbm(x*f.pocket+53,z*f.pocket+29,2));
-    if(cw>0.03)p=Math.max(p,canopyW(x,z)*f.canopyPer/maxN);
+    if(cw>0.03)p=Math.max(p,leeW(x,z)*f.leePer/maxN);
     if(f.field)p*=clamp(0.1+4*Math.pow(fbm(x*f.field+31,z*f.field+17,2),2.5),0,1.6);
     if(rng()>=p)continue;
     const h=ch.h(x,z);
@@ -344,12 +341,12 @@ function chunkPoint(ch,rng,env,land){for(let k=0;k<40;k++){const x=ch.x0+rng()*C
 function openY(ch,p,rng,lo,hi){if(p.y<CHEMO)return -60-rng()*260;return clamp(p.y+lo+rng()*(hi-lo),p.y+4,-8);}
 // v11.26: a cell spawns what the ledger holds for it (ecology.js ecoTake), placed by kind through placeKind — the same routine the
 // ledger's recruits use (ecoTick), with off:true (out of the player's sight) and juv:true (born small). The sailers' fleets are the
-// canopy's and outside the ledger: drifters die of nothing.
+// lee's and outside the ledger: drifters die of nothing.
 function* spawnChunkCreatures(ch,rng){
   const c=ch.i*NCELL+ch.j;ecoCap(c,ch);
-  // the sailers' fleets: where the eddies keep drifters (the canopy mask), on the water, over deep ground; one great sailer in three cells
-  const cw=cellCanopy(ch);if(cw>0.3){const n=Math.round((1+3*cw)*Q.creatures);let g=rng()<0.35;
-    for(let k=0;k<n+(g?1:0);k++){let p=null;for(let tr=0;tr<12&&!p;tr++){const x=ch.x0+rng()*CELL,z=ch.z0+rng()*CELL;if(canopyW(x,z)>0.3&&ch.h(x,z)<-40)p=V3(x,0,z);}if(!p)break;
+  // the sailers' fleets: where the eddies keep drifters (the retention field, world.js leeW), on the water, over deep ground; one great sailer in three cells
+  const cw=cellLee(ch);if(cw>0.3){const n=Math.round((1+3*cw)*Q.creatures);let g=rng()<0.35;
+    for(let k=0;k<n+(g?1:0);k++){let p=null;for(let tr=0;tr<12&&!p;tr++){const x=ch.x0+rng()*CELL,z=ch.z0+rng()*CELL;if(leeW(x,z)>0.3&&ch.h(x,z)<-40)p=V3(x,0,z);}if(!p)break;
       const kind=g&&k===n?'greatsailer':'sailer',c=spawn(ch,kind,p,rng);c.g.rotation.y=rng()*TAU;yield;}}
   for(let ei=0;ei<SPAWN.length;ei++){const e=SPAWN[ei];if(POP.k[ei][c]<0.02)continue;const n=ecoTake(ei,c,rng);if(n>0){const placed=yield* placeKind(ch,e,n,rng,{ent:ei});POP.n[ei][c]=placed/Q.creatures;}} // the ledger holds what stood (a hook with no structure to hang in is not owed)
 }

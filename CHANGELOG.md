@@ -5395,3 +5395,63 @@ does not sway with the hingeshell" (a still of a hingeshell curving over the flo
 **Unseen, ask in this order**: whether 15° at a hard turn is the right amount of swing (`COMB_LAG.yaw`), then whether the fold-back under acceleration
 reads at all (`COMB_LAG.acc` is small on purpose), then whether any other rigid part wants the same treatment — the spears, the claws and the tread's
 feeding plates are all still stiff.
+
+## v11.81 — the plankton: the field, the three kinds in the water's colour, the ring, and the canopy ghost gone (22 Sep 2026)
+
+PLANKTON.md §13 pass 1, as the person asked: the field, the bloom map, the three pigment kinds through the water's colour and the veil, and the
+canopy strip of §12. Not the snow, the swarms, the season or the bloom night (passes 2–6).
+
+- **The field** (world.js, the plankton section; DESIGN World, "The plankton"). `plank(x,z,s)` is the column per place: a standing stock in mg/m³
+  of pigment from the food less the vents' share (`PLK.c0` 0.035 × 10^(2.1·nut)), × the benthic return over a shallow floor (`shallow` 1.5, and
+  0.6 more of it in the lagoon's shelter), × the retention field (`lee` 1.5 × `leeW`); split green/gold by the stirred share (the current and the
+  waves, halved over a shallow floor); and X = log10(depth/u³), Simpson–Hunter's criterion with u the tidal stream at full flood on a spring
+  (`tidalAt`). `bloomC` puts the vertical on it by the clock — green to 45 m fading by 85, gold to 60 fading by 110, red a Gaussian at 95 ± 35,
+  derived from the lit crop under a floor deeper than 60–140 where the column is not stirred — and `bloomTint` colours the water by each kind's
+  crop: w1 = C/(C+0.8) toward the kind's tint (`PIGK`: green 1.05/1.06/0.62, gold 1.35/1.06/0.58, red 0.90/0.70/0.83 — pigment absorbs blue and
+  red; the reds leave a dimmer plum), w2 = C/(C+6) toward the heavy stage (olive, brown). `plankAt(x,y,z)` is the field exactly, for the snow
+  (pass 2) and the tests. The numbers (`node test/plankton.js`): the basin 0.06 (a gyre's 0.03–0.08), the shelf 0.32, the fed flank's break 3.8
+  (gold 2.7 over green 1.1), the lagoon 0.2 (green 50:1), the lee's eddy 0.25 against 0.10 past it and still poorer than the shelf, the gap's jet
+  0.33 (gold), the vent field 0.12 (the heat's food is chemosynthetic, not pigment).
+- **The ring.** The front is a Gaussian on X about `xc` 2.1 (width `xs` 0.3), shifted every frame by 3·log10(amp/springAmp) (`FOG_B`, far.js
+  `bloomTick`): at springs it sits on the shelf break — ~125 m where the stream round the rim's cylinder is 1 m/s, ~55 m where it is 0.75 — and at
+  neaps it moves onto the shelf (~38 m at r 475): the 13-day breathing of §4. It is broken at the two stagnation points on the current's axis (the
+  fed flank's centre and the lee), since the potential flow round the rim has no stream there. It feeds the lit layer × (1 + `front` 2.0) and
+  unmakes the deep maximum × (1 − 0.7). The doc's "40–80 m contour" was arithmetic on the far-field speed; with the flanks' 1 m/s the criterion lands
+  the ring at the break, which is what the doc meant, and `xc` was lowered from 2.35 to 2.1 to put it there.
+- **The storm's pulse.** The rain of the past four days (`weatherAt`, 2 h steps) through a kernel rising over a day and decaying over three, less
+  `calm` 0.15 — the trades' own showers, one most days, are the climatology and not a storm (at first the pulse counted them and the gold sat at
+  ×1.9 everywhere) — × `storm` 4 on the gold: ×1.7 at the peak of a 24-day run, ×1 at its least.
+- **The maps** (scene.js, far.js `wmFill`/`wmBlur`, `wmBloom`, `bloomAt`). The two crops on a log scale (`plankEnc`, 0.03–20) in the floor map's
+  blue and alpha, X as (X−1)/5 in the water map's alpha; filled and blurred with the colour and the floor from the same sample per texel, so the
+  ring is drawn at the maps' 36 m grain and nothing is refilled. The first build gave the bloom its own 720×720 map beside the water map, as the
+  doc and the ask had it: **every tinted material failed to compile** — the fragment shaders were at WebGL's 16 texture units — and the world was
+  the veil alone (seen in the first after-stills: no floor, no body). Packing into the existing maps' free channels is the fix and costs nothing.
+  CLAUDE.md's Things that bite says so now.
+- **The veil** (scene.js `fogVeil`): each of its two samples is tinted at its own depth (`bloomTint(bloomC(…))`) after the floor's blend, so a ray
+  looking down into the deep maximum reads plum-grey and one along the shelf reads the shelf's green; the ambient (atmosphere.js
+  `updateAtmosphere`) does the same on the CPU (`bloomAt`). `waterColor` lost its plankton guess (nut × the floor's light × 0.3, greener), which
+  the field replaces; the turbidity's grey and the plume's brown stay.
+- **The canopy strip** (§12). `canopyW` is `leeW`, the retention field, with the v9 positions (three eddies in the wake, the `EDDY` table): it
+  places the sailer fleets and the buttons (`leePer`, was `canopyPer`) and feeds the crop's `lee` term, and nothing else. Gone: `WATER_CANOPY` and
+  the green mixed by the alpha (scene.js, atmosphere.js), the floor's 22% shade (chunks.js), the snow's floc boost and its canopy slot (atmosphere.js,
+  `pf` stride 7 → 6), the light's 0.72 and the sun's (atmosphere.js), the shafts' 1 − 0.85 lid, the caustic's 1 − 0.85 shade (scene.js `LIGHT_GLSL`),
+  the sound's lid and the column bed's 0.35 (audio.js), `underCanopy`, `canopyFade`, `CAN_LO`/`CAN_HI`, `CAN_GLSL`. The water map's alpha, which
+  was the canopy's weight, now carries X. The man-o'-war's patch is the ordinary blue-teal with the fleets over it.
+- **ISLANDS[0]**: untouched — `sample()` is not edited; proved anyway against HEAD's world.js over the old square (185,761 samples at 8 m, the
+  ground and all nine fields `Object.is`) and the whole world at 400 m (16,900): 0 differ.
+- **Tests**: `test/plankton.js` (new, in `--test`): the table above, no NaN across the world at four depths, the encoding in range, the doc's
+  numbers, the vertical, the ring on a side radial (crest at r 850, the floor −122) and broken on the axis and moving in at neaps (−38 at r 475), the
+  maps against the field at a texel's centre (0.3 of 255 after the blur) and `bloomAt` against `plankAt` within 5%, the GLSL from the tables, the
+  pulse bounded. `node build.js --test` green on both tiers; `test/snow.js` unchanged but for the floc's canopy term.
+- **Seen** (`test/render/v81_before_*.png`, `v81_after_*.png`, the same five poses from the same build's `tp` and heading, the loop driven by hand
+  in an iframe since the pane would not draw while the app was hidden): the fed flank's break at −20 (599, −672) blue-teal before, olive-green
+  after — the flank's gold at 2.7 mg/m³ and the boot's spring tide; the side break's ring (622, 579, `v81_after_ring.png`) olive; the lagoon at −8
+  a bright faint green over the flats, the sedge and the sand as they were; the thermocline at −64 over the fed slope a dim grey-green, the plum
+  faint; the basin at −20 the same blue as before; the man-o'-war's patch: the green ghost with its hard band at −60 to −90 before, the ordinary
+  blue-teal with the fleets and the buttons over it after.
+
+**Unseen, ask in this order**: whether the fed flank's olive is right or too heavy (`PLK.k1` 0.8 and `k2` 6 set how soon a crop shows and when it
+goes olive; the gold's `PIGK[1]`), then whether the ring at the side break reads as a band of richer water or as a wall (`PLK.front` 2.0, `xs` 0.3),
+then whether the lagoon's green is enough (`shallow` 1.5), then whether the thermocline's plum shows at all over the deep slope (`red` 0.5, the
+red's `PIGK[2]`), then whether the storm's bloom after a rainy stretch reads as an event (`storm` 4, `calm` 0.15), then the sound under the old
+patches — the column bed lost its 0.35 lid there and nothing was heard from here.

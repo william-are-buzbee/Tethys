@@ -7,14 +7,36 @@
 // beyond the loaded cells is up within a second or two of boot (behind the menu), the rest follows.
 
 // ---------- the water map ----------
-// waterColor() of the floor's conditions (world.js), canopy weight in alpha, one texel per ~36 units, box-blurred so borders
+// waterColor() of the floor's conditions (world.js), the front's X in alpha (v11.81), one texel per ~36 units, box-blurred so borders
 // blend over ~70 units. A coarse pass at boot (every 4th texel); each region refines its own block as it is built.
-const WM_T=2*HALF/WM_N,wmRaw=new Float32Array(WM_N*WM_N*4),fmRaw=new Float32Array(WM_N*WM_N),wfRaw=new Float32Array(WM_N*WM_N); // fmRaw (v11.27): the floor's depth, 0..1 of FM_SCALE, filled and blurred beside the colour; wfRaw (v11.44): the place's wave energy (world.js waveFac) in the floor map's green
+const WM_T=2*HALF/WM_N,wmRaw=new Float32Array(WM_N*WM_N*4),fmRaw=new Float32Array(WM_N*WM_N),wfRaw=new Float32Array(WM_N*WM_N),pgRaw=new Float32Array(WM_N*WM_N),pfRaw=new Float32Array(WM_N*WM_N),wmTx=[0,0,0]; // fmRaw (v11.27): the floor's depth, 0..1 of FM_SCALE, filled and blurred beside the colour; wfRaw (v11.44): the place's wave energy (world.js waveFac) in the floor map's green; pgRaw, pfRaw (v11.81): the plankton's green and gold crops (world.js plankTexel) in its blue and alpha, X in the water map's alpha
 function wmFill(i0,i1,j0,j1,step){
   for(let j=j0;j<j1;j+=step)for(let i=i0;i<i1;i+=step){
-    const x=-HALF+(i+0.5*step)*WM_T,z=-HALF+(j+0.5*step)*WM_T,s=sample(x,z),c=waterColor(s),a=canopyW(x,z),fd=clamp(-s.h/FM_SCALE,0,1),wf=waveEnergy(x,z,s);
-    for(let jj=j;jj<Math.min(j1,j+step);jj++)for(let ii=i;ii<Math.min(i1,i+step);ii++){const n=(jj*WM_N+ii)*4;wmRaw[n]=c[0];wmRaw[n+1]=c[1];wmRaw[n+2]=c[2];wmRaw[n+3]=a;fmRaw[jj*WM_N+ii]=fd;wfRaw[jj*WM_N+ii]=wf;}
+    const x=-HALF+(i+0.5*step)*WM_T,z=-HALF+(j+0.5*step)*WM_T,s=sample(x,z),c=waterColor(s),fd=clamp(-s.h/FM_SCALE,0,1),wf=waveEnergy(x,z,s),p=plankTexel(x,z,s,wmTx);
+    for(let jj=j;jj<Math.min(j1,j+step);jj++)for(let ii=i;ii<Math.min(i1,i+step);ii++){const n=(jj*WM_N+ii)*4,m=jj*WM_N+ii;wmRaw[n]=c[0];wmRaw[n+1]=c[1];wmRaw[n+2]=c[2];wmRaw[n+3]=p[2];fmRaw[m]=fd;wfRaw[m]=wf;pgRaw[m]=p[0];pfRaw[m]=p[1];} // alpha: the canopy's weight to v11.80, the front's X since v11.81
   }
+}
+// ---------- the plankton in the maps (v11.81, PLANKTON.md §7) ----------
+// The lit layer's two crops (world.js plankTexel: green and gold on a log scale) ride the floor map's blue and alpha and the tidal front's
+// criterion X the water map's alpha — filled and blurred with the colour and the floor above (one sample() per texel, nothing extra), so the
+// ring is drawn at the maps' 36 m grain. The fragment shaders were at WebGL's 16 texture units, so a map of their own could not be bound. Static per
+// place; the clock's part — the ring's breathing with the spring–neap cycle and the storm's pulse — is uFogB (world.js FOG_B), written per frame by bloomTick.
+// the maps at a point, bilinear like the GPU reads them: out = [green enc, gold enc, X enc, the floor's depth in m]
+function wmBloom(x,z,out){
+  const u=(x+HALF)/WM_T-0.5,v=(z+HALF)/WM_T-0.5,i0=clamp(Math.floor(u),0,WM_N-1),j0=clamp(Math.floor(v),0,WM_N-1),i1=Math.min(i0+1,WM_N-1),j1=Math.min(j0+1,WM_N-1);
+  const fu=clamp(u-i0,0,1),fv=clamp(v-j0,0,1),F=FM_DATA,W=WM_DATA,bl=(D,c)=>{const a=D[(j0*WM_N+i0)*4+c]*(1-fu)+D[(j0*WM_N+i1)*4+c]*fu,b=D[(j1*WM_N+i0)*4+c]*(1-fu)+D[(j1*WM_N+i1)*4+c]*fu;return (a*(1-fv)+b*fv)/255;};
+  out[0]=bl(F,2);out[1]=bl(F,3);out[2]=bl(W,3);out[3]=bl(F,0)*FM_SCALE;return out;
+}
+// the crops at a point from the maps, now: out = [green, gold, red] mg/m³ (the CPU's read of what the veil draws; updateAtmosphere)
+const bmB=[0,0,0,0];
+function bloomAt(x,y,z,out){wmBloom(x,z,bmB);return bloomC(bmB,bmB[3],TIDE-y,out);}
+// the clock's part of the field, per frame: the front's criterion shifted by the tide's amplitude (u ∝ amp: 3·log10), and the storm's pulse —
+// the rain of the past four days (weatherAt, 2 h steps) through a kernel rising over a day and decaying over three, recomputed every 2 s
+let bmPulse=0,bmPulseT=-1e9;
+function bloomTick(){
+  FOG_B[0]=PLK.xc+3*Math.log10(tideAmp(clockH)/TIDE_A1);
+  if(clockH-bmPulseT>2*CLOCK_RATE||clockH<bmPulseT){let p=0;for(let tau=2;tau<=96;tau+=2)p+=weatherAt(clockH-tau).rain*(tau/30)*Math.exp(1-tau/30);bmPulse=p*2/30;bmPulseT=clockH;}
+  FOG_B[2]=PLK.storm*Math.max(0,bmPulse-PLK.calm);
 }
 // the floor's depth at a point as the shader reads it (bilinear on the blurred map), in units (v11.27)
 function wmFloor(x,z){
@@ -28,7 +50,7 @@ function wmWave(x,z){
   const fu=clamp(u-i0,0,1),fv=clamp(v-j0,0,1),D=FM_DATA;
   const a=D[(j0*WM_N+i0)*4+1]*(1-fu)+D[(j0*WM_N+i1)*4+1]*fu,b=D[(j1*WM_N+i0)*4+1]*(1-fu)+D[(j1*WM_N+i1)*4+1]*fu;return (a*(1-fv)+b*fv)/255;
 }
-// the map at a point, bilinear like the GPU reads it: rgb the floor's water, a the canopy weight (0..1 floats)
+// the map at a point, bilinear like the GPU reads it: rgb the floor's water, a the front's X (0..1 floats)
 function wmSample(x,z,out){
   const u=(x+HALF)/WM_T-0.5,v=(z+HALF)/WM_T-0.5,i0=clamp(Math.floor(u),0,WM_N-1),j0=clamp(Math.floor(v),0,WM_N-1),i1=Math.min(i0+1,WM_N-1),j1=Math.min(j0+1,WM_N-1);
   const fu=clamp(u-i0,0,1),fv=clamp(v-j0,0,1),D=WM_DATA;
@@ -37,10 +59,10 @@ function wmSample(x,z,out){
 }
 function wmBlur(i0,i1,j0,j1){
   for(let j=Math.max(0,j0);j<Math.min(WM_N,j1);j++)for(let i=Math.max(0,i0);i<Math.min(WM_N,i1);i++){
-    let r=0,g=0,b=0,a=0,f=0,wf=0,n=0;
-    for(let dj=-1;dj<=1;dj++){const jj=j+dj;if(jj<0||jj>=WM_N)continue;for(let di=-1;di<=1;di++){const ii=i+di;if(ii<0||ii>=WM_N)continue;const k=(jj*WM_N+ii)*4;r+=wmRaw[k];g+=wmRaw[k+1];b+=wmRaw[k+2];a+=wmRaw[k+3];f+=fmRaw[jj*WM_N+ii];wf+=wfRaw[jj*WM_N+ii];n++;}}
+    let r=0,g=0,b=0,a=0,f=0,wf=0,pg=0,pf=0,n=0;
+    for(let dj=-1;dj<=1;dj++){const jj=j+dj;if(jj<0||jj>=WM_N)continue;for(let di=-1;di<=1;di++){const ii=i+di;if(ii<0||ii>=WM_N)continue;const k=(jj*WM_N+ii)*4,m=jj*WM_N+ii;r+=wmRaw[k];g+=wmRaw[k+1];b+=wmRaw[k+2];a+=wmRaw[k+3];f+=fmRaw[m];wf+=wfRaw[m];pg+=pgRaw[m];pf+=pfRaw[m];n++;}}
     const k=(j*WM_N+i)*4;WM_DATA[k]=Math.round(255*clamp(r/n,0,1));WM_DATA[k+1]=Math.round(255*clamp(g/n,0,1));WM_DATA[k+2]=Math.round(255*clamp(b/n,0,1));WM_DATA[k+3]=Math.round(255*clamp(a/n,0,1));
-    FM_DATA[k]=Math.round(255*clamp(f/n,0,1));FM_DATA[k+1]=Math.round(255*clamp(wf/n,0,1));
+    FM_DATA[k]=Math.round(255*clamp(f/n,0,1));FM_DATA[k+1]=Math.round(255*clamp(wf/n,0,1));FM_DATA[k+2]=Math.round(255*clamp(pg/n,0,1));FM_DATA[k+3]=Math.round(255*clamp(pf/n,0,1));
   }
   waterMap.needsUpdate=true;floorMap.needsUpdate=true;
 }
@@ -134,7 +156,7 @@ const LMK={meshes:[]};
 // forest read as a green floor. A sparse stand-in for each: every 5th stipe as a crossed pair of olive cards stretched to
 // the surface with a canopy pad on top (a wall of stalks from afar), every 3rd bladder as a thin crossed card the height of the water
 // column with a pad on top, rafts and colonies as flat octagons. Placed by the same density rules as
-// placeFloraType (biome, field, pocket, canopy) from a pure per-cell rng, drawn by the region, and zeroed inside loaded
+// placeFloraType (biome, field, pocket, the lee) from a pure per-cell rng, drawn by the region, and zeroed inside loaded
 // cells the way the far terrain is sunk. They do not match the near flora one for one; only the density does.
 function impGeo(tris){ // tris: [[x,y,z]x3, [r,g,b]] with the normal from the winding
   const pos=[],nor=[],col=[];
@@ -164,11 +186,11 @@ const impCache=new Array(NCELL*NCELL).fill(null);
 function* impostorsGen(i,j){
   let L=impCache[i*NCELL+j];if(L)return L;L=[];
   const x0=i*CELL-HALF,z0=j*CELL-HALF,d=new THREE.Object3D();
-  const cw=Math.max(canopyW(x0+CELL/2,z0+CELL/2),canopyW(x0,z0),canopyW(x0+CELL,z0),canopyW(x0,z0+CELL),canopyW(x0+CELL,z0+CELL));
+  const cw=Math.max(leeW(x0+CELL/2,z0+CELL/2),leeW(x0,z0),leeW(x0+CELL,z0),leeW(x0,z0+CELL),leeW(x0+CELL,z0+CELL)); // the retention field (v11.81; the canopy mask to v11.80)
   for(let si=0;si<FAR_IMP.length;si++){const sp=FAR_IMP[si];
     const f=sp.f,rng=mulberry((((i*73856093)^(j*19349663)^((si+40)*83492791)^0x2545f491)>>>0));
     let maxN=f.per||0;
-    const canopy=f.canopyPer&&cw>0.03;if(canopy)maxN=Math.max(maxN,f.canopyPer);
+    const lee=f.leePer&&cw>0.03;if(lee)maxN=Math.max(maxN,f.leePer);
     const tries=Math.round(maxN*Q.flora/sp.stride),floor=f.y!=='surface';
     for(let n=0;n<tries;n++){
       if(n%50===49)yield;
@@ -176,7 +198,7 @@ function* impostorsGen(i,j){
       // the envelope can only lower the chance: reject on the cheap terms first, sample() only for the rest
       const field=f.field?clamp(0.1+4*Math.pow(fbm(x*f.field+31,z*f.field+17,2),2.5),0,1.6):1;
       const pocket=f.pocket?0.1+smooth(0.6,0.72,fbm(x*f.pocket+53,z*f.pocket+29,2)):1;
-      const cterm=canopy?canopyW(x,z)*f.canopyPer/maxN:0;
+      const cterm=lee?leeW(x,z)*f.leePer/maxN:0;
       if(u>=Math.max(pocket,cterm)*field)continue;
       const s=sample(x,z),h=s.h,sl=Math.hypot((sample(x+STEP,z).h-h)/STEP,(sample(x,z+STEP).h-h)/STEP);
       if(u>=Math.max((f.per||0)/maxN*(f.env?envW(f.env,h,sl,fixF(s.f,sl)):1)*pocket,cterm)*field)continue;

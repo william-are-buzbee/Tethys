@@ -1,6 +1,6 @@
 # PLANKTON.md — the water's own life: the field, the day, the year, the colour and the swarm
 
-**Status: designed, not built (22 Sep 2026).** Written from a discussion of 22 Sep about marine snow — the person: marine snow is
+**Status: pass 1 built as v11.81 (22 Sep 2026) — the field (`plank`), the three kinds through the veil, the front ring by the tide, the storm's pulse, the canopy strip of §12; the bloom map went into the water and floor maps' free channels (the shaders were at 16 texture units). Passes 2–6 designed, not built.** Written from a discussion of 22 Sep about marine snow — the person: marine snow is Written from a discussion of 22 Sep about marine snow — the person: marine snow is
 "one of the more important effects in the game visually for keeping orientation, space and size disparity intact", and refining it
 asks the microbial question. This doc answers it once for the whole game: what lives in the water, what decides it, what it does to
 the light, and how much of it the simulation actually carries. Upstream: `PLANET.md` (the chemocline, the upwelling, the trades, the

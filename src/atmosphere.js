@@ -313,11 +313,11 @@ function updateFume(dt,above){const K=SKY;fume.visible=above;if(!above)return;co
 // its cell — position, width and phase hashed from (ci, cj) — so when the camera moves the set of cells shifts and the shafts stay put,
 // the ones at the edge faded by distance from the centre. Each is turned to face the camera about the vertical; the vertices are
 // written on the CPU each frame (SH_N × 4, the snow's way). Alpha per shaft: none over water shallower than 4 m under its top, full at
-// 16 (it never reaches the ground: the bottom stops 1.5 m over groundAt); by 1 - 0.85 canopy (the water map); fading within 5 m of the
+// 16 (it never reaches the ground: the bottom stops 1.5 m over groundAt); fading within 5 m of the
 // camera (so the near plane never slices one). In the shader: a soft width, a profile that rises over the top 14% and decays down
 // the length, the fog's extinction only (an additive thing takes no veil, DESIGN). Blended as screen since v11.50.1, see shM.
 // Strength: SH_A × the beam's share × the sky's light × wk (hidden the frame the camera is in air, faded in under it, like the shimmer).
-// Believability: crepuscular rays through a wave surface, only from a sun that is up and clear, never under the canopy or a shower.
+// Believability: crepuscular rays through a wave surface, only from a sun that is up and clear, never under a shower.
 const SH_K=Q.shafts,SH_N=SH_K*SH_K,SH_S=7.0,SH_L=30,SH_TOP=3,SH_A=0.16,SH_FOC=8; // SH_FOC (v11.39): the depth at which a shaft reads the surface's focusing (scene.js cauFocus) — its brightness is the same field the floor's net is drawn from; the two-sine flicker it had is gone
 const shP=new Float32Array(SH_N*12),shA=new Float32Array(SH_N*4),shV=new Float32Array(SH_N*4),shPh=new Float32Array(SH_N*4),shUV=new Float32Array(SH_N*8);
 for(let i=0;i<SH_N;i++){const b=i*4;shV[b]=0;shV[b+1]=0;shV[b+2]=1;shV[b+3]=1;shUV.set([0,0,1,0,1,1,0,1],i*8);}
@@ -332,7 +332,6 @@ const shM=new THREE.ShaderMaterial({uniforms:shU,transparent:true,depthWrite:fal
     'float d=vD;float tn=exp(-uFogD*uFogD*d*d);float ex=mix(exp(-uFogP.x*d),tn,uFogP.y)'+FOG_CUT_GLSL+';gl_FragColor=vec4(uCol*(uK*vA*w*pr*fl*ex),1.0);}'});
 const shafts=new THREE.Mesh(shG,shM);shafts.frustumCulled=false;shafts.renderOrder=0;shafts.visible=false;scene.add(shafts); // renderOrder 0 (v11.50.3; was -3): after the surface, which is -1 under water and writes depth. Drawn before it, a shaft was erased wherever the surface was drawn over it — the whole far water above the horizon line — and survived only on the far kelp crowns and the floor, which sit in front of the surface: the person's white patch the shape of a shaft, made of crowns (15 Sep). After the surface its light lies over the water and the crowns alike; before the fume and the rain (2)
 function shHash(i,j,k){let n=(Math.imul(i,73856093)^Math.imul(j,19349663)^Math.imul(k,83492791))|0;n=Math.imul(n^(n>>>13),1274126177);n=(n^(n>>>16))>>>0;return n/4294967296;}
-const shWM=[0,0,0,0];
 function updateShafts(above,wk){
   const K=SKY,on=!above&&SUN_W[3]>0.02&&wk>0.01&&K.skyL>0.01&&FX.shafts;shafts.visible=on;if(!on)return;
   const sx=SUN_W[0],sy=Math.max(SUN_W[1],0.2),sz=SUN_W[2],hl=Math.hypot(sx,sz),ax=hl>1e-4?sx/hl:0,az=hl>1e-4?sz/hl:0;
@@ -341,7 +340,6 @@ function updateShafts(above,wk){
   for(let jj=0;jj<SH_K;jj++)for(let ii=0;ii<SH_K;ii++){const ci=ci0+ii,cj=cj0+jj,x=(ci+0.15+0.7*shHash(ci,cj,1))*SH_S,z=(cj+0.15+0.7*shHash(ci,cj,2))*SH_S,w=2+2*shHash(ci,cj,3);
     const g=groundAt(x,z),avail=top-g-1.5,len=Math.min(SH_L,Math.max(avail,0.1));
     let a=clamp((avail-4)/12,0,1)*(1-smooth(R*0.32,R*0.5,Math.hypot(x-cx,z-cz)))*smooth(1.5,5,Math.hypot(x-px,z-pz));
-    if(a>0){const cf=canopyFade(top);if(cf>0){wmSample(x,z,shWM);a*=1-0.85*shWM[3]*cf;}} // the mats over the shaft's head (v11.32: the shader's ramp)
     const bx=x-sx/sy*len,bz=z-sz/sy*len,vx=px-x,vz=pz-z,vl=Math.max(Math.hypot(vx,vz),1e-3),rx=-vz/vl*w*0.5,rz=vx/vl*w*0.5,b=n*4,k=n*12;
     shP[k]=x-rx;shP[k+1]=top;shP[k+2]=z-rz;shP[k+3]=x+rx;shP[k+4]=top;shP[k+5]=z+rz;shP[k+6]=bx+rx;shP[k+7]=top-len;shP[k+8]=bz+rz;shP[k+9]=bx-rx;shP[k+10]=top-len;shP[k+11]=bz-rz;
     if(a>0)a*=clamp(0.25+0.5*cauFocus(x,z,SH_FOC,t),0.2,1.6); // the surface's focusing over this shaft (v11.39)
@@ -390,7 +388,7 @@ const waterDome=(function(){const mat=new THREE.MeshBasicMaterial({color:0x00000
 //            dark. Fewer with depth as bacteria eat them (the Martin curve, flux ~ (d/90)^-0.86), bigger and browner as the
 //            small ones go; a thin layer on the thermocline (-64) and the particle maximum at the chemocline (-450: iron and
 //            manganese come out of solution at the redox edge — the Black Sea has this layer), rusty in the last 25 m above the
-//            plate, milky in it. More under the canopy (the rafts shed); gone below the chemocline.
+//            plate, milky in it. Gone below the chemocline. (The canopy's floc boost went with the canopy, v11.81.)
 //   silt   — mineral: the bed lifted. Where waves reach the floor (`expo`: the top 30 m) the whole column carries sand; over any
 //            mud or sand the current stirs a bottom nepheloid layer (7 m e-folding); the lagoon's still water holds its fines.
 //            Nothing over bare rock (`sub` 1). The colour of the bed: olivine sand, grey-brown mud, dark at the vents.
@@ -405,14 +403,14 @@ const waterDome=(function(){const mat=new THREE.MeshBasicMaterial({color:0x00000
 // velocity per point that persists as a wake. Every point is one kind, chosen where it is from the kinds' weights there, or
 // dormant (parked at the camera, clipped) when the water there is sparse — so the count is spent where the snow is: dense
 // fines at the top, a few big flakes in the dark. A point re-rolls when it wraps the box, and at its refresh (one point in 64
-// a frame: the fields, the floor, the canopy re-read) when its kind has faded where it has sunk to, or it was dormant.
+// a frame: the fields and the floor re-read) when its kind has faded where it has sunk to, or it was dormant.
 // Fall rates are a compromise with the eye: real aggregates do 50-200 m a day (2 mm/s, motionless to a swimmer); 8 cm/s (the
 // old rate, 7 km a day) read as a snowfall. These are ~10× reality and read as slow.
 // Drawn as one Points with a per-point colour (the particle's own), size and alpha (aSz), lit by the material colour (the ambient
 // by depth and daylight, updateAtmosphere) plus the player's light by distance — so the snow shows in a torch's reach in the
 // dark and is invisible outside it. The shader patch reads r128's points chunks; if a line isn't found it warns and the snow
 // draws uniform (the old look) rather than not at all.
-const PN=Q.snow,SN_HW=30,pp=new Float32Array(PN*3),pv=new Float32Array(PN*3),pc=new Float32Array(PN*3),ps=new Float32Array(PN*2),pk=new Uint8Array(PN),pr=new Float32Array(PN),ph=new Float32Array(PN),pf=new Float32Array(PN*7);
+const PN=Q.snow,SN_HW=30,pp=new Float32Array(PN*3),pv=new Float32Array(PN*3),pc=new Float32Array(PN*3),ps=new Float32Array(PN*2),pk=new Uint8Array(PN),pr=new Float32Array(PN),ph=new Float32Array(PN),pf=new Float32Array(PN*6);
 const SN_K=[{sz:0.5,fall:0.005},{sz:1.0,fall:0.02},{sz:0.6,fall:0.05},{sz:0.55,fall:-0.28},{sz:1.35,fall:0.006}]; // size × the material's, m/s down
 const SN_TH=-64,SN_CH=CHEMO,SN_W0=0.9,SN_GAIN=3.0,SN_REF=63; // the thermocline, the chemocline (y); the weight that fills the count; weight → alpha; the refresh mask (one point in 64 a frame: a point re-rolls about once a second)
 const pg=new THREE.BufferGeometry();pg.setAttribute('position',new THREE.BufferAttribute(pp,3));pg.setAttribute('color',new THREE.BufferAttribute(pc,3));pg.setAttribute('aSz',new THREE.BufferAttribute(ps,2));
@@ -429,14 +427,14 @@ pm.onBeforeCompile=function(sh){sh.uniforms.uPL=plU;sh.uniforms.uPLc=plCU;let n=
   if(n!==5)console.warn('snow: points chunks not as expected ('+n+' of 5); the snow draws uniform');};
 pm.customProgramCacheKey=function(){return 'snow';};
 const plankton=new THREE.Points(pg,pm);plankton.frustumCulled=false;scene.add(plankton);
-const snF=new Float32Array(NF),snWM=[0,0,0,0],snW=[0,0,0,0,0],snLast=V3(1e9,0,0);let snFrame=0; // snLast: the camera last frame — a jump (spawn, the zoo, a respawn) reseeds the whole cloud at once
+const snF=new Float32Array(NF),snW=[0,0,0,0,0],snLast=V3(1e9,0,0);let snFrame=0; // snLast: the camera last frame — a jump (spawn, the zoo, a respawn) reseeds the whole cloud at once
 function snGauss(u){return Math.exp(-u*u);}
-// the kind's weight at a point: y and the point's cached conditions (pf: sub, flow, expo, nut, heat, shel, canopy; ph: the floor)
-function snowW(k,i,y){const b=i*7,d=TIDE-y,hf=y-ph[i];if(d<0.3||hf<0)return 0;
+// the kind's weight at a point: y and the point's cached conditions (pf: sub, flow, expo, nut, heat, shel; ph: the floor)
+function snowW(k,i,y){const b=i*6,d=TIDE-y,hf=y-ph[i];if(d<0.3||hf<0)return 0;
   switch(k){
     case 0:return (0.35+0.65*pf[b+3])*(0.7*Math.exp(-d/40)+0.75*snGauss((y-SN_TH+2)/9));
     case 1:{const form=smooth(4,45,d),martin=Math.pow(Math.max(d,90)/90,-0.86);
-      return (0.4+0.6*pf[b+3])*(1+1.2*pf[b+6]*smooth(-90,-60,y))*(form*martin+0.9*snGauss((y-SN_TH)/6)+1.6*snGauss((y-SN_CH)/7))*0.9*smooth(SN_CH-15,SN_CH,y);}
+      return (0.4+0.6*pf[b+3])*(form*martin+0.9*snGauss((y-SN_TH)/6)+1.6*snGauss((y-SN_CH)/7))*0.9*smooth(SN_CH-15,SN_CH,y);}
     case 2:{const stir=pf[b+2]*(0.35+0.65*SEA_CHOP)*(0.3+0.7*Math.exp(-hf/12)),bed=(0.15+0.85*pf[b+1])*(1.2*Math.exp(-hf/6)+0.4*Math.exp(-hf/30)),lag=0.4*pf[b+5]*Math.exp(-hf/10); // the bed: a sharp layer in the bottom few metres inside the thicker bottom mixed layer
       return (1-pf[b])*(stir+bed+lag)*(1+0.5*pf[b+4]);}
     case 3:return Math.max(pf[b+2]*(0.3+0.7*SEA_CHOP),0.25*smooth(0.45,1,SEA_CHOP))*Math.exp(-d/2.2)+0.35*SKY.rainA*Math.exp(-d/1.2);
@@ -447,8 +445,8 @@ function snowW(k,i,y){const b=i*7,d=TIDE-y,hf=y-ph[i];if(d<0.3||hf<0)return 0;
 // `keep`: a refresh of a live point — its velocity and look stay if it draws the same kind again (no pop).
 let snDirty=true;
 function snowSeed(i,x,y,z,keep){
-  const ch=chunkAt(x,z),b=i*7,k0=keep?pk[i]:255;let f,h;if(ch){f=ch.f(x,z);h=ch.h(x,z);}else{const s=sample(x,z,snF);f=s.f;h=s.h;}
-  pf[b]=f[FI.sub];pf[b+1]=f[FI.flow];pf[b+2]=f[FI.expo];pf[b+3]=f[FI.nut];pf[b+4]=f[FI.heat];pf[b+5]=f[FI.shel];wmSample(x,z,snWM);pf[b+6]=snWM[3];ph[i]=h; // the canopy's weight over this column (it floats over deep water; snowW applies it by the point's own height)
+  const ch=chunkAt(x,z),b=i*6,k0=keep?pk[i]:255;let f,h;if(ch){f=ch.f(x,z);h=ch.h(x,z);}else{const s=sample(x,z,snF);f=s.f;h=s.h;}
+  pf[b]=f[FI.sub];pf[b+1]=f[FI.flow];pf[b+2]=f[FI.expo];pf[b+3]=f[FI.nut];pf[b+4]=f[FI.heat];pf[b+5]=f[FI.shel];ph[i]=h; // v11.81: the canopy's weight (pf[b+6]) went with the canopy; the crop at the point is pass 2's (PLANKTON.md §9, plankAt)
   const cy=camera.position.y,lo=Math.max(cy-SN_HW,h+0.3),hi=Math.min(cy+SN_HW,TIDE-0.4);
   const park=()=>{pk[i]=255;pp[i*3]=camera.position.x;pp[i*3+1]=cy;pp[i*3+2]=camera.position.z;ps[i*2+1]=0;}; // parked at the camera: clipped by the near plane
   if(hi<=lo){park();return;}
@@ -467,7 +465,7 @@ function snowSeed(i,x,y,z,keep){
   else{const ht=pf[b+4];if(ht>0.05&&q>0.7){cr=cg=0.85;cb=0.83;}else{cr=lerp(0.09,0.28,ht);cg=lerp(0.10,0.27,ht);cb=lerp(0.12,0.27,ht);}}
   pc[i*3]=cr+j;pc[i*3+1]=cg+j;pc[i*3+2]=cb+j;ps[i*2]=SN_K[k].sz*(0.7+0.6*q);
 }
-for(let i=0;i<PN;i++){pk[i]=255;pf.fill(0,i*7,i*7+7);} // all parked until the first frame under water seeds them where the camera is
+for(let i=0;i<PN;i++){pk[i]=255;pf.fill(0,i*6,i*6+6);} // all parked until the first frame under water seeds them where the camera is
 function updatePlankton(dt){
   const cx=camera.position.x,cy=camera.position.y,cz=camera.position.z,kd=Math.exp(-2.5*dt),kf=Math.min(1,8*dt),K=SKY;
   currentAt(cx,cz,cy,CURV);const cux=CURV.x*dt,cuz=CURV.z*dt; // the snow drifts with the current
@@ -475,7 +473,7 @@ function updatePlankton(dt){
   snFrame++;const ref=snFrame&SN_REF;
   if(Math.abs(cx-snLast.x)+Math.abs(cy-snLast.y)+Math.abs(cz-snLast.z)>SN_HW){for(let i=0;i<PN;i++)snowSeed(i,cx+(Math.random()-0.5)*2*SN_HW,cy+(Math.random()-0.5)*2*SN_HW,cz+(Math.random()-0.5)*2*SN_HW);}snLast.set(cx,cy,cz);
   for(let i=0;i<PN;i++){
-    const k=pk[i],b=i*7;
+    const k=pk[i],b=i*6;
     if(k===255){if((i&SN_REF)===ref)snowSeed(i,cx+(Math.random()-0.5)*2*SN_HW,cy+(Math.random()-0.5)*2*SN_HW,cz+(Math.random()-0.5)*2*SN_HW);else{pp[i*3]=cx;pp[i*3+1]=cy;pp[i*3+2]=cz;}continue;} // parked: ride at the camera (clipped); one in 64 a frame tries the water at a random spot in the box
     let x=pp[i*3],y=pp[i*3+1],z=pp[i*3+2],vx=pv[i*3]*kd,vy=pv[i*3+1]*kd,vz=pv[i*3+2]*kd;
     for(let bb=0;bb<flowN;bb++){const f=FLOW[bb],rx=x-f.x;if(rx>f.a4||rx<-f.a4)continue;const ry=y-f.y,rz=z-f.z,r2=rx*rx+ry*ry+rz*rz;if(r2>f.a4*f.a4)continue; // physics.js flowAt, inlined: this is the hot loop
@@ -525,16 +523,17 @@ function applyFog(above){
 // the sky three times too bright at the flip and dimming: the flash on every breach in the person's fifth video. (v11.7's first cut
 // also mixed the fogs and the domes; the water's veil read into the air wrapped the shore in teal on every breach — seen, struck.)
 const MED_T=0.25,SKY_NEAR=1.5;let medK=0; // SKY_NEAR (v11.42): how far under the wave the camera can be with the sky still drawn; deeper the surface's underside covers it (through its alpha the sky would tint the mirror — WATER.md B makes that the window)
-const seaFogC=new THREE.Color(),airFogC=new THREE.Color(),hemiSea=new THREE.Color(),hemiSeaG=new THREE.Color(),hemiAir=new THREE.Color(),hemiAirG=new THREE.Color();
+const amC=[0,0,0],seaFogC=new THREE.Color(),airFogC=new THREE.Color(),hemiSea=new THREE.Color(),hemiSeaG=new THREE.Color(),hemiAir=new THREE.Color(),hemiAirG=new THREE.Color();
 function updateAtmosphere(dt){
   updateSky(dt);const K=SKY,tint=K.tint;skyT.setRGB(tint[0],tint[1],tint[2]);
-  const uc=underCanopy(player.pos.x,player.pos.z,player.pos.y),depth=TIDE-player.pos.y; // depth under the water level now
-  const dfD=daylightAt(player.pos.y)*(uc?0.72:1),df=dfD*K.skyLw; // daylight at the player's depth (world.js, one curve with the shader's since v11.32): by depth, then by the sky the water sees (v11; v11.23 skyLw)
+  const depth=TIDE-player.pos.y; // depth under the water level now
+  const dfD=daylightAt(player.pos.y),df=dfD*K.skyLw; // daylight at the player's depth (world.js, one curve with the shader's since v11.32): by depth, then by the sky the water sees (v11; v11.23 skyLw)
   // the water here, read from the same blurred map the fog shader reads at the camera (so the background, the ambient
-  // light and the fog agree, and a border is a drift over ~100 units of travel, not an event); the canopy mixed in as the shader does
-  wmSample(player.pos.x,player.pos.z,wmHere);const cw=wmHere[3]*canopyFade(player.pos.y),w=WATER_CANOPY,bw=SEA_FOG.bright*(1-0.28*cw); // v11.32: the shader's ramp, not a cut at -70
+  // light and the fog agree, and a border is a drift over ~100 units of travel, not an event); the plankton's tint as the shader has it (v11.81)
+  wmSample(player.pos.x,player.pos.z,wmHere);const bw=SEA_FOG.bright;
   {const fw=Math.exp(-Math.max(player.pos.y+wmFloor(player.pos.x,player.pos.z)-FLOOR_FREE,0)/FLOOR_H),oc=wcolAt(Math.max(-player.pos.y,OPEN_D));for(let i=0;i<3;i++)wmHere[i]=lerp(oc[i],wmHere[i],fw);} // v11.27: the floor's colour only within FLOOR_H of it, as the shader has it (world.js FLOOR_H)
-  const wr=lerp(wmHere[0],w[0],cw)*bw,wg=lerp(wmHere[1],w[1],cw)*bw,wb=lerp(wmHere[2],w[2],cw)*bw,dl=daylightAt(player.pos.y);
+  bloomTint(wmHere,bloomAt(player.pos.x,player.pos.y,player.pos.z,amC)); // v11.81: the crops at the player's own depth, from the bloom map (far.js), as fogVeil tints each of its samples
+  const wr=wmHere[0]*bw,wg=wmHere[1]*bw,wb=wmHere[2]*bw,dl=daylightAt(player.pos.y);
   // the medium is the camera's: air above the surface, water below. Crossing it snaps fog and light; within it they drift.
   const above=mode==='play'?player.camAbove:camera.position.y>waveH(camera.position.x,camera.position.z); // in play the camera's side is decided with hysteresis and the camera is held clear of the wave (player.js finishPlayer); the raw test here flipped every frame the chop passed the camera (v11.6)
   const wlc=waveH(camera.position.x,camera.position.z),camUnder=camera.position.y<wlc; // the wave at the camera and the camera's true side, this frame (v11.42): the fog's split (uFogAC.w) and the surface's one camera-side branch read these, not the lagging flag
@@ -563,7 +562,7 @@ function updateAtmosphere(dt){
   hemiAir.copy(hemiSkyA).multiplyScalar(Math.pow(K.skyL,0.85)).multiply(skyT);hemiAirG.copy(hemiGroundA).multiplyScalar(K.skyL).multiply(skyT);
   hemiSea.copy(seaFogC).multiplyScalar(1.8);hemiSeaG.copy(seaFogC).multiplyScalar(SEA_FOG.ground);
   hemi.intensity=lerp(0.3+0.7*df,0.85,k);hemi.color.copy(hemiSea).lerp(hemiAir,k);hemi.groundColor.copy(hemiSeaG).lerp(hemiAirG,k);
-  const sunSea=(0.9+0.2*Math.sin(t*2.3)+0.1*Math.sin(t*3.9))*1.2*(uc?0.72:1)*K.lumLw; // the surface value: the shader scales it by the daylight at the lit point (scene.js, sun-by-depth)
+  const sunSea=(0.9+0.2*Math.sin(t*2.3)+0.1*Math.sin(t*3.9))*1.2*K.lumLw; // the surface value: the shader scales it by the daylight at the lit point (scene.js, sun-by-depth)
   sun.intensity=lerp(sunSea,1.35*K.lumL,k);
   const wk=above?0:1-k; // the water's things: fading in under the water (k falls from 1), gone the frame the camera is in air (v11.7.2)
   plight.intensity=(1.3*(1-dfD)*(1-dfD)+0.5*(1-K.skyL)*(1-K.skyL))*wk*(FX.plight?1:0); // the player's own light: in the deep as before, and a little at night; `own light` on the effects list (v11.52, POLISH.md Raised 13 Sep: the person wants to see the world without it)

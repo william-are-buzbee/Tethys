@@ -40,6 +40,7 @@ node serve.js            static server; open http://localhost:8080/dev.html (edi
 | `test/steer.js` | the steering (v11.77): scripted input through the frame loop for the three roster players, the hose and the sickle — straight up, straight down, a loop, a knockback, a and d, space and c, s, the touch stick, a breach (the surface both ways), first person; fails on a flip (the body off a held heading), a spike (a frame faster than the body's turn rate, the arc's allowance in the air), a strafe, a body upside down, a NaN; the walking (v11.78): the picker, the scuttle and the ram up a slope the test finds clear of rock, a turn, backing by the legs, a step, a ledge, the hop and the beach | `node test/steer.js`, `TIER=low …` |
 | `test/audio.js` | the audio graph against the stub's fake `AudioContext` (any NaN param throws), the space at five sites, tick cost | `node test/audio.js` |
 | `test/snow.js` | the marine snow mix at thirteen sites, layering invariants, tick cost | `node test/snow.js` |
+| `test/plankton.js` | the plankton field (v11.81): the crops by kind and the front's X at the doc's sites, the crops at three depths by the clock, the tint; no NaN across the world, the encoding in range, the doc's numbers (a gyre, island water, the fed flank, the lee's eddy, the lagoon green, the flank gold, no bloom at the vent), the vertical, the ring on a side radial and broken on the axis and moving in at neaps, the maps against the field, the GLSL from the tables, the storm's pulse bounded | `node test/plankton.js` |
 | `test/combat.js` | holds form and kill, ropes never NaN, the player held, bled, pinned and killed, the grab, the bite, the sting, the paralysis, the blood trail, the miss rule, the poison, a tail torn off and the stump growing back; a table of every hunter of the player and its outcome; the matrix (v11.54): every hunter at contact behind each prey — the covering under the hold, the edge's verdict, the gape, the jaws' distance | `node test/combat.js` |
 | `test/pool.js` | the flora pools (v11.52): blocks contiguous, counts summing, no NaN, a cell's block identical alone, first or last, the others untouched by a removal, the card species per cell, growth without loss | `node test/pool.js` |
 | `test/registry.js` | the creator's registry (v11.70): every clade × core × part kind × style the lab offers, in the dev lab and the creator, through the real panel, the roster's panels, every species onto every other core; the registry read directly; fails on an offer that does not compile, a control with no name, value or range, two controls with one name, a style offered outside its declaration, a style declared for two clades (v11.70.1: a style is one clade's), a piece with no controls | `node test/registry.js`; `ALL=1 …`; `SRC=path …` |
@@ -94,7 +95,7 @@ test/              headless tests, the THREE stub, real geometry for previews, t
 | src file | owns |
 |---|---|
 | util.js | math helpers, `mulberry` seeded rng, value noise |
-| world.js | the island as an analytic function: `sample(x,z)` → height and the nine condition fields `FI`; `envW` envelopes; tide and clock; sun, moon, weather; waves `waveH`; water colour; landmarks `LM` |
+| world.js | the island as an analytic function: `sample(x,z)` → height and the nine condition fields `FI`; `envW` envelopes; tide and clock; sun, moon, weather; waves `waveH`; water colour; the retention field `leeW` and the plankton (v11.81: `plank`, `bloomC`, `bloomTint`, `PLK`, `PIGK`, `BLOOM_GLSL`, `plankAt`); landmarks `LM` |
 | physics.js | contact: the per-cell collider hash, body capsules, verlet chains (arms, tails, tentacles) and rigs, body-to-body push, the disturbance lists |
 | scene.js | quality tier `Q`, renderer, camera, lights, the fog (three's replaced), shadow maps, every shared material |
 | parts.js | geometry kit `part`/`merge`, arm rings as rigs and their poses, `swimClock`, LOD baking |
@@ -108,7 +109,7 @@ test/              headless tests, the THREE stub, real geometry for previews, t
 | creatures_ai.js | registry, spawning, LOD, behaviours by role, hunger, carcasses, eggs, per-frame update |
 | chunks.js | cell streaming: height grid, terrain mesh, flora placement (`settleOn`, `clearOf`), solids, spawns from the ledger, culling |
 | ecology.js | the population as a ledger `POP`: capacity from envelopes, the off-screen model, births owed to loaded cells |
-| far.js | beyond the cells: coarse far terrain in regions streamed round the player (v11.58), the apron past the edge, every big structure, impostor cards, the water/floor maps for the whole world |
+| far.js | beyond the cells: coarse far terrain in regions streamed round the player (v11.58), the apron past the edge, every big structure, impostor cards, the water/floor maps for the whole world (the plankton's crops and the front's X in their free channels, `wmBloom`, `bloomAt`, `bloomTick`, v11.81) |
 | player.js | the player as a spec (`playerClade`, v11.68; v11.75: any species of the roster — no hand numbers: the arm `CAM_BODY`, the jet's kick and the sprint derive's, venom the founder's `DEFS` row) and `CLADES` (the three roster players), abilities from parts (`ABILITIES`: ink, stun, withdraw, ram, shut), movement in water / air / on land, camera, damage, ink, splashes; the stomach (v11.73: `player.hunger` on the ledger's model through creatures_ai.js `hungerTick`/`kill`/`eatAt` by `eaterK`, `EAT`, the readout's `hungerLine`) |
 | atmosphere.js | the sea surface, the sky, rain, haze, light shafts, marine snow, fog and light by medium, HUD, compass |
 | combat.js | holds (a rope between a grip and a hit capsule), the struggle, the states (v11.55: the gape, the pin, the placed act by `EDGE`, wounds that bleed and slow, venom, autotomy; v11.56: the blood trail, the strike's miss rule, the poison by feeding; v11.57: the wound as a spec edit — a part torn off, the body re-derived, the stump and the regrowth), blood, the player's grab and bite |
@@ -251,7 +252,9 @@ Docs, most upstream first. When a doc's Open list says a choice is the person's,
   `TERRAIN_MAT`/`GLOW` "big" (keep the far ghost) — a structure built with `MAT` vanishes at 300 units. `WAVE_GLSL` is generated
   from `WAVES`; never write the wave sum twice.
 - Past ±HALF the edge regions' apron (`apronGen`) carries the far terrain to 2000 beyond, so a mesh that ends at the edge shows
-  against nothing. The veil reads `floorMap` beside `waterMap` (96×96, filled together in `wmFill`/`wmBlur`): a new map channel goes there.
+  against nothing. The veil reads `floorMap` beside `waterMap` (1440×1440, filled together in `wmFill`/`wmBlur`): a new map channel goes there — and
+  only there: the tinted fragment shaders are at WebGL's 16 texture units (v11.81: a third map failed every material's compile and the world was the veil
+  alone). The maps' free channels are used up since v11.81 (floor b, a: the crops; water a: the front's X).
 - The far layer draws every structure from `bigsFor`; cells only register collision. Anything `big` a cell draws itself pops and
   doubles up. Change the ground rule in `settleOn`, nowhere else.
 - Since v11.12 the flora has a draw distance `FLORA_FAR`: a new small species wants a cut material; a new big one wants a card in

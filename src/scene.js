@@ -49,7 +49,7 @@ const camera=new THREE.PerspectiveCamera(CAM_K.fov,innerWidth/innerHeight,0.2,FA
 // so big distant things stay as ghosts instead of ending at 250 units. uFogP is per material: big things (terrain, structures,
 // landmarks, glow, the surface, the dome, big creatures) read FOG_P, small things (flora, small creatures, impostors) read
 // FOG_PS with a smaller ghost — see addTint. (3) Under water the veil's colour is the water's from a world-space map (WATER
-// by floor biome, canopy weight in alpha, far.js), sampled at the camera and at a point at most uFogW.w units along the
+// by the floor's conditions, far.js; the plankton's tint from the bloom map beside it, v11.81), sampled at the camera and at a point at most uFogW.w units along the
 // ray (the light scattered into the eye comes from the water near it: the void beyond the rim never paints the horizon),
 // darkened by the daylight at that point (dark looking down into the deep, light looking up), brightened toward the sun
 // (uFogS), scaled by uFogW.y. The black dome at the far plane (atmosphere.js) is fogged by the same code, so the "sky" under
@@ -80,7 +80,6 @@ const FOG_W=new Float32Array([0,SEA_FOG.bright,SEA_FOG.dlAt,SEA_FOG.reach]),FOG_
 // and the two depth curves of world.js as GLSL, generated from the same constants the JS reads so the two cannot drift again
 const WM_SCALE=(1/(2*HALF)).toFixed(9);
 const DL_GLSL=y=>'clamp(1.0+min(0.0,('+y+')-uFogW.x)/'+DL_REF.toFixed(1)+','+DL_MIN.toFixed(2)+',1.0)';
-const CAN_GLSL=y=>'smoothstep('+CAN_LO.toFixed(1)+','+CAN_HI.toFixed(1)+','+y+')';
 // The veil closes completely between FOG_CUT0 and FOG_CUT1 (v11.27): the slow population never reached zero (1.1% at the far plane), so the black
 // dome and a terrain fragment at the same distance differed by a percent or two of the terrain's lit colour — enough, on a dark gradient,
 // for the far mesh's outline against the dome to read as a horizon. Past FOG_CUT1 every fragment is the veil at that direction exactly,
@@ -107,9 +106,14 @@ function updateFogCamera(){const e=camera.matrixWorld.elements;FOG_C[0]=e[12];FO
 const WM_N=NCELL*6,WM_DATA=new Uint8Array(WM_N*WM_N*4);
 const waterMap=new THREE.DataTexture(WM_DATA,WM_N,WM_N,THREE.RGBAFormat,THREE.UnsignedByteType);
 waterMap.minFilter=waterMap.magFilter=THREE.LinearFilter;waterMap.wrapS=waterMap.wrapT=THREE.ClampToEdgeWrapping;waterMap.generateMipmaps=false;waterMap.clone=function(){return this;};
-const FM_DATA=new Uint8Array(WM_N*WM_N*4),floorMap=new THREE.DataTexture(FM_DATA,WM_N,WM_N,THREE.RGBAFormat,THREE.UnsignedByteType); // (v11.27) the floor's depth under each texel of the water map, r = depth/FM_SCALE, blurred like it (far.js fmBlur): the veil blends the floor's colour out by the height above it (world.js FLOOR_H)
-FM_DATA.fill(255); // deep water and full waves everywhere until the far layer fills the map (v11.44): the wave sum reads it, and headless tests without the far layer keep the deep-water sea
+const FM_DATA=new Uint8Array(WM_N*WM_N*4),floorMap=new THREE.DataTexture(FM_DATA,WM_N,WM_N,THREE.RGBAFormat,THREE.UnsignedByteType); // (v11.27) the floor's depth under each texel of the water map, r = depth/FM_SCALE, blurred like it (far.js wmBlur): the veil blends the floor's colour out by the height above it (world.js FLOOR_H); g the wave energy (v11.44); b, a the plankton's green and gold crops (v11.81, below)
+FM_DATA.fill(255);for(let i=2;i<FM_DATA.length;i+=4){FM_DATA[i]=0;FM_DATA[i+1]=0;} // deep water and full waves everywhere until the far layer fills the map (v11.44): the wave sum reads it, and headless tests without the far layer keep the deep-water sea; the crops (v11.81) at the gyre's floor
 const FM_SCALE=1024;floorMap.minFilter=floorMap.magFilter=THREE.LinearFilter;floorMap.wrapS=floorMap.wrapT=THREE.ClampToEdgeWrapping;floorMap.generateMipmaps=false;floorMap.clone=function(){return this;};
+// The plankton (v11.81, PLANKTON.md §7) rides the same two maps: the lit layer's green and gold crops on a log scale in the floor map's blue and
+// alpha, the tidal front's criterion X in the water map's alpha (world.js plankTexel; far.js wmFill/wmBlur write them beside the colour and the
+// floor). The fragment shaders were at WebGL's 16 texture units, so a third map could not be bound (seen: every tinted material failed to
+// compile). Static per place; the clock's part (the ring's spring–neap breathing, the storm's pulse) is uFogB, written per frame by far.js
+// bloomTick. The veil reads them at both its samples and tints the column's colour at each sample's own depth (bloomC, bloomTint in the fog block).
 // The mist above the water (v11.17): two exponential layers on the water level, rho(y) = uMist.x·exp(-y·uMist.y) + uMist.z·exp(-y·uMist.w)
 // (the marine haze and the surf's spray; y above the level), integrated in closed form along a ray from height cy to height fy over
 // length d — the ray is cut at the water level, a fragment beneath it (the floor through the surface) counts only its part in air.
@@ -174,12 +178,13 @@ const MIST_GLSL='float mistL(float cy,float dy,float d,float rho,float ih){float
   C.dithering_pars_fragment=DITHER_PARS;C.dithering_fragment='gl_FragColor.rgb=dithering(gl_FragColor.rgb);';
   C.fog_pars_vertex='#ifdef USE_FOG\nuniform vec3 uFogC;uniform mat3 uFogR;uniform vec4 uFogW;varying float vFogDepth;varying vec3 vFogPos;\n#endif'; // uFogW in the vertex stage too since v11.32: SUNK_V (the Lambert sun by depth) reads the tide from it, and until now only the fragment chunk declared it
   C.fog_vertex='#ifdef USE_FOG\nvFogDepth=length(mvPosition.xyz);vFogPos=uFogC+uFogR*mvPosition.xyz;\n#endif';
-  C.fog_pars_fragment='#ifdef USE_FOG\nuniform vec3 fogColor;uniform vec3 uFogC;uniform vec4 uFogP;uniform vec4 uFogW;uniform vec4 uFogS;uniform vec4 uFogT;uniform vec4 uFogA;uniform vec4 uFogAC;uniform vec4 uMist;uniform vec4 uMistC;uniform vec4 uMistW;uniform sampler2D uWaterMap;uniform sampler2D uFloorMap;uniform vec4 uSkA,uSkB,uSkC,uSkD,uSkE,uSkF;varying float vFogDepth;varying vec3 vFogPos;\n#ifdef FOG_EXP2\nuniform float fogDensity;\n#else\nuniform float fogNear;uniform float fogFar;\n#endif\n'+MIST_GLSL+SKYLITE_GLSL+WCOL_GLSL+WAVE_GLSL_FOG+
-    // the veil seen along a ray in water from o for L (v8–v11.32's fog body, now a function of its origin, v11.42): the water map at o and at the bounded point, the floor's colour only near the floor, the canopy, daylight, the sun's glow, the sky's light and tint, the chemocline's brown
-    'vec3 fogVeil(vec3 o,vec3 rd,float L){vec3 sp=o+rd*min(L,uFogW.w);vec2 m0=o.xz*'+WM_SCALE+'+0.5,m1=sp.xz*'+WM_SCALE+'+0.5;vec4 w0=texture2D(uWaterMap,m0),w1=texture2D(uWaterMap,m1);'+
-    'w0.rgb=mix(wcol(max(-o.y,'+OPEN_D.toFixed(1)+')),w0.rgb,exp(-max(o.y+texture2D(uFloorMap,m0).r*'+FM_SCALE.toFixed(1)+'-'+FLOOR_FREE.toFixed(1)+',0.0)*'+(1/FLOOR_H).toFixed(5)+'));w1.rgb=mix(wcol(max(-sp.y,'+OPEN_D.toFixed(1)+')),w1.rgb,exp(-max(sp.y+texture2D(uFloorMap,m1).r*'+FM_SCALE.toFixed(1)+'-'+FLOOR_FREE.toFixed(1)+',0.0)*'+(1/FLOOR_H).toFixed(5)+'));'+
-    'vec4 wm=mix(w0,w1,uFogP.z);float y=mix(o.y,sp.y,uFogW.z);float cw=wm.a*'+CAN_GLSL('y')+';float dl='+DL_GLSL('y')+';float sg=pow(max(dot(rd,uFogS.xyz),0.0),6.0);'+
-    'vec3 fc=mix(wm.rgb,vec3('+WATER_CANOPY.map(v=>v.toFixed(3)).join(',')+'),cw)*(1.0-0.28*cw)*uFogW.y*(0.3+0.7*dl)*(1.0+uFogS.w*sg*dl)*uFogT.x*mix(vec3(1.0),uFogT.yzw,smoothstep(-40.0,0.0,y));'+
+  C.fog_pars_fragment='#ifdef USE_FOG\nuniform vec3 fogColor;uniform vec3 uFogC;uniform vec4 uFogP;uniform vec4 uFogW;uniform vec4 uFogS;uniform vec4 uFogT;uniform vec4 uFogA;uniform vec4 uFogAC;uniform vec4 uMist;uniform vec4 uMistC;uniform vec4 uMistW;uniform sampler2D uWaterMap;uniform sampler2D uFloorMap;uniform vec4 uFogB;uniform vec4 uSkA,uSkB,uSkC,uSkD,uSkE,uSkF;varying float vFogDepth;varying vec3 vFogPos;\n#ifdef FOG_EXP2\nuniform float fogDensity;\n#else\nuniform float fogNear;uniform float fogFar;\n#endif\n'+MIST_GLSL+SKYLITE_GLSL+WCOL_GLSL+BLOOM_GLSL+WAVE_GLSL_FOG+
+    // the veil seen along a ray in water from o for L (v8–v11.32's fog body, now a function of its origin, v11.42): the water map at o and at the bounded point, the floor's colour only near the floor, the plankton's tint at each sample's own depth (v11.81: the bloom map through bloomC/bloomTint, world.js; the canopy's green to v11.80), daylight, the sun's glow, the sky's light and tint, the chemocline's brown
+    'vec3 fogVeil(vec3 o,vec3 rd,float L){vec3 sp=o+rd*min(L,uFogW.w);vec2 m0=o.xz*'+WM_SCALE+'+0.5,m1=sp.xz*'+WM_SCALE+'+0.5;vec4 w0=texture2D(uWaterMap,m0),w1=texture2D(uWaterMap,m1),f0=texture2D(uFloorMap,m0),f1=texture2D(uFloorMap,m1);'+
+    'w0.rgb=mix(wcol(max(-o.y,'+OPEN_D.toFixed(1)+')),w0.rgb,exp(-max(o.y+f0.r*'+FM_SCALE.toFixed(1)+'-'+FLOOR_FREE.toFixed(1)+',0.0)*'+(1/FLOOR_H).toFixed(5)+'));w1.rgb=mix(wcol(max(-sp.y,'+OPEN_D.toFixed(1)+')),w1.rgb,exp(-max(sp.y+f1.r*'+FM_SCALE.toFixed(1)+'-'+FLOOR_FREE.toFixed(1)+',0.0)*'+(1/FLOOR_H).toFixed(5)+'));'+
+    'w0.rgb=bloomTint(w0.rgb,bloomC(vec3(f0.ba,w0.a),f0.r*'+FM_SCALE.toFixed(1)+',uFogW.x-o.y));w1.rgb=bloomTint(w1.rgb,bloomC(vec3(f1.ba,w1.a),f1.r*'+FM_SCALE.toFixed(1)+',uFogW.x-sp.y));'+
+    'vec4 wm=mix(w0,w1,uFogP.z);float y=mix(o.y,sp.y,uFogW.z);float dl='+DL_GLSL('y')+';float sg=pow(max(dot(rd,uFogS.xyz),0.0),6.0);'+
+    'vec3 fc=wm.rgb*uFogW.y*(0.3+0.7*dl)*(1.0+uFogS.w*sg*dl)*uFogT.x*mix(vec3(1.0),uFogT.yzw,smoothstep(-40.0,0.0,y));'+
     'fc*=mix(vec3(1.0),vec3(1.12,0.92,0.72),smoothstep('+CHEMO_TINT[0].toFixed(1)+','+CHEMO_TINT[1].toFixed(1)+',y));return fc;}\n'+
     // the water segment: the chemocline's milky plate by the ray's length inside it, then the veil by the two-population transmittance (uFogP.y the material's share); dn: the downward darkening from above; ck: the far cut, on the camera's segment only
     'vec3 fogWater(vec3 col,vec3 o,vec3 rd,float L,vec3 dn,float ck){vec3 fc=fogVeil(o,rd,L)*dn;float dy=rd.y*L;if(abs(dy)<1e-3)dy=1e-3;float sl=abs(clamp(('+(CHEMO+CHEMO_PLATE).toFixed(1)+'-o.y)/dy,0.0,1.0)-clamp(('+(CHEMO-CHEMO_PLATE).toFixed(1)+'-o.y)/dy,0.0,1.0))*L;'+
@@ -210,7 +215,7 @@ const MIST_GLSL='float mistL(float cy,float dy,float d,float rho,float ih){float
     'if(cu){if(dO>0.0)col=fogAir(col,cp,rd,dO,1.0);col=fogWater(col,uFogC,rd,dC,vec3(1.0),ck);}'+
     'else{if(dO>0.0){float sc=smoothstep('+SCAT[0].toFixed(2)+'*uFogTC.y,'+SCAT[1].toFixed(2)+'*uFogTC.y,-rd.y);col=fogWater(col,cp,rd,d,mix(vec3(1.0),vec3('+UPWELL.map(v=>v.toFixed(2)).join(',')+'),clamp(-rd.y,0.0,1.0)),sc*ck);}col=fogAir(col,uFogC,rd,dC,1.0);}'+ // v11.64: the air part takes no cut from above — the horizon tier (horizon.js) draws what lies past the far plane, so a fragment in air keeps its haze contrast to the plane instead of dissolving into the sky by FOG_CUT1 // the water part over the whole length d (v11.42.1), its transmittance scaled by the chop's scatter at grazing (sc, SCAT: 0 at the horizon) and the far cut; the cut closes the ray to the medium the *fragment* is in (v11.42.3): on a split ray the air part takes none, or the dome and the far floor past the cut came out the sky's horizon white under the water — the white backdrop from above
     'gl_FragColor.rgb=col;}\n#endif';
-  for(const k in THREE.ShaderLib){const u=THREE.ShaderLib[k]&&THREE.ShaderLib[k].uniforms;if(u&&u.fogColor){u.uFogP={value:FOG_P};u.uFogW={value:FOG_W};u.uFogS={value:FOG_S};u.uFogT={value:FOG_T};u.uMist={value:MIST_P};u.uMistC={value:MIST_C};u.uMistW={value:MIST_W};u.uFogC={value:FOG_C};u.uFogR={value:FOG_R};u.uWaterMap={value:waterMap};u.uFloorMap={value:floorMap};u.uFogA={value:FOG_A};u.uFogAC={value:FOG_AC};u.uFogTC={value:FOG_TC};u.uSkA={value:FOG_SKA};u.uSkB={value:FOG_SKB};u.uSkC={value:FOG_SKC};u.uSkD={value:FOG_SKD};u.uSkE={value:FOG_SKE};u.uSkF={value:FOG_SKF};}}
+  for(const k in THREE.ShaderLib){const u=THREE.ShaderLib[k]&&THREE.ShaderLib[k].uniforms;if(u&&u.fogColor){u.uFogP={value:FOG_P};u.uFogW={value:FOG_W};u.uFogS={value:FOG_S};u.uFogT={value:FOG_T};u.uMist={value:MIST_P};u.uMistC={value:MIST_C};u.uMistW={value:MIST_W};u.uFogC={value:FOG_C};u.uFogR={value:FOG_R};u.uWaterMap={value:waterMap};u.uFloorMap={value:floorMap};u.uFogB={value:FOG_B};u.uFogA={value:FOG_A};u.uFogAC={value:FOG_AC};u.uFogTC={value:FOG_TC};u.uSkA={value:FOG_SKA};u.uSkB={value:FOG_SKB};u.uSkC={value:FOG_SKC};u.uSkD={value:FOG_SKD};u.uSkE={value:FOG_SKE};u.uSkF={value:FOG_SKF};}}
   // Sunlight by the fragment's own depth (v8.4). sun.intensity is the surface value (atmosphere.js); the directional light
   // is scaled here by the daylight at the lit point's world height (the same 0.28..1 curve the fog and the ambient use),
   // so a floor 150 under a player at the surface is lit by 64% sun, not 100% — before this, everything was lit by the
@@ -260,7 +265,7 @@ const BAND_GLSL=b=>'{float y=vWy;float it=smoothstep('+(-TIDE_A1-1.1).toFixed(2)
 // ---------- the light (v11.13, POLISH.md pass A): caustics and the sun's shadows of bodies, in every tinted material's fragment ----------
 // Fill is nearly free here and vertices are the frame (AUDIT: four times the pixels cost 0.4 ms), so the light is done per fragment
 // in the shaders that already exist, from what every fragment already carries under USE_FOG: vFogPos (the world position), uFogC
-// (the camera), uFogS.xyz (the luminary), uFogT (the sky's light), uWaterMap (canopy weight in alpha), uTint.x (the water level now).
+// (the camera), uFogS.xyz (the luminary), uFogT (the sky's light), uTint.x (the water level now).
 // The flat face normal is cross(dFdx, dFdy) of the world position — what the terrain's flat shading already does.
 // Caustics (v11.35, redone from the 13 Sep effects audit; DESIGN The light): derived, not painted. The web on a floor is the sun
 // focused by the surface's curvature — the Jacobian of the map from a surface point to where its refracted ray lands, J = I − d·c·H
@@ -274,7 +279,7 @@ const BAND_GLSL=b=>'{float y=vWy;float it=smoothstep('+(-TIDE_A1-1.1).toFixed(2)
 // each train blurred by the sun's disc and the beam's scatter at depth (CAU_SUN; the contrast fades by wavelength, the mean stays 1), and the result is
 // a line where the focus reaches CAU_T (a soft step of CAU_SOFT either side, ×CAU_HI; two tones, pale lines on the floor and nothing
 // else — v11.35.2–3) — then applied as 1 + cau·(I − 1) (cau = LIGHT_K.x, 1 physical; the readout's t-y) by the beam's share (uSunW.w), by
-// 1 − 0.85 canopy, and by whether the beam reaches this face at all (the shadows' nl rule, v11.34.1: clamp(dot(fn, sun)·2.5)).
+// and by whether the beam reaches this face at all (the shadows' nl rule, v11.34.1: clamp(dot(fn, sun)·2.5)).
 // Nothing at the surface itself (d·c·H → 0 gives I → 1 on its own); wd gates the block to under water.
 // Shadows (v11.23, the second pass): one low-resolution shadow map along the sun, rendered by three's own depth pass (sun.castShadow)
 // and read by hand in every tinted fragment from the world position — never through three's receiveShadow (r128 keys a material's
@@ -564,8 +569,8 @@ const SH_GLSL=s=>'if(uShP'+s+'.y>0.5){vec3 sp=pxp+fn*(uShP'+s+'.w*sign(dot(fn,uS
   'float u=uPix>0.5?4.0*shTap(uShMap'+s+',sc.xy,z,fd):shTap(uShMap'+s+',sc.xy+o1,z,fd)+shTap(uShMap'+s+',sc.xy-o1,z,fd)+shTap(uShMap'+s+',sc.xy+o2,z,fd)+shTap(uShMap'+s+',sc.xy-o2,z,fd);'+ // pixel light (v11.38): one hard tap at the snapped point
   'sh=min(sh,1.0-0.25*u*ef);}}';
 const LIGHT_GLSL=LIGHT_FX?'\n#ifdef USE_FOG\n{float dep=uTint.x-vFogPos.y;if(uSunW.w>0.002){vec3 fn=normalize(cross(dFdx(vFogPos),dFdy(vFogPos)));float wd=clamp(dep*0.7-0.2,0.0,1.0);'+ // 0 in air and at the surface itself (a raft's pad at -0.45 barely), full 1.7 m under
-  'if(wd>0.0&&uLightK.x>0.0){'+CAU_GLSL+'float cw=texture2D(uWaterMap,vFogPos.xz*'+WM_SCALE+'+0.5).a*'+CAN_GLSL('vFogPos.y')+';float nc=clamp(dot(fn,uSunW.xyz)*2.5,0.0,1.0);'+
-  'gl_FragColor.rgb*=1.0+uLightK.x*(ci-1.0)*wd*nc*uSunW.w*(1.0-0.85*cw);}'+ // the fade from the eye is per train (CAU_FAR, in wavelengths: a 0.4 m train is gone by 28 m, the 2 m one by 140)
+  'if(wd>0.0&&uLightK.x>0.0){'+CAU_GLSL+'float nc=clamp(dot(fn,uSunW.xyz)*2.5,0.0,1.0);'+
+  'gl_FragColor.rgb*=1.0+uLightK.x*(ci-1.0)*wd*nc*uSunW.w;}'+ // v11.81: no longer × (1 − 0.85 canopy) — the canopy's paint went (PLANKTON.md §12) // the fade from the eye is per train (CAU_FAR, in wavelengths: a 0.4 m train is gone by 28 m, the 2 m one by 140)
   'vec3 pxp=vFogPos;if(uPix>0.5&&abs(fn.y)>0.3){vec2 q=(floor(vFogPos.xz*'+(1/CAU_PX).toFixed(4)+')+0.5)*'+CAU_PX.toFixed(4)+';pxp=vec3(q.x,vFogPos.y-(fn.x*(q.x-vFogPos.x)+fn.z*(q.y-vFogPos.z))/fn.y,q.y);}'+ // the receiver snapped to the caustic's grid, along its face (v11.38)
   'float sh=1.0;'+SH_GLSL('')+SH_GLSL('S')+ // the creatures' map, then the world's (v11.30): the darker of the two
   'float nl=clamp(dot(fn,uShL.xyz)*2.5,0.0,1.0);'+ // the shadow takes away the beam, so a face the beam never reached loses nothing (v11.34.1)

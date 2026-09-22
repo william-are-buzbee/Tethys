@@ -1,0 +1,87 @@
+// Headless plankton check (v11.81, PLANKTON.md §13 pass 1): the field at the sites the doc names — the fed flank, the shelf break's ring,
+// the lagoon, the lee (the old canopy patches), the basin, the gap and the vent — printed as a table: the column's crops by kind (world.js
+// plank), the front's criterion X, then the crops at three depths through bloomC by the clock (the surface, the thermocline, the deep
+// maximum), and the water's tint from them (bloomTint on the table's shelf colour). Then the invariants: no NaN anywhere on a grid across
+// the world; every texel encodes within 0..1; the basin poorer than island water poorer than the fed flank, on the doc's numbers (a gyre
+// 0.03–0.08, island water 0.2–0.5, an upwelling flank 1–3); the ring exists on a side radial (the front's weight passes 0.5 between the shelf
+// and the flank) and is broken on the current's axis; the ring moves shoreward from springs to neaps; the red kind is deeper than the green;
+// the maps (far.js wmFill/wmBloom) agree with the field at a texel's centre; the GLSL string carries the tables' numbers; and the
+// storm's pulse is bounded. It proves the numbers go where the doc says; it says nothing about how the water looks.
+const fs=require('fs'),path=require('path');
+const ROOT=path.join(__dirname,'..');
+const ORDER=fs.readFileSync(path.join(ROOT,'src','order.txt'),'utf8').split('\n').map(s=>s.trim()).filter(s=>s&&s[0]!=='#');
+let js=ORDER.map(n=>fs.readFileSync(path.join(ROOT,'src',n+'.js'),'utf8')).join('\n');
+js+='\nglobal.__pk={sample,plank,plankTexel,plankEnc,bloomC,bloomTint,plankAt,bloomAt,wmBloom,wmFill,wmBlur,bloomTick,FOG_B,PLK,PIGK,BLOOM_GLSL,WM_N,wcolAt,leeW,tidalAt,tideAmp,TIDE_A1,CUR_A,FI,HALF,setClock:(h)=>{clockH=h;TIDE=tideAt(h);},tide:()=>TIDE};';
+const tmp=path.join(require('os').tmpdir(),'tethys_plankton_bundle.js');
+fs.writeFileSync(tmp,'(function(){"use strict";\n'+js+'\n})();');
+require('./stub.js');
+require(tmp);
+const P=global.__pk;
+let failed=false;
+function ok(c,msg){console.log((c?'  ok   ':'  FAIL ')+msg);if(!c)failed=true;}
+const f3=v=>v.toFixed(3).padStart(7),f2=v=>v.toFixed(2).padStart(6);
+const up=5.44,dn=P.CUR_A,side=0.75; // the fed flank's centre, the lee, and a side of the rim's cylinder (the stream 1 m/s there; the shelf 55 m at r 600, the break 140 at 900)
+const sites=[
+  {name:'the fed flank, the shelf break',a:up,r:900},
+  {name:'the fed flank, the slope',a:up,r:1300},
+  {name:'a side flank, the shelf',a:side,r:600},
+  {name:'a side flank, the break',a:side,r:850},
+  {name:'a side flank, the slope',a:side,r:1300},
+  {name:'the lagoon',a:1.0,r:100},
+  {name:'the lee, the first eddy',a:2.3,r:1420},
+  {name:'the lee, past the eddies',a:dn,r:2000},
+  {name:'the vent field',a:2.6,r:1310},
+  {name:'the gap in the sill',a:up,r:13000},
+  {name:'the basin',x:4000,z:4000},
+];
+for(const s of sites){if(s.x===undefined){s.x=Math.round(Math.cos(s.a)*s.r);s.z=Math.round(Math.sin(s.a)*s.r);}}
+P.setClock(0); // boot: a spring tide (world.js: the clock starts at mid-flood on a spring)
+P.bloomTick();
+console.log('the column (mg/m³ of pigment: green, gold, red) and the front\'s X, then the crops by the clock at 3 m, at the thermocline (64) and at 95, and the shelf water tinted at 3 m');
+console.log('  site'.padEnd(34)+'x'.padStart(6)+'z'.padStart(7)+'h'.padStart(7)+'nut'.padStart(6)+'  green   gold    red      X   |  3 m: g/f/r  64 m: g/f/r  95 m: g/f/r  | tint at 3 m (of 0.10,0.46,0.58)');
+const rows={};
+for(const s of sites){const sm=P.sample(s.x,s.z),c=P.plank(s.x,s.z,sm),tx=P.plankTexel(s.x,s.z,sm,[0,0,0]);c.push(P.bloomC(tx,-sm.h,95,[0,0,0])[2]); // c: green, gold, X, then the red at 95 m by the clock
+  const at=d=>P.bloomC(tx,-sm.h,d,[0,0,0]);const c3=at(3),c64=at(64),c95=at(95);const col=P.bloomTint(P.wcolAt(0).slice(),c3);
+  rows[s.name]={c,tx,c3,c64,c95,col,h:sm.h};
+  console.log('  '+s.name.padEnd(32)+String(s.x).padStart(6)+String(s.z).padStart(7)+sm.h.toFixed(0).padStart(7)+f2(sm.f[P.FI.nut])+f3(c[0])+f3(c[1])+f3(c[3])+f2(c[2])+'   | '+c3.map(v=>v.toFixed(2)).join('/')+'  '+c64.map(v=>v.toFixed(2)).join('/')+'  '+c95.map(v=>v.toFixed(2)).join('/')+'  | '+col.map(v=>v.toFixed(3)).join(','));
+}
+// invariants on a grid across the whole world
+{let nan=0,n=0,enc=0;const tx=[0,0,0],C=[0,0,0];
+  for(let z=-P.HALF;z<=P.HALF;z+=800)for(let x=-P.HALF;x<=P.HALF;x+=800){const sm=P.sample(x,z);P.plankTexel(x,z,sm,tx);n++;for(let k=0;k<3;k++){if(tx[k]!==tx[k])nan++;if(tx[k]<-1e-9||tx[k]>1+1e-9)enc++;}for(const d of [3,64,95,200]){P.bloomC(tx,-sm.h,d,C);for(let k=0;k<3;k++)if(C[k]!==C[k]||C[k]<0)nan++;}}
+  ok(nan===0,'no NaN and no negative crop over '+n+' points at four depths');ok(enc===0,'every texel encodes within 0..1');}
+// the doc's numbers
+{const basin=rows['the basin'].c,shelf=rows['a side flank, the shelf'].c,flank=rows['the fed flank, the shelf break'].c,lee=rows['the lee, the first eddy'].c,leeS=rows['the lee, past the eddies'].c,lag=rows['the lagoon'].c;
+  const tot=c=>c[0]+c[1];
+  ok(tot(basin)>0.03&&tot(basin)<0.09,'the basin is a gyre (lit layer '+tot(basin).toFixed(3)+' mg/m³, 0.03–0.08)');
+  ok(tot(shelf)>0.2&&tot(shelf)<0.9,'the shelf is island water ('+tot(shelf).toFixed(2)+', 0.2–0.5 before the ring)');
+  ok(tot(flank)>1&&tot(flank)<6,'the fed flank\'s break is an upwelling flank ('+tot(flank).toFixed(2)+', 1–3 before the ring)');
+  ok(tot(lee)>tot(leeS)*1.5,'the eddy retains: the lee\'s crop in the patch '+tot(lee).toFixed(3)+' vs past it '+tot(leeS).toFixed(3));
+  ok(tot(lee)<tot(shelf),'and the patch is still poorer than the shelf ('+tot(lee).toFixed(3)+' vs '+tot(shelf).toFixed(2)+'): a little greener than the basin, not a green patch');
+  ok(lag[0]>lag[1]*3,'the lagoon is green (green '+lag[0].toFixed(3)+' vs gold '+lag[1].toFixed(3)+')');
+  ok(rows['the fed flank, the slope'].c[3]>0.2&&rows['the lagoon'].c[3]<0.01,'the red is the deep column\'s: '+rows['the fed flank, the slope'].c[3].toFixed(2)+' at 95 m over the fed slope, '+rows['the lagoon'].c[3].toFixed(3)+' over the lagoon\'s floor');
+  ok(flank[1]>flank[0],'the fed flank is gold (gold '+flank[1].toFixed(2)+' vs green '+flank[0].toFixed(2)+')');
+  const v=rows['the vent field'],g=rows['the gap in the sill'].c;ok(v.c[0]+v.c[1]<0.3,'the vent field grows no bloom of its own (the heat\'s food is chemosynthetic: '+(v.c[0]+v.c[1]).toFixed(3)+')');
+  ok(g[1]>g[0],'the gap\'s jet is stirred: gold ('+g[1].toFixed(2)+') over green ('+g[0].toFixed(2)+')');}
+// the vertical: the red is deepest, the green shallowest, and nothing at 200
+{const R=rows['the fed flank, the slope'],tx=R.tx,at=d=>P.bloomC(tx,-R.h,d,[0,0,0]);const s3=at(3),s95=at(95),s200=at(200);
+  ok(s3[0]>s95[0]*5&&s95[2]>s3[2]*5,'the green lives in the mixed layer and the red in the deep maximum (green 3 m '+s3[0].toFixed(2)+' / 95 m '+s95[0].toFixed(3)+'; red '+s3[2].toFixed(3)+' / '+s95[2].toFixed(2)+')');
+  ok(s200[0]+s200[1]+s200[2]<0.01,'nothing photosynthetic at 200 m ('+(s200[0]+s200[1]+s200[2]).toFixed(4)+')');}
+// the ring: along a side radial the front's weight peaks between the shelf and the flank; on the axis it never does; at neaps it moves in
+function frontOn(a){const out=[];for(let r=300;r<=2400;r+=25){const x=Math.cos(a)*r,z=Math.sin(a)*r,sm=P.sample(x,z),c=P.plank(x,z,sm),fx=(c[2]-P.FOG_B[0])*P.FOG_B[1];out.push({r,h:sm.h,fr:Math.exp(-fx*fx)});}return out;}
+{const S=frontOn(side),best=S.reduce((m,e)=>e.fr>m.fr?e:m,S[0]);ok(best.fr>0.9&&best.h<-40&&best.h>-200,'the ring on a side radial: the front\'s crest at r '+best.r+', the floor '+best.h.toFixed(0)+' (40–200 m, the break)');
+  const A=frontOn(up),ba=A.reduce((m,e)=>e.fr>m.fr?e:m,A[0]);ok(ba.fr<0.3,'and broken on the current\'s axis (the stagnation point: the front\'s best '+ba.fr.toFixed(2)+' at r '+ba.r+')');
+  P.setClock(30*13/2);P.bloomTick();const N=frontOn(side),bn=N.reduce((m,e)=>e.fr>m.fr?e:m,N[0]);P.setClock(0);P.bloomTick();
+  ok(bn.h>best.h+10,'the ring moves onto the shelf at neaps (the crest\'s floor '+bn.h.toFixed(0)+' at r '+bn.r+' against '+best.h.toFixed(0)+' at springs)');
+  ok(best.fr>0&&rows['a side flank, the break'].c3[0]+rows['a side flank, the break'].c3[1]>rows['a side flank, the shelf'].c3[0]+rows['a side flank, the shelf'].c3[1],'the ring feeds the lit layer at the break (3 m: '+(rows['a side flank, the break'].c3[0]+rows['a side flank, the break'].c3[1]).toFixed(2)+' vs the shelf\'s '+(rows['a side flank, the shelf'].c3[0]+rows['a side flank, the shelf'].c3[1]).toFixed(2)+')');}
+// the maps agree with the field at a texel's centre after a fill and blur at step 1 there (the blur: the 3×3 mean, so the field's own slope over 36 m is the error)
+{const s=sites[1],T=2*P.HALF/P.WM_N,i=Math.floor((s.x+P.HALF)/T),j=Math.floor((s.z+P.HALF)/T);P.wmFill(i-2,i+3,j-2,j+3,1);P.wmBlur(i-1,i+2,j-1,j+2);
+  const cx=-P.HALF+(i+0.5)*T,cz=-P.HALF+(j+0.5)*T,m=P.wmBloom(cx,cz,[0,0,0,0]),t=P.plankTexel(cx,cz,P.sample(cx,cz),[0,0,0]);let e=0;for(let k=0;k<3;k++)e=Math.max(e,Math.abs(m[k]-t[k]));
+  ok(e<0.03,'the maps hold the field at a texel\'s centre (max error '+(e*255).toFixed(1)+' of 255 after the blur)');
+  const A=P.bloomAt(cx,-3,cz,[0,0,0]),B=P.plankAt(cx,-3,cz,[0,0,0]);ok(Math.abs(A[0]-B[0])<0.05*B[0]+0.01&&Math.abs(A[1]-B[1])<0.05*B[1]+0.01,'bloomAt (the map) and plankAt (the field) agree there within 5% ('+A.map(v=>v.toFixed(3)).join('/')+' vs '+B.map(v=>v.toFixed(3)).join('/')+')');}
+// the GLSL carries the same numbers
+{const g=P.BLOOM_GLSL;ok(g.indexOf(P.PLK.k1.toFixed(2))>0&&g.indexOf(P.PLK.k2.toFixed(2))>0&&g.indexOf(P.PLK.front.toFixed(2))>0&&g.indexOf(P.PIGK[0].m1.map(n=>n.toFixed(3)).join(','))>0&&g.indexOf('uFogB')>0,'the GLSL is generated from PLK and PIGK (k1, k2, front, the green\'s tint, uFogB)');}
+// the storm's pulse over a month: bounded, and non-zero after rain
+{let mx=0,mn=1e9;for(let h=0;h<30*24;h+=1){P.setClock(h);P.bloomTick();mx=Math.max(mx,P.FOG_B[2]);mn=Math.min(mn,P.FOG_B[2]);}P.setClock(0);P.bloomTick();
+  ok(mx>0.1&&mx<8,'the storm\'s pulse over 24 days peaks at ×'+(1+mx).toFixed(2)+' on the gold (bounded; ×'+(1+mn).toFixed(2)+' at its least)');}
+console.log(failed?'plankton FAILED':'plankton ok');
+process.exit(failed?1:0);
