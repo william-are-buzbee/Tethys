@@ -1,5 +1,10 @@
 # HANDOFF — tethys
 
+**v11.77.1 (22 Sep 2026): the keys as before, the camera the mouse's.** The person looked at v11.77: dizzying. a and d sidestep and space and c rise and dive again
+(thrusts on a body that keeps its facing — the old keys on the new model), the camera is the heading's as it was, and the heading is held within `HEAD_MAX` 80° of the
+body's facing so the camera never looks the animal in the face; v11.77's turn keys and camera lead are struck. **Ask first** whether the 80° stop reads as a drag or a
+wall, then the sidestep at full speed.
+
 **v11.78 (22 Sep 2026): walking on the floor (CHANGELOG v11.75's scope on v11.77's model).** A legged body with its feet on the ground, wet or dry, walks
 (player.js `WALK`): held at its kind's clearance (the world's rule, `C.clear`), along its facing at derive's walk speed, back where its legs are jointed pairs
 (`LEGS_BACK`), the turn about up at the full rate, the pitch and the lean the slope's (`groundGrad`, `rollBias`), its feet kept down a step and off a ledge it falls,
@@ -15,8 +20,8 @@ at 0.6, a fish brakes at 2.5 × the coast, the keys turn at the body's rate) and
 player, so nothing spins at vertical; w thrusts along the body, s backs or brakes, a/d turn the heading, space/c pitch it, derive's buoyancy drifts (`BUOY_V`). The camera
 sits behind the body, led toward the heading by at most a radian. `test/steer.js` (both tiers, in `--test`) drives five bodies through straight up and down, a loop, a
 knock, the keys, a breach and first person and fails on a flip, a spike, a strafe or a NaN. Seen: the finback, the soft-arm and the sickle straight up, through the surface
-and straight down (`test/render/v77_*.png`). **Ask first** the turn at rest (0.35 of the rate: the finback 62°/s, the sickle 15), then the camera's lead, then a/d as a turn
-and s as a brake, then the buoyancy drift (the coilshell rises when idle), then the 88° pitch limit.
+and straight down (`test/render/v77_*.png`). **Ask first** the turn at rest (0.35 of the rate: the finback 62°/s, the sickle 15), then s as a brake, then the buoyancy drift (the coilshell rises when idle),
+then the 88° pitch limit. The camera's lead and the turn keys went in v11.77.1.
 
 **v11.76 (21 Sep 2026): the hingeshells' line (LINEAGE §13.6's other half, §12.31).** Any hingeshell of the roster is a founder through v11.75's path (the
 hose is the one to play: 1.5 m, framed from 6.4). The mode (line.js `BREED.hingeshells`): 3 eggs at 0.02 of the child's mass (0.68 of the hose's stomach),

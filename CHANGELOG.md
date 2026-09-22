@@ -5234,3 +5234,28 @@ CHANGELOG v11.75's scope ("what it would take"), built on v11.77's model: a legg
 2. **The hop** at 2.5 m/s under water and the sink at 1.2: a picker hops 0.44 m and is down in a second.
 3. **Which legs back**: jointed pairs yes, paddle rows and rear pairs no — a scuttle cannot reverse.
 4. **The lean** at 0.8 of the side slope, and the pitch at the whole of the fore-and-aft one.
+
+## v11.77.1 — the keys as before, the camera the mouse's (22 Sep 2026)
+
+The person looked (22 Sep 2026): "the controls are a little dizzying now — pressing c and space should function like before, moving the camera is
+useless honestly, it just disorients the player. I think pressing left and right should also move the animal left or right, it's just that the
+controls are generally better now with the proper steering. but nothing was really broken about how it worked before, except the whole turn around
+thing." So v11.77's two calls are struck and the old keys come back on the new model — which is what the old model could not do, since its body turned
+to face whatever the keys pushed it toward.
+
+- **The keys** (player.js `updatePlayer`): w and s along the body's axis (s backs at `STEER.rev` where the body can, else brakes), **a and d sidestep**
+  along the body's right, **space and c rise and dive** — the move vector as v11.76 had it (normalised, × the speed, the vertical at 0.8), but a thrust on
+  a body that keeps its facing; the jet's squeeze follows the keys' direction (the funnel turns), else the body's axis. Space is the jump on the strand
+  and the hop off the floor for a legged body (v11.78). `STEER.key` is gone. Touch: the left stick swims, as before.
+- **The camera is the mouse's** (`finishPlayer`: the heading's angles, as before v11.77; `STEER.lead` is gone), with one guard — **the heading is held
+  within `HEAD_MAX` 1.4 rad (80°) of the body's facing** in yaw and in pitch (`updatePlayer`): a flick round the back stops 80° off the tail and the
+  mouse drags the animal round at its own rate, so the camera never looks it in the face and never moves on its own.
+- **Tests** (`test/steer.js`): a and d run the velocity 70% across a body that keeps its facing with the heading untouched; space and c put 60% of it
+  vertical with the body level; the touch stick swims and sidesteps; a flick of π stops 75–79° off the body; the vertical phases hold the heading every
+  frame as a mouse would. The walking section unchanged. `--test` green on both tiers.
+- **Seen**: the finback swum with a and d and with space in the app's browser (`test/render/v771_*.png`): the body level and facing forward while the
+  velocity runs across and up.
+
+**Unseen, ask in this order:**
+1. `HEAD_MAX` at 80°: whether the stop at the flick reads as a drag or a wall, and whether 90° (the animal's flank) is better.
+2. The sidestep at the full speed, as v11.76 had it, on every body — a fish crabbing sideways as fast as it swims.

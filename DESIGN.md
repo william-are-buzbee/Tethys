@@ -1719,12 +1719,16 @@ pace's share, floored at `TURN_MIN` 0.35), eased within `STEER.ease` 0.3 rad and
 coilshell 144, the hose 147, the sickle 44. The orientation is composed from the facing (`faceQ`, Euler YXZ: yaw about world up, pitch about the body's x), so the body's up
 tends to world up and nothing degenerates at vertical — no lookAt against UP anywhere in the player (to v11.76 the body faced its velocity with one: the spin at vertical,
 the sideways strafe, the turn to a knock, the snap at the surface). w thrusts along the body's axis (`bodyFwd`); s backs at `STEER.rev` where the body can (a jetter 0.6 —
-the funnel turned, the squeeze kicking back) and brakes one that cannot (the coast × `STEER.brake` 2.5); a and d turn the heading at the body's rate (`STEER.key` 1; the
-touch stick's x), space and c pitch it (space jumps a walker on the strand); derive's buoyancy is a drift the pitch trims (`BUOY_V` sinks −0.25, neutral 0, floats 0.15 m/s).
+the funnel turned, the squeeze kicking the way the keys ask) and brakes one that cannot (the coast × `STEER.brake` 2.5); **a and d sidestep along the body's right, space and
+c rise and dive** (v11.77.1, the person, 22 Sep 2026: "c and space should function like before … left and right should also move the animal" — the move vector as v11.76 had it,
+a thrust on a body that keeps its facing; v11.77's turn keys struck; space jumps or hops a walker); derive's buoyancy is a drift the pitch trims (`BUOY_V` sinks −0.25, neutral 0,
+floats 0.15 m/s).
 In the air the facing follows the velocity at `STEER.air` 2 × the rate (a fish flopping on the strand too) and comes back to the heading at its rate: no snap; a knockback is
-a push and a flinch. The camera (`finishPlayer`) sits behind the body's facing, led toward the heading by at most `STEER.lead` 1 rad, never in front of the face; its up is
-its own angles' (`_m.lookAt` with that up); first person looks along the heading from the nose. `bodyPose`'s bank, the compass, the world map and the audio's swish read the
-body's own yaw and `angV`. `test/steer.js` is the proof. Open (CHANGELOG v11.77): the rate at rest, the lead, a/d as a turn, the drift, the pitch limit.
+a push and a flinch. The camera (`finishPlayer`) is the mouse's — the heading's angles, as before v11.77 (v11.77.1: "moving the camera is useless, it just disorients"; the
+lead of v11.77 struck) — and the heading is held within `HEAD_MAX` 1.4 rad (80°) of the body's facing in yaw and pitch, so a flick round the back stops there and the mouse
+drags the animal round at its rate: the camera never looks it in the face and never moves on its own; its up is its own angles' (`_m.lookAt` with that up); first person
+looks along the heading from the nose. `bodyPose`'s bank, the compass, the world map and the audio's swish read the
+body's own yaw and `angV`. `test/steer.js` is the proof. Open (CHANGELOG v11.77, v11.77.1): the rate at rest, `HEAD_MAX`, the sidestep at full speed, the drift, the pitch limit.
 
 **The editor at conception (v11.72, `line.js`; LINEAGE §13.4).** `x` no longer lays at once: `playerLay` checks the floor and the stomach (v11.73) and
 `conceiveOpen` opens the lab as the creator on the parent's spec (`lab.conceive = {parent, gen, budget, at, price}`; the clade locked, `p` off).
@@ -1903,7 +1907,7 @@ distance — a designed pass, not a knob. `render` is CPU submission; the GPU ru
   marine snow, rain, clouds, surface glow, vignette — in the lab panel's look, on the right. `options` on the menu (v11.47; the `effects` word
   at the bottom right is gone), or `e` on the menu and in play (the pointer is released while it is open, taken back on close; escape or a click on the canvas closes it).
   Saved in localStorage (`tethys.fx`). Each system reads `FX.key` where it draws; a switch is a key in `FX_DEF`, a row in `FX_LIST`, a read.
-- Controls (the hint, `menu.js`; v11.77): mouse steers, w swim, s brake or back, a d turn, space c up and down, shift burst, q ability, click bite, m mute, esc menu; mouse
+- Controls (the hint, `menu.js`; v11.77.1): mouse steers, w a s d swim, space rise, c dive, shift burst, q ability, click bite, m mute, esc menu; mouse
   look by pointer lock from the first frame of play (`choose` asks for it in the menu word's click), Tab releases it and shows the cursor, Tab or a click
   takes it back; a click while locked is the bite; drag-to-look if the lock is blocked (e.g. inside an iframe). v11.13.1: the invisible
   menu's picks were taking every click below the title (`pointer-events:auto` on a child beats the parent's `none`); `#menu.gone .pick` is none now. Touch: left side drag to swim,
