@@ -1,9 +1,11 @@
 # LINEAGE.md — the line across generations: a full life, the brood it leaves, the mutation, and the magic that is admitted
 
-**Status: §13.1–2 built, minimal (v11.69, 21 Sep 2026): the line on the slot with its track, the finback's clutch (v11.73: paid from the stomach; to then a cooldown for its cost), broods as
-records that survive an unload, the handover at death to the nearest living child, the save ended with none, and the sparkle at the handover only.
-The player became a spec first (v11.68). Not built: the crude shrine page, §8's sparse entries (a survival knob stands in), the editor at conception,
-the other clades' modes. Design otherwise, 20 Sep 2026. The person's answers are in §12 and are folded through the body of this doc.** Written
+**Status: §13.1–6 built (21 Sep 2026): the line on the slot with its track, the clutch by the body's own mode (v11.69 the finback; v11.74 the
+ringmouths' one spawning, brood and scheduled death; v11.76 the hingeshells' den and the moult on the player), broods as records that survive an
+unload, the handover at death to the nearest living child, the save ended with none, the sparkle, the player as a spec (v11.68) and any species of
+the roster as the founder (v11.75), the editor at conception with its budget (v11.72) paid from the stomach (v11.73). Not built: the crude shrine
+page, §8's sparse entries (a survival knob stands in), §6b's materials, and §12.33's zoom-and-fade into the editor — §13.4 ships as a jump cut.
+Design otherwise, 20 Sep 2026. The person's answers are in §12 (32–38 added 22 Sep 2026) and are folded through the body of this doc.** Written
 at the head of the creator pass (the person, 20 Sep: the creator becomes the default start of the game, and the game becomes "a genetic
 lineage game where you can trace your ancestry, lives and activity levels"). Upstream: `PLANET.md` (the clades and their limits),
 `CLADES.md` (the three signatures), `COMBAT.md` (death, and `slotDeath` as built), `CREATOR.md` (the spec, the compiler, the lab as it
@@ -404,6 +406,31 @@ coordinates and days in a form that could be exported.
     physically possible (player.js `ABILITIES`) as the stand-in; CREATOR.md keeps the design note.
 31. **The player moults, and the moult is not a trip to the editor** (21 Sep 2026): the editor opens at conception only, as for everyone. Built v11.76:
     the world's own `MOULT` rules on the player by the clock, the hatchling growing through its moults.
+32. **Reproduction keeps the founder's feel until you evolve away from it** (22 Sep 2026): "your reproduction should FEEL the same as the starting
+    clade, sparkles aside. Down the line you can evolve into whatever you want and may reproduce in a different way." So the mode is the body's, as
+    `breedOf` already reads it — and a line that edits its way into another mode changes how it breeds, which is the reward, not a setting. The whole
+    offspring system wants a believability pass of its own later: "make it believable for the world and then let the player kinda fudge the rules a
+    little bit."
+33. **The conception editor becomes a moment, not a jump cut** (22 Sep 2026, the person's own design — §13.4 is built as a jump cut and this replaces
+    it). You lay the eggs and swim off; the camera leaves the body, zooms in on the clutch over a few seconds and fades to black; the editor fades in
+    as **a pedestal in a simulated backdrop of the world you are actually in** — Spore's creature creator, explicitly; when you commit, it fades back
+    to the player, who is where it was, beside the eggs. What this fixes: today the editor opens on the spot and the world spins round the clutch
+    (the person laid beside a rock and "the creature creator kinda circled the ground and I saw nothing really"). It also gives `playerAway`
+    (v11.72.1) a reason to exist on screen instead of a gap.
+34. **The moult's numbers follow the animals, not the game** (22 Sep 2026): "probably whatever is believable in nature for animals of that size that
+    moult." A real decapod is soft for roughly a twentieth to a tenth of its intermoult; `MOULT` runs 0.5 / 20 = 2.5% today, so the soft window is
+    short by half at least. The cue that a moult is coming is agreed (the valves stop raising, the coat dulls, a hint in the last hour).
+35. **Everything that can starve, wastes** (22 Sep 2026): "yes, everyone is capable of starving so it should apply to everyone." v11.74's wasting is
+    the brooder's only; it becomes the rule for any starving body, the one switch v11.73 left (CHANGELOG v11.73, candidate b).
+36. **The body's state is shown on a key, and knowing it is itself a trait** (22 Sep 2026): "we should have a button that shows UI elements that are
+    normally hidden … an icon that is darker the hungrier you are, or a classic set of bars — health, hunger, and eventually stamina. Self awareness
+    will become its own genetic thing, whether you want info on things or not." So the readout of the body is a held key, and later a part of the
+    build: an animal that knows how hungry it is has paid for the nerve that tells it.
+37. **Abilities need a chooser before the list gets long** (22 Sep 2026): "down the line we will have more complicated behaviors, like an MMO where
+    you can use 30 skills or abilities. You can make a complex creature so down the line we will need a system for selecting different actions."
+    `Q` firing the first ability the body has (v11.75) is the stand-in until then; §12.30's ganglion model is where it lands.
+38. **The founder list stays wide open for now** (22 Sep 2026): the traps, the hood, the forage and the giants are all still offered — "I need to be
+    able to quickly occupy any animal and test them out." Narrowing it is a decision for when the game is being balanced, not while it is being built.
 
 ## 13. Build order
 

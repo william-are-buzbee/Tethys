@@ -1,30 +1,28 @@
 # HANDOFF — tethys
 
-**v11.77.2 (22 Sep 2026): the body turns into the keys.** The person looked at v11.77.1 (a and d swapped — my sign; the body not turning into a sidestep or a climb):
-w, a, d, space and c are together a direction in the camera's frame (player.js `dirK`) and the body turns into it at its rate, swimming where it faces — a alone a right
-angle left and away, w with space a 39° climb, space alone straight up, never a flip; s alone brakes or backs. The camera is the heading's as before v11.77, held within
-`HEAD_MAX` 92° of the body's facing so it never looks the animal in the face and a alone does not drag it; v11.77's turn keys and camera lead are struck. **v11.77.3:** the person's ask after v11.77.2 ("much, much better") — `free look` on the effects list (`FX.freeLook`, off by default): the mouse spins the camera round a
-body that holds until a movement key is down, then it turns into the keys' direction; the thrust runs by the body's alignment with the keys (`al`: facing the camera it
-pivots first, never the old tail-first swim), and a body thrusting into a turn turns at its full rate whatever its speed. **Ask first** whether free look should be the
-default, then whether the 92° stop on a flick reads as a drag or a wall with it off.
+**v11.79 (22 Sep 2026): the camera off the body's axis, free look by default, s the reverse.** The person answered the movement stack: free look is
+the default now (effects.js `FX_DEF`, with `FX_V`/`FX_NEW` carrying a changed default past a browser that has already saved its choices) — the mouse
+spins the camera round a body that holds until a movement key is down; the clamped mode (`HEAD_MAX`, the mouse dragging the animal round) is the switch
+off. The third-person camera sits `CAM_LIFT` 0.42 of its arm above the body's line and looks at a point `CAM_AIM` 0.45 of that lift up, so the animal is
+seen from over its back about a sixth of the frame below centre instead of end-on down its own axis ("like I was driving a racecar"). `s` is the reverse
+for every body — `STEER.rev` jet 0.6, sculling 0.35, legs 0.5 × what the legs are — turning nothing, and it is still the brake while the body is going
+forward; any pair of legs backs up, a paddle row at `LEGS_AWK` 0.55 of a jointed pair's. The camera's `_m.lookAt` had been swallowed by a comment on its
+line and was fixed here. Seen: `test/render/v79_fin_cam.png` against `v79_fin_cam_before.png`. **Ask first** whether the lift is "a little over it" or too
+high, then whether the animal wants to ride higher in the frame (`CAM_AIM`), then the reverse speeds.
 
-**v11.78 (22 Sep 2026): walking on the floor (CHANGELOG v11.75's scope on v11.77's model).** A legged body with its feet on the ground, wet or dry, walks
-(player.js `WALK`): held at its kind's clearance (the world's rule, `C.clear`), along its facing at derive's walk speed, back where its legs are jointed pairs
-(`LEGS_BACK`), the turn about up at the full rate, the pitch and the lean the slope's (`groundGrad`, `rollBias`), its feet kept down a step and off a ledge it falls,
-out of the current, a hop on space; off the floor a flapper with legs swims and a legs-only body sinks back (`canSwim`, `WALK.sink`). 63 lines in player.js and one
-in fx.js against v11.75's estimate of 40 — the clearance, the ledge, the current, the lean, the legs' style and the legs-only sink were not in it; the camera needed
-nothing. `test/steer.js` walks the picker, the scuttle and the ram up the west shelf's slope, turns, backs, steps, falls off a ledge, hops and walks the beach
-above. Seen: the picker on the floor, nose-up on the slope, leaning across it (`test/render/v78_picker_*.png`). **Ask first** whether the camera should stay level
-on a slope, then the hop and the sink, then which legs may back, then the lean.
+**v11.78 (22 Sep 2026): walking on the floor.** A legged body with its feet on the ground, wet or dry, walks (player.js `WALK`): held at its kind's
+clearance, along its facing at derive's walk speed, back by its legs, the turn about up at the full rate, the pitch and the lean the slope's
+(`groundGrad`, `rollBias`), its feet kept down a step and off a ledge it falls, out of the current, a hop on space; off the floor a flapper with legs
+swims and a legs-only body sinks back (`canSwim`, `WALK.sink`). `test/steer.js` walks the picker, the scuttle and the ram up the west shelf's slope,
+turns, backs, steps, falls off a ledge, hops and walks the beach above. The person on the land questions (22 Sep): the hop, the sink and the lean are
+fine for now — "right now it's fixing stuff, then getting back to the core loop"; more robust land characteristics are a later pass.
 
-**v11.77 (22 Sep 2026): the animal steers itself (the person's decision of 21 Sep, DESIGN The player).** The mouse sets a heading; the body's own facing turns toward
-it at derive's turn rate by the world's rule (player.js `turnRateOf`, `faceToward`; `STEER`: ease 0.3 rad, the camera's lead 1 rad, the arc in the air at 2×, a jetter backs
-at 0.6, a fish brakes at 2.5 × the coast, the keys turn at the body's rate) and the orientation is composed from that facing (`faceQ`) — no lookAt against up anywhere in the
-player, so nothing spins at vertical; w thrusts along the body, s backs or brakes, a/d turn the heading, space/c pitch it, derive's buoyancy drifts (`BUOY_V`). The camera
-sits behind the body, led toward the heading by at most a radian. `test/steer.js` (both tiers, in `--test`) drives five bodies through straight up and down, a loop, a
-knock, the keys, a breach and first person and fails on a flip, a spike, a strafe or a NaN. Seen: the finback, the soft-arm and the sickle straight up, through the surface
-and straight down (`test/render/v77_*.png`). **Ask first** the turn at rest (0.35 of the rate: the finback 62°/s, the sickle 15), then s as a brake, then the buoyancy drift (the coilshell rises when idle),
-then the 88° pitch limit. The camera's lead and the turn keys went in v11.77.1.
+**v11.77–11.77.3 (22 Sep 2026): the animal steers itself.** The mouse sets a heading; the body's own facing turns toward it at derive's turn rate
+(player.js `turnRateOf`, `faceToward`, `faceQ`, `STEER`) and the orientation is composed from that facing, so nothing spins at vertical. w, a, d, space
+and c are together a direction in the camera's frame (`dirK`) and the body turns into it, swimming where it faces. The person on what is left open
+(22 Sep): the turn at rest and the 88° pitch limit are fine for now and want a video before any change — "the way that fish kind of dart around when
+they swim looks different than this … we might have to revisit this in the physics passes"; the buoyancy drift stands "as long as it's a believable
+amount".
 
 **v11.76 (21 Sep 2026): the hingeshells' line (LINEAGE §13.6's other half, §12.31).** Any hingeshell of the roster is a founder through v11.75's path (the
 hose is the one to play: 1.5 m, framed from 6.4). The mode (line.js `BREED.hingeshells`): 3 eggs at 0.02 of the child's mass (0.68 of the hose's stomach),

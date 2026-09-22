@@ -5298,3 +5298,43 @@ screen without turning the character."
   seconds, no spike; the switch off again. Green on both tiers.
 - **Seen** (`test/render/v773_fin_*.png`): the finback face-on with the camera spun behind its face and the body holding; ten frames into w, pivoting
   in place; and swum off away from the camera.
+
+## v11.79 — the camera off the body's axis, free look by default, s the reverse (22 Sep 2026)
+
+The person answered the whole stack of movement asks. Four of them are code, and this is the four.
+
+- **Free look is the default** (effects.js `FX_DEF.freeLook` true). The person: "Free look should be the default for sure. Something about the old
+  controls was better than the new controls — the turning is good, fixing the issue with getting turned around was good, but the game needed those
+  simpler controls and a camera that isn't pulling you like it's a racing game." The clamped mode (`HEAD_MAX`, the mouse dragging the animal round)
+  stays as the switch off. On the 92° stop with it off, they saw nothing either way ("I don't see much of a wall or anything anywhere"), so it stands.
+- **A default that changes now reaches a browser that has already played** (effects.js `FX_V` 79, `FX_NEW`): the saved record carries a version and,
+  when it is older, the keys listed in `FX_NEW` take the new default instead of the stored one. Every other choice the person has made is kept. Without
+  it a v11.77.3 save of `free look: off` would have hidden this version's whole point.
+- **The camera sits over the body instead of on its axis** (player.js `CAM_LIFT` 0.42, `CAM_AIM` 0.45). The person: "The camera does seem to be a bit
+  directly behind you. Contributing to the racing game feeling a bit. Felt that way with the slowblood fin, like I was positioned exactly behind and I
+  was driving a racecar." It was 1.4 m above the body's line whatever the animal — 12° for a finback at an arm of 7.5 m and 2° for a sickle at 38 m,
+  which is the body's own axis, seen end-on. Now the lift is a share of the arm (the finback 3.15 m, 23°) and the look rises by `CAM_AIM` of it, so the
+  view tilts down 9° and the animal sits about a sixth of the frame below centre with its back, its fins and the ground under it in view.
+- **s is the reverse, for every body** (player.js `STEER.rev`: jet 0.6, sculling 0.35 — new — legs 0.5 × what the legs are). The person: "I think S
+  needs to be a reverse. You need to be able to swim backwards and use the controls fully — if you are not moving the mouse and you move to the left,
+  then press s, you should swim backwards and therefore move to the right, while the camera is unmoving." s alone still turns nothing, so that is what
+  it does. The brake is not gone: while the body is still moving forward the same backward thrust runs at `STEER.brake` 2.5 × accel, so it stops
+  smartly and then backs. "Later on that can be a cognitive capacity — not all animals can swim in reverse" is the next version of this, not this one.
+- **Any pair of legs may back up** (player.js `LEGS_AWK` 0.55; `legsBackOf` returns a factor, not a flag). The person: "any pair of legs should be able
+  to back up as long as it makes sense (if your back legs don't work you can't use your front very well, but you could probably try)". Jointed pairs
+  (placed, walk, hang, march) back at the full `STEER.rev.legs`; a paddle row (rock, swim) and the raptors' rear pairs back at 0.55 of it — the scuttle
+  now makes 1.2 m where it made none, the picker 3.6.
+- **The hint line follows the switch** (menu.js): "mouse looks, w a d swim, s reverse" with free look on, the old line with it off.
+- **Found and fixed on the way**: the camera's `_m.lookAt` had been swallowed by the comment I put on that line (the third time this project has done
+  that — v11.18.1, v11.43). The camera kept whatever orientation it last had while its position tracked the body, which draws a world that swings
+  round you for no reason. Caught by looking: the finback was not in the frame at all.
+- **Tests** (`test/steer.js`, both tiers): the battery now runs with free look off (it is the clamp it tests) and turns it back on after; s backs every
+  one of the five founders along its own body within the rate `STEER.rev` gives it and with no strafe (the finback 2.15 m/s, the soft-arm 4.86, the
+  coilshell 2.40, the hose 2.32, the sickle 3.29); every walker steps back, the picker 3.6 m and the paddle rows 1.2 and 1.7. `node build.js --test`
+  green on both tiers.
+- **Seen** (`test/render/v79_fin_cam.png`, and `v79_fin_cam_before.png` with the old numbers for the comparison): before, the finback is dead centre and
+  almost tail-on; after, it is below centre and seen from over its back, with the shelf under it.
+
+**Unseen, ask in this order**: whether the lift reads as "a little over it" or as too high a camera (`CAM_LIFT`), then whether the animal wants to sit
+higher in the frame (`CAM_AIM`, lower = the camera looks down more and the body rides higher), then the reverse speeds — a fish sculling backwards at a
+third of its cruise is the guess, and nothing measured it — then whether an awkward backer should also be slower to turn while it backs.

@@ -27,8 +27,8 @@ const ABILITIES=[
   {id:'ram',part:'the ram',fits:sp=>sp.parts.some(p=>p.kind==='weapon'&&p.style==='ram')},
   {id:'shut',part:'the valves',fits:sp=>sp.parts.some(p=>p.kind==='valves')}
 ];
-const LEGS_BACK=['placed','walk','hang','march']; // v11.78: the leg styles that can step backward — jointed pairs; a paddle row (rock, swim) and the raptors' rear pairs cannot
-function legsBackOf(spec){let sp;try{sp=fillSpec(spec);}catch(e){return false;}return sp.parts.some(p=>p.kind==='legs'&&LEGS_BACK.indexOf(p.style)>=0);}
+const LEGS_BACK=['placed','walk','hang','march'],LEGS_AWK=0.55; // v11.78: the leg styles built to step backward — jointed pairs. v11.79 (the person, 22 Sep 2026: "any pair of legs should be able to back up as long as it makes sense … if your back legs don't work you can't use your front very well, but you could probably try"): a paddle row (rock, swim) and the raptors' rear pairs back too, awkwardly, at LEGS_AWK of a jointed pair's rate
+function legsBackOf(spec){let sp;try{sp=fillSpec(spec);}catch(e){return 0;}let k=0;for(const p of sp.parts)if(p.kind==='legs')k=Math.max(k,LEGS_BACK.indexOf(p.style)>=0?1:LEGS_AWK);return k;} // the best backing any pair of its legs can manage, 0 if it has none
 function abilitiesOf(spec){let sp;try{sp=fillSpec(spec);}catch(e){return [];}return ABILITIES.filter(a=>a.fits(sp)).map(a=>a.id);} // every ability the body has, in the table's order (fillSpec: the registry's defaults where the spec is silent)
 function presetFor(spec){const id=spec.clade==='ringmouths'?(spec.core&&spec.core.kind==='coilbody'?'coil':'soft'):'fin';return CLADE_PRESETS.find(p=>p.id===id);} // the kind of body a spec is: a coiled ringmouth the coilshell's, another ringmouth the soft-arm's, anything else the finback's
 function playerClade(spec,pre,j){ // the player's clade object from a spec (and its preset, if it is one): what player.js, combat.js and the rest read as player.clade. j: a hatchling's scale (v11.69: ECO.juv until grown; v11.76 a hingeshell's steps at its moults), the numbers scaled as the world's juveniles' are (creatures_ai.js scaledDef)
@@ -73,6 +73,7 @@ const CAM_DWELL=0.5,CAM_FLIP=0.4; // v11.42: CAM_CLEAR (0.35, the camera held cl
 // there for the shadow map — v11.23, so your own shadow is under you in first person; before, the body was hidden and three's depth
 // pass skips a hidden object) and its wake and arms still act on the world.
 const FP_AHEAD=0.35;
+const CAM_LIFT=0.42,CAM_AIM=0.45; // v11.79 (the person on v11.78: "the camera does seem to be a bit directly behind you … contributing to the racing game feeling"): the third-person camera sits CAM_LIFT of its arm above the body's line and looks at a point CAM_AIM of that lift above it — the animal seen from a little over it, its back and its shape read, instead of end-on down its own axis
 // The animal steers itself (v11.77; the person, 21 Sep 2026: every animal must be playable without feeling strange — steering by heading, no strafing
 // for a swimmer, backing up only where the body can). The mouse sets the heading you want (yaw, pitch); the body's own facing (byaw, bpitch) turns
 // toward it at derive's turn rate by the world's rule (creatures_ai.js: the rate at the top speed, an ambling body at its pace's share, floored at
@@ -84,16 +85,16 @@ const FP_AHEAD=0.35;
 // right … nothing was really broken about how it worked before, except the whole turn around thing"; then "the animal just moves without changing
 // direction when going down, up, left or right"): w, a, d, space and c together are a direction in the camera's frame; the body turns into it at its
 // own rate and swims where it faces — v11.76's keys with the body turning into them by the composition, so straight up is a body pointing up and never
-// a flip. s alone brakes, or backs at STEER.rev where the body can. Space is the jump on the strand and the hop off the floor for a legged body.
+// a flip. s alone backs at STEER.rev without turning the body (v11.79: every body reverses; while it is still going forward that same thrust is the brake). Space is the jump on the strand and the hop off the floor for a legged body.
 // Derive's buoyancy is a drift the pitch trims (BUOY_V). In the air the body follows its arc and comes back to the heading at its rate, without a snap. The camera is the mouse's, as before v11.77 ("moving the camera is useless, it just disorients"), held within HEAD_MAX of the body's
 // facing so it never looks the animal in the face: a flick past it stops there and the body comes round under it.
 const PITCH_MAX=1.54; // rad (88°): the heading's pitch limit — nearly straight up or down; a loop is not a heading
 const HEAD_MAX=1.6; // rad (92°): how far the heading (the mouse, the camera) may run ahead of the body's facing in yaw and in pitch; the body turns toward it at its rate and the mouse drags it round. Past a right angle, so a alone (the body a right angle off the camera) does not drag the camera with it (v11.77.2)
-const STEER={ease:0.3,air:2,rev:{jet:0.6,legs:0.5},brake:2.5,min:TURN_MIN}; // ease: within this angle (rad) of the heading the turn eases in exponentially (a radian left a slow body settling for seconds, test/steer.js); air: the body follows its arc at this × its turn rate; rev: backing as a share of the top speed where the body can — a jetter turns its funnel, a legged body steps back on the floor (v11.78), a fish cannot; brake: s on a body that cannot back is the coast's decay × this (the fins flared); min: the turn's floor at rest, the world's (TURN_MIN)
+const STEER={ease:0.3,air:2,rev:{jet:0.6,legs:0.5,swim:0.35},brake:2.5,min:TURN_MIN}; // ease: within this angle (rad) of the heading the turn eases in exponentially (a radian left a slow body settling for seconds, test/steer.js); air: the body follows its arc at this × its turn rate; rev: backing as a share of the top speed where the body can — a jetter turns its funnel, a legged body steps back on the floor (v11.78), a fish cannot; brake: s on a body that cannot back is the coast's decay × this (the fins flared); min: the turn's floor at rest, the world's (TURN_MIN)
 const BUOY_V={sinks:-0.25,neutral:0,floats:0.15};
 // Walking on the floor (v11.78, CHANGELOG v11.75's scope on v11.77's model): a legged body on the ground, wet or dry, is a walker — held at the ground
 // plus its kind's clearance (C.clear: the founder's DEFS clear, else 0.35 × size, the world's rule for its own walkers), w and s along its facing at
-// derive's walk speed (the legs' Froude speed), back at STEER.rev.legs where the legs are jointed pairs (LEGS_BACK), the turn about up only at the full
+// derive's walk speed (the legs' Froude speed), back at STEER.rev.legs by what its legs are (LEGS_BACK, LEGS_AWK), the turn about up only at the full
 // rate (legs pivot at any pace), the pitch and the lean the ground's slope under it (groundGrad), its feet kept down a step (WALK.step × size: a deeper
 // drop is a ledge, and it falls), space a hop off the floor (WALK.hop; the strand's jump in the air). Off the floor it swims by what its build says: a
 // flapper with legs (the hood, the ram) swims as any flapper; a body whose only propulsion is its legs (derive's mode 'walk': canSwim false) has no
@@ -208,9 +209,9 @@ function updatePlayer(dt){
   if(still||P.dead){ty=P.byaw;tp=P.bpitch;}
   faceToward(P,ty,tp,rate,dt);faceQ(P);
   const bf=bodyFwd(P,T3); // the body's own axis: what the thrust runs along (v11.77.2: the keys turn the body, above; the thrust follows the body)
-  const rev=walker?(C.legsBack?STEER.rev.legs:0):C.jet?STEER.rev.jet:0,swims=walker||C.canSwim||sub<0.5; // s: back where the body can (a jetter's funnel, jointed legs on the ground), else the brake; a legs-only body off the floor under water has no thrust
+  const rev=walker?STEER.rev.legs*(C.legsBack||0):C.jet?STEER.rev.jet:STEER.rev.swim,swims=walker||C.canSwim||sub<0.5; // s: every body backs now (v11.79, the person: "S needs to be a reverse. You need to be able to swim backwards and use the controls fully … Later on that can be a cognitive capacity — not all animals can swim in reverse") — a jetter's funnel fastest, a sculling body at STEER.rev.swim, legs by what they are (LEGS_AWK); a legs-only body off the floor under water has no thrust
   const al=dirK?clamp(1+Math.cos(P.bpitch)*Math.cos(tp)*Math.cos(wrapA(ty-P.byaw))+Math.sin(P.bpitch)*Math.sin(tp),0,1):1; // the thrust by the body's alignment with where the keys point: full within a right angle, none facing away — facing the camera, it pivots first (v11.77.3: never the old backwards swim toward the camera)
-  const th=still||!swims?0:dirK?al:mz<0?-rev:0,brake=!still&&mz<0&&!rev&&!walker&&!dirK; // any direction key drives it forward along the body it is turning; s alone backs or brakes
+  const th=still||!swims?0:dirK?al:mz<0?-rev:0,brake=!still&&mz<0&&!walker&&!dirK&&P.vel.dot(bf)>0; // any direction key drives it forward along the body it is turning; s alone backs — and while the body is still going forward that thrust is a brake, so it stops at STEER.brake and then swims backwards (v11.79)
   const move=T1.copy(bf).multiplyScalar(th);
   const moving=th!==0;
   let spd=walker?(C.landSpeed||4):C.speed;if(!walker&&C.sprint&&sprint)spd*=C.sprint; // a walker's Froude speed is its ceiling (v11.75)
@@ -276,8 +277,9 @@ function finishPlayer(dt,near){
   bodyPose(P,dt,P.byaw); // v11.53 (fx.js): squash and stretch, banking, the bite's snap — after the anim, before the rigs step. v11.77: the bank from the body's own turn, not the heading's
   stepRigs(P,near,dt);
   P.pulse=Math.max(0,P.pulse-dt*2);P.snapT=Math.max(0,(P.snapT||0)-dt);P.nudgeT=Math.max(0,(P.nudgeT||0)-dt);P.fovKickT=Math.max(0,(P.fovKickT||0)-dt); // v11.53 (fx.js): the bite's snap, the camera's nudge toward it, the hurt's fov kick; squash and stretch and banking
+  const arm=C.cam+CAM_K.arm,lift=arm*CAM_LIFT; // the third-person arm and how far above the body's line it sits — a share of the arm, so a 21 m sickle is looked down on as much as a 3 m finback (v11.79: 1.4 m flat put the camera on the body's own axis, "positioned exactly behind … like I was driving a racecar")
   if(P.fp){const nose=(P.b&&P.b.F?P.b.F.nose*P.g.scale.x:C.size)+FP_AHEAD;T2.copy(P.pos).addScaledVector(bodyFwd(P,T1),nose);} // at the nose, along the body
-  else{T2.copy(P.pos).addScaledVector(fwd,-(C.cam+CAM_K.arm)).addScaledVector(UP,1.4); // v11.48: CAM_K.arm from the readout's tuner
+  else{T2.copy(P.pos).addScaledVector(fwd,-arm).addScaledVector(UP,lift); // v11.48: CAM_K.arm from the readout's tuner
   const ch=groundAt(T2.x,T2.z)+1.0;if(T2.y<ch)T2.y=ch;}
   // camAbove is which side the camera's natural spot is on, with hysteresis: it flips CAM_FLIP past the wave and never within CAM_DWELL of
   // the last flip (a wave passing the spot is not a reason to change the light). Since v11.42 it drives only the light's crossfade, the sound
@@ -288,6 +290,8 @@ function finishPlayer(dt,near){
   else{if(T2.y>cw+CAM_FLIP&&P.camFlipT<=0){P.camAbove=true;P.camFlipT=CAM_DWELL;}}
   applyCam();if(P.fp)camera.position.copy(T2);else{solidPush(T2,0.6,null,null,true);camera.position.lerp(T2,1-Math.exp(-8*dt));if(P.nudgeT>0&&P.nudgeD)camera.position.addScaledVector(P.nudgeD,P.nudgeT*2.0);}
   if(P.hurtT>0){camera.position.x+=rnd(-1,1)*P.hurtT*0.3;camera.position.y+=rnd(-1,1)*P.hurtT*0.3;}
-  if(P.fp)T2.copy(camera.position).add(fwd);else T2.copy(P.pos).addScaledVector(fwd,3);_m.lookAt(camera.position,T2,cup);camera.quaternion.setFromRotationMatrix(_m); // the look with the camera's own up (v11.77): never a lookAt against UP
+  // the look rises by CAM_AIM of the lift (v11.79): at 1 the camera looks along the heading and the body hangs low in the frame, at 0 it looks straight at the body and the heading is off the top — 0.45 puts the animal about a sixth of the frame below centre with the heading a little above it
+  if(P.fp)T2.copy(camera.position).add(fwd);else T2.copy(P.pos).addScaledVector(fwd,3).addScaledVector(UP,lift*CAM_AIM);
+  _m.lookAt(camera.position,T2,cup);camera.quaternion.setFromRotationMatrix(_m); // the look with the camera's own up (v11.77): never a lookAt against UP
   plight.position.copy(P.pos).add(V3(0,1,0));
 }

@@ -45,6 +45,7 @@ function phase(name,n,ks,head,cap,capAir){ // cap, capAir: the turn allowed a fr
 }
 function run(C,label){
   X.setMode('menu');X.choose(C);P.dead=false;clearKeys();X.setT(120);
+  if(X.FX.freeLook)X.fxToggle('freeLook'); // v11.79: free look is the default now, so this battery turns it off — it is the clamped mode (HEAD_MAX) that it tests; the free-look block below turns it back on
   place(700,-90,-700); // deep water over the flank (the smoke's clade 5 boots here: ground −151): eight seconds straight up stays under
   P.yaw=0.4;P.pitch=0;P.byaw=P.yaw;P.bpitch=0;global.__step(30);
   const rate=P.clade.turn*DEG,cap=rate*1.05,capAir=rate*X.STEER.air*1.05; // the turn's cap (deg/s): derive's, and the arc's allowance in the air
@@ -87,7 +88,8 @@ function run(C,label){
   const kb=R.find(r=>r.name==='a knockback');check(kb.off<6&&kb.maxTurn<=cap,label+': a knockback does not turn the body to the knock (off '+kb.off.toFixed(1)+'° after it)');
   check(Math.abs(turnedA)<0.01&&Math.abs(turnedD)<0.01&&Math.abs(sideA*DEG-45)<8&&Math.abs(sideD*DEG+45)<8&&R.find(r=>r.name==='d').strafe<0.2,label+': a and d turn the body into the sidestep — '+(sideA*DEG).toFixed(0)+'° left and '+(sideD*DEG).toFixed(0)+'° right of the heading with w, swimming where it faces, the heading (the camera) untouched');
   check(Math.abs(pitchedS)<0.01&&Math.abs(pitchedC)<0.01&&upS>0.3&&upC<-0.3&&Math.abs(bpS*DEG-39)<8&&Math.abs(bpC*DEG+39)<8,label+': space climbs and c dives with w — the body pitched '+(bpS*DEG).toFixed(0)+'° and '+(bpC*DEG).toFixed(0)+'°, '+(upS*100).toFixed(0)+'% and '+(upC*100).toFixed(0)+'% of the velocity vertical, the heading untouched');
-  const sP=R.find(r=>r.name==='s');check(P.clade.jet?sP.spd>0.5:sP.spd<0.5,label+': s '+(P.clade.jet?'backs a jetter ('+sP.spd.toFixed(1)+' m/s)':'brakes a body that cannot back ('+sP.spd.toFixed(2)+' m/s)'));
+  const sP=R.find(r=>r.name==='s');const rvK=P.clade.jet?X.STEER.rev.jet:X.STEER.rev.swim,rvW=P.clade.speed*rvK; // v11.79: every body reverses, a jetter fastest
+  check(sP.spd>rvW*0.5&&sP.spd<rvW*1.4&&sP.strafe<0.2,label+': s backs it along its own body at STEER.rev ('+sP.spd.toFixed(2)+' m/s of '+rvW.toFixed(2)+', across share '+sP.strafe.toFixed(2)+')');
   const tc=R.find(r=>r.name==='touch');check(Math.abs(turnedT)<0.01&&tc.spd>1&&Math.abs(tc.side*DEG+45)<8,label+': the touch stick swims and turns into its sidestep ('+tc.spd.toFixed(1)+' m/s, '+(tc.side*DEG).toFixed(0)+'° off the heading) on the same model');
   P.yaw+=Math.PI;global.__step(1);const ahead=Math.abs(((P.yaw-P.byaw+Math.PI)%(2*Math.PI)+2*Math.PI)%(2*Math.PI)-Math.PI);check(ahead<=X.HEAD_MAX+0.01,label+': a flick of the mouse round the back stops '+(ahead*DEG).toFixed(0)+'° off the body (HEAD_MAX '+(X.HEAD_MAX*DEG).toFixed(0)+'°): the camera never looks it in the face');global.__step(120);
   return R;
@@ -103,6 +105,7 @@ for(const [C,label] of [[finC,'finback'],[sickle,'sickle']]){
   clearKeys();K.KeyW=true;global.__step(10);const early=P.vel.length();const come=phase('w',360,{KeyW:true},null,cap,cap*X.STEER.air);
   check(early<0.8&&come.off<3&&come.spd>P.clade.speed*0.5&&come.over===0,label+': w turns it toward the camera — pivoting first ('+early.toFixed(2)+' m/s after ten frames, facing the camera), then swimming off ('+come.spd.toFixed(1)+' m/s, '+come.off.toFixed(1)+'° off after six seconds), no spike');
   X.fxToggle('freeLook');check(X.FX.freeLook===false,label+': free look off again');}
+if(!X.FX.freeLook)X.fxToggle('freeLook');check(X.FX.freeLook===true,'free look is the default (v11.79) — the walking below runs in it'); // and the rest of the file runs as the game ships
 // ---- walking on the floor (v11.78): a legged founder walks a slope nose-up at derive's walk speed, turns on the spot, steps back where its legs are
 // jointed, keeps its feet down a step and falls off a ledge, hops, cannot swim when its legs are all it has (and sinks back), walks the strand; a
 // flapper with legs (the ram) walks on the floor and swims off it ----
@@ -134,7 +137,7 @@ function walkRun(id,label){
   const y0=P.yaw;P.yaw=y0+HPI2;const tn=walk('turn',120,{KeyW:true});
   check(tn.off<5&&tn.gr>0.95,label+': turns on its legs to a heading a right angle off ('+tn.off.toFixed(1)+'° left after 2 s)');
   walk('settle',40,{});const bk=walk('back',120,{KeyS:true});
-  check(P.clade.legsBack?bk.along<-0.8:Math.abs(bk.along)<0.4,label+(P.clade.legsBack?': steps back on s ('+bk.along.toFixed(1)+' m)':': cannot step back on s — its legs are a paddle row ('+bk.along.toFixed(1)+' m)'));
+  check(bk.along<(P.clade.legsBack>=1?-0.8:-0.4),label+': steps back on s ('+bk.along.toFixed(1)+' m'+(P.clade.legsBack>=1?', jointed pairs':', awkwardly — a paddle row at '+P.clade.legsBack+' of a jointed pair')+')');
   // a step and a ledge: lifted a little it keeps its feet; lifted a body's height it is off the ground and falls back onto it
   P.pos.y+=0.2;const st=walk('a step',30,{});
   check(st.gr>0.9,label+': a step of 0.2 m keeps its feet on the ground ('+(st.gr*100).toFixed(0)+'%)');
