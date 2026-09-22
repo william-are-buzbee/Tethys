@@ -1,12 +1,14 @@
 // Headless check of the player as a spec (v11.68; v11.71: one calculator): the three presets' speed, accel and turn are derive's and no species
 // ships with a lock, every DEFS kind moves on derive's numbers, the ceiling is neutral at 30 m, a spec that is no preset takes its numbers from derive, the save carries the spec (SAVE_V 2) and a version 1 record's
-// clade id loads as its preset. Same bundle and stub as the smoke test. TIER=low runs the low tier.
+// clade id loads as its preset. §4–6 the line, the editor at conception and the stomach; §7 (v11.74) the ringmouths' modes: the soft-arm spawns once, broods, guards
+// and strays, does not feed, wastes, dies at the hatch and continues as a hatchling, dies of age unspawned; the coilshell lays again and again; the stem's cap on the lobes.
+// Same bundle and stub as the smoke test. TIER=low runs the low tier.
 const fs=require('fs'),path=require('path');
 const ROOT=path.join(__dirname,'..');
 const ORDER=fs.readFileSync(path.join(ROOT,'src','order.txt'),'utf8').split('\n').map(s=>s.trim()).filter(s=>s&&s[0]!=='#');
 let js=ORDER.map(n=>fs.readFileSync(path.join(ROOT,'src',n+'.js'),'utf8')).join('\n');
 js+='\nglobal.__pl={CLADES,SPECS,DEFS,derive,statsOf,playerClade,player,startNew,startFrom,saveNow,saveRefresh,get saveList(){return saveList;},get curSave(){return curSave;},get mode(){return mode;},SAVE_V,specToJSON};';
-js+='\nglobal.__line={get t(){return t;},setT(v){t=v;clockH=t*CLOCK_RATE;},DAY_S,LINE,BROOD_SURVIVE,groundAt,lay:()=>playerLay()&&conceiveClose(true),eggs:()=>eggs,cur:()=>lineCur(),line:()=>curSave?curSave.line:null,die:(c)=>die(c),live:(b)=>broodLive(b),young:(b)=>creatures.filter(c=>c.alive&&c.brood===b),tick:(dt)=>lineTick(dt),children:()=>lineChildren(),clear:()=>worldClear(),cells:()=>cellsAround()};';
+js+='\nglobal.__line={get t(){return t;},setT(v){t=v;clockH=t*CLOCK_RATE;},DAY_S,LINE,BREED,breed:()=>lifeBreed(lineCur()),brooding:()=>lineBrooding(),guarded:(b)=>broodGuarded(b),lifeS:()=>lifeS(lineCur()),hint:()=>hintEl.textContent,findCarcass:(c,R)=>findCarcass(c,R),groundAt,lay:()=>playerLay()&&conceiveClose(true),eggs:()=>eggs,cur:()=>lineCur(),line:()=>curSave?curSave.line:null,die:(c)=>die(c),live:(b)=>broodLive(b),young:(b)=>creatures.filter(c=>c.alive&&c.brood===b),tick:(dt)=>lineTick(dt),children:()=>lineChildren(),clear:()=>worldClear(),cells:()=>cellsAround()};';
 js+='\nglobal.__cv={lab,open:()=>playerLay(),close:(d)=>conceiveClose(d),build:()=>labBuild(),load:(sp)=>labLoad(sp),price:(a,b)=>conceivePrice(a,b),budget:(g)=>conceiveBudget(g),BUDGET,paramOf,frame:(sp)=>compileFrame(sp),spark:()=>spark,gone:()=>playerGone(),hunter:(kind,dx)=>{const p=V3(player.pos.x+dx,player.pos.y+1,player.pos.z),c=spawn(chunkAt(p.x,p.z),kind,p,mulberry(11),{ent:-1});c.hunger=1;return c;},noSpark:()=>{spark=null;},bite:()=>{player.biteCD=0;playerBite();},put:(kind,dx,dz)=>{const p=V3(player.pos.x+dx,player.pos.y,player.pos.z+dz);return spawn(chunkAt(p.x,p.z),kind,p,mulberry(12),{ent:-1});},kill:(c,by)=>kill(c,by),eco:(k)=>ecoOf(k),K:()=>eaterK(player),carc:()=>carcasses,tick:(dt)=>hungerTick(player,dt),EAT,STARVE_T,ECO,cost:(s)=>clutchCost(s),fuel:(s)=>clutchHunger(s),hline:()=>hungerLine()};';
 const tmp=path.join(require('os').tmpdir(),'tethys_player.js');
 fs.writeFileSync(tmp,'(function(){"use strict";\n'+js+'\n})();');
@@ -77,7 +79,7 @@ const Cf=X.player.clade;check(['speed','accel','turn','mass','bite','cam','sprin
   check(X.startFrom(rec)===false&&X.mode==='menu','an ended slot cannot be continued');
   // an unloaded brood falls by BROOD_SURVIVE a game day; the line through the save
   X.startNew(fin);floor();L.lay();const b2=L.cur().broods[0];L.clear();L.setT(b2.at+L.DAY_S);const cs=L.children();
-  check(cs.length===1&&b2.hatched&&Math.abs(b2.n-L.LINE.n*L.BROOD_SURVIVE)<0.01,'a brood unloaded for a game day: hatched by the clock, '+L.LINE.n+' → '+b2.n.toFixed(2));
+  check(cs.length===1&&b2.hatched&&Math.abs(b2.n-L.breed().n*L.breed().survive)<0.01,'a brood unloaded for a game day: hatched by the clock, '+L.breed().n+' → '+b2.n.toFixed(2));
   L.cells();X.saveNow();X.saveRefresh();const r2=X.saveList.find(r=>r.id===X.curSave.id);
   check(r2&&r2.v===3&&r2.line[0].broods.length===1&&!('_ch' in r2.line[0].broods[0]),'the line in the save (v '+(r2&&r2.v)+'), the broods without their runtime links');
   X.startFrom(r2);check(L.line()[0].broods[0].hatched&&L.live(L.line()[0].broods[0])===Math.round(r2.line[0].broods[0].n),'continued: the brood back as '+L.live(L.line()[0].broods[0])+' young at its clutch');
@@ -102,7 +104,7 @@ const Cf=X.player.clade;check(['speed','accel','turn','mass','bite','cam','sprin
   b=L.cur().broods[1];const kid=b&&b.spec,dk=X.derive(kid),dp=X.derive(JSON.parse(par));
   check(b&&X.specToJSON(kid)!==par&&tailOf(kid).lh===tl.lh&&b.price===pr.total&&kid.clade==='slowbloods'&&!!V.spark(),'the clutch carries the child\'s spec ('+kid.id+', tail '+tailOf(JSON.parse(par)).lh+' → '+tailOf(kid).lh+'), and the sparkle plays');
   check(dk.speed!==dp.speed&&dk.mass!==dp.mass,'the child\'s body derives its own numbers: speed '+dp.speed+' → '+dk.speed+', mass '+dp.mass+' → '+dk.mass+' (v11.73: a lobe weighs and drags)');
-  check(Math.abs(b.fuel-L.LINE.egg*L.LINE.n*dk.mass)<1e-3&&Math.abs(P.hunger-b.fuel/V.K().meal)<0.01,'the clutch cost the child\'s mass × '+L.LINE.n+' eggs × LINE.egg '+L.LINE.egg+' = '+b.fuel+' t, '+P.hunger.toFixed(2)+' of the stomach (v11.73)');
+  check(Math.abs(b.fuel-L.breed().egg*L.breed().n*dk.mass)<1e-3&&Math.abs(P.hunger-b.fuel/V.K().meal)<0.01,'the clutch cost the child\'s mass × '+L.breed().n+' eggs × LINE.egg '+L.breed().egg+' = '+b.fuel+' t, '+P.hunger.toFixed(2)+' of the stomach (v11.73)');
   // refused over the budget: four times the scale is 8 points against 3
   wait();floor();V.open();V.lab.spec.s=(V.lab.spec.s||1)*4;V.build();const n0=L.cur().broods.length;
   check(V.close(false)===false&&X.mode==='lab'&&L.cur().broods.length===n0,'over the budget the lab will not commit ('+V.price(V.lab.conceive.parent,V.lab.v).total+' of '+V.lab.conceive.budget+') and nothing is laid');
@@ -157,6 +159,70 @@ const Cf=X.player.clade;check(['speed','accel','turn','mass','bite','cam','sprin
   check(V.close(false)===false&&X.mode==='lab'&&L.cur().broods.length===n0,'at 0.30 it is refused: '+V.fuel(kid).toFixed(2)+' of the stomach wanted, '+(1-P.hunger).toFixed(2)+' in it; nothing laid');
   P.hunger=0.02;check(V.close(false)===true&&X.mode==='play'&&L.cur().broods.length===n0+1&&Math.abs(L.cur().broods[n0].fuel-ck)<1e-3&&Math.abs(P.hunger-(0.02+ck/K.meal))<1e-6,'at 0.02 it is afforded: the clutch cost '+L.cur().broods[n0].fuel+' t and the stomach is at '+P.hunger.toFixed(2));
   P.hunger=0.3;floor();check(V.open()===true&&V.close(true)===true&&Math.abs(P.hunger-(0.3+fp))<1e-6,'a copy at 0.30 is afforded: '+P.hunger.toFixed(2)+' after');
+}
+// ---- 7. the ringmouths (v11.74, LINEAGE §3, §12.26–28): the mode off the body; the soft-arm spawns once, broods (no feeding, the losses off it, the wasting), guards and strays, dies at the hatch and continues as a hatchling, killed brooding the clutch stands, dies of age unspawned with no child; the coilshell lays again and again; the stem's cap ----
+{const L=global.__line,V=global.__cv,P=X.player,soft=X.CLADES.find(c=>c.id==='soft'),coil=X.CLADES.find(c=>c.id==='coil'),floor=()=>{const h=L.groundAt(P.pos.x,P.pos.z);P.pos.y=h+1.5;P.vel.set(0,0,0);P.sub=1;},wait=()=>{P.hunger=0;P.starveT=0;};
+  X.startNew(soft);floor();V.noSpark();const m=L.breed(),K=V.K();
+  check(m===L.BREED.soft&&m.once===true&&m.n>=20&&m.egg<0.005,'the soft-arm\'s mode is read off its body — soft: '+m.n+' eggs at '+m.egg+' of the child\'s mass, once, a life of '+m.life+' × mass^¼ days');
+  check(Math.abs(V.fuel(soft.spec)-m.egg*m.n*X.derive(soft.spec).mass/K.meal)<1e-6&&V.fuel(soft.spec)>0.5&&V.fuel(soft.spec)<0.8,'its one clutch costs '+(V.cost(soft.spec)*1000).toFixed(0)+' kg, '+V.fuel(soft.spec).toFixed(2)+' of its '+(K.meal*1000).toFixed(0)+' kg stomach');
+  const age0=(L.t-L.cur().born)/L.DAY_S,span=L.lifeS()/L.DAY_S,grow=V.eco(Object.keys(X.DEFS).find(k=>k.indexOf('line:')===0&&X.DEFS[k].spec===P.clade.spec)).grow;
+  check(Math.abs(age0-grow)<1e-6&&span>4&&span<7&&Math.abs(span-m.life*Math.pow(K.mass,0.25))<1e-6,'the founder is an adult hatched a growth ago: age '+age0.toFixed(2)+' d of a span of '+span.toFixed(2)+' ('+m.life+' × mass^¼)');
+  check(V.hline().indexOf('  age '+age0.toFixed(2)+' d of '+span.toFixed(2))>0,'the readout has the age: "'+V.hline().split('  ').find(q=>q.indexOf('age')===0)+'"');
+  const hatchD=(t=>t)((X.derive(soft.spec),V.ECO.hatch*Math.pow(K.mass,0.25)*(m.hatchK||1))),starveD=(1-V.ECO.hungry+V.STARVE_T)*K.cycle;
+  check(hatchD<starveD,'the brood ('+hatchD.toFixed(2)+' d) is inside the starvation clock from a laying at hunger '+V.ECO.hungry+' ('+starveD.toFixed(2)+' d): the parent lives to the hatch');
+  // spawns once
+  P.hunger=0.1;check(L.lay()===true&&L.cur().broods.length===1&&L.cur().broods[0].n===m.n&&Math.abs(P.hunger-0.1-V.fuel(soft.spec))<1e-6&&L.hint().indexOf('the clutch: '+m.n+' eggs')===0,'grown and fed, it lays its clutch of '+L.cur().broods[0].n+' (the stomach at '+P.hunger.toFixed(2)+'; the hint "'+L.hint()+'")');
+  const b=L.cur().broods[0];
+  check(L.lay()===false&&L.hint()==='brooding'&&L.brooding()===b,'and not twice: "'+L.hint()+'"');
+  // does not feed
+  P.hunger=0.8;const ar=V.put('arrow',0,0.8);V.bite();
+  check(!ar.alive&&P.hunger===0.8,'a brooding body kills and is not fed: an arrow bitten, the stomach stays at 0.80');
+  // guards: the parent on the clutch, a scuttle 10 m off finds no carcass in it and walks its wander; the parent 40 m off, the scuttle takes the clutch and eats it down
+  P.pos.set(b.pos[0],b.pos[1]+1.5,b.pos[2]);const sc=V.put('scuttle',10,0);sc.hunger=1;sc.pos.set(b.pos[0]+10,b.pos[1]+0.5,b.pos[2]);sc.home.copy(sc.pos);
+  check(L.guarded(b)===true&&L.findCarcass(sc,30)===null,'the parent on the clutch guards it (within '+m.guard+' m): the scuttle\'s smell finds no carcass in it');
+  __step(60);check(L.guarded(b)&&sc.scav!==b._egg&&b._egg.flesh===b._egg.flesh0&&b.n===m.n,'a second of the world: the scuttle does not go to it, the clutch whole ('+b.n+' eggs)');
+  P.pos.set(b.pos[0]+40,b.pos[1]+1.5,b.pos[2]);floor();sc.pos.set(b.pos[0]+10,b.pos[1]+0.5,b.pos[2]);
+  check(L.guarded(b)===false&&L.findCarcass(sc,30)===b._egg,'the parent 40 m off: strayed, and the scuttle smells the clutch');
+  const f0=b._egg.flesh;let ate=false;for(let i=0;i<40&&!ate;i++){__step(30);ate=b._egg&&b._egg.flesh<f0;}
+  check(ate&&sc.scav===b._egg,'and goes to it and eats: the clutch down to '+(b._egg.flesh/f0).toFixed(3)+' of itself, the scuttle '+((sc.pos.distanceTo(b._egg.pos)).toFixed(1))+' m');
+  sc.alive&&V.kill(sc,null);
+  // strays: the clock's losses off the loaded clutch while the parent is off it, none while it is on it
+  const n0=b.n;L.tick(0.1*L.DAY_S);const n1=b.n;
+  check(n1<n0&&Math.abs(n1/n0-Math.pow(m.survive,0.1))<1e-6&&b._egg.n===Math.round(n1),'a tenth of a day strayed: the clutch '+n0.toFixed(2)+' → '+n1.toFixed(2)+' (survive '+m.survive+' a day), the egg at '+b._egg.n);
+  P.pos.set(b.pos[0],b.pos[1]+1.5,b.pos[2]);L.tick(0.1*L.DAY_S);check(b.n===n1,'a tenth of a day guarding: nothing lost');
+  // wastes: the stomach past hungry is the way to death, the speed the calculator's off a live spec with less muscle, the body rebuilt gaunt
+  P.hunger=0.1;L.tick(0.5);const g0=P.g;P.hunger=0.9;P.starveT=0;L.tick(0.5);const w1=P.waste,k1=P.speedK,live=P.live; // whole first: the strays test above ran at 0.8, already gaunt
+  const full=X.derive(soft.spec),less=X.derive(Object.assign(JSON.parse(X.specToJSON(soft.spec)),{waste:w1}));
+  check(w1>0.2&&w1<0.35&&live&&live.waste===w1&&Math.abs(k1-less.speed/full.speed)<1e-6&&k1<0.95,'at hunger 0.90 it is wasted '+w1.toFixed(2)+': speed × '+k1.toFixed(2)+' (derive '+full.speed+' → '+less.speed+' on the live spec)');
+  check(P.g!==g0&&P.clade.spec===soft.spec&&P.hunger===0.9,'the body rebuilt gaunt (the spec still the adult\'s, the stomach kept)');
+  check(V.hline().indexOf('brooding '+Math.round(b.n)+' eggs')>0&&V.hline().indexOf('guarded, wasted '+w1.toFixed(2)+' speed ×'+k1.toFixed(2))>0,'the readout: "'+V.hline().split('  ').find(q=>q.indexOf('brooding')===0)+'"');
+  P.hunger=0.1;L.tick(0.5);check(P.waste===0&&P.speedK===1,'fed again (a test\'s stomach): whole');
+  // killed while brooding: the clutch stands and hatches, and you are one of what hatches (v11.69's run-on)
+  const t0=L.t;L.die('the test: killed brooding');
+  check(X.mode==='play'&&!P.dead&&L.line().length===2&&L.line()[0].cause==='the test: killed brooding'&&L.t>=b.hatch&&P.clade.juv>0&&P.clade.id==='soft'&&Math.hypot(P.pos.x-b.pos[0],P.pos.z-b.pos[2])<3,'killed brooding: the world ran on '+((L.t-t0)/L.DAY_S).toFixed(2)+' d to the hatch and you are a hatchling at the clutch ('+P.clade.size.toFixed(2)+' m)');
+  check(L.lay()===false&&L.hint()==='not yet grown','a hatchling cannot spawn');
+  // dies at the hatch: the clutch hatches loaded, the parent is spent, the nearest child is a hatchling at the clutch among its siblings
+  X.startNew(soft);floor();V.noSpark();P.hunger=0.1;L.lay();const b2=L.cur().broods[0];b2._egg.t=0.01;const id2=X.curSave.id;__step(3);
+  check(b2.hatched&&L.line().length===2&&L.line()[0].cause==='spent'&&X.mode==='play'&&!P.dead&&P.clade.juv>0&&Math.hypot(P.pos.x-b2.pos[0],P.pos.z-b2.pos[2])<4,'the hatch: the parent\'s death is "'+L.line()[0].cause+'", you are a hatchling at the clutch');
+  check(L.live(b2)===Math.round(b2.n)&&L.live(b2)>=m.n-2&&L.line()[1].parent===0,'its siblings round it: '+L.live(b2)+' young of the line (one is you)');
+  check(L.brooding()===null&&L.breed()===m,'the child is not brooding, and is the same mode');
+  // dies of age unspawned, with no child: the save is over
+  X.startNew(soft);floor();const id3=X.curSave.id;L.setT(L.cur().born+L.lifeS()+1);L.tick(0.5);X.saveRefresh();const r3=X.saveList.find(r=>r.id===id3);
+  check(X.mode==='menu'&&r3&&r3.over===true&&r3.deaths[r3.deaths.length-1].cause==='old'&&r3.line[0].cause==='old','old age unspawned: dead of "'+(r3&&r3.deaths[r3.deaths.length-1].cause)+'" at '+((r3.line[0].died-r3.line[0].born)/L.DAY_S).toFixed(2)+' d, no child, the save over');
+  // the coilshell: the nautilus — lays again and again, like the finback, does not age, does not brood
+  X.startNew(coil);floor();V.noSpark();const mc=L.breed(),Kc=V.K();
+  check(mc===L.BREED.shelled&&!mc.once&&!mc.life&&X.derive(coil.spec).buoyancy==='floats','the coilshell\'s mode is read off its shell (it floats): shelled — '+mc.n+' eggs at '+mc.egg+', again and again, no age');
+  check(V.fuel(coil.spec)>0.5&&V.fuel(coil.spec)<0.8,'a clutch costs '+(V.cost(coil.spec)*1000).toFixed(0)+' kg, '+V.fuel(coil.spec).toFixed(2)+' of its '+(Kc.meal*1000).toFixed(0)+' kg stomach');
+  wait();check(L.lay()===true&&L.cur().broods.length===1&&L.brooding()===null&&L.hint()!=='brooding','it lays');
+  wait();floor();check(L.lay()===true&&L.cur().broods.length===2&&L.cur().broods[1].n===mc.n,'and lays again: two clutches of '+mc.n);
+  check(V.hline().indexOf(' of ')<0||V.hline().indexOf('age ')>0&&!/age [\d.]+ d of/.test(V.hline()),'the readout\'s age has no span (nothing else ages yet)');
+  // the finback as before: a slowblood, its mode
+  X.startNew(X.CLADES.find(c=>c.id==='fin'));check(L.breed()===L.BREED.slowbloods&&L.breed().n===4,'the finback is a slowblood: 4 eggs, again and again');
+  // the stem's cap (DERIVE_K.stemM): v11.73's tall lobe held to the muscle that swings it; no roster kind capped
+  const fin=JSON.parse(X.specToJSON(X.SPECS.fin)),tl=fin.parts.find(p=>p.kind==='tail'),d0=X.derive(fin);tl.lh=3.7;const d1=X.derive(fin);
+  check(d1.plausible.some(q=>q.indexOf('outrun')>=0)&&d1.speed/d0.speed<1.35,'a lobe 3.7 m tall on the fin outruns its stem: '+d0.speed+' → '+d1.speed+' (×'+(d1.speed/d0.speed).toFixed(2)+'; +48% before the cap) — "'+d1.plausible.find(q=>q.indexOf('outrun')>=0)+'"');
+  const capped=Object.keys(X.SPECS).filter(k=>X.derive(X.SPECS[k]).plausible.some(q=>q.indexOf('outrun')>=0));
+  check(!capped.length,'no roster kind is capped'+(capped.length?': '+capped.join(', '):''));
 }
 console.log(fails?'player: '+fails+' FAILED':'player: all ok');
 process.exit(fails?1:0);

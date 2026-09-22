@@ -1,5 +1,17 @@
 # HANDOFF — tethys
 
+**v11.74 (21 Sep 2026): the ringmouths' reproduction (LINEAGE §13.6's ringmouth half, §12.26–28).** The mode is read off the body (line.js `BREED`,
+`breedOf`): a soft ringmouth is the octopus — one clutch of 30 cheap eggs (0.66 of the soft-arm's stomach), grown; then it broods: it kills and is not fed
+(`feeds`), it wastes as its stomach empties (`wasteOf` on the stomach's clock to starvation, the speed the calculator's off the live spec with
+`DERIVE_K.waste` 0.8 of the thrust gone at the end, the mantle rebuilt thinner at every tenth), it guards the clutch within `BREED.guard` 12 m (no scavenger
+takes it, nothing is lost) or strays (the losses run at `survive` 0.5 a day and the scavengers come) — and it dies at the hatch (`die('spent')`), the handover to
+a hatchling at the clutch. It ages: `BREED.life` 4 × mass^¼ days, 5.69 for the soft-arm (3.8 real hours), `die('old')`; the founder is an adult hatched a
+growth ago. A shelled ringmouth (derive: it floats) is the nautilus and breeds like the finback, 2 dear eggs again and again; nothing else ages. The stem's
+muscle caps the lobes (`DERIVE_K.stemM` 40: no roster kind moves, the tall lobe +26% for +48%). **The brood is inside the starvation clock** (0.36 d against
+1.28–1.56): the parent is hungry at the hatch, not spent — `BREED.soft.hatchK` lengthens the brood (3 arrives spent). **Ask first** whether the brood should be
+the octopus's long one (hatchK), then whether the waste term should run for every starving body (v11.73's candidate b, one switch), then the numbers (30 eggs,
+half a day, 12 m, 5.7 days), then how the gaunt mantle reads.
+
 **v11.73 (21 Sep 2026): the player's hunger (LINEAGE §6's fuel half).** One rule for every animal (the person, 21 Sep): `player.hunger` is the
 ledger's own model on the player's line kind (creatures_ai.js `eaterK` — the finback's cycle 0.78 game days, meal 146 kg) through the same
 `hungerTick`, `kill` and `eatAt`: a gulp or a kill feeds by the prey's food over the meal (one arrow fills a finback), a bite at a carcass is one
@@ -10,8 +22,8 @@ bill's `eggs` row greys `lay` for a child the stomach cannot hold. The cooldown 
 line; no bar. **The tail term**: the lobes weigh and drag (`DERIVE_K.lobeF`, `lobeI`; `lobeT` refit so the tailed roster's mean held; every kind
 within ±7%, CHANGELOG has the table); v11.72's long lobe buys +3% now, but a *tall* lobe buys +48% for 0.6 points — the stem's muscle is not a term
 yet. LINEAGE §6b proposes the materials (lime, iron, pigment as stores on the life, fed by what was eaten where), not built. **Ask first** how the
-body should show hunger (the four candidates in CHANGELOG v11.73, Unseen 1), then whether 31 real minutes to hungry and 68 to dead play, then the
-tail's muscle cap, then which material to build first.
+body should show hunger (the four candidates in CHANGELOG v11.73, Unseen 1), then whether 31 real minutes to hungry and 68 to dead play, then which
+material to build first. (The tail's muscle cap is v11.74.)
 
 **v11.72.1 (21 Sep 2026): out of the world while you edit.** The person on v11.72: "a lot of fun"; the sparkle on the clutch is in, the budget
 as the only cap works for now (§11.5), 3 points is OK for now (LINEAGE §12.21–24). Built their fourth answer: while the editor at conception is

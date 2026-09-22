@@ -1452,7 +1452,10 @@ anaerobic store against the time to reach speed) × `chamber` 0.8; a jet's thrus
 walker's speed is Froude's, `walk` × sqrt(g × leg), the leg's length off the `legs` part; a `tail` part's lobes (v11.73) give thrust `lobeT` 4.3
 × lh × ll × amp × √beat and cost their volume (0.15 × lh × ll m³, the three boxes' 0.05 thickness) and two drags — `lobeF` 0.1 × lh × ll skin
 friction and `lobeI` 5 × ll² × amp² induced (a foil's lift costs C_L²/(π × aspect), so a broad lobe pays and a tall one does not); `lobeT` was
-refit so the tailed roster's geometric mean of speed held, and the roster moved within ±7% (CHANGELOG v11.73); accel = `accel` × (thrust/drag)^0.35 / mass^`accMass`;
+refit so the tailed roster's geometric mean of speed held, and the roster moved within ±7% (CHANGELOG v11.73); the lobes' thrust is capped by the stem's muscle
+(v11.74, `stemM` 40 per m² of the stem's mean cross-section π(stem/2L)², the lobes style taking the core's tail end: the roster runs 12–39 and nothing moves;
+a lobe past it is "outrun" in the lab's readout); a body that is wasting (v11.74, `spec.waste` 0..1 on a live spec — a brooding ringmouth, line.js) has `waste`
+0.8 of that share of its thrust gone; accel = `accel` × (thrust/drag)^0.35 / mass^`accMass`;
 turn = `turn` / L^`turnExp`, × `flex` 1.8 for a body that bends along its length, capped at `turnMax`. Fitted to the roster by geometric mean
 per mode against the kinds that swim for their life or their meal (CHANGELOG v11.71 has the table and every mover). `defPhysics`
 (creatures_defs.js) writes `top`, `speed = top × pace`, `flee = top`, `turn` and `accel` onto every `DEFS` kind at load; no row carries a hand
@@ -1732,15 +1735,28 @@ meal/20)`: 7.3 kg and 0.05 of hunger, twenty bites from starving; a poisoned bod
 On the save as `hunger` and `starveT`, kept through a rebody, the child's own at a handover (a hatchling's full). Shown on the readout's `hunger` line
 only (main.js, `hungerLine`): no bar by the text rule; how the body itself might show it is the person's (CHANGELOG v11.73, Unseen 1).
 
+**The modes (v11.74, `line.js` `BREED`; LINEAGE §3, §12.26–28).** Reproduction is read off the body (`breedOf`): a slowblood is `slowbloods` — 4 eggs at 0.01 of
+the child's adult derived mass, again and again, no age; a ringmouth that floats on the calculator (the chambered shell) is `shelled`, the nautilus — 2 eggs at
+0.008, again and again, no age; any other ringmouth is `soft`, the octopus — `once`: 30 eggs at 0.001 (67 kg, 0.66 of the soft-arm's stomach), one clutch a
+life, grown, then the brood: it kills and is not fed (`feeds`; creatures_ai.js `kill`, `eatAt`), it wastes (`wasteOf`: the share of the way from `ECO.hungry` to
+death by starvation on the stomach's clock, put on the live spec as `waste` and re-derived — `speedK`; the mantle rebuilt thinner at every tenth, `gaunt` 0.25 of
+its radius at full), it guards the clutch within `guard` 12 m (no scavenger takes it — `findCarcass`, `scavenge` — and nothing is lost) or strays (the loaded
+clutch loses at `survive` 0.5 a day by the clock and any scavenger takes it), and it dies at the hatch — `die('spent')` in `lineTick` once the clutch has
+hatched, loaded or by the clock — the handover to a hatchling at the clutch. `hatchK` 1 is the brooded clutch's hatch as a multiple of the world's (0.36 days:
+inside the starvation clock, 1.28–1.56 days from the laying, so the parent arrives hungry, wasted 0.1–0.3; 3 would bring it spent). `life` 4 × mass^¼ game
+days is its span (5.69, 3.8 real hours): `die('old')` — a founder is an adult hatched a growth ago (`lineStart`), a child dates from its hatch; nothing else
+ages. A hingeshell has no mode (`x`: `not this body`; the den is §13.6). `survive` is every mode's unloaded rate (`broodCatchUp`). The readout's hunger line
+carries the age and, brooding, the clutch, the hatch, guarded or strayed, the waste and the speed factor.
+
 **The line (v11.69, `line.js`; LINEAGE.md §13.1–2).** The slot carries `line`, a list of lives, the last the one played: `{spec, preset, born, grown, died,
 cause, playT, parent, track, lay, broods}` — times on the world clock `t`, `track` a sample every `LINE.trackS` 5 s of play run-length coded (`[x,y,z]`,
-`[x,y,z,k]` for k equal ones). **Laying** (`x`, `playerLay`): a slowblood, grown, on the floor under water (`LINE.near` 3 m, the floor below −4 m, clear of
-solids), not hungry (`hunger` ≤ `ECO.hungry` 0.4, v11.73) and fed enough for a copy of itself (the clutch's price, above); `LINE.n` 4 eggs, the world's clutch mesh
+`[x,y,z,k]` for k equal ones). **Laying** (`x`, `playerLay`): a body with a mode (v11.74), grown, on the floor under water (`LINE.near` 3 m, the floor below −4 m, clear of
+solids), not hungry (`hunger` ≤ `ECO.hungry` 0.4, v11.73) and fed enough for a copy of itself (the clutch's price, above); the mode's eggs (`BREED.n`), the world's clutch mesh
 (`eggGeo`, `MATT`) hatching after `ECO.hatch`·mass^¼ days (0.39 for the finback). **A brood** is a record on the life that laid it, `{cell, pos, n, born,
 hatch, spec, hatched, at}`, and the truth about the clutch: loaded, it is an egg outside the ledger (`ent` −1, eaten down by scavengers like any clutch) or
 its young — `ent` −1 creatures of a kind per spec (`lineKind`: `line:<hash>`, the player's numbers, a hunter of `LINE_PREY` arrow, needle, scuttle; hunted
 by whatever has the player on its prey list, `preyOn`), juveniles at `ECO.juv` until `ECO.grow`·mass^¼ days — and n follows them (`broodLive`, every
-second); unloaded, n falls by `BROOD_SURVIVE` 0.8 a game day (`broodCatchUp`, lazily) and the hatch goes by the clock — the stand-in for §8's sparse
+second); unloaded, n falls by the mode's `survive` a game day (0.8; `broodCatchUp`, lazily) and the hatch goes by the clock — the stand-in for §8's sparse
 ledger entries. `lineLoad`/`lineUnload` (chunks.js) put a brood back or count it. **Death** (`slotDeath` → `lineNext`): the nearest living child of the
 life that died — a young in a loaded cell, a clutch, an unloaded brood with n ≥ ½; an unhatched clutch runs the world on to its hatch (`worldClear`, the
 clock to `hatch`, the model catching up over its next ticks). `lineContinue`: the child's place and age (a juvenile body is `playerClade(spec, preset,

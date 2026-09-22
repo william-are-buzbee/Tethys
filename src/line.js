@@ -1,4 +1,4 @@
-// line.js — the line across generations (v11.69, LINEAGE.md §13.1–2): the lives on the slot and their tracks, the finback's clutch, the editor at conception and its budget (v11.72, §13.4), the broods, the handover at death, the sparkle
+// line.js — the line across generations (v11.69, LINEAGE.md §13.1–2): the lives on the slot and their tracks, the clutch by the body's mode (v11.74: the ringmouths' — BREED), the editor at conception and its budget (v11.72, §13.4), the broods, the handover at death, the sparkle
 // A slot's `line` is a list of lives, the last the one being played: {spec, preset, born, grown, died, cause, playT, parent, track, lay, broods}.
 // born and died are the world clock `t` (seconds; DAY_S a game day), grown the clock at which the body is adult (a hatchling is ECO.juv of it
 // until then, as the world's juveniles are), parent the index of the life that laid it (−1 the founder), track the position every LINE.trackS
@@ -10,17 +10,50 @@
 // children, not siblings or grandchildren); the earlier lives' broods still load and live as the world's animals. Nothing here is in the ledger.
 // Decided for this pass (the person, 21 Sep 2026): the player breeds alone, no mate; at death you continue as the nearest living child; an
 // unhatched clutch counts as a living child, and the world runs on to its hatch.
-const LINE={trackS:5,near:3,egg:0.01,n:4}; // trackS: s of play between the track's samples; near: m over the floor a clutch may be laid from; egg: an egg's material as a share of the child's adult derived mass — a clutch costs egg × n × derive(child).mass tonnes of what the body has eaten, charged to the stomach over its meal (clutchHunger, v11.73: LINEAGE §6's fuel half; the finback's 4 eggs at 1.77 t are 71 kg, 0.49 of its 146 kg stomach — a child of twice the mass costs twice, and needs a fuller stomach to afford). Until v11.73 the stand-in was a cooldown by the child's mass (LINE.cool 0.2 days at coolM 1.69 t, gone); n: eggs a clutch (the slowblood's: several clutches, little in each, §3)
-const BROOD_SURVIVE=0.8; // the share of a brood alive after a game day while its cell is unloaded (eggs and young alike) — the stand-in for §8's sparse entries: 4 eggs are 3.2 after a day and under one living child after about six
+const LINE={trackS:5,near:3}; // trackS: s of play between the track's samples; near: m over the floor a clutch may be laid from. The eggs' number and price are the mode's (BREED, v11.74; LINE.egg and LINE.n to v11.73)
+// ---------- the modes (v11.74, LINEAGE §3, §12.26–28: the person, 21 Sep 2026) ----------
+// Reproduction is a body fact, not a setting, and it is read off the body: a ringmouth with a chambered shell (derive: it floats) is the nautilus — few
+// large eggs, laid again and again, the shell being a skeleton — and a soft one is the octopus: one clutch of many small eggs, grown, and after it a brood
+// it does not feed through (feeds), wasting as its stomach empties (wasteOf: the calculator's own speed off a live spec with less muscle, DERIVE_K.waste),
+// guarding the clutch or not (broodGuarded: a choice with a payoff, not a leash — off it, the losses run), and dead at the hatch (die('spent'): a death like
+// any other, the handover to a hatchling at the clutch). It ages, too, so a soft-arm that never spawns still ends (die('old')); nothing else ages yet. A
+// slowblood breeds again and again and cares for nothing (§3). The hingeshells' den is §13.6, not built: no mode, and x refuses the body.
+// r against K in the eggs: a clutch costs egg × n × the child's adult derived mass in tonnes, off the stomach over the parent's meal (clutchHunger, v11.73).
+// Per key — n: eggs a clutch. egg: an egg's material as a share of the child's adult derived mass. once: one clutch a life, then the brood. life: the lifespan
+// in game days × mass^¼ (the ledger's q, as every rate is; 0 never ages). survive: the share of a brood alive after a game day unguarded — its cell unloaded
+// (every mode), and loaded while the brooding parent is off it (a brooding mode). guard: m from the clutch within which the parent guards it — no scavenger
+// takes it and it loses nothing. gaunt: the share of the core's radius gone at full wasting (the look; the speed is DERIVE_K.waste's). hatchK: the brooded
+// clutch's hatch time as a multiple of the world's (ECO.hatch × mass^¼). First numbers, to be moved by play (the person tunes; §6: "playtested a lot"):
+const BREED={
+  soft:{n:30,egg:0.001,once:true,life:4,survive:0.5,guard:12,gaunt:0.25,hatchK:1}, // the octopus: 30 eggs at 2.24 t are 67 kg, 0.66 of the soft-arm's 102 kg stomach; a life of 4 × 1.42 = 5.7 game days (3.8 real hours); the brood 0.36 days at hatchK 1 — the parent reaches the hatch at hunger 0.6–0.9, wasted 0.1–0.3 (its starvation clock from the laying is 1.3–1.6 days, so the brood is well inside it); at 3 it would arrive spent; unguarded, half the clutch a day
+  shelled:{n:2,egg:0.008,once:false,life:0,survive:0.8}, // the nautilus (the coilshell): 2 eggs at 3.3 t are 53 kg, 0.63 of its 84 kg stomach, again and again; no brood, no age
+  slowbloods:{n:4,egg:0.01,once:false,life:0,survive:0.8} // the finback (v11.69–73): 4 eggs at 1.77 t are 71 kg, 0.49 of its 146 kg stomach; 4 eggs unloaded are 3.2 after a day and under one living child after about six
+};
+function breedOf(spec){if(!spec)return null;if(spec.clade==='slowbloods')return BREED.slowbloods;if(spec.clade!=='ringmouths')return null;let ch=false;try{ch=derive(spec).buoyancy==='floats';}catch(e){}return ch?BREED.shelled:BREED.soft;} // the mode off the body
+function lifeBreed(L){if(!L)return null;if(L._m===undefined)L._m=breedOf(L.spec);return L._m;} // cached on the life (the runtime links, never saved)
+function broodBreed(b){if(b._m===undefined)b._m=breedOf(b.spec);return b._m||BREED.slowbloods;}
+function lifeS(L){const m=lifeBreed(L);return m&&m.life?m.life*Math.pow(ecoOf(lineKind(L.spec)).mass,0.25)*DAY_S:0;} // s: the life's span, or 0 for a body that does not age
+function lineBrooding(){const L=lineCur();if(!L||player.dead)return null;const m=lifeBreed(L);if(!m||!m.once||!L.broods.length)return null;const b=L.broods[L.broods.length-1];return b.hatched?null:b;} // the clutch the player is brooding, or null
+function feeds(o){return o!==player||!lineBrooding();} // creatures_ai.js kill and eatAt ask: a brooding ringmouth has stopped feeding
+function broodGuarded(b){const L=lineCur();if(!L||b.hatched||playerGone())return false;const m=lifeBreed(L);if(!m||!m.guard||L.broods.indexOf(b)<0)return false;const dx=player.pos.x-b.pos[0],dy=player.pos.y-b.pos[1],dz=player.pos.z-b.pos[2];return dx*dx+dy*dy+dz*dz<m.guard*m.guard;} // the brooding parent within guard of its clutch: the scavengers keep off (findCarcass, scavenge) and the clock's losses stop
+// the wasting (a brooding body): the share of the way from hungry to death by starvation — the stomach's clock past ECO.hungry and then STARVE_T cycles
+// (creatures_ai.js hungerTick) — 0 at hungry, 1 at the death. The live spec carries it (spec.waste) and the calculator gives the speed (combat.js rederive,
+// as a wound does); the body is rebuilt gaunt at every tenth (BREED.gaunt on the core's radius, where the core has one — the mantle)
+function wasteOf(P){if(!lineBrooding())return 0;const K=eaterK(P),cyc=K.cycle*DAY_S;return clamp((Math.max(0,P.hunger-ECO.hungry)*cyc+P.starveT)/((1-ECO.hungry)*cyc+STARVE_T*cyc),0,1);}
+function wasteTick(L,P,m){const w=wasteOf(P);if(Math.abs(w-(P.waste||0))<0.02&&!(w===0&&P.waste))return;
+  const gs=Math.floor(w*10+1e-9);if(m.gaunt&&gs!==(L._gs||0)){L._gs=gs;playerRebody(gauntClade(P.clade,m.gaunt*gs/10));} // the look, in steps (playerBody starts a body whole: waste is set after)
+  P.waste=w;const live=liveSpec(P);if(live){live.waste=w;rederive(P);}}
+function gauntClade(C,k){const sp=JSON.parse(specToJSON(C.spec)),core=CORES[sp.core.kind];if(k>0&&core&&core.params.R){const R0=sp.core.R!==undefined?sp.core.R:core.params.R.d;sp.core.R=+(R0*(1-k)).toFixed(4);}return Object.assign({},C,{build:()=>compile(sp)});} // the clade as it is, its body compiled thinner; spec stays the adult's (the save, the calculator's full body)
 const LINE_PREY=['arrow','needle','scuttle']; // what the young of the player's line hunt: the player's own food (DESIGN The player)
 function lineCur(){const L=curSave&&curSave.line;return L&&L.length?L[L.length-1]:null;}
 function lifeNew(spec,preset,parent,born,grown){return {spec:JSON.parse(specToJSON(spec)),preset:preset,born:r3(born),grown:r3(grown),died:null,cause:'',playT:0,parent:parent,track:[],lay:-1e9,broods:[]};}
 function lifeClade(L,k){const sp=specOk(L.spec),pre=sp?presetFor(sp):CLADE_PRESETS.find(p=>p.id===L.preset);return sp?playerClade(sp,pre,k):CLADES.find(c=>c.id===L.preset)||CLADES[1];}
-function lineStart(C){curSave.line=[lifeNew(C.spec,C.id,-1,t,t)];} // a new game: the founder, adult from the start
+function lineStart(C){curSave.line=[lifeNew(C.spec,C.id,-1,t-growS(C.spec),t)];} // a new game: the founder, adult from the start — hatched a growth ago, so its age (v11.74) is an adult's
 function lineLoadRec(rec,C){ // the line from a record, or (a record from before v11.69) the animal on it as the founder
   const ok=Array.isArray(rec.line)&&rec.line.length&&rec.line.every(L=>L&&L.spec&&Array.isArray(L.broods)&&Array.isArray(L.track));
   curSave.line=ok?JSON.parse(JSON.stringify(rec.line)):[lifeNew(C.spec,C.id,-1,t,t)];
   for(const L of curSave.line)for(const b of L.broods){b._ch=null;b._egg=null;}
+  const L=lineCur();if(L&&lifeBreed(L)&&!(L.born<L.grown))L.born=L.grown-growS(L.spec); // a founder from before v11.74: adult at its start, so hatched a growth before it
 }
 // the kind the young of a spec are (a def per spec, as the lab's placed creature has one): the player's numbers, a hunter of the player's food
 function lineKind(spec){const k='line:'+hashStr(specToJSON(spec)).toString(36);if(DEFS[k])return k;const C=playerClade(spec),st=statsOf(spec);
@@ -36,14 +69,23 @@ function lineTick(dt){ // in play (save.js updateSave): the life's clock and tra
     if(q&&q[0]===s[0]&&q[1]===s[1]&&q[2]===s[2])q[3]=(q[3]||1)+1;else T.push(s);}
   lineCnt-=dt;if(lineCnt<=0){lineCnt=1;for(const M of curSave.line)for(const b of M.broods)if(b._ch&&b.hatched)b.n=broodLive(b);}
   if(P.clade.juv&&t>=L.grown)playerRebody(lifeClade(L,1)); // grown: the adult body in one step, as a juvenile of the world's grows up (there out of sight; here in view — a stand-in)
+  // v11.74: the ringmouths' modes — the age, the brood, the wasting
+  const m=lifeBreed(L);if(!m)return;
+  if(m.life&&t-L.born>=lifeS(L)){die('old');return;} // old age: a death like any other (the handover, or the save over)
+  const b=m.once&&L.broods.length?L.broods[L.broods.length-1]:null;if(!b)return;
+  if(!b._ch)broodCatchUp(b);if(!b.hatched&&t>=b.hatch&&!b._egg)b.hatched=true; // hatched by the clock: unloaded (broodCatchUp), or loaded and eaten to nothing — the brood is over all the same
+  if(b.hatched){die('spent');return;} // the clutch has hatched (loaded: creatures_ai.js updateEggs → broodHatch put the young in the world a frame ago): the parent's brood is over, and so is it — the nearest child is a hatchling at the clutch
+  if(b._egg&&!broodGuarded(b)){b.n*=Math.pow(m.survive,dt/DAY_S);const g=b._egg,n=Math.round(b.n);if(n<g.n){g.n=n;if(n<=0)removeEgg(g);}} // strayed from a loaded clutch: the mode's losses run, as they do unloaded (guarded, nothing is lost and no scavenger comes)
+  wasteTick(L,P,m);
 }
 function broodLive(b){let n=0;for(const c of creatures)if(c.alive&&c.brood===b)n++;return n;}
 // ---------- laying (x) ----------
 function playerLay(){
   const P=player,C=P.clade,L=lineCur();if(mode!=='play'||P.dead||!C||!L)return false;
-  const h=groundAt(P.pos.x,P.pos.z),ch=chunkAt(P.pos.x,P.pos.z);let why='';
-  if(C.spec.clade!=='slowbloods')why='not this body'; // the slowblood's mode alone (LINEAGE §13.2); the ringmouth's one spawning and the hingeshell's den are §13.6
+  const h=groundAt(P.pos.x,P.pos.z),ch=chunkAt(P.pos.x,P.pos.z),m=lifeBreed(L);let why='';
+  if(!m)why='not this body'; // the slowbloods' and the ringmouths' modes (BREED, v11.74); the hingeshell's den is §13.6, not built
   else if(C.juv)why='not yet grown';
+  else if(m.once&&L.broods.length)why='brooding'; // v11.74: the semelparous spawn once — after it the clutch is all it has, and it dies at the hatch
   else if(P.hunger>ECO.hungry)why='hungry'; // v11.73: the ledger's own line (ECO.hungry, where a hunter goes hunting) — a hungry animal does not lay
   else if(P.hunger+clutchHunger(C.spec)>=1)why='not fed enough'; // v11.73: a copy of yourself must be affordable before the window opens, so declining always can lay (what a heavier child costs is conceiveClose's)
   else if(P.sub<0.9||h>-4||P.pos.y-h>LINE.near+1.1||!ch)why='on the floor, under water';
@@ -80,7 +122,7 @@ function conceiveBudget(gen){return BUDGET.base+BUDGET.gen*(gen-1);} // gen: the
 // the fuel (v11.73, LINEAGE §6): a clutch is paid from what the body has eaten — the child's adult derived mass × the eggs × LINE.egg, in tonnes, taken
 // off the parent's stomach as a share of its meal (ecology.js ecoOf on the line kind: the player's hunger runs on it, player.js). Refused when it would
 // leave the stomach starving (hunger 1): a big child wants a full parent. The materials — the mineral, the pigment — are §6's other half, proposed there, not built.
-function clutchCost(child){return LINE.egg*LINE.n*derive(child).mass;} // tonnes of food
+function clutchCost(child){const m=lifeBreed(lineCur())||breedOf(child)||BREED.slowbloods;return m.egg*m.n*derive(child).mass;} // tonnes of food, by the parent's mode (v11.74)
 function clutchHunger(child){const P=player;return P.clade?clutchCost(child)/eaterK(P).meal:0;} // as hunger (of the parent's stomach)
 function priceMove(a,b,q){ // one parameter from a to b, against its registry line
   if(a===undefined||b===undefined||a===b)return 0;if(!q||q.k==='b'||q.k==='s')return JSON.stringify(a)===JSON.stringify(b)?0:BUDGET.toggle;
@@ -120,9 +162,10 @@ function conceiveClose(decline){ // the window closed: the clutch laid as the ch
   const fuel=clutchHunger(child);if(player.hunger+fuel>=1){const m='not fed enough for this child ('+fuel.toFixed(2)+' of the stomach, '+(1-player.hunger).toFixed(2)+' in it): a smaller one, or decline';hintEl.textContent=m;hintEl.style.opacity=1;labRender();labMsg(m);return false;} // v11.73: the fuel half of the bill (LINEAGE §6) — the stomach must hold the eggs; a copy always can (playerLay checked)
   lab.conceive=null;labLeave();return layClutch(child,pr,cv);}
 function layClutch(child,pr,cv){ // the clutch on the floor where the window opened, carrying the child's spec
-  const L=lineCur(),P=player,ch=chunkAt(cv.at.x,cv.at.z);if(!L||!ch)return false;
-  const b={cell:ch.i*NCELL+ch.j,pos:[r3(cv.at.x),r3(cv.at.y),r3(cv.at.z)],n:LINE.n,born:r3(t),hatch:r3(t+hatchS(child)),spec:child,gen:cv.gen+1,price:pr.total,hatched:false,at:r3(t),_ch:ch,_egg:null};
+  const L=lineCur(),P=player,ch=chunkAt(cv.at.x,cv.at.z),m=lifeBreed(L)||BREED.slowbloods;if(!L||!ch)return false;
+  const b={cell:ch.i*NCELL+ch.j,pos:[r3(cv.at.x),r3(cv.at.y),r3(cv.at.z)],n:m.n,born:r3(t),hatch:r3(t+hatchS(child)*(m.hatchK||1)),spec:child,gen:cv.gen+1,price:pr.total,hatched:false,at:r3(t),_ch:ch,_egg:null};
   L.broods.push(b);L.lay=r3(t);b.fuel=r3(clutchCost(child));P.hunger=Math.min(1,P.hunger+clutchHunger(child));broodEgg(ch,b);P.pulse=1;thump(0.3,90,40,null,0.6,0.05); // v11.73: the eggs' material off the stomach (the record keeps it in tonnes)
+  if(m.once){const msg='the clutch: '+m.n+' eggs, the hatch in '+((b.hatch-t)/DAY_S).toFixed(2)+' days — you will not feed again; stay by it, or not';hintEl.textContent=msg;hintEl.style.opacity=1;setTimeout(()=>{if(hintEl.textContent===msg)hintEl.style.opacity=0;},6000);} // v11.74: the brood begins
   if(pr.total>0)sparkStart(cv.at);saveNow();return true;} // the sparkle: only a changed child is the magic (§7); a copy is what any animal lays
 // ---------- the broods in the world ----------
 function broodEgg(ch,b){ // the clutch on the floor: the world's own egg (creatures_ai.js layEggs), outside the ledger (ent −1), its brood on it
@@ -135,9 +178,9 @@ function broodHatch(g){const b=g.brood;b.hatched=true;b.n=g.n;b.at=r3(t);b._egg=
 function broodSpawn(ch,b,n){ // the young at the clutch, as old as the brood is (juveniles until grown, then adults)
   const kind=lineKind(b.spec),age=t-b.hatch,gs=growS(b.spec),rng=mulberry((b.born*1000+n*7919)>>>0);
   for(let i=0;i<n;i++){const p=V3(b.pos[0]+(rng()-0.5)*6,0,b.pos[2]+(rng()-0.5)*6);p.y=groundAt(p.x,p.z)+1+b.spec.size*0.5;
-    const c=spawn(ch,kind,p,rng,{ent:-1,juv:age<gs});if(age<gs)c.juv=Math.max(1,gs-age);c.brood=b;c.home.set(b.pos[0],p.y,b.pos[2]);}
+    const c=spawn(ch,kind,p,rng,{ent:-1,juv:age<gs});if(age<gs)c.juv=Math.max(1,gs-age);if(age<60)c.hunger=0;c.brood=b;c.home.set(b.pos[0],p.y,b.pos[2]);} // a hatchling is fed (v11.74: spawn draws a hunter's hunger at random, and the handover takes the child's stomach as it is — you became one at 0.72)
 }
-function broodCatchUp(b){if(b._ch)return;const d=(t-b.at)/DAY_S;if(d<=0)return;if(!b.hatched&&t>=b.hatch)b.hatched=true;b.n*=Math.pow(BROOD_SURVIVE,d);b.at=r3(t);} // an unloaded brood, lazily: its hatch by the clock, its losses by the knob
+function broodCatchUp(b){if(b._ch)return;const d=(t-b.at)/DAY_S;if(d<=0)return;if(!b.hatched&&t>=b.hatch)b.hatched=true;b.n*=Math.pow(broodBreed(b).survive,d);b.at=r3(t);} // an unloaded brood, lazily: its hatch by the clock, its losses by its mode's knob (BREED.survive, v11.74)
 function lineLoad(ch){ // a cell loaded (chunks.js genChunk): every brood of the line that lies in it is put back — the clutch, or its living young
   if(!curSave||!curSave.line)return;const ci=ch.i*NCELL+ch.j;
   for(const L of curSave.line)for(const b of L.broods){if(b.cell!==ci||b._ch)continue;broodCatchUp(b);const n=Math.round(b.n);if(n<1){b.n=0;continue;}b._ch=ch;
@@ -161,11 +204,11 @@ function lineNext(from){
     worldClear();t=Math.max(t,best.b.hatch)+0.01;clockH=t*CLOCK_RATE;TIDE=tideAt(clockH);}
   return null;}
 function lineContinue(x,cause){ // you are the child now, where and as it is (LINEAGE §4.5): its age, its place, the parent's spec
-  const L=lineCur(),b=x.b,spec=b.spec,gs=growS(spec),grown=b.hatch+gs;let pos,yaw=player.yaw;
+  const L=lineCur(),b=x.b,spec=b.spec,gs=growS(spec),born=Math.min(b.hatch,t),grown=born+gs;let pos,yaw=player.yaw; // born: the hatch, or now if the clutch hatched early (a dev's hand on the egg's clock; seen v11.74 as an age of −0.35 d)
   if(x.c){const c=x.c;pos=c.pos.clone();T1.set(0,0,1).applyQuaternion(c.g.quaternion);yaw=Math.atan2(-T1.x,-T1.z);removeCreature(c);b.n=broodLive(b);}
   else{b.n=Math.max(0,b.n-1);pos=V3(b.pos[0],0,b.pos[2]);pos.y=groundAt(pos.x,pos.z)+2;}
   L.died=r3(t);L.cause=cause||'';
-  curSave.line.push(lifeNew(spec,L.preset,curSave.line.length-1,b.hatch,grown));
+  curSave.line.push(lifeNew(spec,L.preset,curSave.line.length-1,born,grown));
   const C=lifeClade(lineCur(),t<grown?ECO.juv:1);
   playerBody(C,pos,yaw,0);if(x.c){player.hunger=x.c.hunger;player.starveT=x.c.starveT;}cellsAround();snapMed=true; // the child's stomach as it was (v11.73); a hatchling's is full
   setTimeout(()=>{fadeEl.style.opacity=0;},300);sparkStart();saveNow();

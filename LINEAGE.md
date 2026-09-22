@@ -49,10 +49,17 @@ written, and — now that a life only ends in a death (§4) — they set two thi
 well those young do without you**, which together are the odds that your death finds anything alive to continue as.
 
 ### Ringmouths — spawn once and die (semelparous, extreme r)
+*Amended 21 Sep 2026 (the person): this is the **soft** ringmouth's fate — the octopus. A shelled ringmouth has a skeleton, so the reason below does not
+hold for it: the coilshell breeds like the finback (the nautilus, not the octopus). And a semelparous ringmouth ages — it dies of old age at a lifespan
+derived from its mass the way every other rate is, so a soft-arm that never spawns still ends; nothing else ages yet. Built v11.74: line.js `BREED`, the mode
+read off the body (a shell that floats on the calculator is the nautilus); the brood (no feeding, the wasting by the calculator, guarding as a choice), the
+death at the hatch, the age. The person's numbers to tune are the table's.*
+
 The cephalopod fate, honest for a soft fast-growing animal with no skeleton: grow hard, breed once, senesce, die.
 
 - One clutch, many small eggs, at the end of the life. **The spawning and the death are the same event**, so the handover is forced and
-  the timing is not yours: you breed and you go.
+  the timing is not yours: you breed and you go. *(v11.74: the event has a length — after the spawning the animal broods, feeding no more and
+  weakening, and the death is at the hatch; the handover is to a hatchling at the clutch. Guarding the clutch is a choice with a payoff, not a leash.)*
 - Unclaimed young: many, cheap, mostly eaten. A ringmouth variant establishes by numbers or not at all.
 - The feeling: a run. You build toward one spawning, and dying before it ends the line outright.
 - The person's "adults die deliberately once they lose control" is this, and it needs no cognition system: it is the clade's biology.
@@ -375,6 +382,14 @@ coordinates and days in a form that could be exported.
 25. **The player's hunger is the model every creature runs — one rule, not a special case** (21 Sep 2026: "a universal logic"). Built v11.73:
     `ecoOf` on the player's line kind through the same `hungerTick`, `kill` and `eatAt`; starvation a death like any other; a clutch paid
     from the stomach.
+26. **The soft-arm is semelparous** (21 Sep 2026): it may spawn once, grown. After spawning it broods — it stops feeding and weakens — and it dies
+    when the clutch hatches, so its handover is at the hatch, to a hatchling at the clutch. Built v11.74 (`BREED.soft`, `once`; the weakening is the
+    calculator's own speed off a live spec that is wasting, not a special case; the clutch's losses fall while the parent guards it and rise when it
+    strays — a choice with a payoff, not a leash).
+27. **A semelparous ringmouth ages** (21 Sep 2026): it dies of old age at a lifespan derived from its mass the way every other rate is (a named
+    knob, the person to tune — `BREED.life`, days × mass^¼), so a soft-arm that never spawns still ends. Nothing else ages yet. Built v11.74.
+28. **The coilshell breeds like the finback** (21 Sep 2026): the nautilus, not the octopus — §3's reason (soft, no skeleton) is not true of a shelled
+    animal. §3 amended; built v11.74 (`BREED.shelled`, read off the body: a shell that floats on the calculator).
 
 ## 13. Build order
 
@@ -400,5 +415,7 @@ Each step is playable and tells the person something; the expensive answers (§8
    the cooldown is gone. The materials are §6b, proposed.)*
 5. **The sparkle** (§7) — small, and it should arrive with the first handover so the tell exists from the beginning. *(Built v11.69 for the
    handover; v11.72 for the closed mutation window, on the clutch: a screen-space four-point star, `starPath`, with a short trail.)*
-6. **The other two modes**: the ringmouth's one spawning and scheduled death; the hingeshell's brood and den.
+6. **The other two modes**: the ringmouth's one spawning and scheduled death; the hingeshell's brood and den. *(The ringmouth half built v11.74: the
+   soft-arm's one clutch, the brood — no feeding, the wasting, the guarding — the death at the hatch, and the age; the coilshell as the finback's mode. The
+   hingeshell's den is not built: a hingeshell has no mode and `x` refuses it.)*
 7. **§8.2's derived `DEFS`**, and with it variants as real ledger entries, marketshare, and the shrine's ecology tab.

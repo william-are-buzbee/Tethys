@@ -1793,6 +1793,13 @@ const PARTS = {
       if (p.style === 'lathe')
         for (let i = 1; i < p.prof.length; i++) stem += (p.prof[i - 1][0] + p.prof[i][0]) * Math.abs(p.prof[i][1] - p.prof[i - 1][1]);
       else if (p.style === 'cyl') stem = (p.r0 + p.r1) * p.L; // the stem's side area over pi
+      // v11.74: the muscle that drives the lobes is the stem's — its mean cross-section (π r̄², r̄ the stem's mean radius off the same side area: stem / 2L),
+      // or the body's own tail end for lobes with no stem. The lobes' thrust is capped at DERIVE_K.stemM per m² of it: v11.73 found a tall lobe buying
+      // +48% for 0.6 points because nothing said the stem had to swing it. At 40 no roster kind is capped (the darters at 39 are the nearest)
+      const Ls = p.style === 'lathe' ? Math.abs(p.prof[p.prof.length - 1][1] - p.prof[0][1]) : p.style === 'cyl' ? p.L : 0,
+        rbar = Ls > 0 ? stem / (2 * Ls) : ctx.F && ctx.F.anchors && ctx.F.anchors.tail ? ctx.F.anchors.tail.r0 : p.lh * 0.1,
+        lobeRaw = p.lh * p.ll * DERIVE_K.lobeT,
+        lobe = Math.min(lobeRaw, DERIVE_K.stemM * Math.PI * rbar * rbar);
       const tail = new THREE.Mesh(merge(T), MAT);
       tail.position.set(0, 0, p.z);
       ctx.bf.add(tail);
@@ -1806,7 +1813,8 @@ const PARTS = {
           else tail.rotation.y = a;
           if (p.body) B.frame.rotation.y = p.body * Math.sin(ph + 0.5); // the whole frame: hull, fins, tail hinge and mouth (v11.18)
         },
-        thrust: (p.lh * p.ll * DERIVE_K.lobeT + stem) * p.amp * Math.sqrt(ctx.beat[0] + ctx.beat[1]),
+        thrust: (lobe + stem) * p.amp * Math.sqrt(ctx.beat[0] + ctx.beat[1]),
+        capped: lobe < lobeRaw ? +(lobe / lobeRaw).toFixed(2) : 0, // v11.74: the share of the lobes' thrust the stem's muscle can drive, when it is less than all of it
         mass: stem * stem * 0.5 + p.lh * p.ll * 0.15, // v11.73: the three lobes are boxes 0.05 thick (tailTrio) — their volume, at the clade's density
         area: p.lh * p.ll * DERIVE_K.lobeF + p.ll * p.ll * p.amp * p.amp * DERIVE_K.lobeI, // v11.73: the lobes' skin friction (∝ their area) and their induced drag (∝ chord² × amp², the lift's cost — a tall narrow lobe pays less than a broad one for the same thrust; the beat stays out: it is the animation's number, and the size law is lenExp's). v11.72 found 0.45 points of tail buying +31% speed against no drag at all (0.05 of the lobe)
         extent: [p.z + p.lz - p.ll * 0.5, p.z]
@@ -2895,6 +2903,8 @@ const DERIVE_K = {
   lobeT: 4.3, // a tail lobe's thrust per m² of lobe at amplitude 1 and beat 1 (the three lobes of tailTrio); 3 to v11.72 against no lobe drag — v11.73: refit with lobeF and lobeI so the nine tailed kinds' geometric mean of speed holds (1.002): the broad-lobed small boids −5%, the tall-lobed big bodies +6–7%
   lobeF: 0.1, // the lobes' skin friction as frontal-equivalent area per m² of lobe: six faces at Cf ~0.008 against a body cd ~0.45
   lobeI: 5, // the lobes' induced drag as frontal-equivalent area per (chord² × amp²): a lobe's lift coefficient goes with its amplitude, C_Di = C_L² / (π × aspect), aspect = lh/ll, so the cost per m² of lobe is ∝ ll/lh and the whole is ∝ ll²; the three lobes over a body cd ~0.45 at the roster's beats give 3 × 2.4/(π × 0.45)
+  stemM: 40, // v11.74: a tail's stem as the muscle that swings its lobes — the lobes' thrust per m² of the stem's mean cross-section, a cap (the roster's most lobe-heavy body, the darter, runs 39 to its stem; the fin 15, the abyssal 17, the basker 22): at 40 nothing in the roster moves, and v11.73's tall lobe (lh 3.7 on the fin) is held to 0.60 of its lobes
+  waste: 0.8, // v11.74: the share of a body's thrust gone at full wasting (spec.waste 1: the muscle burnt — a brooding ringmouth that has stopped feeding, line.js wasteOf; the same term could run for every starving body, not switched on). Speed goes as thrust^tdExp, so 0.8 is a top speed of 0.57 at the end
   ceilL: 60, // m: the length the speed ceiling bends at (CREATOR.md, The size ceiling, item 4). Power ∝ L³ against drag ∝ L²v³ has no ceiling, but a burst is an anaerobic store that lasts ~mass^0.25 while the time to reach speed grows faster (Hirt et al. 2017: the fastest animals are mid-sized) — past ceilL speed is flat in L
   ceilN: 4, // how sharply: the factor is (1+(L/ceilL)^n)^(-lenExp/n) — 0.999 at the abyssal's 19 m, 0.994 at 30 m, 0.93 at 60, and a 600 m body does what a 60 m one does
   accel: 1.4, // 1/s: the rate a body closes on the speed it wants, at thrust/drag 1 and 1 t (the three presets' hand numbers fit 0.97 of this)
@@ -2936,6 +2946,7 @@ function derive(spec0) {
     jet = F.jet,
     tail = false,
     flaps = false,
+    capped = 0,
     eyes = 0,
     zmin = F.tail,
     zmax = F.nose;
@@ -2960,6 +2971,7 @@ function derive(spec0) {
     if (r.paddle) flaps = true;
     if (r.reach) reach = Math.max(reach, r.reach);
     if (r.streamline) cd *= r.streamline;
+    if (r.capped) capped = r.capped;
     if (r.extent) {
       zmin = Math.min(zmin, r.extent[0]);
       zmax = Math.max(zmax, r.extent[1]);
@@ -2983,6 +2995,7 @@ function derive(spec0) {
     mass = vol * dens;
   if (jet) thrust += Math.pow(F.volume, 2 / 3) * DERIVE_K.jet * (F.jetK || 1); // the jet: the mantle's volume per pulse, and the pulse rate falling as 1/length (a sac pulses feebly: jetK)
   thrust *= s2;
+  if (spec.waste > 0) thrust *= 1 - DERIVE_K.waste * Math.min(1, spec.waste); // v11.74: a wasting body (spec.waste 0..1, a live spec's: line.js) has burnt that share of its muscle
   const drag = Math.max(0.02, area * cd);
   const mode = F.mode === 'sail' ? 'sail' : flaps ? 'flap' : tail ? 'undulate' : jet ? 'jet' : legs ? 'walk' : 'drift';
   // speed (v11.71, one calculator for every animal): a swimmer's top speed is K × efficiency(mode) × (thrust/drag)^tdExp × (L/2)^lenExp, under the
@@ -3013,6 +3026,7 @@ function derive(spec0) {
     plausible.push('a chambered shell implodes below −450');
   if (spec.depth !== undefined && spec.depth < -200 && eyes > 8) plausible.push('many eyes below the light');
   if (thrust < 0.01) plausible.push('nothing propels it');
+  if (capped) plausible.push('the lobes outrun the stem that swings them (' + Math.round(capped * 100) + '% driven)'); // v11.74: DERIVE_K.stemM
   if (L / 2 > spec.size * 1.6) plausible.push('longer than its size says (' + (L / 2).toFixed(1) + ' m half-length)');
   return {
     mass: +mass.toFixed(2),

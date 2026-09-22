@@ -23,7 +23,7 @@ const CLADES=CLADE_PRESETS.map(p=>playerClade(SPECS[p.spec],p));
 let floor0=-1e9;for(let a=0;a<TAU;a+=0.3)for(let r=0;r<=16;r+=4)floor0=Math.max(floor0,sample(Math.cos(a)*r,Math.sin(a)*r).h);
 const dispY=floor0+4.5,spawnPos=V3(0,floor0+3,0);
 const player={clade:null,pos:V3(0,dispY,0),vel:V3(0,0,0),yaw:0,pitch:0,g:null,b:null,anim:null,inkT:0,withdrawn:false,cd:0,jetT:0,hurtT:0,lastHurt:-100,dead:true,pulse:0,spd:0,biteCD:0,sub:1,wet:true,grounded:false,flopT:0,camAbove:false,camFlipT:0,fp:false,
-  mass:6,bound:0,reach:0,shapesW:null,chainW:null,grab:null,grabT:0,heldT:0,heldK:1,holding:0,hold:null,held:0,grabKey:false,grabCD:0,bleed:0,woundL:null,paraT:0,stungT:0,sickT:0,hunger:0,starveT:0,armsLost:0,regrow:null,cause:'',speedK:1,turnK:1,live:null,lost:null,cWith:null,onPad:null,def:{size:1.6},hitRk:0,hitFl:0,landV:0,wasGrounded:false}; // hitRk/hitFl: this frame's push was against rock / a plant; landV: the speed of the last landing on the floor (audio.js consumes both) // def.size: creatures read it when the player is their target
+  mass:6,bound:0,reach:0,shapesW:null,chainW:null,grab:null,grabT:0,heldT:0,heldK:1,holding:0,hold:null,held:0,grabKey:false,grabCD:0,bleed:0,woundL:null,paraT:0,stungT:0,sickT:0,hunger:0,starveT:0,waste:0,armsLost:0,regrow:null,cause:'',speedK:1,turnK:1,live:null,lost:null,cWith:null,onPad:null,def:{size:1.6},hitRk:0,hitFl:0,landV:0,wasGrounded:false}; // hitRk/hitFl: this frame's push was against rock / a plant; landV: the speed of the last landing on the floor (audio.js consumes both) // def.size: creatures read it when the player is their target
 // Out of the world (v11.72.1, the person, 21 Sep 2026: "the game should teleport the player out of existence temporarily or make them invis/invuln while
 // they edit"): while the editor at conception is open (line.js conceiveOpen) the body is hidden and nothing in the world can see, smell, chase, hold,
 // sting or flee it — every read of the player as a thing to react to in creatures_ai.js and combat.js asks playerGone(), which death answers too.
@@ -38,7 +38,10 @@ const EAT={bite:1}; // s of the world's feeding rate one bite (click) at a carca
 let hlSpec=null,hlCost=0;
 function hungerLine(){const P=player,C=P.clade;if(!C||mode!=='play')return '';const K=eaterK(P);if(hlSpec!==C.spec){hlSpec=C.spec;hlCost=clutchHunger(C.spec);}
   const left=P.hunger>=1?'starving '+(P.starveT/(K.cycle*DAY_S*STARVE_T)).toFixed(2):'starving in '+((1-P.hunger)*K.cycle).toFixed(2)+' d';
-  return 'hunger '+P.hunger.toFixed(2)+(P.hunger>ECO.hungry?' hungry':'')+'  '+left+'  stomach '+(K.meal*1000).toFixed(0)+' kg  cycle '+K.cycle.toFixed(2)+' d  a clutch of '+LINE.n+' as you: '+hlCost.toFixed(2)+' of it';}
+  const L=lineCur(),m=lifeBreed(L),b=lineBrooding();let ex=''; // v11.74: the age, and the brood
+  if(L)ex+='  age '+((t-L.born)/DAY_S).toFixed(2)+' d'+(m&&m.life?' of '+(lifeS(L)/DAY_S).toFixed(2):'');
+  if(b)ex+='  brooding '+Math.round(b.n)+' eggs, the hatch in '+(Math.max(0,b.hatch-t)/DAY_S).toFixed(2)+' d, '+(broodGuarded(b)?'guarded':'strayed')+', wasted '+(P.waste||0).toFixed(2)+' speed ×'+(P.speedK||1).toFixed(2);
+  return 'hunger '+P.hunger.toFixed(2)+(P.hunger>ECO.hungry?' hungry':'')+'  '+left+'  stomach '+(K.meal*1000).toFixed(0)+' kg  cycle '+K.cycle.toFixed(2)+' d  a clutch of '+(m?m.n:0)+' as you: '+hlCost.toFixed(2)+' of it'+ex;}
 function playerAway(on){const P=player;P.away=!!on;if(P.g)P.g.visible=!on;if(on){P.hold=null;P.vel.set(0,0,0);for(const c of creatures)if(c.target===P)dropTarget(c);}}
 const keys={};let locked=false,drag=null,touchL=null,touchAbility=false;
 const JET_W=0.18; // s of thrust per 0.5 s jet cycle
@@ -57,8 +60,8 @@ function hurtPlayer(dmg,from){
   if(from){T4.copy(P.pos).sub(from).normalize();P.vel.addScaledVector(T4,7);}
 }
 function die(cause){ // v11.55: a placed act (combat.js killBy) — swallowed, opened, skewered, crushed, the nerve cord; the slot's animal is dead (the person, 15 Sep 2026): its world kept, the menu, a new animal on continue
-  const P=player;if(P.dead)return;camNote();P.dead=true;P.cause=cause||'';P.bleed=0;P.paraT=0;P.stungT=0;releaseAll(P);fadeEl.style.opacity=1; // camNote (save.js, v11.47.2): the title screen opens from the spot you died in
-  setTimeout(()=>{if(curSave&&mode==='play'){slotDeath(P.cause);return;} // a slot: the death is written and the menu comes back (save.js); without one (the tests, the lab) the respawn as before
+  const P=player;if(P.dead)return;camNote();P.dead=true;P.cause=cause||'';P.bleed=0;P.paraT=0;P.stungT=0;releaseAll(P);fadeEl.style.opacity=1;const slot=curSave; // camNote (save.js, v11.47.2): the title screen opens from the spot you died in
+  setTimeout(()=>{if(slot&&curSave!==slot)return;if(curSave&&mode==='play'){slotDeath(P.cause);return;} // v11.74: a death is the slot's it happened in — a new game started inside the fade (seen driving the look by hand) must not be ended by it // a slot: the death is written and the menu comes back (save.js); without one (the tests, the lab) the respawn as before
     P.pos.copy(spawnPos);P.vel.set(0,0,0);P.inkT=0;P.bleed=0;P.hold=null;P.held=0;P.camAbove=false;P.camFlipT=0;snapMed=true;P.wet=true;P.sub=1;for(const c of creatures){if(c.target===player)dropTarget(c);}camera.position.copy(P.pos).add(V3(0,2,8));setTimeout(()=>{fadeEl.style.opacity=0;P.dead=false;},500);},2800);
 }
 function bite(){playerBite();} // v11.31: combat.js — a gulp, a mouthful of a carcass, or a wound (a tear on what you hold)

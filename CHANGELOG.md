@@ -4924,3 +4924,79 @@ is the child's own at the handover (a hatchling's is full), and is not ticked wh
    starving (the model's number: a 146 kg meal against a tonne of arrow). A player-only `meal` multiplier is a special case and was not built.
 3. The tail's next term: the muscle cap on the lobes (Found, above), or leave it to the band price.
 4. The materials proposal (LINEAGE §6) — which of the three sources to build first, and whether a hingeshell's mineral rides its coat class.
+
+## v11.74 — the ringmouths' reproduction (21 Sep 2026)
+
+LINEAGE §13.6's ringmouth half, on the person's decisions of 21 Sep (LINEAGE §12.26–28): the soft-arm is semelparous — it may spawn once, grown,
+then broods and dies at the hatch — and it ages; the coilshell breeds like the finback (the nautilus, not the octopus: a shelled animal has a
+skeleton, so §3's reason does not hold for it — §3 amended); nothing else ages yet. The mode is read off the body, not chosen.
+
+- **The modes** (line.js `BREED`, a comment per key; `breedOf(spec)`): a slowblood is `slowbloods`; a ringmouth whose body floats on the calculator
+  (derive's `buoyancy` — the chambered shell) is `shelled`, the nautilus; any other ringmouth is `soft`, the octopus. A hingeshell has no mode and
+  `x` says `not this body` (the den is §13.6, unbuilt). The eggs, r against K: `n` a clutch and `egg`, an egg as a share of the child's adult derived
+  mass — soft 30 × 0.001 (67 kg, 0.66 of the soft-arm's 102 kg stomach), shelled 2 × 0.008 (53 kg, 0.63 of the coilshell's 84), slowbloods 4 × 0.01 as
+  v11.73 (71 kg, 0.49 of 146). `LINE.egg` and `LINE.n` are gone; `BROOD_SURVIVE` is the mode's `survive` (soft 0.5 a day — many cheap eggs, mostly
+  eaten; the others 0.8). The mode is cached on the life and the brood (`_m`, never saved).
+- **The soft-arm spawns once.** Its one conception is its one trip to the editor and the clutch carries whatever it chose; after it `x` says
+  `brooding`. The hint at the laying: "the clutch: 30 eggs, the hatch in 0.36 days — you will not feed again; stay by it, or not".
+- **Brooding.** `feeds(o)` (line.js; creatures_ai.js `kill` and `eatAt` ask): a brooding body kills and is not fed, and takes nothing from a carcass.
+  **Guarding** (`BREED.guard` 12 m): within it the parent guards the clutch — `findCarcass` never offers it to a scavenger and `scavenge` drops one that
+  has it, and nothing is lost; off it, the mode's losses run on the loaded clutch by the clock (`survive` a day, the egg's count following, `lineTick`)
+  and any scavenger takes it. A choice with a payoff, not a leash: the parent may go anywhere. **The wasting**: `wasteOf` is the share of the way
+  from hungry (`ECO.hungry`) to death by starvation (`STARVE_T`) on the stomach's own clock, 0..1; the live spec carries it (`spec.waste`, as a wound
+  edits the live spec) and the calculator gives the speed — `DERIVE_K.waste` 0.8, the share of the thrust gone at full wasting; speed goes as
+  thrust^0.35, so the soft-arm's 8.1 is 7.5 at a quarter, 6.8 at half, 4.6 at the end (`rederive` → `speedK`, v11.57's path). The body is rebuilt
+  thinner at every tenth of waste (`BREED.gaunt` 0.25 of the mantle's radius at full; `gauntClade`, `playerRebody`); the spec on the save stays
+  the adult's. The same term could run for every starving body (v11.73's candidate b) — not switched on.
+- **Checked: the brood is inside the starvation clock.** The hatch is `ECO.hatch` × mass^¼ = 0.36 game days (14 real minutes; `hatchK` 1). From a
+  laying at the latest hunger allowed (0.4) death by starvation is 1.28 days off, from a full stomach 1.56: the parent lives to the hatch with three
+  and a half times to spare, so neither gives — but the wasting only reaches 0.1–0.3 by the hatch (speed × 0.97–0.90): the parent is hungry at the
+  hatch, not spent. `BREED.soft.hatchK` is the knob for the octopus's long brood: at 3 (1.07 days) it arrives wasted 0.67–0.83 (speed × 0.7–0.6); at 4
+  a parent that laid hungry starves first — a death like any other, and v11.69's run-on to the hatch.
+- **Death at the hatch**: `die('spent')` from `lineTick` once the brood's clutch has hatched — loaded (`broodHatch` put the young in the world the
+  frame before), unloaded (by the clock, `broodCatchUp`), or eaten to nothing (the clock all the same). The handover is v11.69's: the nearest living
+  child, a hatchling at the clutch among its siblings. Killed while brooding, the clutch stands and hatches — v11.69's run-on, tested.
+- **Age**: `BREED.life` 4 game days × mass^¼ (the ledger's q, as every rate) — the soft-arm 5.69 game days, 3.8 real hours; a founder is an adult
+  hatched a growth ago (`lineStart`: born = now − `growS`; a record from before v11.74 gets the same at load), a child from its hatch. `die('old')`
+  in `lineTick`; the shelled and the slowbloods have `life` 0. The readout's hunger line has `age 1.42 d of 5.69` and, brooding, `brooding 28 eggs,
+  the hatch in 0.35 d, guarded, wasted 0.28 speed ×0.91`.
+- **The tail's stem** (v11.73's finding): `DERIVE_K.stemM` 40 — the lobes' thrust is capped at stemM per m² of the stem's mean cross-section (π r̄²,
+  r̄ off the side area the stem term already measures, stem / 2L; the lobes style with no stem takes the core's tail end). The roster's lobes against
+  their stems: darter and glim 39, needle 27, basker 22, crusher 17, abyssal 17, fin and ridge 15, grazer 12 — **at 40 no species moves**: every
+  derived speed, accel and turn is v11.73's to the digit, over all 42 specs. v11.73's tall lobe (lh 3.7 on the fin, 0.6 points) buys +26% now (7.7
+  against 6.1) for +48%, and the lab's readout says "the lobes outrun the stem that swings them (60% driven)". At 30 the darters would lose 9%.
+- **Tests** (`test/player.js` §7, in `--test`): the mode off the body (soft; the coilshell shelled by its floating shell); the clutch's cost; the
+  founder's age a growth and its span 5.69 (on the readout); the brood inside the starvation clock; laid once, grown and fed, and not twice; an arrow
+  bitten while brooding feeds nothing; the parent on the clutch guards it (a scuttle 10 m off smells no carcass in it and does not go, for a second of
+  the world), 40 m off it does not (the scuttle smells it, goes to it and eats it down); a tenth of a day strayed loses the clutch 29.9 → 27.9 and the
+  egg follows, a tenth guarding loses nothing; at hunger 0.90 the body is wasted 0.28, speed × 0.91 as derive gives it on the live spec, and rebuilt
+  gaunt with the spec the adult's and the stomach kept; fed again, whole; killed brooding, the world runs on 0.35 d and you are a hatchling at the
+  clutch; the hatch loaded: the parent's death "spent", you a hatchling among 29 siblings, not brooding, the same mode; old age unspawned at 5.69 d
+  with no child, the save over, the cause "old"; the coilshell lays and lays again (two clutches of 2), no span on its readout; the finback's mode;
+  the tall lobe capped and no roster kind capped. §4–6's `LINE.n` and `BROOD_SURVIVE` reads are the mode's. `--test` green on both tiers (the low
+  tier's eel check in §5, v11.72.1, is random — `wander` — and failed once in six runs before this change as after it).
+- **Found by looking, fixed**: the handover took the child's stomach as it was, and a hatchling's was `spawn`'s random draw for a hunter (you became one
+  at 0.72) — the young at a hatch are fed now (`broodSpawn`); a clutch hatched early by hand gave the child an age of −0.35 d — the child's birth is the
+  hatch or now, whichever is first (`lineContinue`); and a death's 2.8 s fade ended whatever slot was current when it fired — it is the slot's it happened
+  in now (player.js `die`).
+- **Seen** in the app's browser (dev.html on serve.js, the loop driven by the pane): a new game as the soft-arm at the peak's floor; `x` at hunger 0.10
+  opened the bill — "the eggs 0.66 of 0.90 eaten … unchanged: the clutch will be a copy"; declined, the clutch laid, the hint "the clutch: 30 eggs, the
+  hatch in 0.36 days — you will not feed again; stay by it, or not", and the readout's line "hunger 0.76 hungry … a clutch of 30 as you: 0.66 of it  age
+  1.42 d of 5.69  brooding 30 eggs, the hatch in 0.36 d, guarded, wasted 0.20 speed ×0.94" — the clutch takes the stomach past hungry, so the wasting
+  starts at the laying; 40 m off the readout said strayed, back over it guarded; at hunger 1 with the starving clock at 0.85 the body was rebuilt at the
+  eighth step (the mantle's radius 0.509 for 0.636, wasted 0.90, speed ×0.64) — from behind, a visibly thinner mantle under the same collar and skirt;
+  the egg's clock put to 0.1 s: the hatch (30 young in a knot over the clutch, seen through the fade), the parent's death "spent", and you a hatchling of
+  0.88 m among 29 siblings with the sparkle over you. The coilshell: "the eggs 0.63 of 0.90", two clutches of 2 laid in a row, no brooding, the readout's
+  age without a span. Not seen: a brood played to its hatch in real time (14 minutes), a scavenger taking an unguarded clutch in play (the test does),
+  and the gaunt body from the side in good light.
+
+**Unseen, ask in this order:**
+1. **The brood's length** (`BREED.soft.hatchK`): at 1 the parent is hungry at the hatch, not spent (wasted 0.1–0.3); the octopus's long brood is 3, and
+   the parent arrives wasted 0.7–0.8 at speed × 0.6–0.7 — 43 real minutes over the clutch. Which is the game?
+2. **The waste term for every starving body** (v11.73's candidate b): `spec.waste` in derive is one switch from running for a starving hunter and for the
+   finback player past hungry; it touches the fight's balance.
+3. **The numbers**: 30 eggs at 0.66 of the stomach, half the clutch a day unguarded, 12 m to guard, a life of 5.7 game days (3.8 real hours).
+4. **The gaunt mantle**: a quarter of its radius at full wasting, in tenths (a rebuild each) — does it read as a starving animal, and should the arms and
+   the collar thin with it?
+5. **A brooding parent's threat**: guarding keeps scavengers off by the parent's presence alone; whether a hunter should fear a brooding soft-arm over
+   its clutch, or take it more easily as it wastes, is not built.

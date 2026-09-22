@@ -104,7 +104,7 @@ function worldClear(){ // every cell out (the living written into the ledger), a
 function cellsAround(){const ci=cellOf(player.pos.x),cj=cellOf(player.pos.z);for(let dj=-1;dj<=1;dj++)for(let di=-1;di<=1;di++){const i=ci+di,j=cj+dj;if(i>=0&&j>=0&&i<NCELL&&j<NCELL)loadChunkNow(i,j);}shadowDirty();} // the 3×3 round the player before the first frame (boot, a game starting, the menu); the rest streams
 function playerBody(C,pos,yaw,pitch){ // the player's body built and placed as the clade; the old one disposed
   const P=player;playerDrop();const b=C.build();castOn(b.g);scene.add(b.g);
-  P.clade=C;P.b=b;P.g=b.g;P.anim=b.anim;P.mass=C.mass;P.def.size=C.size;P.paraT=0;P.stungT=0;P.sickT=0;P.hunger=0;P.starveT=0;P.armsLost=0;P.regrow=null;P.cause='';P.live=null;P.lost=null;P.speedK=1;P.turnK=1;
+  P.clade=C;P.b=b;P.g=b.g;P.anim=b.anim;P.mass=C.mass;P.def.size=C.size;P.paraT=0;P.stungT=0;P.sickT=0;P.hunger=0;P.starveT=0;P.waste=0;P.armsLost=0;P.regrow=null;P.cause='';P.live=null;P.lost=null;P.speedK=1;P.turnK=1;
   P.pos.copy(pos);b.g.position.copy(pos);P.vel.set(0,0,0);P.yaw=+yaw||0;P.pitch=clamp(+pitch||0,-1.35,1.35);P.dead=false;P.cd=0;P.inkT=0;P.bleed=0;P.hold=null;P.held=0;P.grab=null;P.holding=0;P.withdrawn=false;P.fp=false;P.camAbove=false;P.camFlipT=0;P.wet=true;P.sub=1;P.hurtT=0;P.lastHurt=-100;P.jetT=0;P.pulse=0;P.biteCD=0;P.flopT=0;
   camera.position.copy(pos).add(V3(0,2,8));snapMed=true;seeSpec(C.spec.id);
 }
