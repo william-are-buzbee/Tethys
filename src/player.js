@@ -1,5 +1,5 @@
 // player.js — the player as a spec (any species of the roster since v11.75), movement in water / air / on land, camera, bite, abilities, damage and death
-// legs (derive's, off the spec) makes it walk on the strand (landSpeed: the calculator's Froude speed, jump) instead of flopping.
+// legs (derive's, off the spec) make it a walker on the ground, wet or dry (v11.78, WALK below: landSpeed, the calculator's Froude speed; the hop and the jump) instead of a swimmer that flops.
 // The player is a spec (v11.68): the numbers come off the build (statsOf: derive with the spec's locks over it). v11.71: no preset carries a lock — speed,
 // accel and turn are derive's for the player as for every animal (the person, 21 Sep 2026), the contact mass is every creature's rule (bodyMass: size
 // cubed, floored), the bite's size the lab's rule. v11.75 (the person, 21 Sep 2026: the founder is any existing species of the chosen clade — the roster is
@@ -27,13 +27,15 @@ const ABILITIES=[
   {id:'ram',part:'the ram',fits:sp=>sp.parts.some(p=>p.kind==='weapon'&&p.style==='ram')},
   {id:'shut',part:'the valves',fits:sp=>sp.parts.some(p=>p.kind==='valves')}
 ];
+const LEGS_BACK=['placed','walk','hang','march']; // v11.78: the leg styles that can step backward — jointed pairs; a paddle row (rock, swim) and the raptors' rear pairs cannot
+function legsBackOf(spec){let sp;try{sp=fillSpec(spec);}catch(e){return false;}return sp.parts.some(p=>p.kind==='legs'&&LEGS_BACK.indexOf(p.style)>=0);}
 function abilitiesOf(spec){let sp;try{sp=fillSpec(spec);}catch(e){return [];}return ABILITIES.filter(a=>a.fits(sp)).map(a=>a.id);} // every ability the body has, in the table's order (fillSpec: the registry's defaults where the spec is silent)
 function presetFor(spec){const id=spec.clade==='ringmouths'?(spec.core&&spec.core.kind==='coilbody'?'coil':'soft'):'fin';return CLADE_PRESETS.find(p=>p.id===id);} // the kind of body a spec is: a coiled ringmouth the coilshell's, another ringmouth the soft-arm's, anything else the finback's
 function playerClade(spec,pre,j){ // the player's clade object from a spec (and its preset, if it is one): what player.js, combat.js and the rest read as player.clade. j: a hatchling's scale (v11.69: ECO.juv until grown; v11.76 a hingeshell's steps at its moults), the numbers scaled as the world's juveniles' are (creatures_ai.js scaledDef)
   pre=pre||presetFor(spec);j=j||1;const st=statsOf(spec),base=SPECS[pre.spec],fd=founderDef(spec),ab=abilitiesOf(spec),sq=Math.sqrt(j);
   return {id:pre.id,name:spec===base?pre.name:(spec.id&&spec.id!==pre.spec?spec.id:pre.name),spec:spec,preset:pre,build:j===1?()=>compile(spec):()=>compile(spec,j*(spec.s||1)),juv:j<1?j:0,
     speed:st.speed*sq,accel:st.accel,turn:st.turn,mass:+(Math.max(BODY_MIN,spec.size*spec.size*spec.size)*j*j*j).toFixed(3),bite:Math.round(st.mass*3+2)*j*j,size:spec.size*j,jet:!!st.jet,legs:!!st.legs,landSpeed:st.legs?st.walk*sq:undefined, // bite for a spec without the lock: the lab's DEFS rule (specExport, dmg = mass × 3)
-    sprint:st.burst>1?st.burst:undefined,jetImp:st.jet?st.jetImp*sq:undefined,buoy:st.buoyancy,mode:st.mode,cam:+(CAM_BODY.at+CAM_BODY.per*st.length*j).toFixed(1),venom:fd?fd.venom:undefined,immune:!!(fd&&fd.immune),founder:founderOf(spec),abilities:ab,ability:ab[0]||null}; // v11.75: every number off the build or the founder's row; a hatchling's arm and kick with its scale
+    sprint:st.burst>1?st.burst:undefined,jetImp:st.jet?st.jetImp*sq:undefined,buoy:st.buoyancy,mode:st.mode,canSwim:st.mode!=='walk',legsBack:legsBackOf(spec),clear:fd&&fd.clear!==undefined?fd.clear*j:spec.size*j*0.35,cam:+(CAM_BODY.at+CAM_BODY.per*st.length*j).toFixed(1),venom:fd?fd.venom:undefined,immune:!!(fd&&fd.immune),founder:founderOf(spec),abilities:ab,ability:ab[0]||null}; // v11.75: every number off the build or the founder's row; a hatchling's arm and kick with its scale
 }
 const CLADES=CLADE_PRESETS.map(p=>playerClade(SPECS[p.spec],p));
 let floor0=-1e9;for(let a=0;a<TAU;a+=0.3)for(let r=0;r<=16;r+=4)floor0=Math.max(floor0,sample(Math.cos(a)*r,Math.sin(a)*r).h);
@@ -83,7 +85,17 @@ const FP_AHEAD=0.35;
 // trims (BUOY_V). In the air the body follows its arc and comes back to the heading at its rate, without a snap.
 const PITCH_MAX=1.54; // rad (88°): the heading's pitch limit — nearly straight up or down; a loop is not a heading
 const STEER={key:1,ease:0.3,lead:1.0,air:2,rev:{jet:0.6,legs:0.5},brake:2.5,min:TURN_MIN}; // ease: within this angle (rad) of the heading the turn eases in exponentially (a radian left a slow body settling for seconds, test/steer.js); key: a/d and space/c turn the heading at this share of the body's turn rate; lead: the camera stays within this angle (rad) of behind the body's facing, so it is never in front of the face; air: the body follows its arc at this × its turn rate; rev: backing as a share of the top speed where the body can — a jetter turns its funnel, a legged body steps back on the floor (v11.78), a fish cannot; brake: s on a body that cannot back is the coast's decay × this (the fins flared); min: the turn's floor at rest, the world's (TURN_MIN)
-const BUOY_V={sinks:-0.25,neutral:0,floats:0.15}; // m/s: derive's buoyancy as a drift the body trims with its pitch — a dense body settles, a chambered one rises, unless it swims against it
+const BUOY_V={sinks:-0.25,neutral:0,floats:0.15};
+// Walking on the floor (v11.78, CHANGELOG v11.75's scope on v11.77's model): a legged body on the ground, wet or dry, is a walker — held at the ground
+// plus its kind's clearance (C.clear: the founder's DEFS clear, else 0.35 × size, the world's rule for its own walkers), w and s along its facing at
+// derive's walk speed (the legs' Froude speed), back at STEER.rev.legs where the legs are jointed pairs (LEGS_BACK), the turn about up only at the full
+// rate (legs pivot at any pace), the pitch and the lean the ground's slope under it (groundGrad), its feet kept down a step (WALK.step × size: a deeper
+// drop is a ledge, and it falls), space a hop off the floor (WALK.hop; the strand's jump in the air). Off the floor it swims by what its build says: a
+// flapper with legs (the hood, the ram) swims as any flapper; a body whose only propulsion is its legs (derive's mode 'walk': canSwim false) has no
+// thrust in the water and sinks at WALK.sink until its feet find the ground again.
+const WALK={acc:8,step:0.6,hop:2.5,sink:1.2,lean:0.8}; // acc: the walk's velocity rate (1/s); step: the height (× size) a walker steps down without leaving the ground; hop: m/s off the floor under water; sink: m/s a legs-only body sinks off the floor; lean: the share of the side slope the body rolls into
+const GG={x:0,z:0};
+function groundGrad(x,z,out){out.x=(groundAt(x+1,z)-groundAt(x-1,z))*0.5;out.z=(groundAt(x,z+1)-groundAt(x,z-1))*0.5;return out;} // the ground's slope (dh/dx, dh/dz) over 2 m // m/s: derive's buoyancy as a drift the body trims with its pitch — a dense body settles, a chambered one rises, unless it swims against it
 const _E=new THREE.Euler();
 function wrapA(a){return ((a+Math.PI)%TAU+TAU)%TAU-Math.PI;} // an angle to (−π, π]
 function turnRateOf(P){const C=P.clade;return C.turn*(P.turnK||1)*clamp(P.vel.length()/Math.max(0.1,C.speed),STEER.min,1);} // rad/s: the world's rule for the body's turn (creatures_ai.js, v11.71)
@@ -171,40 +183,36 @@ function updatePlayer(dt){
   // Thrust and water drag scale with it; gravity with what is left. Nothing stops you leaving the water except gravity.
   const wl=waveH(P.pos.x,P.pos.z),R=0.9,sub=clamp((wl-(P.pos.y-R))/(2*R),0,1);P.sub=sub;
   const still=P.withdrawn||P.shut||P.paraT>0; // withdrawn, shut, or paralysed (COMBAT.md §3b): the body does nothing you ask of it
-  const airborne=sub<0.5&&!P.grounded,strand=sub<0.5&&P.grounded,walker=strand&&C.legs&&!P.dead; // v11.78 adds the floor
-  // the heading (v11.77): the mouse's, and the keys turn it at the body's rate — a/d the yaw, space/c the pitch (space jumps a walker)
+  const airborne=sub<0.5&&!P.grounded,strand=sub<0.5&&P.grounded,walker=C.legs&&P.grounded&&!P.dead; // v11.78: a legged body on the ground, wet or dry, walks
+  P.hopT=Math.max(0,(P.hopT||0)-dt);
+  // the heading (v11.77): the mouse's, and the keys turn it at the body's rate — a/d the yaw, space/c the pitch (space hops a walker off the floor)
   let rate=turnRateOf(P);if(walker)rate=C.turn*(P.turnK||1); // legs pivot at any pace
   if(!still&&!P.dead){const kr=rate*STEER.key*dt;if(ky)P.yaw+=ky*kr;if(kp&&!walker)P.pitch=clamp(P.pitch+kp*kr,-PITCH_MAX,PITCH_MAX);}
-  // the facing: toward the heading in the water; in the air (and a fish flopping on the strand) along the arc; a walker level on the strand; held while still or lying
-  let ty=P.yaw,tp=P.pitch;
-  if(airborne||(strand&&!C.legs)){const v=P.vel.length();if(v>1.2){ty=Math.atan2(-P.vel.x,-P.vel.z);tp=Math.asin(clamp(P.vel.y/v,-1,1));rate*=STEER.air;}else{ty=P.byaw;tp=P.bpitch;}}
-  else if(walker)tp=0;
+  // the facing: toward the heading in the water; a walker's yaw to the heading, its pitch and lean the ground's slope under it (v11.78); in the air (and a fish flopping on the strand) along the arc; held while still or lying
+  let ty=P.yaw,tp=P.pitch;P.rollBias=0;
+  if(walker){const hx=-Math.sin(P.byaw),hz=-Math.cos(P.byaw),g=groundGrad(P.pos.x,P.pos.z,GG);tp=Math.atan(g.x*hx+g.z*hz);P.rollBias=Math.atan(g.x*-Math.cos(P.byaw)+g.z*Math.sin(P.byaw))*WALK.lean;} // the slope along the facing, and across it (the body's right is (−cos byaw, 0, sin byaw))
+  else if(airborne||strand){const v=P.vel.length();if(v>1.2){ty=Math.atan2(-P.vel.x,-P.vel.z);tp=Math.asin(clamp(P.vel.y/v,-1,1));rate*=STEER.air;}else{ty=P.byaw;tp=P.bpitch;}}
   if(still||P.dead){ty=P.byaw;tp=P.bpitch;}
   faceToward(P,ty,tp,rate,dt);faceQ(P);
   const bf=bodyFwd(P,T3); // the body's own axis: what w thrusts along
-  const rev=C.jet?STEER.rev.jet:0,th=still?0:mz>0?1:mz<0?-rev:0,brake=!still&&mz<0&&!rev; // s: back where the body can (a jetter's funnel), else the brake
-  const moving=th!==0;
-  let spd=C.speed;if(C.sprint&&sprint)spd*=C.sprint;
+  const rev=walker?(C.legsBack?STEER.rev.legs:0):C.jet?STEER.rev.jet:0,swims=walker||C.canSwim||sub<0.5; // s: back where the body can (a jetter's funnel, jointed legs on the ground), else the brake; a legs-only body off the floor under water has no thrust
+  const th=still||!swims?0:mz>0?1:mz<0?-rev:0,brake=!still&&mz<0&&!rev&&!walker,moving=th!==0;
+  let spd=walker?(C.landSpeed||4):C.speed;if(!walker&&C.sprint&&sprint)spd*=C.sprint; // a walker's Froude speed is its ceiling (v11.75)
   P.heldT=Math.max(0,P.heldT-dt);if(P.heldT>0)spd*=0.8; // brushed by something's arms
   spd*=P.heldK||1; // held (combat.js updateHolds sets it): in jaws or claws you thrash, in arms you barely swim
   spd*=slowOf(P); // bleeding, or stung (combat.js, v11.55)
   P.grabT=Math.max(0,P.grabT-dt);if(P.grabT<=0||(P.grab&&!P.grab.alive))P.grab=null;
   if(still)sprint=false;
-  T2.copy(bf).multiplyScalar(spd*th);T2.y+=(BUOY_V[C.buoy]||0)*sub; // the thrust along the body, and derive's buoyancy as a drift (a sinking body swims a little nose-up to hold its depth)
+  T2.copy(bf).multiplyScalar(spd*th);if(!walker)T2.y+=((BUOY_V[C.buoy]||0)-(C.canSwim?0:WALK.sink))*sub; // the thrust along the body, and derive's buoyancy as a drift (a sinking body swims a little nose-up to hold its depth); a legs-only body off the floor sinks
   const ak=C.accel*(brake?STEER.brake:1);
-  if(sub>=0.999)P.vel.lerp(T2,1-Math.exp(-ak*dt));
+  if(walker){const k=1-Math.exp(-WALK.acc*dt);P.vel.x=lerp(P.vel.x,T2.x,k);P.vel.z=lerp(P.vel.z,T2.z,k);if(sub>=0.5)P.vel.y=lerp(P.vel.y,T2.y,k);else P.vel.y-=GRAV*(1-sub)*dt; // along the slope; on the strand gravity holds it down
+    if(kp>0&&!still&&P.vel.y<=0.1){P.vel.y=sub>=0.5?WALK.hop:(C.jump||5);P.hopT=0.3;}} // the hop off the floor, the jump on the strand
+  else if(sub>=0.999)P.vel.lerp(T2,1-Math.exp(-ak*dt));
   else{
     P.vel.lerp(T2,1-Math.exp(-ak*sub*dt));P.vel.y-=GRAV*(1-sub)*dt;P.vel.multiplyScalar(1-0.12*(1-sub)*dt);
-    if(strand&&!P.dead){
-      const hx=-Math.sin(P.byaw),hz=-Math.cos(P.byaw); // the body's heading over the ground
-      if(C.legs){ // walking: along the body's facing at derive's walk speed; back at the legs' share; space jumps
-        const ls=C.landSpeed||4,wth=still?0:mz>0?1:mz<0?-STEER.rev.legs:0,k=1-Math.exp(-8*dt);
-        P.vel.x=lerp(P.vel.x,hx*ls*wth,k);P.vel.z=lerp(P.vel.z,hz*ls*wth,k);
-        if(kp>0&&!still&&P.vel.y<=0.1)P.vel.y=C.jump||5;
-      }else{ // a fish out of water: it lies where it lands, and flops the way it lies when you push
-        P.vel.x*=Math.exp(-6*dt);P.vel.z*=Math.exp(-6*dt);P.flopT-=dt;
-        if(mz&&!still&&P.flopT<=0){P.flopT=0.7;const s=mz>0?1:-1;P.vel.x+=hx*s*4.2;P.vel.z+=hz*s*4.2;P.vel.y=4.8;P.pulse=1;thump(0.25,150,60,null,0.8,0.06);}
-      }
+    if(strand&&!P.dead){ // a fish out of water: it lies where it lands, and flops the way it lies when you push
+      const hx=-Math.sin(P.byaw),hz=-Math.cos(P.byaw);P.vel.x*=Math.exp(-6*dt);P.vel.z*=Math.exp(-6*dt);P.flopT-=dt;
+      if(mz&&!still&&P.flopT<=0){P.flopT=0.7;const s=mz>0?1:-1;P.vel.x+=hx*s*4.2;P.vel.z+=hz*s*4.2;P.vel.y=4.8;P.pulse=1;thump(0.25,150,60,null,0.8,0.06);}
     }
   }
   // the jet: every 0.5 s a squeeze, its impulse (jetImp) delivered as a thrust over the first JET_W of the cycle — the same
@@ -217,15 +225,16 @@ function updatePlayer(dt){
   if(sub>=0.5){if(P.vel.length()>vmax)P.vel.setLength(vmax);}
   else{const hv=Math.hypot(P.vel.x,P.vel.z);if(hv>vmax){P.vel.x*=vmax/hv;P.vel.z*=vmax/hv;}if(P.vel.y<-30)P.vel.y=-30;}
   P.pos.addScaledVector(P.vel,dt);
-  if(sub>0){currentAt(P.pos.x,P.pos.z,P.pos.y,CURV);P.pos.addScaledVector(CURV,dt*sub);} // carried by the current (chunks.js)
+  if(sub>0&&!walker){currentAt(P.pos.x,P.pos.z,P.pos.y,CURV);P.pos.addScaledVector(CURV,dt*sub);} // carried by the current (chunks.js); not a walker with its feet on the ground (v11.78, as the world's floor creatures hold on)
   contactK=0;const pad=bodyPush(P.pos,P.vel,P.g.quaternion,C.size*0.7,0.9,0.5);P.hitFl=contactK&1;P.hitRk=contactK&2; // rock and pads first (centre, nose and tail), then the floor has the last word
   // floor: gentle slopes clamp you up, steep walls push you back
-  let fh=groundAt(P.pos.x,P.pos.z)+1.1;P.grounded=false;const vy0=P.vel.y;
+  const clr=C.legs?C.clear:1.1;let fh=groundAt(P.pos.x,P.pos.z)+clr;P.grounded=false;const vy0=P.vel.y; // v11.78: a legged body stands at its kind's clearance
   if(P.pos.y<fh){
     const gx=(groundAt(P.pos.x+1,P.pos.z)-groundAt(P.pos.x-1,P.pos.z))*0.5,gz=(groundAt(P.pos.x,P.pos.z+1)-groundAt(P.pos.x,P.pos.z-1))*0.5,gl=Math.hypot(gx,gz);
-    if(gl>1.2){const pen=fh-P.pos.y,k=pen/(gl*gl);P.pos.x-=gx*k;P.pos.z-=gz*k;const vn=(P.vel.x*gx+P.vel.z*gz)/gl;if(vn>0){P.vel.x-=gx/gl*vn;P.vel.z-=gz/gl*vn;}fh=groundAt(P.pos.x,P.pos.z)+1.1;if(P.pos.y<fh){P.pos.y=fh;P.grounded=true;}}
+    if(gl>1.2){const pen=fh-P.pos.y,k=pen/(gl*gl);P.pos.x-=gx*k;P.pos.z-=gz*k;const vn=(P.vel.x*gx+P.vel.z*gz)/gl;if(vn>0){P.vel.x-=gx/gl*vn;P.vel.z-=gz/gl*vn;}fh=groundAt(P.pos.x,P.pos.z)+clr;if(P.pos.y<fh){P.pos.y=fh;P.grounded=true;}}
     else{P.pos.y=fh;if(P.vel.y<0)P.vel.y*=-0.2;P.grounded=true;}
   }
+  else if(C.legs&&P.wasGrounded&&!(P.hopT>0)&&!P.dead&&P.pos.y-fh<WALK.step*Math.max(0.8,C.size)){P.pos.y=fh;if(P.vel.y<0)P.vel.y=0;P.grounded=true;} // v11.78: a walker keeps its feet down a step; a deeper drop is a ledge and it falls
   if(P.grounded&&!P.wasGrounded&&vy0<0)P.landV=-vy0;P.wasGrounded=P.grounded; // the landing's speed, for its thud (audio.js)
   // on a lily pad: it takes your weight (dips more the smaller it is) and you are ashore on it
   P.onPad=pad;if(pad){P.grounded=true;loadPad(pad,clamp(0.6/pad.r,0.03,0.45));}

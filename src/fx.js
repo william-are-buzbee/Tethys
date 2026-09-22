@@ -82,7 +82,7 @@ function bodyPose(o,dt,yaw){
   const strike=(o.st&&o.st.strike)||(o===player&&o.hold)?1:0;
   const sqT=clamp(acc*POSE_K.sq,-0.1,POSE_K.sqMax)+strike*POSE_K.strike+(o.snapT>0?POSE_K.snap:0);
   o.sq=(o.sq||0)+(sqT-(o.sq||0))*(1-Math.exp(-9*dt));
-  const rigged=!!(b.rigs&&b.rigs.length),cap=rigged?POSE_K.bankRig:POSE_K.bankMax;let rollT=clamp(-POSE_K.bank*rate*spd,-cap,cap);
+  const rigged=!!(b.rigs&&b.rigs.length),cap=rigged?POSE_K.bankRig:POSE_K.bankMax;let rollT=clamp(-POSE_K.bank*rate*spd,-cap,cap)+(o.rollBias||0); // rollBias (v11.78): a walker's lean into the side slope (player.js)
   if(o.stun>0)rollT=POSE_K.stunRoll*(o.stunSide||1)*(rigged?0.5:1);
   o.rollV=(o.rollV||0)*Math.exp(-3*dt);o.roll=(o.roll||0)+(rollT-(o.roll||0))*(1-Math.exp(-4*dt))+o.rollV*dt;
   const s=o.sq;b.frame.scale.set(1-s*0.5,1-s*0.5,1+s);b.frame.rotation.z=o.roll;

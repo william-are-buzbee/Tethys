@@ -5197,3 +5197,40 @@ faced the velocity, which is why touching the water snapped it back.
 3. **a and d as a turn** (my call) against roll or a tighter turn; **s as a brake** on a fish at 2.5 × the coast.
 4. **The buoyancy drift**: 0.25 m/s down for a sinker, 0.15 up for the coilshell — it drifts to the surface left alone.
 5. **The pitch limit** 88°: a loop is not a heading; whether the body should ever go past vertical.
+
+## v11.78 — walking on the floor (22 Sep 2026)
+
+CHANGELOG v11.75's scope ("what it would take"), built on v11.77's model: a legged body on the ground is a walker, wet or dry.
+
+- **The walker** (player.js `WALK`, the section over `updatePlayer`): a legged body with its feet on the ground — under water or on the strand, one path —
+  is held at the ground plus its kind's clearance (`C.clear`: the founder's `DEFS` clear, else 0.35 × size, the world's rule for its own walkers; the
+  picker's 0.52, the ram's 1.4; a swimmer keeps the 1.1 it had), walks along its facing at derive's walk speed (`landSpeed`, the legs' Froude speed:
+  the picker 3.9, the scuttle 2.3, the ram 3.2 on the floor against 10 swimming; no sprint — a walker's Froude speed is its ceiling, v11.75) at
+  `WALK.acc` 8/s, backs at `STEER.rev.legs` 0.5 where its legs are jointed pairs (`LEGS_BACK`: placed, walk, hang, march — the picker; a paddle row or
+  the rear pairs cannot — the scuttle, the ram; `legsBackOf`), turns about up at its full rate (legs pivot at any pace; the picker's 8 rad/s comes
+  round a right angle in a quarter second), its pitch the slope along its facing and its lean the slope across it (`groundGrad`, `rollBias` into
+  fx.js `bodyPose` at `WALK.lean` 0.8), keeps its feet down a step (`WALK.step` 0.6 × size: a deeper drop is a ledge and it falls), is not carried by
+  the current (as the world's floor creatures hold on), and hops off the floor on space (`WALK.hop` 2.5 m/s; the strand's jump in the air as before).
+  The keys' pitch does nothing on the ground; the mouse's pitch only leads the camera, whose lead (v11.77) and the ground clamp bound it.
+- **Off the floor it swims by what its build says**: a flapper with legs (the hood, the ram; `canSwim`: derive's mode is not `walk`) swims as any
+  flapper and settles at its buoyancy; a body whose only propulsion is its legs (derive's mode `walk`: the picker, the scuttle, the trap, the tread…) has
+  no thrust in the water and sinks at `WALK.sink` 1.2 m/s until its feet find the ground again — a hop is a hop.
+- **The scope against v11.75's estimate** ("some 40 lines in player.js and the camera"): 63 lines changed in player.js and one in fx.js; the camera
+  needed nothing (v11.77's lead already bounds it). What the estimate had not counted: the clearance per kind, the step against the ledge, the walker
+  out of the current, the lean, backing by the legs' style, and the legs-only body that cannot swim — each a line or two, and each found by the test
+  or the look (the picker walked into a boulder and stood there: contact, not the walk — the test now finds a path clear of rock).
+- **Tests** (`test/steer.js`, the walking section; both tiers in `--test`): the picker (walk legs), the scuttle (paddle legs) and the ram (flaps and
+  legs) on the west shelf's slope (found by the test: ground −13, rising 5 m over 24 m, the path clear of solids) — up the slope nose-up at the walk
+  speed with the feet on the ground every frame, a right-angle turn on the spot, s stepping back or not by the legs, a 0.2 m step kept, a ledge
+  fallen off and landed (a flapper sinks at its buoyancy instead), the hop — the legs-only bodies sink back in a second, the ram swims off at 10 m/s —
+  and the beach above it walked ashore at the walk speed. Green on both tiers.
+- **Seen** (dev.html, the loop by hand, `test/render/v78_picker_*.png`): the picker on the shelf floor from behind, walking; on the slope with its nose
+  36° up and the beach in view; across the slope leaning 27° into it, its silt trail behind. Not seen: the strand walk in play, the hop, a flapper's
+  switch from walking to swimming.
+
+**Unseen, ask in this order:**
+1. **The walker's camera**: with the body pitched to the slope the camera pitches with it (the lead is about the body's facing); on a steep climb it looks
+   up the hill. Whether the camera should stay level on the floor.
+2. **The hop** at 2.5 m/s under water and the sink at 1.2: a picker hops 0.44 m and is down in a second.
+3. **Which legs back**: jointed pairs yes, paddle rows and rear pairs no — a scuttle cannot reverse.
+4. **The lean** at 0.8 of the side slope, and the pitch at the whole of the fore-and-aft one.

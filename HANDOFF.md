@@ -1,5 +1,14 @@
 # HANDOFF — tethys
 
+**v11.78 (22 Sep 2026): walking on the floor (CHANGELOG v11.75's scope on v11.77's model).** A legged body with its feet on the ground, wet or dry, walks
+(player.js `WALK`): held at its kind's clearance (the world's rule, `C.clear`), along its facing at derive's walk speed, back where its legs are jointed pairs
+(`LEGS_BACK`), the turn about up at the full rate, the pitch and the lean the slope's (`groundGrad`, `rollBias`), its feet kept down a step and off a ledge it falls,
+out of the current, a hop on space; off the floor a flapper with legs swims and a legs-only body sinks back (`canSwim`, `WALK.sink`). 63 lines in player.js and one
+in fx.js against v11.75's estimate of 40 — the clearance, the ledge, the current, the lean, the legs' style and the legs-only sink were not in it; the camera needed
+nothing. `test/steer.js` walks the picker, the scuttle and the ram up the west shelf's slope, turns, backs, steps, falls off a ledge, hops and walks the beach
+above. Seen: the picker on the floor, nose-up on the slope, leaning across it (`test/render/v78_picker_*.png`). **Ask first** whether the camera should stay level
+on a slope, then the hop and the sink, then which legs may back, then the lean.
+
 **v11.77 (22 Sep 2026): the animal steers itself (the person's decision of 21 Sep, DESIGN The player).** The mouse sets a heading; the body's own facing turns toward
 it at derive's turn rate by the world's rule (player.js `turnRateOf`, `faceToward`; `STEER`: ease 0.3 rad, the camera's lead 1 rad, the arc in the air at 2×, a jetter backs
 at 0.6, a fish brakes at 2.5 × the coast, the keys turn at the body's rate) and the orientation is composed from that facing (`faceQ`) — no lookAt against up anywhere in the
@@ -29,8 +38,7 @@ the only number that moved), the jet's squeeze and the sprint are derive's (`DER
 speed derive's `walk`, venom and immunity the founder species' `DEFS` row (creatures_defs.js `founderDef`, rows for the three presets; the line's young
 run the founder's row on their own body — **this is the seam LINEAGE §8.2's derived DEFS replaces**). An ability is a part's (`ABILITIES`, the stand-in
 for the ganglion model, CREATOR.md): ink the mantle, stun a tail, withdraw a shell wide enough, **ram** the ram's blow, **shut** the valves (Q held: still,
-shell to every edge, not invulnerable); the three presets keep exactly theirs. A founder that hunts nothing has no hunger clock. **Walking: not built** — a
-legged player walks on the strand and is a free swimmer under water; CHANGELOG v11.75 says what floor walking would take. **Ask first** which species
+shell to every edge, not invulnerable); the three presets keep exactly theirs. A founder that hunts nothing has no hunger clock. **Ask first** which species
 should not be offered (the traps, the hood, the forage, the immortals, the big — the sickle is framed from 21 m), then the stun that does not scale,
 the camera's line, the flap burst, Q with two abilities.
 

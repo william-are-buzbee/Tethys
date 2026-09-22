@@ -8,7 +8,7 @@ const fs=require('fs'),path=require('path');
 const ROOT=path.join(__dirname,'..');
 const ORDER=fs.readFileSync(path.join(ROOT,'src','order.txt'),'utf8').split('\n').map(s=>s.trim()).filter(s=>s&&s[0]!=='#');
 let js=ORDER.map(n=>fs.readFileSync(path.join(ROOT,'src',n+'.js'),'utf8')).join('\n');
-js+='\nglobal.__st={player,choose,keys,founderClade,hurtPlayer,waveH,groundAt,cellsAround,STEER,PITCH_MAX,TURN_MIN,camera,creatures,removeCreature,setTouch:(o)=>{tstate.L=o?{id:0,x0:100,y0:400,x:100+70*o.mx,y:400-70*o.mz,t0:0,moved:1}:null;},toggleFP,get t(){return t;},setT:(v)=>{t=v;},get mode(){return mode;},setMode:(m)=>{mode=m;}};';
+js+='\nglobal.__st={player,choose,keys,founderClade,hurtPlayer,waveH,groundAt,cellsAround,STEER,PITCH_MAX,TURN_MIN,camera,creatures,removeCreature,WALK,solidPush,V3,setTouch:(o)=>{tstate.L=o?{id:0,x0:100,y0:400,x:100+70*o.mx,y:400-70*o.mz,t0:0,moved:1}:null;},toggleFP,get t(){return t;},setT:(v)=>{t=v;},get mode(){return mode;},setMode:(m)=>{mode=m;}};';
 const tmp=path.join(require('os').tmpdir(),'tethys_steer.js');
 fs.writeFileSync(tmp,'(function(){"use strict";\n'+js+'\n})();');
 process.env.PICK='0';
@@ -92,5 +92,53 @@ function run(C,label){
 }
 const soft=X.founderClade('soft'),finC=X.founderClade('fin'),coil=X.founderClade('coil'),hose=X.founderClade('hose'),sickle=X.founderClade('sickle');
 run(finC,'finback');run(soft,'soft-arm');run(coil,'coilshell');run(hose,'hose (hingeshell)');run(sickle,'sickle (the slowest hingeshell)');
+// ---- walking on the floor (v11.78): a legged founder walks a slope nose-up at derive's walk speed, turns on the spot, steps back where its legs are
+// jointed, keeps its feet down a step and falls off a ledge, hops, cannot swim when its legs are all it has (and sinks back), walks the strand; a
+// flapper with legs (the ram) walks on the floor and swims off it ----
+// the west shelf's slope (ground −14..−5, gradient 0.2–0.5, rising 5 m over 24 m uphill) and the beach above it (ground +0.6..2, the sea behind, rising ahead), each with a path clear of rock (the picker walked into a boulder and stood there: contact, not the walk)
+const gh=(x,z)=>X.groundAt(x,z),gradAt=(x,z)=>({x:(gh(x+1,z)-gh(x-1,z))/2,z:(gh(x,z+1)-gh(x,z-1))/2});
+function clearPath(x,z,ux,uz,len){for(let s=-2;s<=len;s+=2){const px=x+ux*s,pz=z+uz*s,p=X.V3(px,gh(px,pz)+1.0,pz);if(X.solidPush(p,1.2,null,null,true))return false;}return true;}
+function findSpot(kind){for(let x=-330;x<=-260;x+=4)for(let z=0;z<=100;z+=4){const h=gh(x,z);const g=gradAt(x,z),gl=Math.hypot(g.x,g.z)||1e-9,ux=g.x/gl,uz=g.z/gl;
+    if(kind==='slope'){if(!(h>-14&&h<-5&&gl>0.2&&gl<0.5))continue;if(!(gh(x+12*ux,z+12*uz)-h>2.6&&gh(x+24*ux,z+24*uz)-h>5))continue;P.pos.set(x,h+2,z);X.cellsAround();if(clearPath(x,z,ux,uz,26))return [x,z];}
+    else{if(!(h>0.6&&h<2&&gl>0.08&&gl<0.3))continue;if(!(gh(x+8*ux,z+8*uz)-h>0.6&&gh(x+16*ux,z+16*uz)-h>1.2&&gh(x-8*ux,z-8*uz)-h<-0.6))continue;P.pos.set(x,h+2,z);X.cellsAround();if(clearPath(x,z,ux,uz,16))return [x,z];}}
+  return null;}
+let SLOPE=null,STRAND=null;
+function walkRun(id,label){
+  const C=X.founderClade(id);X.setMode('menu');X.choose(C);P.dead=false;clearKeys();X.setT(120);
+  const ls=P.clade.landSpeed,cap=P.clade.turn*DEG*1.05,capAir=cap*X.STEER.air,grad=gradAt;
+  if(!SLOPE){SLOPE=findSpot('slope');STRAND=findSpot('strand');console.log('the slope at '+SLOPE+' (ground '+gh(SLOPE[0],SLOPE[1]).toFixed(1)+'), the strand at '+STRAND+' (ground '+gh(STRAND[0],STRAND[1]).toFixed(1)+')');}
+  const set=(x,z,dy)=>{const h=gh(x,z);P.pos.set(x,h+P.clade.clear+(dy||0.05),z);P.vel.set(0,0,0);P.hold=null;X.cellsAround();P.grounded=true;P.wasGrounded=true;};
+  set(SLOPE[0],SLOPE[1]);const g=grad(P.pos.x,P.pos.z);P.yaw=P.byaw=Math.atan2(-g.x,-g.z);P.pitch=P.bpitch=0;global.__step(30); // facing uphill
+  console.log(label+': walk '+ls+' m/s (swims '+P.clade.speed+', mode '+P.clade.mode+', canSwim '+P.clade.canSwim+', backs '+P.clade.legsBack+'), clearance '+P.clade.clear.toFixed(2)+' m, turn '+P.clade.turn+' rad/s; the slope '+Math.hypot(g.x,g.z).toFixed(2)+' at '+P.pos.y.toFixed(1)+' m');
+  const walk=(name,n,ks,head)=>{clearKeys();Object.assign(K,ks||{});for(const c of X.creatures.slice())X.removeCreature(c);let gr=0,pit=0,nan=0,ymin=1e9,ymax=-1e9,off=0,over=0,last=fwdQ(P.g.quaternion);const p0=P.pos.clone();
+    for(let i=0;i<n;i++){if(head)head(i);global.__step(1);const f=fwdQ(P.g.quaternion),turn=ang(f,last)/DT;last=f;if(P.grounded)gr++;pit+=P.bpitch;if(!fin(P.pos)||!fin(P.vel)||!isFinite(P.rollBias||0))nan++;ymin=Math.min(ymin,P.pos.y);ymax=Math.max(ymax,P.pos.y);if(i>0&&turn>(P.grounded?cap:capAir))over++;}
+    const f=fwdQ(P.g.quaternion),h={x:-Math.sin(P.yaw),y:0,z:-Math.cos(P.yaw)},fh={x:f.x,y:0,z:f.z};const l=Math.hypot(fh.x,fh.z)||1;fh.x/=l;fh.z/=l;off=ang(fh,h);
+    const d=P.pos.clone().sub(p0),along=d.x*fh.x+d.z*fh.z,spd=Math.hypot(d.x,d.z)/(n*DT);
+    const r={name,gr:gr/n,pitch:pit/n,nan,ymin,ymax,off,over,along,spd,rise:P.pos.y-p0.y,ground:gh(P.pos.x,P.pos.z),sub:P.sub,lean:P.rollBias||0};
+    console.log('  '+name.padEnd(12)+' grounded '+(r.gr*100).toFixed(0).padStart(3)+'%  pitch '+(r.pitch*DEG).toFixed(0).padStart(4)+'°  lean '+(r.lean*DEG).toFixed(0).padStart(3)+'°  off '+r.off.toFixed(1).padStart(5)+'°  along '+r.along.toFixed(1).padStart(6)+' m  '+r.spd.toFixed(2)+' m/s  rise '+r.rise.toFixed(2).padStart(6)+'  y '+P.pos.y.toFixed(1)+' over '+r.ground.toFixed(1)+'  sub '+r.sub.toFixed(2)+(r.nan?'  NaN '+r.nan:'')+(r.over?'  spikes '+r.over:''));return r;};
+  const up=walk('uphill',240,{KeyW:true});
+  check(up.nan===0&&up.over===0,label+': no NaN and no spike walking');
+  check(up.gr>0.95&&up.rise>1&&up.pitch>0.08,label+': walks up the slope with its feet on the ground ('+(up.gr*100).toFixed(0)+'% grounded), rose '+up.rise.toFixed(1)+' m, nose up '+(up.pitch*DEG).toFixed(0)+'°');
+  check(Math.abs(up.spd-ls)<ls*0.4,label+': at derive\'s walk speed ('+up.spd.toFixed(2)+' of '+ls+' m/s)');
+  const y0=P.yaw;P.yaw=y0+HPI2;const tn=walk('turn',120,{KeyW:true});
+  check(tn.off<5&&tn.gr>0.95,label+': turns on its legs to a heading a right angle off ('+tn.off.toFixed(1)+'° left after 2 s)');
+  walk('settle',40,{});const bk=walk('back',120,{KeyS:true});
+  check(P.clade.legsBack?bk.along<-0.8:Math.abs(bk.along)<0.4,label+(P.clade.legsBack?': steps back on s ('+bk.along.toFixed(1)+' m)':': cannot step back on s — its legs are a paddle row ('+bk.along.toFixed(1)+' m)'));
+  // a step and a ledge: lifted a little it keeps its feet; lifted a body's height it is off the ground and falls back onto it
+  P.pos.y+=0.2;const st=walk('a step',30,{});
+  check(st.gr>0.9,label+': a step of 0.2 m keeps its feet on the ground ('+(st.gr*100).toFixed(0)+'%)');
+  P.pos.y+=X.WALK.step*Math.max(0.8,P.clade.size)+1.5;let fell=0,landed=-1;clearKeys();for(let i=0;i<240;i++){global.__step(1);if(!P.grounded)fell++;else if(fell>3&&landed<0)landed=i;}
+  check(fell>3&&(landed>0||(P.clade.canSwim&&P.vel.y<0)),label+': off a ledge it '+(landed>0?'falls ('+fell+' frames in the water) and lands again at '+(landed*DT).toFixed(1)+' s':'is off the ground, sinking at '+(-P.vel.y).toFixed(2)+' m/s (a swimmer settles at its buoyancy)'));
+  // the hop: off the floor; a legs-only body has no thrust in the water and sinks back; a flapper swims away
+  const yb=P.pos.y;let hopped=0,hs=0,land=-1,peak=yb,vmax=0;clearKeys();K.KeyW=true;K.Space=true;global.__step(2);K.Space=false;for(let i=0;i<300;i++){global.__step(1);if(!P.grounded){hopped++;peak=Math.max(peak,P.pos.y);vmax=Math.max(vmax,P.vel.length());}else if(hopped>3&&land<0){land=i;break;}}
+  if(P.clade.canSwim)check(hopped>100&&land<0&&vmax>ls*1.5,label+': hops off the floor and swims away on its flaps ('+vmax.toFixed(1)+' m/s, off the ground for '+hopped+' frames)');
+  else check(hopped>3&&land>0&&vmax<ls*1.3,label+': hops '+(peak-yb).toFixed(2)+' m off the floor, cannot swim (top '+vmax.toFixed(1)+' m/s with w held) and sinks back onto it at '+(land*DT).toFixed(1)+' s');
+  // the strand
+  set(STRAND[0],STRAND[1]);{const g2=grad(P.pos.x,P.pos.z);P.yaw=P.byaw=Math.atan2(-g2.x,-g2.z);}P.pitch=P.bpitch=0;global.__step(20); // up the beach, away from the sea
+  const sd=walk('the strand',180,{KeyW:true});
+  check(sd.sub<0.5&&sd.gr>0.9&&sd.along>3&&Math.abs(sd.spd-ls)<ls*0.4&&sd.nan===0,label+': walks the strand ashore ('+sd.along.toFixed(1)+' m at '+sd.spd.toFixed(2)+' m/s, '+(sd.gr*100).toFixed(0)+'% grounded)');
+}
+const HPI2=Math.PI/2;
+walkRun('picker','picker (walk legs)');walkRun('scuttle','scuttle (paddle legs)');walkRun('ram','ram (flaps and legs)');
 console.log(fails?'\nsteer: '+fails+' FAILED':'\nsteer: all ok');
 process.exit(fails?1:0);
