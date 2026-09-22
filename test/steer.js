@@ -8,7 +8,7 @@ const fs=require('fs'),path=require('path');
 const ROOT=path.join(__dirname,'..');
 const ORDER=fs.readFileSync(path.join(ROOT,'src','order.txt'),'utf8').split('\n').map(s=>s.trim()).filter(s=>s&&s[0]!=='#');
 let js=ORDER.map(n=>fs.readFileSync(path.join(ROOT,'src',n+'.js'),'utf8')).join('\n');
-js+='\nglobal.__st={player,choose,keys,founderClade,hurtPlayer,waveH,groundAt,cellsAround,STEER,PITCH_MAX,TURN_MIN,camera,creatures,removeCreature,WALK,solidPush,V3,HEAD_MAX,setTouch:(o)=>{tstate.L=o?{id:0,x0:100,y0:400,x:100+70*o.mx,y:400-70*o.mz,t0:0,moved:1}:null;},toggleFP,get t(){return t;},setT:(v)=>{t=v;},get mode(){return mode;},setMode:(m)=>{mode=m;}};';
+js+='\nglobal.__st={player,choose,keys,founderClade,hurtPlayer,waveH,groundAt,cellsAround,STEER,PITCH_MAX,TURN_MIN,camera,creatures,removeCreature,WALK,solidPush,V3,HEAD_MAX,FX,fxToggle,setTouch:(o)=>{tstate.L=o?{id:0,x0:100,y0:400,x:100+70*o.mx,y:400-70*o.mz,t0:0,moved:1}:null;},toggleFP,get t(){return t;},setT:(v)=>{t=v;},get mode(){return mode;},setMode:(m)=>{mode=m;}};';
 const tmp=path.join(require('os').tmpdir(),'tethys_steer.js');
 fs.writeFileSync(tmp,'(function(){"use strict";\n'+js+'\n})();');
 process.env.PICK='0';
@@ -94,6 +94,15 @@ function run(C,label){
 }
 const soft=X.founderClade('soft'),finC=X.founderClade('fin'),coil=X.founderClade('coil'),hose=X.founderClade('hose'),sickle=X.founderClade('sickle');
 run(finC,'finback');run(soft,'soft-arm');run(coil,'coilshell');run(hose,'hose (hingeshell)');run(sickle,'sickle (the slowest hingeshell)');
+// ---- free look (v11.77.3, the effects list's switch): the mouse spins the camera round a body that holds; w turns it toward the camera — pivoting first when it faces it, the thrust fading in as it comes round ----
+for(const [C,label] of [[finC,'finback'],[sickle,'sickle']]){
+  X.setMode('menu');X.choose(C);P.dead=false;clearKeys();X.setT(120);place(700,-90,-700);P.yaw=P.byaw=0.4;P.pitch=P.bpitch=0;global.__step(30);const cap=P.clade.turn*DEG*1.05;
+  if(!X.FX.freeLook)X.fxToggle('freeLook');check(X.FX.freeLook===true,label+': free look on');
+  const y0=P.byaw;P.yaw=y0+Math.PI;const hold=phase('spun round',120,{},null,cap,cap*X.STEER.air);
+  check(Math.abs(hold.off-180)<2&&Math.abs(P.byaw-y0)<1e-6&&Math.abs(P.yaw-y0-Math.PI)<1e-9,label+': the camera spun round the back and the body held its facing ('+hold.off.toFixed(0)+'° off, the heading unclamped)');
+  clearKeys();K.KeyW=true;global.__step(10);const early=P.vel.length();const come=phase('w',360,{KeyW:true},null,cap,cap*X.STEER.air);
+  check(early<0.8&&come.off<3&&come.spd>P.clade.speed*0.5&&come.over===0,label+': w turns it toward the camera — pivoting first ('+early.toFixed(2)+' m/s after ten frames, facing the camera), then swimming off ('+come.spd.toFixed(1)+' m/s, '+come.off.toFixed(1)+'° off after six seconds), no spike');
+  X.fxToggle('freeLook');check(X.FX.freeLook===false,label+': free look off again');}
 // ---- walking on the floor (v11.78): a legged founder walks a slope nose-up at derive's walk speed, turns on the spot, steps back where its legs are
 // jointed, keeps its feet down a step and falls off a ledge, hops, cannot swim when its legs are all it has (and sinks back), walks the strand; a
 // flapper with legs (the ram) walks on the floor and swims off it ----

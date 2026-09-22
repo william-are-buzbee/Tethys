@@ -191,23 +191,26 @@ function updatePlayer(dt){
   const airborne=sub<0.5&&!P.grounded,strand=sub<0.5&&P.grounded,walker=C.legs&&P.grounded&&!P.dead; // v11.78: a legged body on the ground, wet or dry, walks
   P.hopT=Math.max(0,(P.hopT||0)-dt);
   // the heading (v11.77): the mouse's, held within HEAD_MAX of the body's facing (v11.77.1) — the camera looks along it
-  let rate=turnRateOf(P);if(walker)rate=C.turn*(P.turnK||1); // legs pivot at any pace
-  P.yaw=P.byaw+clamp(wrapA(P.yaw-P.byaw),-HEAD_MAX,HEAD_MAX);P.pitch=clamp(P.bpitch+clamp(P.pitch-P.bpitch,-HEAD_MAX,HEAD_MAX),-PITCH_MAX,PITCH_MAX);
+  const fz=mz>0?1:0,dirK=!still&&!P.dead&&(fz||mx||(my&&!walker)); // a direction key is down (the keys' direction, below)
+  let rate=turnRateOf(P);if(walker||dirK)rate=C.turn*(P.turnK||1); // legs pivot at any pace; and a body thrusting into a turn turns at its full rate whatever its speed (v11.77.3: the sickle at rest turned at 15°/s and a free-look pivot took twelve seconds) — the pace's share is for a body looking round at rest
+  const free=!!FX.freeLook; // v11.77.3 (the person, 22 Sep 2026: "an option to change the camera back to the old version, where you can spin the camera around completely without moving the player at all; only once you hit w you begin to move towards the camera"): the effects list's switch — the heading unclamped, the body holding until a key is down
+  if(free)P.pitch=clamp(P.pitch,-PITCH_MAX,PITCH_MAX);else{P.yaw=P.byaw+clamp(wrapA(P.yaw-P.byaw),-HEAD_MAX,HEAD_MAX);P.pitch=clamp(P.bpitch+clamp(P.pitch-P.bpitch,-HEAD_MAX,HEAD_MAX),-PITCH_MAX,PITCH_MAX);}
   // the facing: toward the heading in the water; a walker's yaw to the heading, its pitch and lean the ground's slope under it (v11.78); in the air (and a fish flopping on the strand) along the arc; held while still or lying
   let ty=P.yaw,tp=P.pitch;P.rollBias=0;
   // the keys' direction (v11.77.2, the person: the animal changes direction when it goes left, right, up or down): w, a, d, space and c together are a
   // direction in the heading's frame — the camera's — and the body turns into it at its own rate and swims where it faces. a alone turns it a right
   // angle left and away, w with space is a 39° climb, space alone straight up. s alone is the brake or the back, never a turn. Off the floor only (a walker's pitch is the slope's, its hop the key's)
-  const fz=mz>0?1:0,dirK=!still&&!P.dead&&(fz||mx||(my&&!walker));
   if(dirK){const cp=Math.cos(P.pitch),hx=-Math.sin(P.yaw)*cp*fz+Math.cos(P.yaw)*mx,hy=Math.sin(P.pitch)*fz+(walker?0:my*0.8),hz=-Math.cos(P.yaw)*cp*fz-Math.sin(P.yaw)*mx,hl=len3(hx,hy,hz); // the heading's forward × w, its right (cos yaw, 0, −sin yaw) × a/d, up × space/c
     if(hl>1e-6){tp=Math.asin(clamp(hy/hl,-1,1));ty=hx*hx+hz*hz>1e-8?Math.atan2(-hx,-hz):P.byaw;}}
+  else if(free&&!airborne&&!strand){ty=P.byaw;tp=P.bpitch;} // free look: no key, the body holds while the camera goes round it
   if(walker){const hx=-Math.sin(P.byaw),hz=-Math.cos(P.byaw),g=groundGrad(P.pos.x,P.pos.z,GG);tp=Math.atan(g.x*hx+g.z*hz);P.rollBias=Math.atan(g.x*-Math.cos(P.byaw)+g.z*Math.sin(P.byaw))*WALK.lean;} // the slope along the facing, and across it (the body's local +x — its left, facing +z — is (−cos byaw, 0, sin byaw); a positive roll lifts it)
   else if(airborne||strand){const v=P.vel.length();if(v>1.2){ty=Math.atan2(-P.vel.x,-P.vel.z);tp=Math.asin(clamp(P.vel.y/v,-1,1));rate*=STEER.air;}else{ty=P.byaw;tp=P.bpitch;}}
   if(still||P.dead){ty=P.byaw;tp=P.bpitch;}
   faceToward(P,ty,tp,rate,dt);faceQ(P);
   const bf=bodyFwd(P,T3); // the body's own axis: what the thrust runs along (v11.77.2: the keys turn the body, above; the thrust follows the body)
   const rev=walker?(C.legsBack?STEER.rev.legs:0):C.jet?STEER.rev.jet:0,swims=walker||C.canSwim||sub<0.5; // s: back where the body can (a jetter's funnel, jointed legs on the ground), else the brake; a legs-only body off the floor under water has no thrust
-  const th=still||!swims?0:dirK?1:mz<0?-rev:0,brake=!still&&mz<0&&!rev&&!walker&&!dirK; // any direction key drives it forward along the body it is turning; s alone backs or brakes
+  const al=dirK?clamp(1+Math.cos(P.bpitch)*Math.cos(tp)*Math.cos(wrapA(ty-P.byaw))+Math.sin(P.bpitch)*Math.sin(tp),0,1):1; // the thrust by the body's alignment with where the keys point: full within a right angle, none facing away — facing the camera, it pivots first (v11.77.3: never the old backwards swim toward the camera)
+  const th=still||!swims?0:dirK?al:mz<0?-rev:0,brake=!still&&mz<0&&!rev&&!walker&&!dirK; // any direction key drives it forward along the body it is turning; s alone backs or brakes
   const move=T1.copy(bf).multiplyScalar(th);
   const moving=th!==0;
   let spd=walker?(C.landSpeed||4):C.speed;if(!walker&&C.sprint&&sprint)spd*=C.sprint; // a walker's Froude speed is its ceiling (v11.75)

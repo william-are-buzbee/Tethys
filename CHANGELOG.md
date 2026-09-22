@@ -5277,3 +5277,24 @@ kept its facing, where the person wanted the animal to turn into the movement as
   pitch it ±39° with w and put 60% of the velocity vertical; the touch stick turns it into its sidestep; a flick stops 86–89° off the body. Green on both tiers.
 - **Seen** (`test/render/v772_fin_*.png`): the finback turned left of the camera under w and a, climbing under w and space, and the flick stopped at
   its flank.
+
+## v11.77.3 — free look (22 Sep 2026)
+
+The person looked at v11.77.2: "Much, much better." One ask: "an option to change the camera back to the old version, where you can spin the camera
+around completely without moving the player at all. It's only once you hit w that you begin to move towards the camera … Right now I can't turn the
+screen without turning the character."
+
+- **`free look`** on the effects list (effects.js `FX.freeLook`, off by default; the one switch there that is not a drawing): the heading is unclamped
+  (`HEAD_MAX` off) and the body holds its facing until a movement key is down, then turns toward the keys' direction in the camera's frame as v11.77.2
+  has it. Off, the mouse steers the animal and the camera is held within `HEAD_MAX` of it, as v11.77.1–2.
+- **The old backwards swim cannot return**: the thrust runs by the body's alignment with where the keys point (`al`: full within a right angle of it,
+  none facing away), so with the camera behind its face and w down the body pivots first and the thrust fades in as it comes round — never the body
+  swimming tail-first toward the camera.
+- **A body thrusting into a turn turns at its full rate** whatever its speed (`rate` under `dirK`, as a walker's): the pace's share (`TURN_MIN` at
+  rest) is for a body looking round with no key down. Found by the test: the sickle at rest turned at 15°/s and a free-look pivot from facing the
+  camera took twelve seconds; at its 44°/s it takes four.
+- **Tests** (`test/steer.js`, the free-look section, the finback and the sickle): the camera spun round the back with the body holding at 180°, the
+  heading unclamped; w from there — 0.25 m/s after ten frames (the pivot), then swimming off at 6.1 and 7.0 m/s within 3° of the camera in six
+  seconds, no spike; the switch off again. Green on both tiers.
+- **Seen** (`test/render/v773_fin_*.png`): the finback face-on with the camera spun behind its face and the body holding; ten frames into w, pivoting
+  in place; and swum off away from the camera.

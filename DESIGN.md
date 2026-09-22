@@ -1728,7 +1728,10 @@ In the air the facing follows the velocity at `STEER.air` 2 × the rate (a fish 
 a push and a flinch. The camera (`finishPlayer`) is the mouse's — the heading's angles, as before v11.77 (v11.77.1: "moving the camera is useless, it just disorients"; the
 lead of v11.77 struck) — and the heading is held within `HEAD_MAX` 1.6 rad (92°; 80 in v11.77.1, raised so a alone does not drag the camera) of the body's facing in yaw and pitch, so a flick round the back stops there and the mouse
 drags the animal round at its rate: the camera never looks it in the face and never moves on its own; its up is its own angles' (`_m.lookAt` with that up); first person
-looks along the heading from the nose. `bodyPose`'s bank, the compass, the world map and the audio's swish read the
+looks along the heading from the nose. **Free look** (v11.77.3, the effects list's `freeLook`, off by default; the person: "an option to change the camera back to the old
+version"): the heading unclamped and the body holding its facing until a movement key is down, then turning into the keys' direction; the thrust runs by the body's
+alignment with where the keys point (`al`: full within a right angle, none facing away — facing the camera it pivots first, so the old tail-first swim toward the camera
+cannot return), and a body thrusting into a turn turns at its full rate whatever its speed (the pace's share is for a body looking round at rest). `bodyPose`'s bank, the compass, the world map and the audio's swish read the
 body's own yaw and `angV`. `test/steer.js` is the proof. Open (CHANGELOG v11.77, v11.77.1): the rate at rest, `HEAD_MAX`, the sidestep at full speed, the drift, the pitch limit.
 
 **The editor at conception (v11.72, `line.js`; LINEAGE §13.4).** `x` no longer lays at once: `playerLay` checks the floor and the stomach (v11.73) and
@@ -1907,7 +1910,7 @@ distance — a designed pass, not a knob. `render` is CPU submission; the GPU ru
 - **The effects list (v11.23, `effects.js`, `#fx`):** the cosmetic systems switchable live — caustics (with a `brightness` slider under it, v11.38.1: `FX_SLIDERS`, a number in `FX_DEF` that persists with the switches), pixel light (v11.38: the caustic and the shadows in blocks, or smooth; off by default since v11.38.1), texels (v11.40–41, its own row since v11.41.1: every tinted surface in texels with a pattern per cell, PIXEL.md; off by default), banded light (v11.41.2: the light posterised with the texels' colour, or smooth; off), shadows, world shadows, ground shadows (v11.30), sharp shadows, light shafts,
   marine snow, rain, clouds, surface glow, vignette — in the lab panel's look, on the right. `options` on the menu (v11.47; the `effects` word
   at the bottom right is gone), or `e` on the menu and in play (the pointer is released while it is open, taken back on close; escape or a click on the canvas closes it).
-  Saved in localStorage (`tethys.fx`). Each system reads `FX.key` where it draws; a switch is a key in `FX_DEF`, a row in `FX_LIST`, a read.
+  `free look` (v11.77.3) is the one row that is not a drawing: the camera model (The player). Saved in localStorage (`tethys.fx`). Each system reads `FX.key` where it draws; a switch is a key in `FX_DEF`, a row in `FX_LIST`, a read.
 - Controls (the hint, `menu.js`; v11.77.1): mouse steers, w a s d swim, space rise, c dive, shift burst, q ability, click bite, m mute, esc menu; mouse
   look by pointer lock from the first frame of play (`choose` asks for it in the menu word's click), Tab releases it and shows the cursor, Tab or a click
   takes it back; a click while locked is the bite; drag-to-look if the lock is blocked (e.g. inside an iframe). v11.13.1: the invisible

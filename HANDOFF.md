@@ -3,8 +3,10 @@
 **v11.77.2 (22 Sep 2026): the body turns into the keys.** The person looked at v11.77.1 (a and d swapped — my sign; the body not turning into a sidestep or a climb):
 w, a, d, space and c are together a direction in the camera's frame (player.js `dirK`) and the body turns into it at its rate, swimming where it faces — a alone a right
 angle left and away, w with space a 39° climb, space alone straight up, never a flip; s alone brakes or backs. The camera is the heading's as before v11.77, held within
-`HEAD_MAX` 92° of the body's facing so it never looks the animal in the face and a alone does not drag it; v11.77's turn keys and camera lead are struck. **Ask first**
-whether the 92° stop on a flick reads as a drag or a wall.
+`HEAD_MAX` 92° of the body's facing so it never looks the animal in the face and a alone does not drag it; v11.77's turn keys and camera lead are struck. **v11.77.3:** the person's ask after v11.77.2 ("much, much better") — `free look` on the effects list (`FX.freeLook`, off by default): the mouse spins the camera round a
+body that holds until a movement key is down, then it turns into the keys' direction; the thrust runs by the body's alignment with the keys (`al`: facing the camera it
+pivots first, never the old tail-first swim), and a body thrusting into a turn turns at its full rate whatever its speed. **Ask first** whether free look should be the
+default, then whether the 92° stop on a flick reads as a drag or a wall with it off.
 
 **v11.78 (22 Sep 2026): walking on the floor (CHANGELOG v11.75's scope on v11.77's model).** A legged body with its feet on the ground, wet or dry, walks
 (player.js `WALK`): held at its kind's clearance (the world's rule, `C.clear`), along its facing at derive's walk speed, back where its legs are jointed pairs
