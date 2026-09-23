@@ -1,6 +1,6 @@
 # PLANKTON.md — the water's own life: the field, the day, the year, the colour and the swarm
 
-**Status: pass 1 built as v11.81 (22 Sep 2026) — the field (`plank`), the three kinds through the veil, the front ring by the tide, the storm's pulse, the canopy strip of §12; the bloom map went into the water and floor maps' free channels (the shaders were at 16 texture units); v11.81.1 turned the green down after the person's look. Pass 2 built as v11.82 (22 Sep): the snow's `live` off the field, its colour by kind, the chain kind. Passes 3–6 designed, not built; the year's length answered 22 Sep (§15: ~185 days).** Written from a discussion of 22 Sep about marine snow — the person: marine snow is
+**Status: pass 1 built as v11.81 (22 Sep 2026) — the field (`plank`), the three kinds through the veil, the front ring by the tide, the storm's pulse, the canopy strip of §12; the bloom map went into the water and floor maps' free channels (the shaders were at 16 texture units); v11.81.1 turned the green down after the person's look. Pass 2 built as v11.82 (22 Sep): the snow's `live` off the field, its colour by kind, the chain kind. Pass 3 built as v11.83 (22 Sep): the tilt, `YEAR_D` 185, the seasonal wind, the mixed layer and the crops by season — less §5's migration, which goes with the swarms (pass 4: the snow's live kind is the crop, and the crop does not migrate). The ledger does not read the season (the census stands); the swarms will. Passes 4–6 designed, not built; the year's length answered 22 Sep (§15: ~185 days).** Written from a discussion of 22 Sep about marine snow — the person: marine snow is
 "one of the more important effects in the game visually for keeping orientation, space and size disparity intact", and refining it
 asks the microbial question. This doc answers it once for the whole game: what lives in the water, what decides it, what it does to
 the light, and how much of it the simulation actually carries. Upstream: `PLANET.md` (the chemocline, the upwelling, the trades, the
@@ -133,7 +133,9 @@ The person (22 Sep): seasons yes, "even if they're subtle". They are worth havin
 - **The risk, named.** Seasonal `nut` feeds capacity through every envelope in the ledger, and `test/census.js` fails if any kind
   collapses under a fifth. So the season must mostly move food **around** rather than switch it off: a swing of about **±20%**
   basin-wide and up to **±60%** locally on the flank and in the lee, with the two out of phase. Census runs at four points in the
-  year before this ships, not one.
+  year before this ships, not one. **Built otherwise (v11.83):** the season moves the crop and the weather, not `nut` — `sample()` stays a
+  function of place and the ledger's capacity does not breathe; it will through the swarms (pass 4), which are ledger records that eat the crop.
+  The mixed layer by season is 64 m × (1 + 0.3·s): 83 windy, 45 still.
 - **What it buys, honestly.** Three things. The sea looks different across a line's lives instead of only across a 40-minute day;
   populations breathe, so the ecology is not a still pond; and a lineage acquires history — "the year my line lived through" is the
   cheapest generational memory the game can have.

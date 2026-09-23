@@ -110,10 +110,10 @@ const WX={},cirrTmp=[0,0,0];
 function skyLerp(out,keys,idx,s){let a=keys[0],b=keys[keys.length-1];for(let i=1;i<keys.length;i++)if(s<=keys[i][0]){a=keys[i-1];b=keys[i];break;}
   const u=clamp((s-a[0])/(b[0]-a[0]),0,1),ca=a[idx],cb=b[idx];out[0]=lerp(ca[0],cb[0],u);out[1]=lerp(ca[1],cb[1],u);out[2]=lerp(ca[2],cb[2],u);return out;}
 function updateSky(dt){const K=SKY;
-  skyDir(sunHA(clockH),K.sun);skyDir(moonHA(clockH),K.moon);K.sunAlt=K.sun.y;K.moonAlt=K.moon.y;K.illum=0.5*(1-K.sun.dot(K.moon)); // the lit fraction from the geometry (v11.17.1; moonIllum(h) was a cosine on the hour, an hour out of step with the conjunctions)
+  skyDir(sunHA(clockH),K.sun,sunDec(clockH));skyDir(moonHA(clockH),K.moon);K.sunAlt=K.sun.y;K.moonAlt=K.moon.y;K.illum=0.5*(1-K.sun.dot(K.moon)); // the lit fraction from the geometry (v11.17.1; moonIllum(h) was a cosine on the hour, an hour out of step with the conjunctions)
   weatherAt(clockH,WX);K.cover=WX.cover;K.rain=WX.rain;K.rainA+=(K.rain-K.rainA)*(1-Math.exp(-0.5*dt)); // a shower arrives over a few seconds
   K.cirrus=WX.cirrus;K.upperOff[0]+=Math.cos(UPPER_A)*UPPER_U*dt;K.upperOff[1]+=Math.sin(UPPER_A)*UPPER_U*dt; // the cirrus streams on the upper wind, real time
-  for(let i=0;i<PLANETS.length;i++)skyDir(sunHA(clockH)-PLANETS[i][0]*Math.PI/180,K.plan[i]); // the wanderers on the sun's track
+  for(let i=0;i<PLANETS.length;i++){const e=PLANETS[i][0]*Math.PI/180;skyDir(sunHA(clockH)-e,K.plan[i],TILT*Math.sin(TAU*yearPhase(clockH)-e));} // the wanderers on the ecliptic (v11.83: the sun's track tilted, each at its own longitude's declination)
   // daylight at the surface as a fraction of noon's: the sun's disc is a fiftieth as bright on the horizon, the sky a tenth — in a
   // renderer without exposure the look is what counts: dusk clearly lit and warm at ~0.22, gone by six degrees under
   K.dayK=smooth(-0.12,0.05,K.sunAlt)*0.28+smooth(0,0.4,K.sunAlt)*0.72;

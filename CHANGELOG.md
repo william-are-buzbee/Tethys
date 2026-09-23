@@ -5522,3 +5522,40 @@ blue from above as all other water".
 **Unseen, ask in this order**: whether the from-above green over the flank is now too much (it is the tint squared there: once in the veil, once
 in the upwelling — a bloom seen from a boat is olive, but the number is a first guess), then whether the snow through the surface reads as
 anything at the person's screen.
+
+## v11.83 — the year: the tilt, the seasonal wind, the mixed layer and the crops by season (22 Sep 2026)
+
+PLANKTON.md §13 pass 3 (§6), on the year the person and another chat decided the same day (PLANET "Decided 22 Sep 2026": ~185 local days of 30 h,
+from the star). The person left the order to me: pass 3 first, on the current 13-day spring–neap cycle — the drift needs only two incommensurate
+periods, and everything here reads the tide's amplitude by name, so the half-distance moon changes `LUNAR_H` and `SPRING_D` and nothing in this
+pass. The day's migration (§5) is not in it: the snow's live kind is the crop, and the crop does not migrate — the grazers do, and they are the
+swarms of pass 4, which will carry the dusk rise.
+
+- **The tilt** (world.js `TILT` 0.262, `YEAR_D` 185, `YEAR_P0` 0.6; `yearPhase`, `sunDec`; `skyDir(ha, out, dec)` — the standard alt-az from latitude,
+  +z south, reducing to the old formula at declination 0). The sun's declination is 15°·sin(2π·phase): at 11.5° N it passes overhead twice a year,
+  the day runs 15.0 h at the equinox, 15.6 at the northern peak and 14.5 at the southern (`test/plankton.js`). The moon keeps declination 0 until
+  the moon pass, so the eclipse at every full moon (v11.17.1, kept on purpose then) is seasonal now: only near the equinoxes is a full moon exactly
+  antisolar. The wanderers ride the tilted ecliptic (atmosphere.js: each at its own longitude's declination). The stars still turn with the sun.
+- **The season is the wind** (`seasonAt` = −sin(2π·phase): +1 at the windy peak, the sun south — an 11.5° N island's winter, as Earth's north-east
+  trades are strongest in the northern winter; −1 at the still). `weatherAt` shifts the wind's threshold by ±0.06 (a year sampled: 224 calm hours at
+  s > 0.5 against 437 at s < −0.5) and the showers' by ±0.02, and returns `season`. Boot is phase 0.6, early in the windy half (s +0.59).
+- **The water by season** (`uFogB.w` = s, far.js `bloomTick`; `bloomC` in the JS and the GLSL from the same lines): the mixed layer 64 × (1 + 0.3 s)
+  — 83 m windy, 45 still — with the green's floor at 0.7–1.33 of it and the gold's at 0.94–1.72; the deep maximum at its base + 31 m, its width
+  35 × (1 + 0.2 s); the gold × (1 + 0.35 s), the green × (1 + 0.15 s), the red × (1 − 0.3 s). Over the fed slope: 3 m gold 0.56 windy against 0.27
+  still; 70 m the lit crop 1.10 against 0.03; the red's peak 0.44 at 75 m still against 0.24 at 115 windy. §6's table, in numbers: the windy half
+  high and shallow and olive, the still half low at the surface with a sharp deep maximum and bluer water. The snow follows, since its live kind
+  reads `bloomC` (v11.82).
+- **What the season does not touch.** `nut` and the ledger: `sample()` stays a function of place, so the census is the same at every point of the
+  year and §6's "risk, named" is not taken here. The ecology will breathe through the swarms (pass 4), which are ledger records that eat the crop.
+  PLANKTON.md §6 says so now.
+- **The readout's clock line** shows the year's phase and the season (windy / between / still). `skip(days)`: a fraction of a day moves the hour
+  (CLAUDE.md says so now — a still at `skip(27.75)` was taken at night before that was noticed).
+- **Tests**: `test/plankton.js` has the year: the windy half feeds the lit layer and mixes it deeper, the still half has the sharper, shallower deep
+  maximum and the calms, the sun's declination is 0 / +15° / −15° at the equinox and the two peaks, the day's length 15.0 / 15.6 / 14.5 h, the moon
+  unchanged. `node build.js --test` green on both tiers; census unchanged by construction.
+- **Seen** (`test/render/v83_flank_boot.png`, `v83_flank_windy.png` at day 212 in the afternoon, `v83_flank_still.png` at day 120 in the morning): the
+  fed flank's break at −20 olive-green at the windy peak and blue-teal at the still, the same pose.
+
+**Unseen, ask in this order**: whether a season no single animal can see is worth its numbers or wants a shorter year after all (§14 — 185 days is
+123 real hours; one session sees a few days of it), then whether the seasonal eclipses are wanted (v11.17.1 kept every full moon eclipsed), then
+whether the still half's blue reads as clearer water or as duller, then the sun's noon height at the two peaks (11.5° and 26.5° off the zenith).

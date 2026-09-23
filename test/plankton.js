@@ -11,7 +11,7 @@ const fs=require('fs'),path=require('path');
 const ROOT=path.join(__dirname,'..');
 const ORDER=fs.readFileSync(path.join(ROOT,'src','order.txt'),'utf8').split('\n').map(s=>s.trim()).filter(s=>s&&s[0]!=='#');
 let js=ORDER.map(n=>fs.readFileSync(path.join(ROOT,'src',n+'.js'),'utf8')).join('\n');
-js+='\nglobal.__pk={sample,plank,plankTexel,plankEnc,bloomC,bloomTint,plankAt,bloomAt,wmBloom,wmFill,wmBlur,bloomTick,FOG_B,PLK,PIGK,BLOOM_GLSL,WM_N,wcolAt,leeW,tidalAt,tideAmp,TIDE_A1,CUR_A,FI,HALF,setClock:(h)=>{clockH=h;TIDE=tideAt(h);},tide:()=>TIDE};';
+js+='\nglobal.__pk={sample,plank,sunDec,seasonAt,yearPhase,skyDir,sunHA,weatherAt,SOLAR_H0,plankTexel,plankEnc,bloomC,bloomTint,plankAt,bloomAt,wmBloom,wmFill,wmBlur,bloomTick,FOG_B,PLK,PIGK,BLOOM_GLSL,WM_N,wcolAt,leeW,tidalAt,tideAmp,TIDE_A1,CUR_A,FI,HALF,setClock:(h)=>{clockH=h;TIDE=tideAt(h);},tide:()=>TIDE};';
 const tmp=path.join(require('os').tmpdir(),'tethys_plankton_bundle.js');
 fs.writeFileSync(tmp,'(function(){"use strict";\n'+js+'\n})();');
 require('./stub.js');
@@ -80,6 +80,21 @@ function frontOn(a){const out=[];for(let r=300;r<=2400;r+=25){const x=Math.cos(a
   const A=P.bloomAt(cx,-3,cz,[0,0,0]),B=P.plankAt(cx,-3,cz,[0,0,0]);ok(Math.abs(A[0]-B[0])<0.05*B[0]+0.01&&Math.abs(A[1]-B[1])<0.05*B[1]+0.01,'bloomAt (the map) and plankAt (the field) agree there within 5% ('+A.map(v=>v.toFixed(3)).join('/')+' vs '+B.map(v=>v.toFixed(3)).join('/')+')');}
 // the GLSL carries the same numbers
 {const g=P.BLOOM_GLSL;ok(g.indexOf(P.PLK.k1.toFixed(2))>0&&g.indexOf(P.PLK.k2.toFixed(2))>0&&g.indexOf(P.PLK.front.toFixed(2))>0&&g.indexOf(P.PIGK[0].m1.map(n=>n.toFixed(3)).join(','))>0&&g.indexOf('uFogB')>0,'the GLSL is generated from PLK and PIGK (k1, k2, front, the green\'s tint, uFogB)');}
+// the year (v11.83, pass 3): the season through bloomC — the windy peak (s +1) against the still (s −1) over the fed slope; the wind's calms by
+// season; the sun's declination, the noon altitude and the day's length at the two peaks; the moon and the equinox untouched
+{const R=rows['the fed flank, the slope'],tx=R.tx;const at=(s,d)=>{P.FOG_B[3]=s;const c=P.bloomC(tx,-R.h,d,[0,0,0]);P.FOG_B[3]=0;return c;};
+  const w3=at(1,3),c3=at(-1,3),w70=at(1,70),c70=at(-1,70),wr=[],cr=[];for(let d=40;d<=200;d+=5){wr.push([d,at(1,d)[2]]);cr.push([d,at(-1,d)[2]]);}
+  const pk=L=>L.reduce((m,e)=>e[1]>m[1]?e:m,L[0]);const pw=pk(wr),pc=pk(cr);
+  ok(w3[1]>c3[1]*1.5&&w3[0]>c3[0],'the windy half feeds the lit layer (3 m: gold '+w3[1].toFixed(2)+' vs '+c3[1].toFixed(2)+' still, green '+w3[0].toFixed(2)+' vs '+c3[0].toFixed(2)+')');
+  ok(w70[0]+w70[1]>(c70[0]+c70[1])*2,'and mixes it deeper (70 m: the lit crop '+(w70[0]+w70[1]).toFixed(2)+' windy vs '+(c70[0]+c70[1]).toFixed(2)+' still)');
+  ok(pc[1]>pw[1]&&pc[0]<pw[0],'the still half has the sharper, shallower deep maximum (red peak '+pc[1].toFixed(2)+' at '+pc[0]+' m vs '+pw[1].toFixed(2)+' at '+pw[0]+' windy)');
+  let calmW=0,calmS=0,n=0;const H=30*185;for(let h=0;h<H;h+=1.5){const wx=P.weatherAt(h);n++;if(wx.wind<0.5){if(wx.season>0.5)calmW++;else if(wx.season<-0.5)calmS++;}}
+  ok(calmS>calmW*1.6,'the still half has the calms ('+calmS+' hours sampled calm at s<−0.5 vs '+calmW+' at s>0.5 over a year)');
+
+  const HY=30*185,dq=P.sunDec((0.25-0.6)*HY),d0=P.sunDec(-0.6*HY),d3=P.sunDec((0.75-0.6)*HY);ok(Math.abs(d0)<1e-6&&Math.abs(dq-0.262)<1e-6&&Math.abs(d3+0.262)<1e-6,"the sun's declination: "+[d0,dq,d3].map(v=>(v*180/Math.PI).toFixed(1)+'°').join(' / ')+' at the equinox, a quarter and three quarters of the year on (0, +15, −15)');
+  const D=[0,0.25,0.75].map(ph=>{const h=(ph-0.6)*30*185;let up=0;for(let hh=0;hh<30;hh+=0.05){const v={x:0,y:0,z:0,set(x,y,z){this.x=x;this.y=y;this.z=z;return this;}};P.skyDir(P.sunHA(h+hh-P.SOLAR_H0),v,P.sunDec(h));if(v.y>0)up+=0.05;}return up;});
+  ok(Math.abs(D[0]-15)<0.3&&Math.abs(D[1]-D[2])>0.5&&Math.abs(D[1]-D[2])<2.5,"the day's length: "+D.map(v=>v.toFixed(1)+' h').join(' / ')+' at the equinox and the two peaks (15 at the equinox, under 2.5 h of swing at 11.5° N with a 15° tilt)');
+  const m={x:0,y:0,z:0,set(x,y,z){this.x=x;this.y=y;this.z=z;return this;}};P.skyDir(0,m);ok(Math.abs(m.y-Math.cos(0.2))<1e-9,'the moon at declination 0 transits as it did');}
 // the storm's pulse over a month: bounded, and non-zero after rain
 {let mx=0,mn=1e9;for(let h=0;h<30*24;h+=1){P.setClock(h);P.bloomTick();mx=Math.max(mx,P.FOG_B[2]);mn=Math.min(mn,P.FOG_B[2]);}P.setClock(0);P.bloomTick();
   ok(mx>0.1&&mx<8,'the storm\'s pulse over 24 days peaks at ×'+(1+mx).toFixed(2)+' on the gold (bounded; ×'+(1+mn).toFixed(2)+' at its least)');}

@@ -100,7 +100,20 @@ not stored but derived — the lit crop × `red` 0.5 × a floor deeper than 60�
 kind's crop saturates twice, w1 = C/(C+`k1` 1.5; 0.8 to v11.81 — the person's look: the shelf went pea-green and the ring was a wall) toward the kind's multiplier (green 1.05/1.06/0.62, gold 1.35/1.06/0.58, red 0.90/0.70/0.83:
 pigment absorbs blue and red; the reds leave a dimmer plum) and w2 = C/(C+`k2` 6) toward the heavy stage (green olive 1.15/0.92/0.70, gold brown
 1.20/0.88/0.60) — multipliers on the column's colour, applied in `fogVeil` at each of its two samples' own depth and on the CPU for the ambient
-(`bloomAt`, updateAtmosphere), so depth's darkening stands. From the air the downward darkening `UPWELL` carries the tint too (v11.82.1), and the snow's top metres show through the surface's body (atmosphere.js `snAU`: the alpha × exp(−depth/2.5) with the camera in air). The GLSL is generated from the same tables (`BLOOM_GLSL`). Every number is a start
+(`bloomAt`, updateAtmosphere), so depth's darkening stands. From the air the downward darkening `UPWELL` carries the tint too (v11.82.1), and the snow's top metres show through the surface's body (atmosphere.js `snAU`: the alpha × exp(−depth/2.5) with the camera in air).
+
+**The year in the water** (v11.83, PLANKTON.md §6, pass 3; world.js `YEAR_D` 185, `TILT` 0.262, `YEAR_P0` 0.6, `yearPhase`, `sunDec`, `seasonAt`; `uFogB.w`).
+The season is the wind, and it reaches the water through one number: s = `seasonAt` = −sin(2π·phase), +1 at the windy peak (the sun south of the
+equator: an 11.5° N island's winter, when Earth's north-east trades are strongest) and −1 at the still. `weatherAt` biases the calms by it (the
+wind's threshold ±0.06: ~15% calm hours at the windy peak, ~40% at the still; a year sampled headless: 224 calm hours against 437) and the showers
+(±0.02). `bloomC` reads s from `uFogB.w`/`FOG_B[3]` (far.js `bloomTick`): the mixed layer 64 × (1 + 0.3 s) — 83 m windy, 45 still — with the green's
+floor at 0.7–1.33 of it and the gold's at 0.94–1.72; the deep maximum at its base + 31, its width 35 × (1 + 0.2 s); the gold × (1 + 0.35 s), the green
+× (1 + 0.15 s), the red × (1 − 0.3 s). Over the fed slope at 3 m: gold 0.56 windy against 0.27 still; at 70 m the lit crop 1.10 against 0.03; the red's
+peak 0.44 at 75 m still against 0.24 at 115 windy — §6's table, in numbers. Boot is phase 0.6, early in the windy half (s +0.59). The ledger's
+capacity does not read the season: `sample()` stays a function of place and the census is untouched; the ecology will breathe through the swarms
+(pass 4), which eat the crop. The day's migration (§5) waits for the swarms too — the snow's live kind is the crop, and the crop does not migrate.
+Seen (`test/render/v83_flank_boot.png`, `v83_flank_windy.png`, `v83_flank_still.png`): the fed flank at −20 olive-green at the windy peak (day 212)
+and blue-teal at the still (day 120). The GLSL is generated from the same tables (`BLOOM_GLSL`). Every number is a start
 (the person, 22 Sep: plausible first, then tune). Seen (`test/render/v81_*.png`): the fed flank's break olive-green, the side break's ring
 olive, the lagoon a faint green over the flats, the thermocline over the fed slope a dim grey-green, the basin blue, the lee's patch its
 ordinary blue-teal with the fleets over it (the green ghost gone). Not built (passes 2–6): the snow off the field, the day and the year, the
@@ -358,6 +371,12 @@ read into the air (its map sampled along rays that point over the void) wrapped 
 for a sharper horizon may expose the sea mesh's far edge; it thickens under rain.
 
 ## The sky
+
+**The year in the sky** (v11.83; world.js `skyDir(ha, out, dec)`): the sun's declination is `TILT`·sin(2π·`yearPhase`), the equinox at phase 0 with the
+sun heading north; at 11.5° N with 15° it passes overhead twice a year and the day runs 14.5–15.6 h (15.0 at the equinox). The moon keeps declination
+0 (its orbit's tilt is the moon pass's), so a full moon is exactly antisolar only near the equinoxes — the eclipses of v11.17.1 are seasonal now, which
+is the physics. The wanderers ride the tilted ecliptic at their own longitude's declination. The stars still turn with the sun (no sidereal year).
+The readout's clock line shows the year's phase and the season.
 
 **The clock (`world.js`, next to the tide; v11).** Day and night run on `clockH`: `LAT` 0.2 (tropical: a 26–28 °C mixed
 layer; no axial tilt is decided, so no seasons — 15 h of day, 15 of night), `SOLAR_H0` 11 (boot is late morning; sunset 11.5 h

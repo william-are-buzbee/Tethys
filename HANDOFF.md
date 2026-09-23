@@ -1,5 +1,15 @@
 # HANDOFF — tethys
 
+**v11.83 (22 Sep 2026): the year — PLANKTON.md §13 pass 3, less the day's migration.** The sun has a declination (world.js `skyDir(ha,out,dec)`,
+`TILT` 15°, `YEAR_D` 185 as PLANET decided, boot at phase 0.6); the day runs 14.5–15.6 h and eclipses are seasonal now (the moon stays at declination 0).
+The season is the wind: `seasonAt` (+1 windy, −1 still) biases the calms and the showers in `weatherAt` and rides `uFogB.w` into `bloomC`, which
+deepens the mixed layer (83 m windy, 45 still), feeds the gold in the windy half and sharpens the deep maximum in the still. The ledger does not read
+the season (census untouched); the swarms will. The day's migration (§5) goes with the swarms, since the snow's live kind is the crop and the crop does
+not migrate. Seen: `test/render/v83_flank_*.png` — the fed flank olive-green at the windy peak, blue-teal at the still. **Ask first** whether a season
+that no single animal can see (185 days of 30 h at 40 real minutes each) is worth its numbers or wants a shorter year after all (§14), then whether the
+seasonal eclipses are wanted (v11.17.1 kept every full moon eclipsed on purpose), then the still half's blue against the windy half's olive. Next: pass 4,
+the swarms as ledger records with the day's rise at dusk, prey for the filter feeders.
+
 **v11.82 (22 Sep 2026): the snow off the field — PLANKTON.md §13 pass 2.** The marine snow's `live` kind takes its weight from the plankton's crop at
 the point (atmosphere.js `snCrop` on the maps' texel through world.js `bloomC`), so the ring, the fed flank, the lee and the deep maximum at 95 m are in
 the snow with no noise function; its colour is the mix of the kinds winning there (`SN_PIG`, subtle by design); and a chain kind seeds one or two followers

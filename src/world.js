@@ -88,6 +88,18 @@ const CHEMO=-450,CHEMO_PLATE=2,CHEMO_TINT=[CHEMO+4,CHEMO-12]; // the milky plate
 // synodic month of 26 days (two springs, SPRING_D 13 apart). East is +x, north is -z (the compass), so the sun rises over the dikes and sets over the
 // collapse. Everything here is a function of the hour, deterministic: skyDir gives a body's direction for an hour angle.
 const LAT=0.2,SOLAR_H0=11,MOON_T0=19; // latitude (rad); local hour at boot; the moon's first upper transit (clockH)
+// The year (v11.83, PLANKTON.md §6, PLANET "Decided 22 Sep 2026"): YEAR_D local days of DAY_H, derived from the star by Kepler (~0.63 Earth years);
+// a modest tilt TILT — a big close moon holds the obliquity steady, and at 11.5° N with 15° the sun passes overhead twice a year: a tropical
+// year with two mild peaks, not a summer. The sun's declination is TILT·sin(2π·phase), the equinox at phase 0 with the sun heading north;
+// the moon and the wanderers keep declination 0 (the moon's orbit's tilt is the moon pass's). The season is the WIND, not the temperature:
+// the trades blow harder and steadier while the sun is south (an 11.5° N island's winter, as Earth's north-east trades do) and slacken while
+// it is north — seasonAt is +1 at the windy peak, −1 at the still one; weatherAt biases the calms and the showers by it, and the plankton
+// (bloomC) deepens the mixed layer and feeds the gold in the windy half, sharpens the deep maximum in the still. Boot is YEAR_P0 of the
+// year in: early in the windy half (the sun south of the equator, heading to its southern peak at 0.75). The ledger's capacity does not read the season (census untouched); the swarms of pass 4 will.
+const YEAR_D=185,TILT=0.262,YEAR_P0=0.6; // local days in the year; the axial tilt (rad, 15°); the year's phase at boot
+function yearPhase(h){const p=(h/(DAY_H*YEAR_D)+YEAR_P0)%1;return p<0?p+1:p;}
+function sunDec(h){return TILT*Math.sin(TAU*yearPhase(h));}
+function seasonAt(h){return -Math.sin(TAU*yearPhase(h));} // +1 the windy peak (the sun south), −1 the still
 // The star and the orbit (v11.17). PLANET decides a late G / early K at ~5300 K and nothing else, so these are placeholders with the
 // derivation shown, to be replaced when the planet is put in its place. A 5300 K dwarf has R ~0.85 R☉ and L = R²(T/5772)⁴ ~0.51 L☉; a
 // 26–28 °C sea wants about Earth's insolation, so a = √L ~0.71 AU, and the disc is R/a = 1.2× the Sun's apparent size: SUN_R 0.0056
@@ -111,7 +123,7 @@ function discOverlap(d,a,b){if(d>=a+b)return 0;if(d<=Math.abs(a-b))return b>=a?1
 // orbit moves them along it over weeks). Non-specific placeholders until the system is designed: an inner one that is the evening
 // star, a big outer one, a faint outer one. [elongation (deg, + east), colour, brightness]
 const PLANETS=[[38,[1.0,0.96,0.88],1.0],[141,[0.98,0.92,0.80],0.7],[-73,[0.85,0.90,1.0],0.35]];
-function skyDir(ha,out){const c=Math.cos(ha),sl=Math.sin(LAT);return out.set(-Math.sin(ha),Math.cos(LAT)*c,sl*c);} // hour angle 0 at upper transit, declination 0: rises east, transits south of the zenith by LAT, sets west
+function skyDir(ha,out,dec){const c=Math.cos(ha),sl=Math.sin(LAT),cl=Math.cos(LAT),cd=dec?Math.cos(dec):1,sd=dec?Math.sin(dec):0;return out.set(-cd*Math.sin(ha),sl*sd+cl*cd*c,sl*cd*c-cl*sd);} // hour angle 0 at upper transit; declination dec (v11.83; 0 to v11.82: rises east, transits south of the zenith by LAT, sets west): the standard alt-az from latitude, +z south
 function sunHA(h){return TAU*((h+SOLAR_H0)%DAY_H-DAY_H/2)/DAY_H;}
 function moonHA(h){return TAU*(h-MOON_T0)/LUNAR_H;}
 // (v11.33: moonIllum is gone — the lit fraction comes from the sun's and moon's own directions since v11, atmosphere.js updateSky.)
@@ -123,8 +135,9 @@ function moonHA(h){return TAU*(h-MOON_T0)/LUNAR_H;}
 // v11.17 adds `cirrus`: the high ice cloud's cover on its own slower noise — not the trades' cloud but the outflow of convection far
 // away (the planet has a rain belt somewhere), so it comes and goes on its own and moves with the upper wind.
 function weatherAt(h,out){const o=out||{};const w=fbm(h*0.13+22.1,17.3,3),q=fbm(h*0.85+5.1,5.1,2),c=fbm(h*0.055+41.7,9.9,2); // seeds chosen so boot is fair (cover 0.44) with the first shower 3 h in
-  o.rain=smooth(0.71,0.78,q);o.cover=clamp(0.15+1.4*(w-0.32)+0.5*o.rain,0.08,0.92);o.cirrus=clamp(2.4*(c-0.36),0,1);
-  o.wind=Math.max(smooth(0.33,0.46,fbm(h*0.09+77.3,2.2,2)),o.rain);return o;} // rain ~10% of the time; wind 1 the trades, 0 a calm (~25% of the time, hours at a stretch; a shower is a gust front)
+  o.rain=smooth(0.71,0.78,q);o.cover=clamp(0.15+1.4*(w-0.32)+0.5*o.rain,0.08,0.92);o.cirrus=clamp(2.4*(c-0.36),0,1); // the cover reads the year's mean rain; the seasonal rain is set below
+  const s=seasonAt(h);o.rain=smooth(0.71-0.02*s,0.78-0.02*s,q);o.season=s; // v11.83: more showers in the windy half
+  o.wind=Math.max(smooth(0.33-0.06*s,0.46-0.06*s,fbm(h*0.09+77.3,2.2,2)),o.rain);return o;} // rain ~10% of the time; wind 1 the trades, 0 a calm (~25% of the time at the year's mean — v11.83: ~15% at the windy peak, ~40% at the still one, hours at a stretch; a shower is a gust front)
 // The wind (PLANET, Wind and current): one prevailing wind toward WIND_A at WIND_U m/s — the waves travel with it and so do the
 // clouds and the rain; the wind blows harder under a shower. Real time, not game time: a cloud crossing the sky at 45× would be
 // a film run fast, and the waves are already real-time.
@@ -461,24 +474,27 @@ function plank(x,z,s,out){const f=s.f,h=s.h,o=out||[0,0,0];
   return o;}
 // the maps' texel for a place (0..1 ×3: the two crops encoded, X), as wmFill writes it
 function plankTexel(x,z,s,out){const o=plank(x,z,s,out);o[0]=plankEnc(o[0]);o[1]=plankEnc(o[1]);o[2]=(o[2]-1)/5;return o;}
-// the clock's part, shared by the shader (uFogB) and the JS: x = xc + 3·log10(amp/spring), y = 1/xs, z = storm·pulse
+// the clock's part, shared by the shader (uFogB) and the JS: x = xc + 3·log10(amp/spring), y = 1/xs, z = storm·pulse, w = the season (v11.83:
+// seasonAt — the mixed layer 64 m × (1 + 0.3·s), the green's floor and the gold's scaled with it, the deep maximum at its base + 31 and
+// narrower in the still half; the gold × (1 + 0.35·s), the green × (1 + 0.15·s), the red × (1 − 0.3·s): the windy half high and shallow, the
+// still half low at the surface with a sharp deep maximum — §6's table)
 const FOG_B=new Float32Array([PLK.xc,1/PLK.xs,0,0]);
 // the crops at a depth d (from the tide) over a floor fd deep, from a texel b (0..1 ×3, bilinear), by the clock: out = [green, gold, red] mg/m³.
 // The red: the lit crop's share under the mixed layer — where the floor is deep enough to hold a maximum and the column is not stirred
 // (the stirred share read back off the gold's share of the lit crop, the shallow term undone)
-function bloomC(b,fd,d,out){const o=out||[0,0,0],X=b[2]*5+1,fx=(X-FOG_B[0])*FOG_B[1],fr=Math.exp(-fx*fx),lit=1+PLK.front*fr;
+function bloomC(b,fd,d,out){const o=out||[0,0,0],X=b[2]*5+1,fx=(X-FOG_B[0])*FOG_B[1],fr=Math.exp(-fx*fx),lit=1+PLK.front*fr,s=FOG_B[3],ml=64*(1+0.3*s);
   const Cg=PLK.cmin*Math.pow(2,b[0]*PLK_ENC),Cf=PLK.cmin*Math.pow(2,b[1]*PLK_ENC),sh=smooth(60,8,fd),stir=clamp(Cf/(Cg+Cf)/(1-0.5*sh),0,1);
-  o[0]=Cg*lit*(1-smooth(45,85,d));o[1]=Cf*lit*(1+FOG_B[2])*(1-smooth(60,110,d));
-  const r=(d-95)/35;o[2]=(Cg+Cf)*PLK.red*smooth(60,140,fd)*(1-0.6*stir)*(1-0.7*fr)*Math.exp(-r*r);return o;}
+  o[0]=Cg*lit*(1+0.15*s)*(1-smooth(0.7*ml,1.33*ml,d));o[1]=Cf*lit*(1+FOG_B[2])*(1+0.35*s)*(1-smooth(0.94*ml,1.72*ml,d));
+  const r=(d-ml-31)/(35*(1+0.2*s));o[2]=(Cg+Cf)*PLK.red*(1-0.3*s)*smooth(60,140,fd)*(1-0.6*stir)*(1-0.7*fr)*Math.exp(-r*r);return o;}
 // the column's colour c tinted by the crops C (bloomC's), in place
 function bloomTint(c,C){for(let k=0;k<3;k++){const P=PIGK[k],w1=C[k]/(C[k]+PLK.k1),w2=C[k]/(C[k]+PLK.k2);for(let i=0;i<3;i++)c[i]*=lerp(1,P.m1[i],w1)*lerp(1,P.m2[i],w2);}return c;}
 const _plkT=[0,0,0];
 // the field at a point in the world, exactly (the snow and the tests): out = [green, gold, red] mg/m³ at that depth, now
 function plankAt(x,y,z,out){const s=sample(x,z);return bloomC(plankTexel(x,z,s,_plkT),-s.h,TIDE-y,out);}
 const _v3=v=>'vec3('+v.map(n=>n.toFixed(3)).join(',')+')';
-const BLOOM_GLSL='vec3 bloomC(vec3 b,float fd,float d){float fx=(b.z*5.0+1.0-uFogB.x)*uFogB.y;float fr=exp(-fx*fx);float lit=1.0+'+PLK.front.toFixed(2)+'*fr;float r=(d-95.0)/35.0;'+
+const BLOOM_GLSL='vec3 bloomC(vec3 b,float fd,float d){float fx=(b.z*5.0+1.0-uFogB.x)*uFogB.y;float fr=exp(-fx*fx);float lit=1.0+'+PLK.front.toFixed(2)+'*fr;float s=uFogB.w;float ml=64.0*(1.0+0.3*s);float r=(d-ml-31.0)/(35.0*(1.0+0.2*s));'+
   'vec2 C='+PLK.cmin.toFixed(3)+'*exp2(b.xy*'+PLK_ENC.toFixed(4)+');float sh=1.0-smoothstep(8.0,60.0,fd);float stir=clamp(C.y/(C.x+C.y)/(1.0-0.5*sh),0.0,1.0);'+
-  'return vec3(C.x*lit*(1.0-smoothstep(45.0,85.0,d)),C.y*lit*(1.0+uFogB.z)*(1.0-smoothstep(60.0,110.0,d)),(C.x+C.y)*'+PLK.red.toFixed(2)+'*smoothstep(60.0,140.0,fd)*(1.0-0.6*stir)*(1.0-0.7*fr)*exp(-r*r));}\n'+
+  'return vec3(C.x*lit*(1.0+0.15*s)*(1.0-smoothstep(0.7*ml,1.33*ml,d)),C.y*lit*(1.0+uFogB.z)*(1.0+0.35*s)*(1.0-smoothstep(0.94*ml,1.72*ml,d)),(C.x+C.y)*'+PLK.red.toFixed(2)+'*(1.0-0.3*s)*smoothstep(60.0,140.0,fd)*(1.0-0.6*stir)*(1.0-0.7*fr)*exp(-r*r));}\n'+
   'vec3 bloomTint(vec3 c,vec3 C){vec3 w1=C/(C+'+PLK.k1.toFixed(2)+'),w2=C/(C+'+PLK.k2.toFixed(2)+');'+
   PIGK.map((P,k)=>{const s='w1.'+'rgb'[k],t='w2.'+'rgb'[k];return 'c*=mix(vec3(1.0),'+_v3(P.m1)+','+s+')'+(P.m2.every(v=>v===1)?'':'*mix(vec3(1.0),'+_v3(P.m2)+','+t+')')+';';}).join('')+'return c;}\n'; // the same curves as bloomC and bloomTint above, from the same tables
 // The water. One density everywhere (there is no per-biome fog: WATER is a colour that belongs to the place, not a veil you

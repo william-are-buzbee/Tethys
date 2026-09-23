@@ -36,7 +36,7 @@ let bmPulse=0,bmPulseT=-1e9;
 function bloomTick(){
   FOG_B[0]=PLK.xc+3*Math.log10(tideAmp(clockH)/TIDE_A1);
   if(clockH-bmPulseT>2*CLOCK_RATE||clockH<bmPulseT){let p=0;for(let tau=2;tau<=96;tau+=2)p+=weatherAt(clockH-tau).rain*(tau/30)*Math.exp(1-tau/30);bmPulse=p*2/30;bmPulseT=clockH;}
-  FOG_B[2]=PLK.storm*Math.max(0,bmPulse-PLK.calm);
+  FOG_B[2]=PLK.storm*Math.max(0,bmPulse-PLK.calm);FOG_B[3]=seasonAt(clockH); // the season (v11.83)
 }
 // the floor's depth at a point as the shader reads it (bilinear on the blurred map), in units (v11.27)
 function wmFloor(x,z){
