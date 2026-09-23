@@ -1,14 +1,26 @@
 # HANDOFF — tethys
 
+**v11.85 (23 Sep 2026): filter feeding — PLANKTON.md §13 pass 5 (§11).** The swarms are food. `derive` reads a sieve's area off the build (`filter`, m²:
+the frontal `combs`; a `comb` part or a webbed net marked `sieve`, the creator's switch — the ram's rake is on, the tread's floor combs and the pall's net
+off): the veil ~100 m², the comb 13, the ram 1.2, the sifter 0.08. A kind with any hunts the swarm on the ledger (`ecoOf`; the swarm `edible`, mortal) and
+never chases one. Live (creatures_ai.js `FILTER`): the intake is the sieve × the water through it × the swarm's density × 0.35, off the stomach over the
+kind's meal and off the swarm's flesh — a starving veil hanging in a full swarm is fed in 45–75 s and takes half of it; the cloud draws the share left and
+disperses at 8%. A hungry one steers for the nearest swarm within 120 m and circles inside (`filterSeek`; the ram between hunts; a sifter school as one);
+the player runs the same intake (`filterPlayer`) and the readout's hunger line says the sieve, the swarm and what is left of it. Also: `ecoCap`'s `max`
+clause had been inside a comment since v11.84 (the strand's cap of 8 scuttles: 41,860 → 11,146 in the census). `node test/census.js 120` holds. Seen (the loop driven by hand, `test/render/v85_*.png`): the veil as the player fed through a swarm on the readout's numbers; a ram going 60 m to a swarm and feeding inside it beside a sifter shoal; a cloud eaten to 29%, sparser only side by side.
+**Ask first** whether a veil or a ram is ever seen feeding in a swarm in play (it circles inside the cloud; the cloud thins), then whether the sifter schools
+find the swarms by night (their ribbons move as one into the cloud), then whether ~45 s for the veil's meal and the half-swarm it takes read right,
+then whether a comb-built child is worth playing yet (slow, always going somewhere — there is no founder with a sieve until a veil, comb, sifter or
+ram is seen). Next: pass 6, the bloom night (§8) — only if 1–5 look right.
+
 **v11.84 (22 Sep 2026): the swarms — PLANKTON.md §13 pass 4, with §5's day.** The grazers of the water column as ledger records (`DEFS.swarm`, a `SPAWN`
 row of 2.5 a cell whose capacity is the lit crop's through `cropK`; 31 in the loaded cells at the ring) with no body: no geometry, no capsule, no push.
 They are drawn by the marine snow — the last 480 points of its buffer ride the six nearest swarms within 160 m, in the pigment kind's colour, bigger,
 relaxing to a jittering place in an 8–14 m cloud after the flow round a body scatters them. Their day (`swarmDepth`): the top 50 m at night, 380 m or
-the floor by day, 45 m deeper under a full moon, the transit on the dusk and the dawn at 4 m/s (v11.84.1: a swarm within 10 m no longer throws — it has no anim). Not yet food: pass 5 gives the veil, the comb, the
-sifter and the ram their intake from them. Seen: `test/render/v84_swarm_beside.png`, a gold cloud at night over the shelf edge. **Ask first** whether
+the floor by day, 45 m deeper under a full moon, the transit on the dusk and the dawn at 4 m/s (v11.84.1: a swarm within 10 m no longer throws — it has no anim).
+Seen: `test/render/v84_swarm_beside.png`, a gold cloud at night over the shelf edge. **Ask first** whether
 a swarm reads as a living cloud against the snow or as more snow (`SW_SZ` 1.7, `SW_COL`, the jitter's 0.6 m), then whether they are met often enough
-(2.5 a cell at full crop; `SW_SEE` 160), then whether the dusk rise is seen at all in play (one game hour is 80 real seconds). Next: pass 5, filter
-feeding — the stomach off the swarms, `derive` reading the filter area.
+(2.5 a cell at full crop; `SW_SEE` 160), then whether the dusk rise is seen at all in play (one game hour is 80 real seconds).
 
 **v11.83.1 (22 Sep 2026): the hood is a player-sized hunter.** The person: the burrowing hingeshell that comes out at you "needs to be just another variant
 for a player-sized predator"; the look liked, the claws for small prey. So: `SPECS.hood` size 2 at 0.42 of its build (a 3.6 m body, the tail spine and flaps

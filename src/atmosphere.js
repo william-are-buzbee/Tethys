@@ -424,7 +424,7 @@ const SN_PIG=[[0.70,0.86,0.62],[0.86,0.78,0.48],[0.78,0.62,0.68]],SN_PALE=[0.82,
 // swarm from the snow is motion and density: the points hold an offset in the cloud (swOff, a slowly turning jitter), relax back to it after the
 // flow round a body scatters them (the same FLOW the snow reads), and the whole cloud rises and sinks with its record (creatures_ai.js updateSwarm).
 // A swarm that leaves the reach or the world gives its block back; an unassigned block parks at the camera like a parked point.
-const SW_SEE=160,SW_SZ=1.7,SW_R=[8,14],swAt=new Array(SN_SWN).fill(null),swOff=new Float32Array(SN_SW*3),swSeed=new Float32Array(SN_SW);let swT=0;const SW_COL=[[0.78,0.90,0.66],[0.92,0.82,0.50],[0.84,0.66,0.72]]; // SW_R: the cloud's radius by the swarm's draw q; SW_COL the kinds' colours for a swarm
+const SW_SEE=160,SW_SZ=1.7,swAt=new Array(SN_SWN).fill(null),swOff=new Float32Array(SN_SW*3),swSeed=new Float32Array(SN_SW);let swT=0;const SW_COL=[[0.78,0.90,0.66],[0.92,0.82,0.50],[0.84,0.66,0.72]]; // the cloud's radius is swarmR (creatures_ai.js SW_R, v11.85: the intake reads the same volume); SW_COL the kinds' colours for a swarm
 function swAssign(){ // every half second: the nearest swarms take the blocks, the rest give theirs back
   const cx=camera.position.x,cy=camera.position.y,cz=camera.position.z,near=[];
   for(const c of creatures){if(c.def.role!=='swarm'||!c.alive)continue;const dd=len3(c.pos.x-cx,c.pos.y-cy,c.pos.z-cz);if(dd<SW_SEE)near.push([dd,c]);}
@@ -433,7 +433,7 @@ function swAssign(){ // every half second: the nearest swarms take the blocks, t
   for(const [,c] of near.slice(0,SN_SWN)){if(swAt.indexOf(c)>=0)continue;const k=swAt.indexOf(null);if(k<0)break;swAt[k]=c;swBlock(k,c);}
 }
 function swBlock(k,c){ // a block seeded for a swarm: offsets in a flattened cloud, the kind's colour, a bigger size; the points start at the cloud
-  const R=lerp(SW_R[0],SW_R[1],c.q||0.5),col=SW_COL[c.pig||0];
+  const R=swarmR(c),col=SW_COL[c.pig||0];
   for(let m=0;m<SN_SWP;m++){const i=PN_SN+k*SN_SWP+m,a=Math.random()*TAU,u=Math.random()*2-1,rr=R*Math.cbrt(Math.random()),s=Math.sqrt(1-u*u);
     swOff[(i-PN_SN)*3]=rr*s*Math.cos(a);swOff[(i-PN_SN)*3+1]=rr*u*0.45;swOff[(i-PN_SN)*3+2]=rr*s*Math.sin(a);swSeed[i-PN_SN]=Math.random()*TAU;
     pp[i*3]=c.pos.x+swOff[(i-PN_SN)*3];pp[i*3+1]=c.pos.y+swOff[(i-PN_SN)*3+1];pp[i*3+2]=c.pos.z+swOff[(i-PN_SN)*3+2];pv[i*3]=pv[i*3+1]=pv[i*3+2]=0;
@@ -512,7 +512,7 @@ function updatePlankton(dt){
   if(Math.abs(cx-snLast.x)+Math.abs(cy-snLast.y)+Math.abs(cz-snLast.z)>SN_HW){for(let i=0;i<PN_SN;i++)snowSeed(i,cx+(Math.random()-0.5)*2*SN_HW,cy+(Math.random()-0.5)*2*SN_HW,cz+(Math.random()-0.5)*2*SN_HW);}snLast.set(cx,cy,cz);
   for(let i=0;i<PN;i++){
     const k=pk[i],b=i*10;
-    if(i>=PN_SN){const sw=swAt[Math.floor((i-PN_SN)/SN_SWP)];if(!sw||!sw.alive){pp[i*3]=cx;pp[i*3+1]=cy;pp[i*3+2]=cz;ps[i*2+1]=0;continue;} // the swarm block (v11.84): parked when its swarm is gone
+    if(i>=PN_SN){const sw=swAt[Math.floor((i-PN_SN)/SN_SWP)];if(!sw||!sw.alive||(i-PN_SN)%SN_SWP>=swarmShare(sw)*SN_SWP){pp[i*3]=cx;pp[i*3+1]=cy;pp[i*3+2]=cz;ps[i*2+1]=0;continue;} // the swarm block (v11.84): parked when its swarm is gone — or eaten (v11.85: a swarm draws the share of its points its flesh leaves, so a cloud thins as a filter feeder works through it)
       let x=pp[i*3],y=pp[i*3+1],z=pp[i*3+2],vx=pv[i*3]*kd,vy=pv[i*3+1]*kd,vz=pv[i*3+2]*kd;
       for(let bb=0;bb<flowN;bb++){const f=FLOW[bb],rx=x-f.x;if(rx>f.a4||rx<-f.a4)continue;const ry=y-f.y,rz=z-f.z,r2=rx*rx+ry*ry+rz*rz;if(r2>f.a4*f.a4)continue;const a=f.a;let r=Math.sqrt(r2),fx=0,fy=0,fz=0;if(r<a*0.9){const q=(a*0.9-r)*8;r=Math.max(r,1e-3);fx+=rx/r*q;fy+=ry/r*q;fz+=rz/r*q;r=a*0.9;}const inv=a*a*a/(2*r*r*r),ur=(f.ux*rx+f.uy*ry+f.uz*rz)/(r*r),dr=Math.exp(-(r-a)/(0.35*a))*0.6;fx+=inv*(3*ur*rx-f.ux)+f.ux*dr;fy+=inv*(3*ur*ry-f.uy)+f.uy*dr;fz+=inv*(3*ur*rz-f.uz)+f.uz*dr;vx+=(fx-vx)*kf;vy+=(fy-vy)*kf;vz+=(fz-vz)*kf;} // scattered by a body, as the snow is
       const o=(i-PN_SN)*3,ph=swSeed[i-PN_SN]+t*0.6,tx=sw.pos.x+swOff[o]+0.6*Math.sin(ph),ty=sw.pos.y+swOff[o+1]+0.25*Math.cos(ph*1.3),tz=sw.pos.z+swOff[o+2]+0.6*Math.cos(ph*0.8); // its place in the cloud, jittering

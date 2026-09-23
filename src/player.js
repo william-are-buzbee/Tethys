@@ -63,6 +63,7 @@ function hungerLine(){const P=player,C=P.clade;if(!C||mode!=='play')return '';co
   if(L&&moulting(L))ex+=lineSoft(L)?'  soft, hard in '+((L.hardAt-t)/DAY_S).toFixed(2)+' d':'  the moult in '+((moultAt(L,(L.moults||0)+1)-t)/DAY_S).toFixed(2)+' d'; // v11.76
   ex+='  q: '+(C.abilities&&C.abilities.length?C.abilities.join(', '):'nothing'); // v11.75: the abilities the body has (the first is Q)
   if(!K.hunter)return 'no stomach on the model (the founder hunts nothing)  a clutch of '+(m?m.n:0)+' as you: '+hlCost.toFixed(2)+ex; // v11.75
+  if(K.filter>0){const sw=P.sw&&P.sw.alive?P.sw:null,dd=sw?P.pos.distanceTo(sw.pos):0;ex+='  sieve '+K.filter.toFixed(1)+' m²'+(sw?dd<swarmR(sw)?' in a swarm, '+Math.round(swarmShare(sw)*100)+'% left':' a swarm '+dd.toFixed(0)+' m off':' no swarm within '+FILTER.see);} // v11.85: the filter feeder's line
   return 'hunger '+P.hunger.toFixed(2)+(P.hunger>ECO.hungry?' hungry':'')+'  '+left+'  stomach '+(K.meal*1000).toFixed(0)+' kg  cycle '+K.cycle.toFixed(2)+' d  a clutch of '+(m?m.n:0)+' as you: '+hlCost.toFixed(2)+' of it'+ex;}
 function playerAway(on){const P=player;P.away=!!on;if(P.g)P.g.visible=!on;if(on){P.hold=null;P.vel.set(0,0,0);for(const c of creatures)if(c.target===P)dropTarget(c);}}
 const keys={};let locked=false,drag=null,touchL=null,touchAbility=false;
@@ -174,7 +175,8 @@ function updateSplashes(dt){
 function updatePlayer(dt){
   const P=player,C=P.clade;
   P.cd=Math.max(0,P.cd-dt);P.biteCD=Math.max(0,P.biteCD-dt);P.inkT=Math.max(0,P.inkT-dt);P.hurtT=Math.max(0,P.hurtT-dt);
-  if(!P.dead&&!P.away&&C&&eaterK(P).hunter&&hungerTick(P,dt))return; // the stomach (v11.73): the ledger's clock on the player's line kind, and starvation is a death like any other. v11.75: a body whose founder hunts nothing (a grazer, a filter feeder) feeds off the model as the world's grazers do — no clock, as they have none
+  if(!P.dead&&!P.away&&C&&eaterK(P).hunter&&hungerTick(P,dt))return; // the stomach (v11.73): the ledger's clock on the player's line kind, and starvation is a death like any other. v11.75: a body whose founder hunts nothing (a grazer) feeds off the model as the world's grazers do — no clock, as they have none. v11.85: a body with a sieve is a hunter of the swarms (ecoOf) and runs the clock
+  if(!P.dead&&!P.away&&C)filterPlayer(dt); // v11.85 (PLANKTON §11): the sieve, if the body has one, fills the stomach from a swarm it is inside (creatures_ai.js)
   let mx=0,mz=0,my=0,sprint=false;
   if(!P.dead){
     mx=(keys.KeyD?1:0)-(keys.KeyA?1:0);mz=(keys.KeyW?1:0)-(keys.KeyS?1:0);my=(keys.Space?1:0)-(keys.KeyC?1:0); // v11.77.1: w/s along the body, a/d across it, space/c up and down — thrusts, the facing the mouse's

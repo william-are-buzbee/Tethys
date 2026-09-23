@@ -1,6 +1,6 @@
 # PLANKTON.md — the water's own life: the field, the day, the year, the colour and the swarm
 
-**Status: pass 1 built as v11.81 (22 Sep 2026) — the field (`plank`), the three kinds through the veil, the front ring by the tide, the storm's pulse, the canopy strip of §12; the bloom map went into the water and floor maps' free channels (the shaders were at 16 texture units); v11.81.1 turned the green down after the person's look. Pass 2 built as v11.82 (22 Sep): the snow's `live` off the field, its colour by kind, the chain kind. Pass 3 built as v11.83 (22 Sep): the tilt, `YEAR_D` 185, the seasonal wind, the mixed layer and the crops by season — less §5's migration, which goes with the swarms (pass 4: the snow's live kind is the crop, and the crop does not migrate). The ledger does not read the season (the census stands); the swarms will. Pass 4 built as v11.84 (22 Sep): the swarms as ledger records with the day's rise (§5, §10), drawn from the snow's budget — not yet food (pass 5 gives the filter feeders their meal). Passes 5–6 designed, not built; the year's length answered 22 Sep (§15: ~185 days).** Written from a discussion of 22 Sep about marine snow — the person: marine snow is
+**Status: pass 1 built as v11.81 (22 Sep 2026) — the field (`plank`), the three kinds through the veil, the front ring by the tide, the storm's pulse, the canopy strip of §12; the bloom map went into the water and floor maps' free channels (the shaders were at 16 texture units); v11.81.1 turned the green down after the person's look. Pass 2 built as v11.82 (22 Sep): the snow's `live` off the field, its colour by kind, the chain kind. Pass 3 built as v11.83 (22 Sep): the tilt, `YEAR_D` 185, the seasonal wind, the mixed layer and the crops by season — less §5's migration, which goes with the swarms (pass 4: the snow's live kind is the crop, and the crop does not migrate). The ledger does not read the season (the census stands); the swarms will. Pass 4 built as v11.84 (22 Sep): the swarms as ledger records with the day's rise (§5, §10), drawn from the snow's budget. Pass 5 built as v11.85 (23 Sep): filter feeding — the sieve off the build (`derive.filter`), the swarms mortal and the filter feeders' paper prey, the stomach fed through a swarm, not by a bite (§11). Pass 6 designed, not built; the year's length answered 22 Sep (§15: ~185 days).** Written from a discussion of 22 Sep about marine snow — the person: marine snow is
 "one of the more important effects in the game visually for keeping orientation, space and size disparity intact", and refining it
 asks the microbial question. This doc answers it once for the whole game: what lives in the water, what decides it, what it does to
 the light, and how much of it the simulation actually carries. Upstream: `PLANET.md` (the chemocline, the upwelling, the trades, the
@@ -26,7 +26,7 @@ chemistry; ionising radiation is not a plankton driver at any depth a swimmer re
   sulfide, and the `live` kind is a guess at the lit layer's own life — a smooth function of depth and `nut`, with no patchiness, no
   day, no year, and no relation to what eats it.
 - **Filter feeding is not implemented**, so half the roster (veil, comb, sifter, ram, and every `filter combs` build the creator can
-  make) eats nothing real.
+  make) eats nothing real. (Built v11.85, §11.)
 
 ## 2. What actually decides plankton, in order
 
@@ -230,6 +230,16 @@ and it dives at dawn, which takes it out of reach of everything shallow. That la
 comb worth being where they are.
 
 ## 11. Filter feeding
+
+**Built as v11.85 (23 Sep 2026), with one change to the letter of the first point: the stomach fills from the swarms, not from the crop.** The
+crop is a map; a swarm is a record with a biomass, and only a record can be eaten down. `derive` reads the sieve's area off the build (`filter`,
+m²: the frontal `combs`, a `comb` part or a webbed net marked `sieve` — the switch is the creator's, since the hingeshells' mouth combs rake the
+floor and the pall's net catches in the dark): the veil's funnel ~100 m², the comb's combs 13, the ram's rake 1.2, the sifter's 0.08. A kind with any
+is a hunter of the swarms on the ledger (ecology.js `ecoOf`; the swarm `edible`, mortal) and never chases one (no capsule). Live, the intake a second
+is the sieve × the water through it (the body's speed, or the combs' sweep of 1 m/s at rest) × the swarm's density (its flesh over the cloud's
+volume) × `FILTER.eff` 0.35: a starving veil hanging in a full swarm is fed in ~45 s (75 in the smaller, wider one seen) and takes half the swarm; the swarm thins as it is eaten (the snow
+draws the share left) and disperses at 8%. A hungry filter feeder steers for the nearest swarm within 120 m and circles in it (creatures_ai.js
+`filterSeek`; a sifter school as one); the player runs the same intake and clock. The census (`node test/census.js 120`) holds: nothing under a fifth.
 
 The loop follows from one real fact: **the mean is never enough.** A big filter feeder cannot live on average water — a blue whale
 needs patches roughly a hundred times the background to break even. So:

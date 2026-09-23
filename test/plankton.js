@@ -11,7 +11,7 @@ const fs=require('fs'),path=require('path');
 const ROOT=path.join(__dirname,'..');
 const ORDER=fs.readFileSync(path.join(ROOT,'src','order.txt'),'utf8').split('\n').map(s=>s.trim()).filter(s=>s&&s[0]!=='#');
 let js=ORDER.map(n=>fs.readFileSync(path.join(ROOT,'src',n+'.js'),'utf8')).join('\n');
-js+='\nglobal.__pk={sample,plank,SPAWN,POP,ecoCap,CELL,NCELL,swarmDepth,swarmPig,MOONL,sunDec,seasonAt,yearPhase,skyDir,sunHA,weatherAt,SOLAR_H0,plankTexel,plankEnc,bloomC,bloomTint,plankAt,bloomAt,wmBloom,wmFill,wmBlur,bloomTick,FOG_B,PLK,PIGK,BLOOM_GLSL,WM_N,wcolAt,leeW,tidalAt,tideAmp,TIDE_A1,CUR_A,FI,HALF,setClock:(h)=>{clockH=h;TIDE=tideAt(h);},tide:()=>TIDE};';
+js+='\nglobal.__pk={sample,spawn,filterIntake,filterSeek,filterPlayer,swarmR,swarmShare,swarmVol,FILTER,ecoOf,DEFS,derive,SPECS,bioMass,creatures,V3,eaterK,ECO,plank,SPAWN,POP,ecoCap,CELL,NCELL,swarmDepth,swarmPig,MOONL,sunDec,seasonAt,yearPhase,skyDir,sunHA,weatherAt,SOLAR_H0,plankTexel,plankEnc,bloomC,bloomTint,plankAt,bloomAt,wmBloom,wmFill,wmBlur,bloomTick,FOG_B,PLK,PIGK,BLOOM_GLSL,WM_N,wcolAt,leeW,tidalAt,tideAmp,TIDE_A1,CUR_A,FI,HALF,setClock:(h)=>{clockH=h;TIDE=tideAt(h);},tide:()=>TIDE};';
 const tmp=path.join(require('os').tmpdir(),'tethys_plankton_bundle.js');
 fs.writeFileSync(tmp,'(function(){"use strict";\n'+js+'\n})();');
 require('./stub.js');
@@ -103,6 +103,28 @@ function frontOn(a){const out=[];for(let r=300;r<=2400;r+=25){const x=Math.cos(a
   ok(dn>-50&&dn<-25,'the night layer under the surface ('+dn.toFixed(0)+' m)');ok(dd<-300,'the day layer deep ('+dd.toFixed(0)+' m)');ok(dm<dn-30,'a full moon holds the night layer deeper ('+dm.toFixed(0)+' vs '+dn.toFixed(0)+')');
   ok(sh>-40&&sh<-30,'over a 40 m shelf the day layer is the floor ('+sh.toFixed(0)+' m)');ok(tw<dn&&tw>dd,'and dusk is between ('+tw.toFixed(0)+' m at half day)');
   ok(P.swarmPig(599,-3,-672)===1&&P.swarmPig(54,-3,84)===0,'the swarm takes the kind winning where it forms: gold on the fed flank, green in the lagoon');}
+// filter feeding (v11.85, pass 5, §11): the sieve off the build, the swarm on the filter feeders' paper prey and on no hunter's chase, the intake through a swarm
+{const F=k=>P.derive(P.SPECS[k]).filter,ch={creatures:[],schools:[],eggs:[],i:0,j:0}; // a cell for spawn to keep its creatures in (nothing here is on the ledger: ent -1)
+  ok(F('veil')>F('comb')&&F('comb')>F('ram')&&F('ram')>F('sifter')&&F('sifter')>0,'the sieve off the build: the veil '+F('veil')+' m², the comb '+F('comb')+', the ram '+F('ram')+', the sifter '+F('sifter'));
+  ok(F('tread')===0&&F('pall')===0&&F('lash')===0&&F('fin')===0,'no sieve on the tread\'s floor combs, the pall\'s net, the lash, the finback');
+  ok(P.DEFS.veil.filter===F('veil')&&P.ecoOf('veil').prey.join()==='swarm'&&P.ecoOf('veil').hunter&&!P.DEFS.veil.prey,'the veil hunts the swarm on paper (ecoOf) and chases nothing (no DEFS prey)');
+  ok(P.ecoOf('ram').prey.indexOf('swarm')>=0&&P.DEFS.ram.prey.indexOf('swarm')<0&&P.ecoOf('tread').prey.length===0,'the ram\'s paper prey has the swarm, its chase list has not; the tread hunts nothing');
+  ok(P.ecoOf('swarm').mortal&&P.ecoOf('swarm').food===216,'the swarm is mortal on the ledger, 216 t of food');
+  const sw=P.spawn(ch,'swarm',P.V3(0,-40,0),Math.random),v=P.spawn(ch,'veil',P.V3(0,-40,3),Math.random);sw.flesh=P.bioMass(sw.def);v.hunger=1;v.sw=sw;v.vel.set(0,0,0);
+  const K=P.ecoOf('veil'),f0=sw.flesh;let s=0;while(v.hunger>0&&s<600){P.filterIntake(v,0.05);s+=0.05;}
+  ok(v.hunger===0&&s>10&&s<120,'a starving veil hanging still in a full swarm is fed in '+s.toFixed(0)+' s (its meal '+K.meal.toFixed(0)+' t)');
+  ok(Math.abs((f0-sw.flesh)-K.meal)<1e-3&&P.swarmShare(sw)>0.4&&P.swarmShare(sw)<0.7,'the swarm lost exactly the meal: '+Math.round(P.swarmShare(sw)*100)+'% of it left');
+  const f1=sw.flesh,h1=P.filterIntake(v,1);ok(h1===false&&sw.flesh===f1,'a fed veil takes nothing more');
+  v.pos.set(0,-40,P.swarmR(sw)+2);v.hunger=1;ok(P.filterIntake(v,1)===false&&v.hunger===1,'outside the cloud the sieve returns nothing');
+  v.pos.set(0,-40,0);let n=0;while(sw.alive&&n<200){v.hunger=1;P.filterIntake(v,1);n++;}
+  ok(!sw.alive&&P.creatures.indexOf(sw)<0&&n>60&&n<190,'eaten down to '+Math.round(P.FILTER.spent*100)+'% the swarm disperses ('+n+' s more under a starving veil: the intake falls with the density, so the tail is long)');
+  const c=P.spawn(ch,'comb',P.V3(50,-40,0),Math.random),sw2=P.spawn(ch,'swarm',P.V3(0,-40,0),Math.random);sw2.flesh=P.bioMass(sw2.def);c.hunger=0.9;c.state='wander';c.swT=0;c.vel.set(0,0,0);
+  let d0=c.pos.distanceTo(sw2.pos),tt=0;while(tt<120&&c.hunger>P.FILTER.full){P.filterSeek(c,0.1);c.pos.addScaledVector(c.vel,0.1);tt+=0.1;}
+  ok(c.state==='filter'||c.hunger<=P.FILTER.full,'a hungry comb 50 m from a swarm seeks it (state '+c.state+', '+d0.toFixed(0)+' m to '+c.pos.distanceTo(sw2.pos).toFixed(0)+' m)');
+  ok(c.hunger<=P.FILTER.full&&tt<120,'and is fed in it in '+tt.toFixed(0)+' s');
+  P.filterSeek(c,0.5);P.filterSeek(c,0.5);ok(c.state==='wander'&&c.sw===null,'fed, it lets the swarm go and wanders');
+  const s3=P.spawn(ch,'sifter',P.V3(0,-40,0),Math.random);ok(P.eaterK(s3).hunter&&s3.def.filter>0,'a sifter has the stomach on the model');
+  for(const o of [v,c,s3,sw2])if(o.alive){o.alive=false;}}
 // the storm's pulse over a month: bounded, and non-zero after rain
 {let mx=0,mn=1e9;for(let h=0;h<30*24;h+=1){P.setClock(h);P.bloomTick();mx=Math.max(mx,P.FOG_B[2]);mn=Math.min(mn,P.FOG_B[2]);}P.setClock(0);P.bloomTick();
   ok(mx>0.1&&mx<8,'the storm\'s pulse over 24 days peaks at ×'+(1+mx).toFixed(2)+' on the gold (bounded; ×'+(1+mn).toFixed(2)+' at its least)');}

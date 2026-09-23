@@ -28,9 +28,9 @@ const ECO={r0:0.12,m:0.1,cyc:0.5,q0:0.05,H:4,take:0.35,mig:0.03,starve:0.35,juv:
 const ECO_K={},_ecoS={h:0,f:null}; // _ecoS: a sample stand-in for cropAt (v11.84)
 function ecoOf(kind){
   let k=ECO_K[kind];if(k)return k;const d=DEFS[kind],mass=bioMass(d),q=Math.pow(mass,0.25);
-  const prey=d.prey?d.prey.filter(p=>p!=='player'&&DEFS[p]):[],stock=d.stock||1;
+  const prey=d.prey?d.prey.filter(p=>p!=='player'&&DEFS[p]):[],stock=d.stock||1;if(d.filter>0&&DEFS.swarm&&kind!=='swarm')prey.push('swarm'); // v11.85 (PLANKTON §11): a body with a sieve (derive's filter, off the build) is a hunter of the swarms on paper — the ledger's response, condition and starvation; never on d.prey, which is what a hunter chases and bites (a swarm has no capsule)
   const cycle=d.cycle!==undefined?d.cycle:ECO.cyc*q,r=d.r!==undefined?d.r:ECO.r0/q,need=d.need!==undefined?d.need:ECO.q0/q*mass,meal=d.meal!==undefined?d.meal:need*cycle;
-  k={mass:mass,stock:stock,food:mass*stock,r:r,m:ECO.m*r,cycle:cycle,meal:meal,need:need,prey:prey,hunter:prey.length>0,mortal:d.hp<1e8||!!d.edible,grow:ECO.grow*q};
+  k={mass:mass,stock:stock,food:mass*stock,r:r,m:ECO.m*r,cycle:cycle,meal:meal,need:need,prey:prey,hunter:prey.length>0,mortal:d.hp<1e8||!!d.edible,grow:ECO.grow*q,filter:d.filter||0};
   if(kind!=='lab')ECO_K[kind]=k;return k;
 }
 // the ledger: per entry e of SPAWN a Float32Array over the cells — n the count, k the capacity, ke the capacity a hunter's prey
@@ -61,7 +61,7 @@ function ecoCap(c,ch){
   const hs=new Float32Array(36),sl=new Float32Array(36),fs=[];
   for(let b=0;b<6;b++)for(let a=0;a<6;a++){const n=b*6+a,x=x0+(a+0.5)/6*CELL,z=z0+(b+0.5)/6*CELL;
     if(ch){hs[n]=ch.h(x,z);sl[n]=ch.slope(x,z);fs.push(ch.f(x,z));}else{const s=sample(x,z);hs[n]=s.h;sl[n]=0;fs.push(s.f.slice());}}
-  SPAWN.forEach((e,ei)=>{let w=0;for(let n=0;n<36;n++){let t=envW(e.env,hs[n],sl[n],fs[n]);if(t>0&&e.crop){_ecoS.h=hs[n];_ecoS.f=fs[n];t*=cropK(cropAt(x0+((n%6)+0.5)/6*CELL,z0+(Math.floor(n/6)+0.5)/6*CELL,_ecoS));}w+=t;}let K=e.n*w/36; // crop (v11.84): the swarms' capacity is the lit standing stock'sif(e.max!==undefined)K=Math.min(K,e.max);
+  SPAWN.forEach((e,ei)=>{let w=0;for(let n=0;n<36;n++){let t=envW(e.env,hs[n],sl[n],fs[n]);if(t>0&&e.crop){_ecoS.h=hs[n];_ecoS.f=fs[n];t*=cropK(cropAt(x0+((n%6)+0.5)/6*CELL,z0+(Math.floor(n/6)+0.5)/6*CELL,_ecoS));}w+=t;}let K=e.n*w/36;if(e.max!==undefined)K=Math.min(K,e.max); // crop (v11.84): the swarms' capacity is the lit standing stock's. v11.85: the max clause was inside this comment from v11.84 (the strand's cap of 8 scuttles went unread); back on its line
     const k0=POP.k[ei][c];POP.k[ei][c]=K;POP.ke[ei][c]=K;
     if(first){POP.n[ei][c]=K*(ecoOf(e.kind).hunter?ECO.initH:ECO.init);POP.ow[ei][c]=rg()*Math.min(1,K)/Q.creatures;} // the owed birth starts at a random phase (v11.31.2): a population is not everywhere at the same point in its cycle, and every cell starting at zero was the whole reason the first clutch took two game days to appear. Over Q.creatures because a clutch is one animal the cell *shows*, so the low tier waits the same time for it
     else if(k0>1e-4)POP.n[ei][c]*=K/k0;else POP.n[ei][c]=Math.min(POP.n[ei][c],K);
@@ -78,7 +78,7 @@ function ecoSettle(isLoaded){ecoModel(1e-4,isLoaded);for(let ei=0;ei<SPAWN.lengt
 // the living are the truth from here until the cell unloads
 function ecoTake(ei,c,rng){const want=POP.n[ei][c]*Q.creatures,n=Math.floor(want)+(rng()<(want%1)?1:0);POP.n[ei][c]=n/Q.creatures;return n;}
 // a cell unloading writes its living back (juveniles count); what died stays dead
-function ecoWriteBack(ch){const c=ch.i*NCELL+ch.j;const cnt=new Float32Array(SPAWN.length);for(const o of ch.creatures)if(o.alive&&o.ent>=0)cnt[o.ent]+=1;
+function ecoWriteBack(ch){const c=ch.i*NCELL+ch.j;const cnt=new Float32Array(SPAWN.length);for(const o of ch.creatures)if(o.alive&&o.ent>=0)cnt[o.ent]+=o.def.role==='swarm'?swarmShare(o):1; // v11.85: a swarm half eaten through is half a swarm to the ledger
   for(let ei=0;ei<SPAWN.length;ei++)POP.n[ei][c]=cnt[ei]/Q.creatures;}
 function ecoDebit(o){if(o.ent<0||!o.chunk)return;const c=o.chunk.i*NCELL+o.chunk.j;POP.n[o.ent][c]=Math.max(0,POP.n[o.ent][c]-1/Q.creatures);}
 // ---------- the model ----------
@@ -150,7 +150,7 @@ function ecoTick(dt0){
     for(let ei=0;ei<SPAWN.length;ei++){const e=SPAWN[ei],K=ecoOf(e.kind);if(!K.mortal)continue;
       const gap=POP.n[ei][c]*Q.creatures-ECO_CNT[ei],ow=POP.ow[ei][c]*Q.creatures,extra=Math.floor(gap+ow+1e-4); // the ledger's own shortfall (a reload rounded down, a creature wandered out) plus the births the cell has been owed since it loaded, both in animals the cell actually shows (Q.creatures)
       if(extra>=1){const rng=mulberry((c*7919+ei*104729+(POP.laid|0)+(POP.recruits|0))>>>0);let got=0;
-        if(e.land||DEFS[e.kind].surface){const g=placeKind(ch,e,Math.min(2,extra),rng,{ent:ei,juv:true,off:true});let r=g.next();while(!r.done)r=g.next();got=r.value||0;POP.recruits+=got;} // the strand's scuttles walk in
+        if(e.land||DEFS[e.kind].surface||DEFS[e.kind].role==='swarm'){const g=placeKind(ch,e,Math.min(2,extra),rng,{ent:ei,juv:DEFS[e.kind].role!=='swarm',off:true});let r=g.next();while(!r.done)r=g.next();got=r.value||0;POP.recruits+=got;} // the strand's scuttles walk in; a swarm forms out of sight (v11.85: a swarm lays no clutch)
         else got=layEggs(ch,e,ei,Math.min(e.grp?Math.max(3,e.grp):3,extra),rng)||0;
         const fromOw=Math.max(0,got-Math.max(0,gap))/Q.creatures;if(fromOw>0){POP.ow[ei][c]=Math.max(0,POP.ow[ei][c]-fromOw);POP.n[ei][c]+=fromOw;}}}} // what the clutch took out of the owed goes into the ledger: the eggs are counted as living from here (ECO_CNT above)
 }

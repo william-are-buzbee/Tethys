@@ -59,7 +59,7 @@ function moults(kind){const sp=specOfKind(kind),g=sp&&GRAMMAR[sp.clade];return !
 // the kind built in a coat class: its PAL preset swapped for the shifted twin for the build and put back (the zoo's own trick for the variants)
 function buildKind(d,kind,cls){const sp=specOfKind(kind),pk=sp&&typeof sp.coat==='string'?sp.coat:null;if(!cls||!pk||!PAL[pk])return d.build();const p0=PAL[pk];PAL[pk]=coatChem(p0,cls,sp.clade);try{return d.build();}finally{PAL[pk]=p0;}}
 // a def with the size-dependent numbers scaled by k (a juvenile at ECO.juv, an adult's band at VARY): chained to the kind's so every other read falls through
-function scaledDef(d,k){const j=Object.create(d),sq=Math.sqrt(k);j.size=d.size*k;if(d.speed)j.speed=d.speed*sq;if(d.top)j.top=d.top*sq;if(d.flee)j.flee=d.flee*sq;if(d.reach)j.reach=d.reach*k;if(d.dmg)j.dmg=d.dmg*k*k;if(d.radius)j.radius=d.radius*k;if(d.lunge)j.lunge=d.lunge*sq;if(d.detect)j.detect=d.detect*k;if(d.clear!==undefined)j.clear=d.clear*k;if(d.food)j.food=Math.max(1,Math.round(d.food*k));return j;}
+function scaledDef(d,k){const j=Object.create(d),sq=Math.sqrt(k);j.size=d.size*k;if(d.speed)j.speed=d.speed*sq;if(d.top)j.top=d.top*sq;if(d.flee)j.flee=d.flee*sq;if(d.reach)j.reach=d.reach*k;if(d.dmg)j.dmg=d.dmg*k*k;if(d.radius)j.radius=d.radius*k;if(d.lunge)j.lunge=d.lunge*sq;if(d.detect)j.detect=d.detect*k;if(d.clear!==undefined)j.clear=d.clear*k;if(d.food)j.food=Math.max(1,Math.round(d.food*k));if(d.filter)j.filter=d.filter*k*k;return j;} // filter (v11.85): an area, with the square
 // a soft body's place: on the floor within MOULT.hide of p, clear of solids at its own radius but with one within 2 m (a rock, a stalk, a structure's foot); failing that, the floor where it is
 function hideSpot(ch,p,rng,d){const r=d.size*0.5,cl=(d.clear!==undefined?d.clear:d.size*0.35)+0.05;
   for(let k=0;k<12;k++){const a=rng()*TAU,dd=1+rng()*MOULT.hide,x=p.x+Math.cos(a)*dd,z=p.z+Math.sin(a)*dd,h=groundAt(x,z);if(h>-3)continue;
@@ -167,7 +167,7 @@ function setWander(c){
   else p.y=clamp(fh+rnd(4,d.cruise||30),fh+3,-4-d.size*0.4);
   c.wander.copy(p);c.wanderT=rnd(6,14);
 }
-function wander(c,dt){c.wanderT-=dt;if(c.wanderT<=0||c.pos.distanceTo(c.wander)<3)setWander(c);const k=burstK(c,dt);seek(c,c.wander,c.def.speed*(c.def.cruiseF||0.45)*k,dt,0.8*k);}
+function wander(c,dt){if(filterSeek(c,dt))return;c.wanderT-=dt;if(c.wanderT<=0||c.pos.distanceTo(c.wander)<3)setWander(c);const k=burstK(c,dt);seek(c,c.wander,c.def.speed*(c.def.cruiseF||0.45)*k,dt,0.8*k);} // v11.85: a hungry filter feeder goes to the swarm instead (the veil, the comb; the ram between hunts)
 // o is on d's prey list: by its kind, or (v11.69) a young of the player's line to whatever hunts the player (line.js lineKind; the crusher's preyClade by the line's preset)
 function preyOn(d,o){if(d.prey.indexOf(o.kind)>=0)return true;return !!(o.def.line&&d.prey.indexOf('player')>=0&&(!d.preyClade||o.def.lineId===d.preyClade));}
 function findPrey(c,R){
@@ -326,6 +326,7 @@ function updateWatcher(c,dt){
 // ribbon of seven costs forty-two distances. v4's fixed offsets from a school centre read as a block; this is the ribbon.
 function updateBoid(c,dt){
   const s=c.school,d=c.def,R=d.size*14,R2=R*R,Rs=d.size*4.5;let ax=0,ay=0,az=0,cx=0,cy=0,cz=0,sx=0,sy=0,sz=0,n=0;
+  if(d.filter>0){if(hungerTick(c,dt))return;c.sw=s.sw||null;filterIntake(c,dt);} // v11.85: the sifter's stomach, fed through the swarm its school has moved into (updateSchools)
   for(const o of s.members){if(o===c||!o.alive)continue;const dx=o.pos.x-c.pos.x,dy=o.pos.y-c.pos.y,dz=o.pos.z-c.pos.z,d2=dx*dx+dy*dy+dz*dz;if(d2>R2)continue;n++;ax+=o.vel.x;ay+=o.vel.y;az+=o.vel.z;cx+=dx;cy+=dy;cz+=dz;
     if(d2<Rs*Rs){const dd=Math.sqrt(d2)||0.01,f=(Rs-dd)/(dd*Rs);sx-=dx*f;sy-=dy*f;sz-=dz*f;}}
   T3.copy(s.target).sub(c.pos);const L=T3.length()||0.01;T3.multiplyScalar(Math.min(1,L/6)/L);
@@ -341,13 +342,15 @@ function updateSchools(dt){
   for(const s of schools){
     let n=0;T1.set(0,0,0);for(const c of s.members)if(c.alive){n++;T1.add(c.pos);}if(n)s.pos.copy(T1.multiplyScalar(1/n));
     s.t-=dt;
-    if(s.t<=0||s.pos.distanceTo(s.target)<3){s.t=rnd(5,12);const p=s.home.clone().add(V3(rnd(-30,30),0,rnd(-30,30)));const fh=groundAt(p.x,p.z),mid=s.members.length&&s.members[0].def.mid;p.y=fh<CHEMO?clamp(s.home.y+rnd(-30,30),-400,-20):mid?clamp(s.home.y+rnd(-12,12),fh+8,-8):clamp(fh+rnd(1.5,8),fh+1.5,-3);s.target.copy(p);} // mid (v11.66): a swarm of the water column keeps its own depth
+    if(s.t<=0||s.pos.distanceTo(s.target)<3){if(s.sw&&s.sw.alive){const R=swarmR(s.sw);s.t=rnd(3,6);s.target.set(s.sw.pos.x+(Math.random()-0.5)*R,s.sw.pos.y+(Math.random()-0.5)*R*0.4,s.sw.pos.z+(Math.random()-0.5)*R);} // v11.85: a hungry school of filter feeders moves through the swarm it found
+      else{s.t=rnd(5,12);const p=s.home.clone().add(V3(rnd(-30,30),0,rnd(-30,30)));const fh=groundAt(p.x,p.z),mid=s.members.length&&s.members[0].def.mid;p.y=fh<CHEMO?clamp(s.home.y+rnd(-30,30),-400,-20):mid?clamp(s.home.y+rnd(-12,12),fh+8,-8):clamp(fh+rnd(1.5,8),fh+1.5,-3);s.target.copy(p);}} // mid (v11.66): a swarm of the water column keeps its own depth
     // threats: the player, and any hunter of the members' kind, scanned four times a second (every member reading every creature
     // was a thousand by a thousand a frame)
     s.scanT=(s.scanT||0)-dt;if(s.scanT<=0){s.scanT=0.25;let th=null,td=14;const kind=s.members.length?s.members[0].kind:'';
       if(!playerGone()){const d=s.pos.distanceTo(player.pos);if(d<td){th=player.pos;td=d;}}
       for(const c of creatures){if(!c.alive||!c.def.prey||c.def.prey.indexOf(kind)<0)continue;const d=s.pos.distanceTo(c.pos);if(d<td){th=c.pos;td=d;}}
-      s.threat=th;}
+      s.threat=th;
+      if(kind&&DEFS[kind].filter>0){let hn=0,hs=0;for(const m of s.members)if(m.alive){hn++;hs+=m.hunger;}if(!hn||hs/hn<=(s.sw?FILTER.full:ECO.hungry))s.sw=null;else if(!s.sw||!s.sw.alive||s.sw.pos.distanceTo(s.pos)>seeOf(DEFS[kind])*1.5)s.sw=swarmNear(s.pos,seeOf(DEFS[kind]));if(s.sw&&s.sw.alive&&s.pos.distanceTo(s.sw.pos)<swarmR(s.sw))s.home.copy(s.sw.pos);}} // v11.85: the school's swarm — sought when its members are hungry on the mean, kept until they are fed; a school feeding in a swarm makes it home, so the ribbons follow the layer's day
     const th=s.threat;
     if(th){T2.copy(s.pos).sub(th);T2.y*=0.2;T2.normalize().multiplyScalar(12);s.target.copy(s.pos).add(T2);const fh=groundAt(s.target.x,s.target.z);s.target.y=clamp(s.target.y,fh+1.5,-3);s.t=Math.min(s.t,2);}
   }
@@ -406,6 +409,37 @@ function updateSwarm(c,dt){
   const dy=ty-c.pos.y;c.vel.y+=(clamp(dy*0.5,-SW_RISE,SW_RISE)-c.vel.y)*Math.min(1,2*dt);
   if(c.pos.y>TIDE-8&&c.vel.y>0)c.vel.y=0;
 }
+// ---------- filter feeding (v11.85, PLANKTON.md §11, pass 5) ----------
+// The mean is never enough: a body with a sieve (derive's filter, m² — the combs, a webbed funnel that sieves; DEFS.filter off the build, the
+// player's on its line kind) fills its stomach from the swarms it passes through, not from a bite — a swarm has no capsule to hold. The intake
+// a second is the sieve's area × the water through it (the body's speed, or the combs' own sweep FILTER.sweep when it hangs still) × the swarm's
+// density (its flesh over the cloud's volume as drawn) × FILTER.eff, taken off the stomach over the kind's meal as a kill's is (ecology.js ecoOf)
+// and off the swarm's flesh — never more than the stomach has room for. A swarm eaten down to FILTER.spent of its biomass disperses (swarmSpent:
+// the ledger debited, the snow's points parked). Open water returns nothing: the swarm is the meal (the veil's 100 m² funnel at its sweep takes a
+// meal in ~45 s of a full 216 t swarm, 75 of the wider 167 t one seen; the comb's 13 m² in ~25, the ram's 1.2 m² in ~50; a sifter's 0.08 m² fills in seconds). A hungry filter feeder (past ECO.hungry, like every hunter) steers for the
+// nearest swarm within FILTER.see — a cloud tens of metres across is seen further than a fish is — and circles inside it until fed to FILTER.full
+// or the swarm is spent (filterSeek: the wanderers, and the ram's idle between hunts); a school of sifters moves as one (updateSchools). The player
+// runs the same intake (filterPlayer, from updatePlayer) on the same clock (hungerTick): a comb-built body is slow, safe from nothing, always going somewhere.
+const FILTER={eff:0.35,sweep:1.0,see:120,full:0.06,spent:0.08,scan:0.5}; // the sieve's efficiency; the combs' sweep, m/s (the least water through them); m a swarm is sought within, plus the kind's home (seeOf: a cloud tens of metres across is found from further than a fish is, and a body that ranges 200 m finds it from 320); the hunger a feeder leaves at; the share of a swarm's biomass at which it disperses; s between scans
+const SW_R=[8,14]; // the cloud's radius by the swarm's draw q (atmosphere.js swBlock seeds its points in it; here the volume the flesh is spread over)
+function swarmR(c){return lerp(SW_R[0],SW_R[1],c.q||0.5);}
+function seeOf(d){return FILTER.see+(d.home||30);} // m a filter feeder of this kind seeks a swarm within: the veil 320, the comb and the ram 300, a sifter school 150
+function swarmVol(c){const R=swarmR(c);return 4/3*Math.PI*R*R*R*0.45;} // flattened 0.45 in y, as drawn
+function swarmShare(c){const m=bioMass(c.def);return m>0?clamp(c.flesh/m,0,1):0;} // what is left of it, 0..1 (the snow draws that share of its points; the ledger counts it so)
+function swarmNear(pos,R){let best=null,bd=R;for(const o of creatures){if(!o.alive||o.def.role!=='swarm')continue;const dd=o.pos.distanceTo(pos);if(dd<bd){bd=dd;best=o;}}return best;}
+function swarmSpent(c){if(!c.alive)return;c.alive=false;ecoDebit(c);POP.eaten+=1;removeCreature(c);}
+function filterIntake(o,dt){const K=eaterK(o),area=o===player?K.filter:(o.def.filter||0),sw=o.sw;if(!(area>0)||!sw||!sw.alive)return false;
+  if(o.pos.distanceTo(sw.pos)>swarmR(sw))return false;if(!feeds(o))return false; // a brooding ringmouth has stopped feeding (line.js)
+  const v=Math.max(FILTER.sweep,o.vel.length()),dens=sw.flesh/swarmVol(sw),take=Math.min(FILTER.eff*area*v*dens*dt,o.hunger*K.meal,sw.flesh);
+  o.hunger=Math.max(0,o.hunger-take/K.meal);o.starveT=0;sw.flesh-=take;o.filtT=0.5;if(sw.flesh<FILTER.spent*bioMass(sw.def))swarmSpent(sw);return take>0;}
+function filterSeek(c,dt){const d=c.def;if(!(d.filter>0))return false;
+  c.swT=(c.swT||0)-dt;if(c.swT<=0){c.swT=FILTER.scan;if(c.hunger>ECO.hungry||(c.state==='filter'&&c.hunger>FILTER.full)){if(!c.sw||!c.sw.alive||c.sw.pos.distanceTo(c.pos)>seeOf(d)*1.5)c.sw=swarmNear(c.pos,seeOf(d));}else c.sw=null;}
+  const sw=c.sw;if(!sw||!sw.alive){if(c.state==='filter'){c.state='wander';setWander(c);}return false;}
+  const R=swarmR(sw),dist=c.pos.distanceTo(sw.pos),k=burstK(c,dt),sp=d.speed*(d.cruiseF||0.45)*k;if(c.state!=='filter'){c.state='filter';c.wanderT=0;}
+  if(dist>R*0.7)seek(c,sw.pos,sp,dt,0.8*k);
+  else{c.wanderT-=dt;if(c.wanderT<=0||c.pos.distanceTo(c.wander)<2){c.wanderT=rnd(3,7);c.wander.set(sw.pos.x+(Math.random()-0.5)*R*1.2,sw.pos.y+(Math.random()-0.5)*R*0.6,sw.pos.z+(Math.random()-0.5)*R*1.2);}seek(c,c.wander,sp*0.7,dt,0.8*k);} // inside: circling through the cloud
+  filterIntake(c,dt);return true;}
+function filterPlayer(dt){const P=player;P.swT=(P.swT||0)-dt;if(P.swT<=0){P.swT=FILTER.scan;P.sw=eaterK(P).filter>0?swarmNear(P.pos,FILTER.see):null;}filterIntake(P,dt);} // the player's nearest swarm within FILTER.see, for the readout and the intake
 function updateJelly(c,dt){
   const k=c.def.size>3?0.5:1;c.vel.set(0.3*k*Math.sin(t*0.3*k+c.t0),0.15*k*Math.sin(t*0.5*k+c.t0),0.3*k*Math.cos(t*0.27*k+c.t0));
   c.biteT-=dt;if(c.def.dmg>0&&!playerGone()&&c.biteT<=0&&c.pos.distanceTo(player.pos)<Math.max((c.def.reach||0)+1,reachOf(c,player))){c.biteT=0.6;stingPlayer();}
@@ -450,7 +484,7 @@ function updateCreatures(dt0){
       case 'watch':updateWatcher(c,dt);break;
       case 'hunter':updateHunter(c,dt);break;
       case 'graze':updateGrazer(c,dt);break;
-      case 'wander':wander(c,dt);break;
+      case 'wander':if(d.filter>0&&hungerTick(c,dt))break;wander(c,dt);break; // v11.85: a filter feeder runs the stomach's clock (the veil, the comb); a wanderer with no sieve has no stomach on the model
       case 'coil':updateCoil(c,dt);break;
       case 'ambush':updateLurker(c,dt);break;
       case 'drift':updateJelly(c,dt);break;

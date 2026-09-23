@@ -5621,3 +5621,46 @@ round the body at speed reads at all.
 `c.anim` called on it, and a swarm has no anim (`swarmBuild`). `updateCreatures` guards the call now (`if(c.anim)`); the shed's call in `shedFlora`
 is only reached by kinds that moult. The smoke tests never met one that close. `node build.js --test` green on both tiers, read after the exit line
 this time.
+
+## v11.85 — filter feeding: the swarms are food, the sieve off the build (23 Sep 2026)
+
+PLANKTON.md §13 pass 5 (§11). The person: "Go ahead and work on pass 5 for filter feeding … the stomach fills from a swarm the body passes through,
+not from a bite, since a swarm has no capsule to hold."
+
+- **The sieve is derived** (creatures_spec.js `derive` → `filter`, m², with the square of the scale): the frontal `combs` of the weapon part (two
+  combs of n segments × seg × the teeth's tl — the comb 13.3 m², the sifter 0.08), a `comb` part marked `sieve` (the rake's plane w × len, or n
+  hanging plates; the ram's 1.2) and a webbed `net` marked `sieve` (the funnel's mouth, π(R + len·wsp/2)²; the veil's 99.8 at s 1.4). `sieve` is a new
+  boolean control on both (the registry: label, default off) because the geometry alone was wrong twice over — a first cut read every comb as a sieve
+  and made the tread, the cinder, the wedge, the plough, the lash and the relict hunters of swarms on paper (the hingeshells' mouth combs rake the
+  floor), and a web as a sieve would have put the pall on the swarms below the chemocline, where none are, and starved it. The switch is the creator's.
+  `defPhysics` puts `filter` on every `DEFS` row off the build (a `scaledDef` individual's with k²); `lineKind` gives the player's row the same.
+- **On the ledger** (ecology.js `ecoOf`): a kind with a sieve has `swarm` on its paper prey — never on `DEFS.prey`, which is what a hunter chases and
+  bites — so it is a hunter (the response, the condition, `ke`, starvation); the swarm is `edible`, so mortal: it breeds at its hand `r` toward the
+  crop's capacity and is taken by biomass share. `test/census.js` loads the spec compiler now so the sieves are on the rows; `node test/census.js 120`:
+  the swarms at 17,064 of a 19,549 capacity (the take is a small share of 216 t clouds), the sifter 19,737 → 20,965, the comb 237 → 288, the ram 160 → 205,
+  nothing under a fifth. The veil (hp 1e9, not edible) is still immortal on paper and sits at `ke`, the capacity its swarms allow.
+- **Live** (creatures_ai.js, the `FILTER` table): the intake a second is `eff` 0.35 × the sieve × the water through it (the body's speed floored at the
+  combs' `sweep` 1 m/s) × the swarm's density (`c.flesh`, `bioMass` 216 t when whole, over the cloud's volume as drawn — `swarmR` 8–14 by q, flattened
+  0.45; `SW_R` moved here from atmosphere.js so the draw and the intake read one radius), capped by the stomach's room and the swarm's flesh, off the
+  stomach over the kind's meal as a kill's is (`filterIntake`; a brooding ringmouth takes nothing). A starving veil hanging in a full swarm is fed in
+  ~45 s and takes half of it; the density falls with the flesh, so the tail is exponential (the last of a swarm under a starving veil ~140 s more) and
+  at `spent` 8% the swarm disperses (`swarmSpent`: debited, `POP.eaten`). The snow draws the share of a swarm's points its flesh leaves (`swarmShare`),
+  so the cloud thins as it is eaten; `ecoWriteBack` counts a half-eaten swarm as half. A filter feeder past `ECO.hungry` seeks the nearest swarm within
+  `seeOf` (`see` 120 + its home: the veil 320, the comb and the ram 300, a sifter school 150), swims to it, circles inside through wander points in the
+  cloud (`filterSeek`, state `filter`: the wander role — which runs `hungerTick` now when it has a sieve — and the ram's idle between hunts), and lets
+  it go at `full` 0.06 or when it is spent. A sifter school moves as one (`updateSchools`: the members' mean hunger, the swarm as target and, feeding,
+  as home, so the ribbons follow the layer's day); each member takes its own intake. A swarm the ledger owes a loaded cell forms out of sight, whole
+  (`ecoTick` through `placeKind` `off`, no clutch, no juvenile). The player: `filterPlayer` from `updatePlayer` — the nearest swarm within 120 m every
+  half second, the intake inside it, the readout's hunger line with the sieve's m², the swarm's distance and what is left of it; a body with a sieve is a
+  hunter on the model and runs the clock (the v11.75 line "a filter feeder feeds off the model" is gone).
+- **Also**: ecology.js `ecoCap`'s `max` clause had been swallowed by v11.84's trailing comment (the strand's cap of 8 scuttles a cell went unread:
+  41,860 in the 120-day census, 11,146 now, as before v11.84). Back on its line.
+- **Tests**: `test/plankton.js` — the sieve off the build for the four and none on the tread, the pall or the finback; the swarm on the paper prey and on
+  no chase list; a starving veil fed in 46 s through a full swarm, the swarm's loss exactly the meal (53% left), nothing taken fed or outside the cloud,
+  the swarm dispersing eaten down (135 s more), a hungry comb 50 m off seeking a swarm, fed in it in 50 s and letting it go; a sifter's stomach on the
+  model. `test/live.js` tables the filter feeders with the hunters (a swarm as a meal, `filter` as hunting). `node build.js --test` green on both tiers.
+- **Seen** (dev.html in the app's browser, the loop driven by hand — the pane ran at a twentieth of real time, so every number below is game time; the frames posted to `test/render/`): as the veil (`startNew(playerClade(SPECS.veil))`, the readout's line `sieve 99.8 m² in a swarm, 97% left`) hanging still in a 167 t swarm of radius 13.2 over the shelf by day, hunger 0.95 → 0.71 in 20 s and 0.53 in 60 s, the swarm 97% → 82% → 71% (`v85_veil_swarm_0/20/60.png`: the veil from behind, the cloud too faint from a camera in the air over 11 m of water to read). From the veil's nose in first person in a gold swarm at −47 in the kelp (`v85_swarm_fp_full.png`), then the same swarm eaten to 29% with 53 of its 75 points parked (`v85_swarm_fp_120.png`): fewer gold squares, which reads only side by side — the cloud is sparse to begin with. A ram spawned 60 m from a full swarm at hunger 1 went to state `filter` on its first scan, closed at ~3.4 m/s, was inside at 12 s and fed 1 → 0.69 over the next 15 s at the computed 0.03 t/s; `v85_ram_in_swarm.png`: the ram in the cloud with a sifter shoal feeding beside it. The sifter schools: over 15 s on the flank, schools with a swarm in reach moved 2 m/s to it and fed (0.74 → 0.07, 0.57 → 0.08); schools past 360 m stood, as everything past the step radius does. Not seen: a veil of the world's own feeding (none loaded near the shelf), the thinning of a cloud at the swarm's full point count on the person's tier, the night.
+
+**Unseen, ask in this order**: whether a veil or a ram is ever seen feeding in a swarm (it circles inside; the cloud thins), then whether the sifter
+schools find the swarms by night, then whether ~45 s for the veil's meal and the half-swarm it takes read right (`FILTER.eff`), then whether a
+comb-built child is worth playing yet — no founder with a sieve exists until a veil, comb, sifter or ram has been seen.

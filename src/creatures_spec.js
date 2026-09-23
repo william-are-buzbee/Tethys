@@ -1350,7 +1350,7 @@ const PARTS = {
       hold:{clades:['ringmouths'],off:true,params:['n','z','R','len','w','segs','curve','ks','damp','cosMax','plan','phase','taper','col','shade','s0','a0']}, // off (v11.70.1, the person): worn by no species; kept, offered to no one
       crawl:{clades:['ringmouths'],params:['n','len','w','segs','ks','damp','cosMax','plan','phase','z0','y0','taper','h','col','shade','s0','s1','a0','a1','k0','k1','sw']},
       raise:{clades:['ringmouths'],params:['n','len','w','segs','ks','damp','cosMax','plan','phase','z0','y0','taper','h','col','shade','s0','a0','wob','wf','f0','sw']},
-      net:{clades:['ringmouths'],params:['n','z','R','len','w','segs','curve','ks','damp','cosMax','plan','phase','taper','col','shade','soft','web','wsp','s0','s1','a0','wob','wf','f0','jet']},
+      net:{clades:['ringmouths'],params:['n','z','R','len','w','segs','curve','ks','damp','cosMax','plan','phase','taper','col','shade','soft','web','wsp','sieve','s0','s1','a0','wob','wf','f0','jet']},
       hang:{clades:['drifters'],params:['n','R','len','w','segs','ks','damp','cosMax','phase','y0','taper','col','soft','a0','pm']},
       lines:{clades:['drifters'],params:['n','R','len','w','segs','ks','damp','cosMax','phase','y0','taper','col','soft','lean','toff']}
     },
@@ -1378,6 +1378,7 @@ const PARTS = {
       soft: {label: 'soft (no contact)', k: 'b', d: (F, p) => p.style === 'net' || p.style === 'hang' || p.style === 'lines'},
       web: {label: 'webbed', k: 'b', d: (F, p) => p.style === 'net'},
       wsp: {label: 'web spread', k: 'k', b: [0.4, 0.9], x: [0, 1.5], d: 0.8},
+      sieve: {label: 'the web sieves', k: 'b', d: false}, // v11.85 (PLANKTON §11): a webbed net held open as a funnel is a filter feeder's sieve (the veil); off it is a net for catching in the dark (the pall)
       sw: {label: 'sweep', k: 'k', b: [0, 0.4], x: [0, 1], d: 0.15},
       // the pose: jet (the jetters: spread by speed, closed on the jet), cone (great/ortho: closing from s0 to s1 over the speed band
       // k0..k1), withdraw (the coilshell: pulled in when st.withdrawn), hold (a fixed spread), crawl (flat: s0/a0 at rest to s1/a1 over
@@ -1473,7 +1474,8 @@ const PARTS = {
         turn: down ? 0 : 0.3,
         thrust: down ? 0 : p.n * p.len * lk * p.w * (flat ? 0.6 : 0.4),
         legs: flat && st0 === 'crawl',
-        reach: down ? 0 : p.len * lk
+        reach: down ? 0 : p.len * lk,
+        filter: p.web && p.sieve ? Math.PI * Math.pow(p.R + p.len * lk * p.wsp * 0.5, 2) : 0 // v11.85: the funnel's mouth — the ring's radius plus the arms' spread at the web's
       };
     }
   },
@@ -1824,8 +1826,8 @@ const PARTS = {
   // ---------- hingeshells (buildRaptor's choices) ----------
   comb: {
     reg:{
-      rake:{clades:['hingeshells'],params:['n','y','z','w','len','snap']},
-      teeth:{clades:['hingeshells'],params:['n','x','y','z','w','len','stag','rake']}
+      rake:{clades:['hingeshells'],params:['n','y','z','w','len','snap','sieve']},
+      teeth:{clades:['hingeshells'],params:['n','x','y','z','w','len','stag','rake','sieve']}
     },
     cost: 1,
     params: {
@@ -1837,7 +1839,8 @@ const PARTS = {
       len: {label: 'length', k: 'len', b: [0.02, 0.3], x: [0.005, 1], d: (F, p) => (p.style === 'teeth' ? F.H.h * 0.6 : F.H.l * 0.35)},
       stag: {label: 'stagger', k: 'len', b: [0, 0.05], x: [0, 0.3], d: F => F.H.l * 0.03},
       rake: {label: 'rake', unit: '°', k: 'k', b: [0, 30], x: [-60, 60], d: 14},
-      snap: {label: 'snap to the body', k: 'b', d: false}
+      snap: {label: 'snap to the body', k: 'b', d: false},
+      sieve: {label: 'sieves the water', k: 'b', d: false} // v11.85 (PLANKTON §11): a comb held into the current is a filter feeder's sieve (the ram); off, the hingeshells' mouth combs rake the floor or comb a wound (the tread, the cinder, the lash) and feed no stomach from a swarm
     },
     build: (ctx, p) => {
       let y = p.y;
@@ -1849,10 +1852,10 @@ const PARTS = {
         // the tread's feeding combs: a row of n hanging plates across x, every other one a little forward
         const n = Math.max(2, Math.round(p.n));
         for (let i = 0; i < n; i++) ctx.P.push(part(G.box(p.w, p.len, p.w * 3.2), -p.x + (i * 2 * p.x) / (n - 1), y, p.z + (i % 2) * p.stag, ctx.pal.joint, {r: [p.rake * DEG, 0, 0]}));
-        return {};
+        return {filter: p.sieve ? n * p.w * p.len : 0}; // v11.85 (PLANKTON §11): a sieve's area — n hanging plates of w × len
       }
       comb(ctx.P, ctx.pal, 0, y, p.z, p.n, p.w, p.len);
-      return {};
+      return {filter: p.sieve ? p.w * p.len : 0}; // v11.85: a sieve's area — the rake's plane, w across by len long (the tines' count is the mesh, not the area)
     }
   },
   tailplate: {
@@ -2562,7 +2565,8 @@ const PARTS = {
         anim: anim,
         rig: whips,
         reach: (W === 'spears' ? L * 0.45 : W === 'whips' ? L * 0.7 : W === 'combs' ? p.seg * p.n * 0.8 : H.l * 1.6) * ln,
-        area: W === 'ram' ? 0 : H.w * H.l * 0.1 * wd
+        area: W === 'ram' ? 0 : H.w * H.l * 0.1 * wd,
+        filter: W === 'combs' ? 2 * Math.max(1, Math.round(p.n)) * p.seg * ln * p.tl : 0 // v11.85 (PLANKTON §11): the two combs' sieve — n segments of seg with teeth tl long, the plane each sweeps
       };
     }
   },
@@ -2961,6 +2965,7 @@ function derive(spec0) {
     flaps = false,
     capped = 0,
     eyes = 0,
+    filter = 0,
     zmin = F.tail,
     zmax = F.nose;
   for (const p of spec.parts) {
@@ -2983,6 +2988,7 @@ function derive(spec0) {
     if (r.leg) legLen = Math.max(legLen, r.leg);
     if (r.paddle) flaps = true;
     if (r.reach) reach = Math.max(reach, r.reach);
+    if (r.filter) filter += r.filter; // v11.85: the sieve's area (the combs, a webbed net that sieves) — the filter feeder's intake is this × the water it passes (creatures_ai.js filterIntake)
     if (r.streamline) cd *= r.streamline;
     if (r.capped) capped = r.capped;
     if (r.extent) {
@@ -3004,6 +3010,7 @@ function derive(spec0) {
     L = (zmax - zmin) * s;
   vol *= s3;
   area *= s2;
+  filter *= s2;
   const dens = gr.density + armour * 0.6,
     mass = vol * dens;
   if (jet) thrust += Math.pow(F.volume, 2 / 3) * DERIVE_K.jet * (F.jetK || 1); // the jet: the mantle's volume per pulse, and the pulse rate falling as 1/length (a sac pulses feebly: jetK)
@@ -3060,6 +3067,7 @@ function derive(spec0) {
     burst: burst,
     jetImp: jetImp,
     reach: +(reach * s + L * 0.5).toFixed(1),
+    filter: +filter.toFixed(3), // m² of sieve (v11.85, PLANKTON §11): 0 on a body with none — the stomach then has no swarm in its model
     cost: cost,
     length: +L.toFixed(2),
     plausible: plausible
@@ -3802,7 +3810,7 @@ const SPECS = {
     parts: [
       {kind: 'eyes', style: 'rim'},
       {kind: 'mouth', style: 'plates', where: 'front'},
-      {kind: 'comb', n: 5},
+      {kind: 'comb', n: 5, sieve: true},
       {kind: 'tailplate', style: 'plates'},
       {kind: 'legs'},
       {kind: 'valves', style: 'back'},
@@ -3920,7 +3928,7 @@ const SPECS = {
       {kind: 'eyes', style: 'collar', n: 12, z: 5.3, R: 2.45, r: 0.28, sy: 0.82, y0: 0},
       {kind: 'mouth', style: 'beak', y: -0.2, z: 5.5, R: 1.0},
       {kind: 'skirt', z: -4.2, R: 3.0, h: 3.6, len: 3.2, f0: 0.7, f1: 0, amp: 0.2, k0: 1, sk: 0},
-      {kind: 'arms', style: 'net', n: 22, z: 5.6, R: 2.1, len: 7, w: 0.16, segs: 3, curve: 0.2, ks: 20, damp: 6, cosMax: 0.3, plan: 'equal', col: 'belly', soft: true, web: true, wsp: 0.55, s0: 0.55, s1: 0.55, jet: false, a0: 0.1, wob: 0.05, wf: 0.4, f0: 0.8}
+      {kind: 'arms', style: 'net', n: 22, z: 5.6, R: 2.1, len: 7, w: 0.16, segs: 3, curve: 0.2, ks: 20, damp: 6, cosMax: 0.3, plan: 'equal', col: 'belly', soft: true, web: true, wsp: 0.55, sieve: true, s0: 0.55, s1: 0.55, jet: false, a0: 0.1, wob: 0.05, wf: 0.4, f0: 0.8}
     ],
     hit: [{a: [0, 0, -4.6], b: [0, 0, 4.6], r: 2.8}],
     behaviour: {role: 'wander'}

@@ -17,11 +17,11 @@ js+='\nglobal.__peak=()=>{player.pos.set(0,dispY,0);cellsAround();};';
 js+='\nglobal.__day=(hours,step)=>{for(let h=0;h<hours;h+=step){clockH+=step;POP.acc=ECO_STEP;ecoTick(ECO_STEP);let g=0;while(POP.model&&g++<5000)ecoTick(0);updateEggs(step/CLOCK_RATE);}};';
 js+='\nglobal.__eggs=()=>{let ow=0,nan=0;for(let ei=0;ei<SPAWN.length;ei++){const W=POP.ow[ei];for(let c=0;c<ECO_CELLS;c++){if(W[c]!==W[c])nan++;ow+=W[c];}}'
   +'return {day:+(clockH/DAY_H).toFixed(2),laid:POP.laid,hatched:POP.hatched,eggs:eggs.length,recruits:POP.recruits,owed:+ow.toFixed(1),nan,cells:chunks.size,creatures:creatures.length};};';
-// one sample of every hunter-role animal: hunger, state, and the distance to the nearest thing on its prey list
-js+='\nglobal.__H={n:0,k:{}};global.__samp=()=>{for(const c of creatures){if(!c.alive||c.dead)continue;const d=c.def;if(d.role!==\'hunter\'&&d.role!==\'ambush\'&&d.role!==\'trap\')continue;'
-  +'let bd=1e9;for(const o of creatures){if(!o.alive||o.dead||o===c)continue;if(d.prey.indexOf(o.kind)<0)continue;const dd=c.pos.distanceTo(o.pos);if(dd<bd)bd=dd;}'
+// one sample of every hunter-role animal (v11.85: and every filter feeder — a swarm is a meal to it): hunger, state, and the distance to the nearest thing on its prey list
+js+='\nglobal.__H={n:0,k:{}};global.__samp=()=>{for(const c of creatures){if(!c.alive||c.dead)continue;const d=c.def;if(d.role!==\'hunter\'&&d.role!==\'ambush\'&&d.role!==\'trap\'&&!(d.filter>0))continue;'
+  +'let bd=1e9;for(const o of creatures){if(!o.alive||o.dead||o===c)continue;if((d.prey||[]).indexOf(o.kind)<0&&!(d.filter>0&&o.def.role===\'swarm\'))continue;const dd=c.pos.distanceTo(o.pos);if(dd<bd)bd=dd;}'
   +'const r=__H.k[c.kind]||(__H.k[c.kind]={n:0,hun:0,hi:0,ch:0,near:0,nn:0,det:d.detect||d.radius||0,role:d.role});__H.n++;'
-  +'r.n++;r.hun+=c.hunger;if(c.hunger>0.9)r.hi++;if(c.state===\'chase\'||c.state===\'strike\'||c.state===\'lunge\'||c.state===\'feed\')r.ch++;if(bd<1e8){r.near+=bd;r.nn++;}}};';
+  +'r.n++;r.hun+=c.hunger;if(c.hunger>0.9)r.hi++;if(c.state===\'chase\'||c.state===\'strike\'||c.state===\'lunge\'||c.state===\'feed\'||c.state===\'filter\')r.ch++;if(bd<1e8){r.near+=bd;r.nn++;}}};';
 js+='\nglobal.__hunt=()=>({kills:POP.kills,starved:+POP.starved.toFixed(1),carcasses:carcasses.length,rows:Object.keys(__H.k).map(k=>{const r=__H.k[k];'
   +'return {kind:k,role:r.role,n:r.n,hunger:r.hun/r.n,hi:100*r.hi/r.n,ch:100*r.ch/r.n,near:r.nn?r.near/r.nn:-1,det:r.det};}).sort((a,b)=>b.hi-a.hi)});';
 const tmp=path.join(require('os').tmpdir(),'tethys_live.js');
