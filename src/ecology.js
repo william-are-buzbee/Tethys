@@ -25,7 +25,7 @@ const ECO={r0:0.12,m:0.1,cyc:0.5,q0:0.05,H:4,take:0.35,mig:0.03,starve:0.35,juv:
 // per kind, derived once: mass (size cubed — the game's unit is the metre), stock (the individuals one drawn one stands for: a ribbon
 // of ten flickers is a shoal — the way the snow's points stand for more; only the small forage carries it), food (mass × stock, what
 // eating one is worth), r, m, cycle, need (mass a day), meal (need × cycle: what fills it from starving), prey (kinds), mortal
-const ECO_K={};
+const ECO_K={},_ecoS={h:0,f:null}; // _ecoS: a sample stand-in for cropAt (v11.84)
 function ecoOf(kind){
   let k=ECO_K[kind];if(k)return k;const d=DEFS[kind],mass=bioMass(d),q=Math.pow(mass,0.25);
   const prey=d.prey?d.prey.filter(p=>p!=='player'&&DEFS[p]):[],stock=d.stock||1;
@@ -61,7 +61,7 @@ function ecoCap(c,ch){
   const hs=new Float32Array(36),sl=new Float32Array(36),fs=[];
   for(let b=0;b<6;b++)for(let a=0;a<6;a++){const n=b*6+a,x=x0+(a+0.5)/6*CELL,z=z0+(b+0.5)/6*CELL;
     if(ch){hs[n]=ch.h(x,z);sl[n]=ch.slope(x,z);fs.push(ch.f(x,z));}else{const s=sample(x,z);hs[n]=s.h;sl[n]=0;fs.push(s.f.slice());}}
-  SPAWN.forEach((e,ei)=>{let w=0;for(let n=0;n<36;n++)w+=envW(e.env,hs[n],sl[n],fs[n]);let K=e.n*w/36;if(e.max!==undefined)K=Math.min(K,e.max);
+  SPAWN.forEach((e,ei)=>{let w=0;for(let n=0;n<36;n++){let t=envW(e.env,hs[n],sl[n],fs[n]);if(t>0&&e.crop){_ecoS.h=hs[n];_ecoS.f=fs[n];t*=cropK(cropAt(x0+((n%6)+0.5)/6*CELL,z0+(Math.floor(n/6)+0.5)/6*CELL,_ecoS));}w+=t;}let K=e.n*w/36; // crop (v11.84): the swarms' capacity is the lit standing stock'sif(e.max!==undefined)K=Math.min(K,e.max);
     const k0=POP.k[ei][c];POP.k[ei][c]=K;POP.ke[ei][c]=K;
     if(first){POP.n[ei][c]=K*(ecoOf(e.kind).hunter?ECO.initH:ECO.init);POP.ow[ei][c]=rg()*Math.min(1,K)/Q.creatures;} // the owed birth starts at a random phase (v11.31.2): a population is not everywhere at the same point in its cycle, and every cell starting at zero was the whole reason the first clutch took two game days to appear. Over Q.creatures because a clutch is one animal the cell *shows*, so the low tier waits the same time for it
     else if(k0>1e-4)POP.n[ei][c]*=K/k0;else POP.n[ei][c]=Math.min(POP.n[ei][c],K);

@@ -416,9 +416,30 @@ const waterDome=(function(){const mat=new THREE.MeshBasicMaterial({color:0x00000
 // by depth and daylight, updateAtmosphere) plus the player's light by distance — so the snow shows in a torch's reach in the
 // dark and is invisible outside it. The shader patch reads r128's points chunks; if a line isn't found it warns and the snow
 // draws uniform (the old look) rather than not at all.
-const PN=Q.snow,SN_HW=30,pp=new Float32Array(PN*3),pv=new Float32Array(PN*3),pc=new Float32Array(PN*3),ps=new Float32Array(PN*2),pk=new Uint8Array(PN),pr=new Float32Array(PN),ph=new Float32Array(PN),pf=new Float32Array(PN*10),snL=new Uint16Array(PN); // pf (v11.82): the six fields, then the maps' texel (the two crops, X, the floor); snL: a chain follower's leader (its own index otherwise)
+const PN=Q.snow,SN_SW=Math.min(480,Math.floor(PN*0.25)),SN_SWN=6,SN_SWP=SN_SW/SN_SWN,PN_SN=PN-SN_SW,SN_HW=30,pp=new Float32Array(PN*3),pv=new Float32Array(PN*3),pc=new Float32Array(PN*3),ps=new Float32Array(PN*2),pk=new Uint8Array(PN),pr=new Float32Array(PN),ph=new Float32Array(PN),pf=new Float32Array(PN*10),snL=new Uint16Array(PN); // pf (v11.82): the six fields, then the maps' texel (the two crops, X, the floor); snL: a chain follower's leader (its own index otherwise)
 const SN_K=[{sz:0.5,fall:0.005},{sz:1.0,fall:0.02},{sz:0.6,fall:0.05},{sz:0.55,fall:-0.28},{sz:1.35,fall:0.006},{sz:0.5,fall:0.012}]; // size × the material's, m/s down; 5 the chain (v11.82)
-const SN_PIG=[[0.70,0.86,0.62],[0.86,0.78,0.48],[0.78,0.62,0.68]],SN_PALE=[0.82,0.90,0.78],SN_CHAIN=[0.80,0.78,0.66],SN_CK=0.6,SN_CHW=0.12; // the live kind's colour by pigment kind (green, gold, red) and in poor water; the chain's; the crop (mg/m³) at which the live kind is half its full weight; the chains' share of the live weight
+const SN_PIG=[[0.70,0.86,0.62],[0.86,0.78,0.48],[0.78,0.62,0.68]],SN_PALE=[0.82,0.90,0.78],SN_CHAIN=[0.80,0.78,0.66],SN_CK=0.6,SN_CHW=0.12;
+// The swarm block (v11.84, PLANKTON.md §10): the last SN_SW points of the snow's own buffer are the swarms' — SN_SWN swarms nearest the camera
+// within SW_SEE get SN_SWP points each, drawn with the same material and the kinds' colours a shade warmer and bigger (SW_SZ), so what tells a
+// swarm from the snow is motion and density: the points hold an offset in the cloud (swOff, a slowly turning jitter), relax back to it after the
+// flow round a body scatters them (the same FLOW the snow reads), and the whole cloud rises and sinks with its record (creatures_ai.js updateSwarm).
+// A swarm that leaves the reach or the world gives its block back; an unassigned block parks at the camera like a parked point.
+const SW_SEE=160,SW_SZ=1.7,SW_R=[8,14],swAt=new Array(SN_SWN).fill(null),swOff=new Float32Array(SN_SW*3),swSeed=new Float32Array(SN_SW);let swT=0;const SW_COL=[[0.78,0.90,0.66],[0.92,0.82,0.50],[0.84,0.66,0.72]]; // SW_R: the cloud's radius by the swarm's draw q; SW_COL the kinds' colours for a swarm
+function swAssign(){ // every half second: the nearest swarms take the blocks, the rest give theirs back
+  const cx=camera.position.x,cy=camera.position.y,cz=camera.position.z,near=[];
+  for(const c of creatures){if(c.def.role!=='swarm'||!c.alive)continue;const dd=len3(c.pos.x-cx,c.pos.y-cy,c.pos.z-cz);if(dd<SW_SEE)near.push([dd,c]);}
+  near.sort((a,b)=>a[0]-b[0]);const keep=new Set(near.slice(0,SN_SWN).map(e=>e[1]));
+  for(let k=0;k<SN_SWN;k++)if(swAt[k]&&!keep.has(swAt[k]))swAt[k]=null;
+  for(const [,c] of near.slice(0,SN_SWN)){if(swAt.indexOf(c)>=0)continue;const k=swAt.indexOf(null);if(k<0)break;swAt[k]=c;swBlock(k,c);}
+}
+function swBlock(k,c){ // a block seeded for a swarm: offsets in a flattened cloud, the kind's colour, a bigger size; the points start at the cloud
+  const R=lerp(SW_R[0],SW_R[1],c.q||0.5),col=SW_COL[c.pig||0];
+  for(let m=0;m<SN_SWP;m++){const i=PN_SN+k*SN_SWP+m,a=Math.random()*TAU,u=Math.random()*2-1,rr=R*Math.cbrt(Math.random()),s=Math.sqrt(1-u*u);
+    swOff[(i-PN_SN)*3]=rr*s*Math.cos(a);swOff[(i-PN_SN)*3+1]=rr*u*0.45;swOff[(i-PN_SN)*3+2]=rr*s*Math.sin(a);swSeed[i-PN_SN]=Math.random()*TAU;
+    pp[i*3]=c.pos.x+swOff[(i-PN_SN)*3];pp[i*3+1]=c.pos.y+swOff[(i-PN_SN)*3+1];pp[i*3+2]=c.pos.z+swOff[(i-PN_SN)*3+2];pv[i*3]=pv[i*3+1]=pv[i*3+2]=0;
+    const j=(Math.random()-0.5)*0.08;pc[i*3]=col[0]+j;pc[i*3+1]=col[1]+j;pc[i*3+2]=col[2]+j;ps[i*2]=SW_SZ*(0.7+0.6*Math.random());ps[i*2+1]=0.85;pk[i]=254;snL[i]=i;}
+  snDirty=true;
+} // the live kind's colour by pigment kind (green, gold, red) and in poor water; the chain's; the crop (mg/m³) at which the live kind is half its full weight; the chains' share of the live weight
 const SN_TH=-64,SN_CH=CHEMO,SN_W0=0.9,SN_GAIN=3.0,SN_REF=63; // the thermocline, the chemocline (y); the weight that fills the count; weight → alpha; the refresh mask (one point in 64 a frame: a point re-rolls about once a second)
 const pg=new THREE.BufferGeometry();pg.setAttribute('position',new THREE.BufferAttribute(pp,3));pg.setAttribute('color',new THREE.BufferAttribute(pc,3));pg.setAttribute('aSz',new THREE.BufferAttribute(ps,2));
 const plU={value:new THREE.Vector4(0,0,0,0)},plCU={value:new THREE.Color(0x6fbfe0)},snAU={value:new THREE.Vector4(0,1/2.5,0,0)}; // snAU (v11.82.1): the tide, 1/the depth the snow fades over seen from the air, 1 with the camera in air
@@ -481,15 +502,21 @@ function snowSeed(i,x,y,z,keep){
   if(k===5){const n=q<0.5?1:2,a=Math.random()*TAU,c=Math.random()*2-1,s=Math.sqrt(1-c*c),dx=s*Math.cos(a)*0.28,dy=c*0.28,dz=s*Math.sin(a)*0.28; // the chain (v11.82): one or two followers strung along a random direction, sharing the leader's look, fall and eddy
     for(let m=1;m<=n;m++){const j=i+m;if(j>=PN)break;if(snL[j]!==j&&snL[j]!==i)continue;pk[j]=5;snL[j]=i;pp[j*3]=x+dx*m;pp[j*3+1]=y+dy*m;pp[j*3+2]=z+dz*m;pv[j*3]=pv[j*3+1]=pv[j*3+2]=0;pr[j]=q;ph[j]=h;for(let c2=0;c2<10;c2++)pf[j*10+c2]=pf[b+c2];pc[j*3]=pc[i*3];pc[j*3+1]=pc[i*3+1];pc[j*3+2]=pc[i*3+2];ps[j*2]=ps[i*2];ps[j*2+1]=ps[i*2+1];}}
 }
-for(let i=0;i<PN;i++){pk[i]=255;snL[i]=i;pf.fill(0,i*10,i*10+10);} // all parked until the first frame under water seeds them where the camera is
+for(let i=0;i<PN;i++){pk[i]=255;snL[i]=i;pf.fill(0,i*10,i*10+10);} // all parked until the first frame under water seeds them where the camera is; the swarm block (i ≥ PN_SN) is assigned by swAssign
 function updatePlankton(dt){
   const cx=camera.position.x,cy=camera.position.y,cz=camera.position.z,kd=Math.exp(-2.5*dt),kf=Math.min(1,8*dt),K=SKY;
   currentAt(cx,cz,cy,CURV);const cux=CURV.x*dt,cuz=CURV.z*dt; // the snow drifts with the current
   const w0=WAVES[0],w1=WAVES[1],e0=w0.A*w0.w,e1=w1.A*w1.w,t0=w0.w*t-w0.ph,t1=w1.w*t-w1.ph,wind=0.35+0.65*K.windK;
   snFrame++;const ref=snFrame&SN_REF;
-  if(Math.abs(cx-snLast.x)+Math.abs(cy-snLast.y)+Math.abs(cz-snLast.z)>SN_HW){for(let i=0;i<PN;i++)snowSeed(i,cx+(Math.random()-0.5)*2*SN_HW,cy+(Math.random()-0.5)*2*SN_HW,cz+(Math.random()-0.5)*2*SN_HW);}snLast.set(cx,cy,cz);
+  swT-=dt;if(swT<=0){swT=0.5;swAssign();}
+  if(Math.abs(cx-snLast.x)+Math.abs(cy-snLast.y)+Math.abs(cz-snLast.z)>SN_HW){for(let i=0;i<PN_SN;i++)snowSeed(i,cx+(Math.random()-0.5)*2*SN_HW,cy+(Math.random()-0.5)*2*SN_HW,cz+(Math.random()-0.5)*2*SN_HW);}snLast.set(cx,cy,cz);
   for(let i=0;i<PN;i++){
     const k=pk[i],b=i*10;
+    if(i>=PN_SN){const sw=swAt[Math.floor((i-PN_SN)/SN_SWP)];if(!sw||!sw.alive){pp[i*3]=cx;pp[i*3+1]=cy;pp[i*3+2]=cz;ps[i*2+1]=0;continue;} // the swarm block (v11.84): parked when its swarm is gone
+      let x=pp[i*3],y=pp[i*3+1],z=pp[i*3+2],vx=pv[i*3]*kd,vy=pv[i*3+1]*kd,vz=pv[i*3+2]*kd;
+      for(let bb=0;bb<flowN;bb++){const f=FLOW[bb],rx=x-f.x;if(rx>f.a4||rx<-f.a4)continue;const ry=y-f.y,rz=z-f.z,r2=rx*rx+ry*ry+rz*rz;if(r2>f.a4*f.a4)continue;const a=f.a;let r=Math.sqrt(r2),fx=0,fy=0,fz=0;if(r<a*0.9){const q=(a*0.9-r)*8;r=Math.max(r,1e-3);fx+=rx/r*q;fy+=ry/r*q;fz+=rz/r*q;r=a*0.9;}const inv=a*a*a/(2*r*r*r),ur=(f.ux*rx+f.uy*ry+f.uz*rz)/(r*r),dr=Math.exp(-(r-a)/(0.35*a))*0.6;fx+=inv*(3*ur*rx-f.ux)+f.ux*dr;fy+=inv*(3*ur*ry-f.uy)+f.uy*dr;fz+=inv*(3*ur*rz-f.uz)+f.uz*dr;vx+=(fx-vx)*kf;vy+=(fy-vy)*kf;vz+=(fz-vz)*kf;} // scattered by a body, as the snow is
+      const o=(i-PN_SN)*3,ph=swSeed[i-PN_SN]+t*0.6,tx=sw.pos.x+swOff[o]+0.6*Math.sin(ph),ty=sw.pos.y+swOff[o+1]+0.25*Math.cos(ph*1.3),tz=sw.pos.z+swOff[o+2]+0.6*Math.cos(ph*0.8); // its place in the cloud, jittering
+      const kk=Math.min(1,1.5*dt);x+=(tx-x)*kk+vx*dt;y+=(ty-y)*kk+vy*dt;z+=(tz-z)*kk+vz*dt;pp[i*3]=x;pp[i*3+1]=y;pp[i*3+2]=z;pv[i*3]=vx;pv[i*3+1]=vy;pv[i*3+2]=vz;ps[i*2+1]=y>TIDE-0.3||y<groundAt(x,z)?0:0.85;continue;}
     if(k===255){if((i&SN_REF)===ref)snowSeed(i,cx+(Math.random()-0.5)*2*SN_HW,cy+(Math.random()-0.5)*2*SN_HW,cz+(Math.random()-0.5)*2*SN_HW);else{pp[i*3]=cx;pp[i*3+1]=cy;pp[i*3+2]=cz;}continue;} // parked: ride at the camera (clipped); one in 64 a frame tries the water at a random spot in the box
     let x=pp[i*3],y=pp[i*3+1],z=pp[i*3+2],vx=pv[i*3]*kd,vy=pv[i*3+1]*kd,vz=pv[i*3+2]*kd;
     for(let bb=0;bb<flowN;bb++){const f=FLOW[bb],rx=x-f.x;if(rx>f.a4||rx<-f.a4)continue;const ry=y-f.y,rz=z-f.z,r2=rx*rx+ry*ry+rz*rz;if(r2>f.a4*f.a4)continue; // physics.js flowAt, inlined: this is the hot loop

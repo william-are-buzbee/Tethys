@@ -1,5 +1,15 @@
 # HANDOFF — tethys
 
+**v11.84 (22 Sep 2026): the swarms — PLANKTON.md §13 pass 4, with §5's day.** The grazers of the water column as ledger records (`DEFS.swarm`, a `SPAWN`
+row of 2.5 a cell whose capacity is the lit crop's through `cropK`; 31 in the loaded cells at the ring) with no body: no geometry, no capsule, no push.
+They are drawn by the marine snow — the last 480 points of its buffer ride the six nearest swarms within 160 m, in the pigment kind's colour, bigger,
+relaxing to a jittering place in an 8–14 m cloud after the flow round a body scatters them. Their day (`swarmDepth`): the top 50 m at night, 380 m or
+the floor by day, 45 m deeper under a full moon, the transit on the dusk and the dawn at 4 m/s. Not yet food: pass 5 gives the veil, the comb, the
+sifter and the ram their intake from them. Seen: `test/render/v84_swarm_beside.png`, a gold cloud at night over the shelf edge. **Ask first** whether
+a swarm reads as a living cloud against the snow or as more snow (`SW_SZ` 1.7, `SW_COL`, the jitter's 0.6 m), then whether they are met often enough
+(2.5 a cell at full crop; `SW_SEE` 160), then whether the dusk rise is seen at all in play (one game hour is 80 real seconds). Next: pass 5, filter
+feeding — the stomach off the swarms, `derive` reading the filter area.
+
 **v11.83.1 (22 Sep 2026): the hood is a player-sized hunter.** The person: the burrowing hingeshell that comes out at you "needs to be just another variant
 for a player-sized predator"; the look liked, the claws for small prey. So: `SPECS.hood` size 2 at 0.42 of its build (a 3.6 m body, the tail spine and flaps
 beyond), `DEFS.hood` a hunter of the sand flats and the lagoon floor (reach 4.6, dmg 18, a strike, the small prey and you), the same spawn envelopes,

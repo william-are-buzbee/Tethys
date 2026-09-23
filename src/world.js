@@ -489,6 +489,8 @@ function bloomC(b,fd,d,out){const o=out||[0,0,0],X=b[2]*5+1,fx=(X-FOG_B[0])*FOG_
 // the column's colour c tinted by the crops C (bloomC's), in place
 function bloomTint(c,C){for(let k=0;k<3;k++){const P=PIGK[k],w1=C[k]/(C[k]+PLK.k1),w2=C[k]/(C[k]+PLK.k2);for(let i=0;i<3;i++)c[i]*=lerp(1,P.m1[i],w1)*lerp(1,P.m2[i],w2);}return c;}
 const _plkT=[0,0,0];
+// the lit layer's standing stock at a place (green + gold, mg/m³, before the clock): the swarms' capacity reads it (ecology.js ecoCap, v11.84)
+function cropAt(x,z,s){const c=plank(x,z,s,_plkT);return c[0]+c[1];}
 // the field at a point in the world, exactly (the snow and the tests): out = [green, gold, red] mg/m³ at that depth, now
 function plankAt(x,y,z,out){const s=sample(x,z);return bloomC(plankTexel(x,z,s,_plkT),-s.h,TIDE-y,out);}
 const _v3=v=>'vec3('+v.map(n=>n.toFixed(3)).join(',')+')';

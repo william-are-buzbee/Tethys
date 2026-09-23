@@ -387,6 +387,25 @@ function updateLurker(c,dt){
   else{c.grab=null;if(!c.hold)c.target=null;seek(c,c.home,4,dt,2);if(c.pos.distanceTo(c.home)<0.8){c.state='sit';c.cool=3;c.pos.copy(c.home);}} // v11.31: what it has hold of comes home with it
   if(c.state==='flee')c.state='return';
 }
+// The swarm's day (v11.84, PLANKTON.md §5, §10): the largest daily movement of animals on the planet, ours included. swarmDepth is the
+// height the cloud wants — the night layer SW_NIGHT under the surface, the day layer SW_DAY (or SW_FLOOR over the floor where the floor comes
+// first: on the shelf the grazers hide near the bottom by day), the moon holding the night layer deeper by SW_MOON at full (Tethys' moon is nine
+// times the Moon's area and gives 0.28 of noon's light: a full-moon night is a noticeably emptier one) — mixed by the sky's day fraction, so the
+// transit rides the dusk and the dawn. The cloud drifts with the current (carried), wanders within home at SW_WANDER, and climbs or sinks toward
+// its depth at SW_RISE (real m/s: a 300 m transit in ~80 real seconds, one game hour). q: the swarm's own draw, so the layer has thickness.
+const SW_NIGHT=-28,SW_DAY=-380,SW_FLOOR=6,SW_MOON=45,SW_RISE=4,SW_WANDER=0.35;
+function swarmDepth(floor,dayK,moonL,q){const night=SW_NIGHT-14*q-SW_MOON*clamp(moonL/MOONL,0,1),day=Math.max(SW_DAY-60*q,floor+SW_FLOOR+3*q);return Math.max(floor+SW_FLOOR,lerp(night,day,dayK));}
+// the pigment kind winning at a point, for the swarm's colour (0 green, 1 gold, 2 red)
+const _swC=[0,0,0];
+function swarmPig(x,y,z){plankAt(x,y,z,_swC);return _swC[1]>_swC[0]&&_swC[1]>=_swC[2]?1:_swC[2]>_swC[0]?2:0;}
+function updateSwarm(c,dt){
+  const d=c.def,q=c.q||0.5,floor=groundAt(c.pos.x,c.pos.z),ty=swarmDepth(floor,SKY.dayK,SKY.moonL,q);
+  c.wanderT-=dt;if(c.wanderT<=0){c.wanderT=rnd(6,14);const a=Math.random()*TAU,r=Math.random()*(d.home||90);c.wander.set(c.home.x+Math.cos(a)*r,0,c.home.z+Math.sin(a)*r);}
+  const dx=c.wander.x-c.pos.x,dz=c.wander.z-c.pos.z,dl=Math.hypot(dx,dz)||1,sp=Math.min(SW_WANDER,dl*0.2);
+  c.vel.x+=(dx/dl*sp-c.vel.x)*Math.min(1,dt);c.vel.z+=(dz/dl*sp-c.vel.z)*Math.min(1,dt);
+  const dy=ty-c.pos.y;c.vel.y+=(clamp(dy*0.5,-SW_RISE,SW_RISE)-c.vel.y)*Math.min(1,2*dt);
+  if(c.pos.y>TIDE-8&&c.vel.y>0)c.vel.y=0;
+}
 function updateJelly(c,dt){
   const k=c.def.size>3?0.5:1;c.vel.set(0.3*k*Math.sin(t*0.3*k+c.t0),0.15*k*Math.sin(t*0.5*k+c.t0),0.3*k*Math.cos(t*0.27*k+c.t0));
   c.biteT-=dt;if(c.def.dmg>0&&!playerGone()&&c.biteT<=0&&c.pos.distanceTo(player.pos)<Math.max((c.def.reach||0)+1,reachOf(c,player))){c.biteT=0.6;stingPlayer();}
@@ -436,6 +455,7 @@ function updateCreatures(dt0){
       case 'ambush':updateLurker(c,dt);break;
       case 'drift':updateJelly(c,dt);break;
       case 'sail':updateSailer(c,dt);break;
+      case 'swarm':updateSwarm(c,dt);break;
     }
     if(sub<1&&!d.legs){const k=1-sub;c.vel.x=lerp(c.vel.x,vx0,k);c.vel.y=lerp(c.vel.y,vy0,k);c.vel.z=lerp(c.vel.z,vz0,k);}
     if(sub<1){c.vel.y-=GRAV*(1-sub)*dt;c.vel.multiplyScalar(1-0.12*(1-sub)*dt);}
@@ -445,7 +465,7 @@ function updateCreatures(dt0){
     // holds station facing into the flow with its tail beating, and is swept only when the current outruns it
     c.carried=sub>0&&!c.grounded&&c.state!=='sit'&&d.role!=='trap'&&!d.floor;
     if(dp<200&&c.carried){if(!c.cur){c.cur=V3(0,0,0);c.curT=0;}c.curT-=dt;if(c.curT<=0){c.curT=0.4+Math.random()*0.2;currentAt(c.pos.x,c.pos.z,c.pos.y,c.cur);}c.pos.addScaledVector(c.cur,dt*sub);}
-    let pad=null;if(dp<200)pad=bodyPush(c.pos,c.vel,c.g.quaternion,d.size*0.75,d.size*0.35,d.size*0.28);
+    let pad=null;if(dp<200&&!d.ghost)pad=bodyPush(c.pos,c.vel,c.g.quaternion,d.size*0.75,d.size*0.35,d.size*0.28);
     const fh=groundAt(c.pos.x,c.pos.z)+(d.clear!==undefined?d.clear:d.size*0.35);c.grounded=false;if(c.pos.y<fh){c.pos.y=fh;if(c.vel.y<0)c.vel.y*=-0.15;c.grounded=true;} // clear: how high the origin sits over the floor (a buried trap sits low)
     if(d.surface){c.pos.y=waveH(c.pos.x,c.pos.z)+(d.ys||0);c.vel.y=0;c.grounded=false;} // a float: on the wave, always (the sailers)
     if(pad){c.grounded=true;loadPad(pad,clamp(d.size*0.3/pad.r,0.02,0.5));} // a fish that lands on a lily pad lies on it (and flops off)

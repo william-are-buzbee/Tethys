@@ -5581,3 +5581,36 @@ claws seem useful for grabbing small prey and putting them into the mouth."
 **Unseen, ask in this order**: whether the eyes under the body still suit a swimmer (the burrower's eyes looked up from the sand; a hunter over
 the sand might want them forward — the person allowed a change if the niche wants it), then whether it is met often enough (0.3 a cell over the
 flats, 0.4 in the lagoon — the buried one's numbers), then the strike's speed 12 against a fleeing darter.
+
+## v11.84 — the swarms: ledger records with the day's rise, drawn by the snow (22 Sep 2026)
+
+PLANKTON.md §13 pass 4 (§10, with §5's migration, which pass 3 left for the grazers). The person: "pass 4, yes. Go right ahead."
+
+- **A swarm is a kind with no body** (creatures_defs.js `DEFS.swarm`, `swarmBuild`: an empty group, no hit capsule, `ghost` so `bodyPush`
+  skips it, `noOrient`; size 6 is the cloud's half-width; immortal to bites — pass 5 makes it food). Its `SPAWN` row (2.5 a cell, the water
+  column below −12) carries `crop`: ecology.js `ecoCap` multiplies the envelope's tolerance at each of its 36 samples by `cropK` of the lit
+  standing stock there (world.js `cropAt`: C/(C+0.5), half at island water), so the swarms are where the water is fed — 1.7 a cell at the ring,
+  2.2 on the fed flank, 0.3 in the basin; 19,549 in the world's ledger (`test/census.js`). Rates by hand (`r` 0.5, `cycle` 2): `bioMass` from
+  size 6 would breed it like a ridge. Placed in the open water over its place (chunks.js `placeKind`, `openY` 10–40 up) with its pigment kind
+  read off the crop (`swarmPig`: gold on the flank, green in the lagoon).
+- **Its day** (creatures_ai.js `updateSwarm`, `swarmDepth`): the night layer `SW_NIGHT` −28 (−14 by the swarm's own draw q), the day layer
+  `SW_DAY` −380 or the floor + `SW_FLOOR` 6 where the floor comes first — over the shelf the grazers hide near the bottom by day, as they do —
+  a full moon holding the night layer `SW_MOON` 45 m deeper (0.28 of noon's light: −80 under it), the two mixed by the sky's `dayK`, so the
+  transit rides the dusk and the dawn at `SW_RISE` 4 m/s real (a 300 m transit in ~80 s, one game hour). The cloud wanders within home 90 at
+  `SW_WANDER` 0.35 and is carried by the current like anything else in the water.
+- **Drawn by the snow** (atmosphere.js): the last `SN_SW` points (480; a quarter of `PN` on low) are the swarm block. Every half second
+  `swAssign` gives `SN_SWP` 80 points each to the `SN_SWN` 6 swarms nearest the camera within `SW_SEE` 160; `swBlock` seeds a block with
+  offsets in a flattened cloud of radius `SW_R` 8–14 by q, the kind's colour `SW_COL` (a shade warmer than the snow's), size `SW_SZ` 1.7×,
+  `pk` 254. In the loop a swarm point takes the same `FLOW` scatter the snow does (a body parts the cloud) and relaxes to its place, jittering
+  slowly on `swSeed`; a block whose swarm left the reach parks at the camera. No new material, no new draw call, no points beyond the budget:
+  the snow's own loop, its seeding and its refresh run to `PN_SN`. What tells a swarm from the snow is motion and density, as the doc says.
+- **Tests**: `test/plankton.js` has the swarms — the entry reads the crop; the capacity at the ring and the flank against the basin; the layers
+  −35 night, −393 day, −80 under a full moon, the floor over a 40 m shelf, −214 at half day; the kind by place. `test/snow.js` skips the block in
+  its stats (`PN_SN`). `test/census.js` carries the kind at capacity (immortal, unpreyed — for now). `node build.js --test` green on both tiers.
+- **Seen** (`test/render/v84_swarm_beside.png`, at night beside a gold swarm at −78 over the shelf edge, 14 m off): a dense warm cloud of points
+  against the sparse snow, the finback under it; the dusk transit and the moon's hold were read off the records (`creatures` in the iframe: the
+  swarm at −105 by day rose to −78 by the full-moon night), not watched.
+
+**Unseen, ask in this order**: whether a swarm reads as a living cloud or as more snow (`SW_SZ`, `SW_COL`, the jitter), then whether they are
+met often enough in play (`SW_SEE` 160, 2.5 a cell), then whether the dusk rise is ever seen (80 real seconds), then whether a cloud parting
+round the body at speed reads at all.

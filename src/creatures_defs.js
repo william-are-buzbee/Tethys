@@ -24,6 +24,14 @@
 const BODY_MIN=0.6;
 function bioMass(d){return d.size*d.size*d.size;}
 function bodyMass(d){return Math.max(BODY_MIN,bioMass(d));}
+// The swarm (v11.84, PLANKTON.md §10, pass 4): the grazers of the water column as one thing — a cloud 10–30 m across, a ledger record like any
+// kind, with no body: no geometry (swarmBuild), no hit capsule (nothing bites it; the filter feeders eat it in pass 5), no push (ghost). It is
+// drawn by the marine snow (atmosphere.js: a block of the snow's own points rides each swarm near the camera, in its pigment kind's colour), and
+// its day is §5's: down to 300–500 m by day (the floor if that comes first), up into the top 50 m at dusk, held deeper under a bright moon
+// (swarmDepth). Its capacity is the crop's (SPAWN `crop`: the lit standing stock through cropK), so the swarms are where the water is fed —
+// the ring, the flank, the lee — and its rate is a grazer's (r, cycle set by hand: bioMass from size 6 would make it breed like a ridge).
+function swarmBuild(){return {g:new THREE.Group(),anim:null,hit:[],rigs:[],cover:[],gape:0,pat:null};}
+function cropK(C){return C/(C+0.5);} // the capacity's share at a lit crop C (mg/m³): half at 0.5 — island water; the basin's 0.06 gives a tenth
 const DEFS={
   darter:{build:()=>compile(SPECS.darter),stock:8,size:0.6,pace:0.65,flee:true,hp:1,edible:true,food:14,role:'boid'},
   glim:{build:()=>compile(SPECS.glim),size:0.55,pace:0.6,flee:true,hp:1,edible:true,food:12,role:'boid'},
@@ -63,6 +71,7 @@ const DEFS={
   // finding — the hood's, lash's and ram's claws get through neither the grazer's nor the finback's hide — is answered by prey they can open: the forage
   // (dies at the touch), the ringmouths' skin, and any hingeshell at its moult (creatures_ai.js MOULT: a soft body is prey to whatever is big enough).
   // v11.10: every species whose build is compile(SPECS.x) is a spec (creatures_spec.js); the lab (#lab) edits them. A hand builder is a species without one.
+  swarm:{build:swarmBuild,size:6,hp:1e9,role:'swarm',ghost:true,noOrient:true,r:0.5,cycle:2,home:90,cruiseF:1,lodNear:10}, // v11.84: see above; size is the cloud's half-width; immortal to bites (pass 5 makes it food)
   hood:{build:()=>compile(SPECS.hood),size:2,hp:60,role:'hunter',prey:['player','flicker','darter','needle','scuttle','rasp','sifter','arrow'],detect:24,reach:4.6,dmg:18,biteCD:1.4,strike:{tell:0.35,dur:0.35,speed:12,range:1.8},burst:{on:0.5,off:1.1},home:50,cruise:16,cruiseF:0.4,cool:4}, // v11.83.1 (the person, 22 Sep): a player-sized hunter of the sand flats and the lagoon floor, the look kept at 0.42 of its build — the claws take the small prey, and you; to v11.83 it was the ambusher from under the sand (size 5, buried, a lunge like the lurker's)
   lash:{build:()=>compile(SPECS.lash),size:3,hp:90,role:'hunter',prey:['player','needle','darter','flicker','arrow','rasp','sifter'],detect:30,reach:5.0,dmg:20,biteCD:1.5,strike:{tell:0.4,dur:0.35,speed:17,range:2.0},burst:{on:0.6,off:1.2},home:60,cruise:20,cruiseF:0.4,cool:4}, // on the ledges, whips out
   ram:{build:()=>compile(SPECS.ram),size:4,hp:200,role:'hunter',prey:['sifter','flicker','darter','arrow'],detect:38,reach:5.5,dmg:34,biteCD:2.0,strike:{tell:0.6,dur:0.5,speed:14,range:2.4},burst:{on:0.8,off:2.0},home:180,cruise:45,cruiseF:0.4,cool:6}, // slow and big in the open water over the flank: its blow stuns a shoal (combat.js RAM), never the player's hunter
@@ -142,6 +151,7 @@ const SPAWN=[
   {kind:'jelly',n:2,env:{h:[-800,-15]}},
   {kind:'jelly',n:2,env:{h:[-800,-15],nut:[0.5,1]}}, // twice as many in fed water
   {kind:'deepbell',n:0.35,env:{h:[-800,-220]}}, // the giant of the drift, below the light
+  {kind:'swarm',n:2.5,crop:true,env:{h:[-3000,-12]}}, // v11.84: the grazers' swarms, where the crop is (crop: the capacity × cropK of the lit standing stock, ecoCap)
   {kind:'sailer',n:0.15,env:{h:[-800,-60]}}, // the odd one on open water; the fleets are the canopy's (spawnChunkCreatures)
   {kind:'sailer',n:1.4,env:{h:[-70,-10],expo:[0.55,1]}}, // and driven in against the shore the wind strikes (Earth: an oceanic animal met on the beach after an onshore wind)
   {kind:'scuttle',n:6,env:{h:[-30,-3],sub:[0.4,1],expo:[0,0.7]}}, // out of the surf, which is the wedge's (v11.66)

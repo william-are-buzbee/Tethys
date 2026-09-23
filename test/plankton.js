@@ -11,7 +11,7 @@ const fs=require('fs'),path=require('path');
 const ROOT=path.join(__dirname,'..');
 const ORDER=fs.readFileSync(path.join(ROOT,'src','order.txt'),'utf8').split('\n').map(s=>s.trim()).filter(s=>s&&s[0]!=='#');
 let js=ORDER.map(n=>fs.readFileSync(path.join(ROOT,'src',n+'.js'),'utf8')).join('\n');
-js+='\nglobal.__pk={sample,plank,sunDec,seasonAt,yearPhase,skyDir,sunHA,weatherAt,SOLAR_H0,plankTexel,plankEnc,bloomC,bloomTint,plankAt,bloomAt,wmBloom,wmFill,wmBlur,bloomTick,FOG_B,PLK,PIGK,BLOOM_GLSL,WM_N,wcolAt,leeW,tidalAt,tideAmp,TIDE_A1,CUR_A,FI,HALF,setClock:(h)=>{clockH=h;TIDE=tideAt(h);},tide:()=>TIDE};';
+js+='\nglobal.__pk={sample,plank,SPAWN,POP,ecoCap,CELL,NCELL,swarmDepth,swarmPig,MOONL,sunDec,seasonAt,yearPhase,skyDir,sunHA,weatherAt,SOLAR_H0,plankTexel,plankEnc,bloomC,bloomTint,plankAt,bloomAt,wmBloom,wmFill,wmBlur,bloomTick,FOG_B,PLK,PIGK,BLOOM_GLSL,WM_N,wcolAt,leeW,tidalAt,tideAmp,TIDE_A1,CUR_A,FI,HALF,setClock:(h)=>{clockH=h;TIDE=tideAt(h);},tide:()=>TIDE};';
 const tmp=path.join(require('os').tmpdir(),'tethys_plankton_bundle.js');
 fs.writeFileSync(tmp,'(function(){"use strict";\n'+js+'\n})();');
 require('./stub.js');
@@ -95,6 +95,14 @@ function frontOn(a){const out=[];for(let r=300;r<=2400;r+=25){const x=Math.cos(a
   const D=[0,0.25,0.75].map(ph=>{const h=(ph-0.6)*30*185;let up=0;for(let hh=0;hh<30;hh+=0.05){const v={x:0,y:0,z:0,set(x,y,z){this.x=x;this.y=y;this.z=z;return this;}};P.skyDir(P.sunHA(h+hh-P.SOLAR_H0),v,P.sunDec(h));if(v.y>0)up+=0.05;}return up;});
   ok(Math.abs(D[0]-15)<0.3&&Math.abs(D[1]-D[2])>0.5&&Math.abs(D[1]-D[2])<2.5,"the day's length: "+D.map(v=>v.toFixed(1)+' h').join(' / ')+' at the equinox and the two peaks (15 at the equinox, under 2.5 h of swing at 11.5° N with a 15° tilt)');
   const m={x:0,y:0,z:0,set(x,y,z){this.x=x;this.y=y;this.z=z;return this;}};P.skyDir(0,m);ok(Math.abs(m.y-Math.cos(0.2))<1e-9,'the moon at declination 0 transits as it did');}
+// the swarms (v11.84, pass 4): the capacity by the crop (the ring's cell against the basin's), the day's depth by the sky and the moon
+{const ei=P.SPAWN.findIndex(e=>e.kind==='swarm');ok(ei>=0&&P.SPAWN[ei].crop===true,'the swarm is a spawn entry whose capacity reads the crop');
+  const cell=(x,z)=>Math.floor((x+P.HALF)/P.CELL)*P.NCELL+Math.floor((z+P.HALF)/P.CELL);const cr=cell(622,579),cb=cell(4000,4000),cf=cell(599,-672);P.ecoCap(cr);P.ecoCap(cb);P.ecoCap(cf);
+  ok(P.POP.k[ei][cr]>P.POP.k[ei][cb]*3&&P.POP.k[ei][cf]>P.POP.k[ei][cb]*3,'the swarms are where the water is fed: capacity '+P.POP.k[ei][cr].toFixed(2)+' a cell at the ring, '+P.POP.k[ei][cf].toFixed(2)+' on the fed flank, '+P.POP.k[ei][cb].toFixed(2)+' in the basin');
+  const dn=P.swarmDepth(-400,0,0,0.5),dd=P.swarmDepth(-400,1,0,0.5),dm=P.swarmDepth(-400,0,P.MOONL,0.5),sh=P.swarmDepth(-40,1,0,0.5),tw=P.swarmDepth(-400,0.5,0,0.5);
+  ok(dn>-50&&dn<-25,'the night layer under the surface ('+dn.toFixed(0)+' m)');ok(dd<-300,'the day layer deep ('+dd.toFixed(0)+' m)');ok(dm<dn-30,'a full moon holds the night layer deeper ('+dm.toFixed(0)+' vs '+dn.toFixed(0)+')');
+  ok(sh>-40&&sh<-30,'over a 40 m shelf the day layer is the floor ('+sh.toFixed(0)+' m)');ok(tw<dn&&tw>dd,'and dusk is between ('+tw.toFixed(0)+' m at half day)');
+  ok(P.swarmPig(599,-3,-672)===1&&P.swarmPig(54,-3,84)===0,'the swarm takes the kind winning where it forms: gold on the fed flank, green in the lagoon');}
 // the storm's pulse over a month: bounded, and non-zero after rain
 {let mx=0,mn=1e9;for(let h=0;h<30*24;h+=1){P.setClock(h);P.bloomTick();mx=Math.max(mx,P.FOG_B[2]);mn=Math.min(mn,P.FOG_B[2]);}P.setClock(0);P.bloomTick();
   ok(mx>0.1&&mx<8,'the storm\'s pulse over 24 days peaks at ×'+(1+mx).toFixed(2)+' on the gold (bounded; ×'+(1+mn).toFixed(2)+' at its least)');}
