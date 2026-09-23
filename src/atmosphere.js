@@ -421,13 +421,13 @@ const SN_K=[{sz:0.5,fall:0.005},{sz:1.0,fall:0.02},{sz:0.6,fall:0.05},{sz:0.55,f
 const SN_PIG=[[0.70,0.86,0.62],[0.86,0.78,0.48],[0.78,0.62,0.68]],SN_PALE=[0.82,0.90,0.78],SN_CHAIN=[0.80,0.78,0.66],SN_CK=0.6,SN_CHW=0.12; // the live kind's colour by pigment kind (green, gold, red) and in poor water; the chain's; the crop (mg/m³) at which the live kind is half its full weight; the chains' share of the live weight
 const SN_TH=-64,SN_CH=CHEMO,SN_W0=0.9,SN_GAIN=3.0,SN_REF=63; // the thermocline, the chemocline (y); the weight that fills the count; weight → alpha; the refresh mask (one point in 64 a frame: a point re-rolls about once a second)
 const pg=new THREE.BufferGeometry();pg.setAttribute('position',new THREE.BufferAttribute(pp,3));pg.setAttribute('color',new THREE.BufferAttribute(pc,3));pg.setAttribute('aSz',new THREE.BufferAttribute(ps,2));
-const plU={value:new THREE.Vector4(0,0,0,0)},plCU={value:new THREE.Color(0x6fbfe0)};
+const plU={value:new THREE.Vector4(0,0,0,0)},plCU={value:new THREE.Color(0x6fbfe0)},snAU={value:new THREE.Vector4(0,1/2.5,0,0)}; // snAU (v11.82.1): the tide, 1/the depth the snow fades over seen from the air, 1 with the camera in air
 // square on purpose (the person, 13 Sep 2026): an untextured PointsMaterial writes the whole quad, and a round sprite would cost a
 // texture fetch per fragment or a discard — squares are both the cheaper option and the one that suits the flat-shaded art
 const pm=new THREE.PointsMaterial({color:0xcfe6ee,size:0.14,transparent:true,opacity:0.55,depthWrite:false,vertexColors:true});
-pm.onBeforeCompile=function(sh){sh.uniforms.uPL=plU;sh.uniforms.uPLc=plCU;let n=0;
-  sh.vertexShader=sh.vertexShader.replace('uniform float size;',()=>{n++;return 'attribute vec2 aSz;uniform vec4 uPL;varying float vA;varying float vL;uniform float size;';})
-    .replace('gl_PointSize = size;',()=>{n++;return 'gl_PointSize=size*aSz.x;vA=aSz.y*smoothstep(0.5,2.0,-mvPosition.z);{vec3 dl=transformed-uPL.xyz;vL=uPL.w/(0.5+dot(dl,dl));}';})
+pm.onBeforeCompile=function(sh){sh.uniforms.uPL=plU;sh.uniforms.uPLc=plCU;sh.uniforms.uSnA=snAU;let n=0;
+  sh.vertexShader=sh.vertexShader.replace('uniform float size;',()=>{n++;return 'attribute vec2 aSz;uniform vec4 uPL;uniform vec4 uSnA;varying float vA;varying float vL;uniform float size;';})
+    .replace('gl_PointSize = size;',()=>{n++;return 'gl_PointSize=size*aSz.x;vA=aSz.y*smoothstep(0.5,2.0,-mvPosition.z)*mix(1.0,exp(-max(uSnA.x-transformed.y,0.0)*uSnA.y),uSnA.z);{vec3 dl=transformed-uPL.xyz;vL=uPL.w/(0.5+dot(dl,dl));}';})
     .replace('#include <logdepthbuf_vertex>',()=>{n++;return 'gl_PointSize=min(gl_PointSize,24.0);\n#include <logdepthbuf_vertex>';});
   sh.fragmentShader=sh.fragmentShader.replace('uniform vec3 diffuse;',()=>{n++;return 'varying float vA;varying float vL;uniform vec3 uPLc;uniform vec3 diffuse;';})
     .replace('#include <color_fragment>',()=>{n++;return 'diffuseColor.rgb=vColor*(diffuse+uPLc*vL);diffuseColor.a*=vA;';});
@@ -584,8 +584,8 @@ function updateAtmosphere(dt){
   plight.intensity=(1.3*(1-dfD)*(1-dfD)+0.5*(1-K.skyL)*(1-K.skyL))*wk*(FX.plight?1:0); // the player's own light: in the deep as before, and a little at night; `own light` on the effects list (v11.52, POLISH.md Raised 13 Sep: the person wants to see the world without it)
   updateShafts(above,wk);
   updateHaze(dt,above);sky.visible=true;sky.position.copy(camera.position);pushSky(); // every frame since v11.43: the surface's window reads the sky's uniforms from under the water, where the sphere is hidden // the sky stays up within SKY_NEAR under the line (v11.42): a camera just under sees air through the near plane's gap above the water, and that is the sky, not the dome
-  plankton.visible=!above&&FX.snow;tintU.value.set(TIDE,above?1:0,K.skyL,0); // x the water level (LIGHT_GLSL's depth); the through-water tint that read y and z went with v11.42 (scene.js)
-  pm.color.setRGB(lerp(0.45,1,df),lerp(0.75,1,df),lerp(0.95,1,df));pm.opacity=0.6*(0.45+0.55*df)*wk; // the light on the snow (v11.24: the particle's own colour is per point): blue-green and dim with depth and the night; the player's light is added in the shader
+  plankton.visible=FX.snow;snAU.value.set(TIDE,1/2.5,above?1:0,0);tintU.value.set(TIDE,above?1:0,K.skyL,0); // the snow from the air too (v11.82.1, the person: none showed below the surface): the top few metres, fading over 2.5 m, through the surface's body // x the water level (LIGHT_GLSL's depth); the through-water tint that read y and z went with v11.42 (scene.js)
+  pm.color.setRGB(lerp(0.45,1,df),lerp(0.75,1,df),lerp(0.95,1,df));pm.opacity=0.6*(0.45+0.55*df)*(above?1:wk); // the light on the snow (v11.24: the particle's own colour is per point): blue-green and dim with depth and the night; the player's light is added in the shader
   updateRain(dt,above);
   if(mode!=='play')return;
   // the depth, and nothing else: no place has a name (the person, Sep 2026). Shown under the water, in whole metres, faded at the surface

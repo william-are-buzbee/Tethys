@@ -5503,3 +5503,22 @@ against the dark water, because the `live` kind coloured itself by the old nutri
 **Unseen, ask in this order**: whether the snow's colour now sits *in* the dark water (the person's point 2), then whether the chains read as strings
 at swimming distance (`SN_CHW`, the 0.28 m spacing in `snowSeed`), then whether the deep maximum reads as a layer when descending through 95 m over
 the flank, then whether the ring's snow is a visible band from the shelf.
+
+## v11.82.1 — the water from above: the tint and the snow (22 Sep 2026)
+
+The person, looking from above the surface after v11.81: no marine snow below the surface, and "green water in the heart of it looks the same
+blue from above as all other water".
+
+- **The tint from above.** The two-segment fog darkens a downward ray's water toward `UPWELL` (scene.js, v11.42: a violet-grey multiplier that
+  reproduced the old from-above look). The veil under it carried the plankton's green since v11.81, but ×(0.50, 0.43, 0.60) took the green out
+  again and left every column the same blue. Now `UPWELL` is multiplied by the crop's tint at the crossing point (`bloomTint` of `bloomC` at the
+  surface, two map reads): the upwelling light in a bloom is the bloom's colour. The basin keeps the blue the person approved.
+- **The snow from above.** The points were hidden the frame the camera was in air. They draw from the air now with their alpha × exp(−depth/2.5)
+  (`snAU`, the points' vertex stage): the top few metres through the surface's body, nothing from the deep. The seeding box already reached 30 m
+  under an airborne camera, so nothing else moves.
+- **Seen** (`test/render/v821_above_ring_graze.png`, `v821_above_basin.png`): from 4 m up at the side break the water is green-grey with the shelf's
+  floor through it; over the basin the same pose is deep blue. The snow's specks are in the frame near the body, small.
+
+**Unseen, ask in this order**: whether the from-above green over the flank is now too much (it is the tint squared there: once in the veil, once
+in the upwelling — a bloom seen from a boat is olive, but the number is a first guess), then whether the snow through the surface reads as
+anything at the person's screen.
