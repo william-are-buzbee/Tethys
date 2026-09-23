@@ -4,7 +4,7 @@
 row of 2.5 a cell whose capacity is the lit crop's through `cropK`; 31 in the loaded cells at the ring) with no body: no geometry, no capsule, no push.
 They are drawn by the marine snow — the last 480 points of its buffer ride the six nearest swarms within 160 m, in the pigment kind's colour, bigger,
 relaxing to a jittering place in an 8–14 m cloud after the flow round a body scatters them. Their day (`swarmDepth`): the top 50 m at night, 380 m or
-the floor by day, 45 m deeper under a full moon, the transit on the dusk and the dawn at 4 m/s. Not yet food: pass 5 gives the veil, the comb, the
+the floor by day, 45 m deeper under a full moon, the transit on the dusk and the dawn at 4 m/s (v11.84.1: a swarm within 10 m no longer throws — it has no anim). Not yet food: pass 5 gives the veil, the comb, the
 sifter and the ram their intake from them. Seen: `test/render/v84_swarm_beside.png`, a gold cloud at night over the shelf edge. **Ask first** whether
 a swarm reads as a living cloud against the snow or as more snow (`SW_SZ` 1.7, `SW_COL`, the jitter's 0.6 m), then whether they are met often enough
 (2.5 a cell at full crop; `SW_SEE` 160), then whether the dusk rise is seen at all in play (one game hour is 80 real seconds). Next: pass 5, filter

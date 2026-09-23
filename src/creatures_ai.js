@@ -481,7 +481,7 @@ function updateCreatures(dt0){
     // the action state the anim reads: the tell and the strike are set by the behaviours above and let go here
     const st=c.st;if(c.tellT<=0&&c.strikeT<=0){st.tell*=Math.exp(-4*dt);st.strike*=Math.exp(-7*dt);if(d.role==='ambush'&&c.state!=='lunge')st.strike*=Math.exp(-7*dt);}st.jet=c.state==='chase'&&d.jetter===true;st.turn=c.turnV||0;st.acc=c.accV||0;
     const vis=dp<c.lodFar;c.g.visible=vis;
-    if(vis){visibleCreatures++;if(dp<SEEN_R&&mode==='play')seeSpec(c.kind);if(dp<c.lodNear){setLOD(c,0);c.anim(t+c.t0,Math.min(4,c.vel.length()/(d.size*0.5)),st);T4.set(0,0,1).applyQuaternion(c.g.quaternion);bodyPose(c,dt,Math.atan2(T4.x,T4.z));}else setLOD(c,1);} // bodyPose (fx.js, v11.53): squash and stretch, banking, the stun's list // seen within SEEN_R (save.js, v11.47): the creator's parts
+    if(vis){visibleCreatures++;if(dp<SEEN_R&&mode==='play')seeSpec(c.kind);if(dp<c.lodNear){setLOD(c,0);if(c.anim)c.anim(t+c.t0,Math.min(4,c.vel.length()/(d.size*0.5)),st);T4.set(0,0,1).applyQuaternion(c.g.quaternion);bodyPose(c,dt,Math.atan2(T4.x,T4.z));}else setLOD(c,1);} // bodyPose (fx.js, v11.53): squash and stretch, banking, the stun's list // seen within SEEN_R (save.js, v11.47): the creator's parts
     if(vis&&dp<c.lodNear&&c.lod===0)simList.push(c);
     if(vis&&dp<c.nearR)near.push(c);
   }

@@ -5614,3 +5614,10 @@ PLANKTON.md §13 pass 4 (§10, with §5's migration, which pass 3 left for the g
 **Unseen, ask in this order**: whether a swarm reads as a living cloud or as more snow (`SW_SZ`, `SW_COL`, the jitter), then whether they are
 met often enough in play (`SW_SEE` 160, 2.5 a cell), then whether the dusk rise is ever seen (80 real seconds), then whether a cloud parting
 round the body at speed reads at all.
+
+## v11.84.1 — a swarm within arm's reach threw (22 Sep 2026)
+
+`test/anim.js` was red under v11.84 and I committed anyway, having read the suite's log before it had finished: a swarm within `lodNear` (10 m) had
+`c.anim` called on it, and a swarm has no anim (`swarmBuild`). `updateCreatures` guards the call now (`if(c.anim)`); the shed's call in `shedFlora`
+is only reached by kinds that moult. The smoke tests never met one that close. `node build.js --test` green on both tiers, read after the exit line
+this time.
