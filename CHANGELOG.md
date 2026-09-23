@@ -5472,3 +5472,34 @@ breathes with the spring–neap cycle and the gold swells after a storm.
 
 **Unseen, ask in this order**: the shelf forest at their own screen (the person's still was greener than mine — their pane is 1600×900 on the 4060,
 the same shader), then the blue snow against the dark water — v11.82, pass 2, colours the snow by the pigment kind and spends it where the crop is.
+
+## v11.82 — the snow off the field: the live kind by the crop, its colour by kind, the chains (22 Sep 2026)
+
+PLANKTON.md §13 pass 2 (§9), as the person asked after looking at v11.81 — their point 2 was this one: the marine snow "blue and out of place"
+against the dark water, because the `live` kind coloured itself by the old nutrient field and weighed itself by a smooth function of depth.
+
+- **The live kind is the field's** (atmosphere.js `snCrop`, `snowW` case 0). `snowSeed` caches the maps' texel at the point (far.js `wmBloom`:
+  the two crops, the front's X, the floor — `pf` grew from 6 to 10 slots) and the weight is world.js `bloomC` on it at the point's height:
+  0.12 × a floor of the finest debris in lit water + 0.9 × C/(C + `SN_CK` 0.6) × (1 + 0.5 × the thermocline's Gaussian). So the ring, the lee's
+  eddy, the fed flank, the deep maximum at 95 and the storm's gold are in the snow by the same numbers as the water's colour, and the person's
+  "concentrated pockets" have the mechanism under them rather than a noise function. Cost: one bilinear read of two maps and one `bloomC` per
+  seed, cached across the six kinds' weights (`snCi`/`snCy`); the loop 0.25 ms a frame headless (0.43 before — fewer kinds are drawn in poor water).
+- **Colour by pigment kind** (`SN_PIG`, `SN_PALE`): the live point's colour is the mix of the three kinds' crops at the point, blended from the
+  old pale by C/(C+0.5) — greenish on the shelf, warm on the flank, plum-grey in the deep maximum, pale in the basin. Subtle, on purpose.
+- **The chain kind** (`SN_K[5]`, 0.5 size, 1.2 cm/s; `SN_CHW` 0.12 of the live weight; `snL`, `snFree`): a leader seeds one or two followers
+  28 cm apart along a random direction, sharing its look, fall and eddy phase; the followers are not refreshed on their own and re-roll when the
+  leader leaves the box, parks or changes kind, or when a per-frame check finds them orphaned. Diatom chains, faecal strings, the discarded houses
+  of filter-feeding drifters — where the life is, a share of it. At `SN_CHW` 0.4 the box was 42% chains (each leader brings 1.5 followers) and
+  the loop 0.61 ms; 0.12 gives 15–21% and 0.25 ms.
+- **Tests**: `test/snow.js` has seventeen sites now — the front ring at a side break against the slope beside it at the same depth (the live weight
+  0.86 vs 0.42), the deep maximum at 95 over the fed slope against the same column at 140 (0.43 vs 0.10; the box 36% live) — and the chains in the
+  ring's box (20%). Three of its old assertions were rewritten for a live kind that moves with the field: the lagoon's "mostly live" counts the
+  chains, the surf's bubbles are 3% of the box not 5 (the crop there dilutes their share, not their number), and the thermocline's floc is judged
+  by its weight rather than its share. `node build.js --test` green on both tiers.
+- **Seen** (`test/render/v82_snow_ring.png`, `v82_snow_flank.png`, `v82_snow_deepmax.png`, `v82_snow_lagoon.png`, `v82_snow_basin.png`): the snow
+  at the break, the flank, the deep maximum, the lagoon and the basin, denser where the field is; the points are 7 cm quads, so at a wide still's
+  distance neither the chains nor the tint can be read — the numbers above are the record for those.
+
+**Unseen, ask in this order**: whether the snow's colour now sits *in* the dark water (the person's point 2), then whether the chains read as strings
+at swimming distance (`SN_CHW`, the 0.28 m spacing in `snowSeed`), then whether the deep maximum reads as a layer when descending through 95 m over
+the flank, then whether the ring's snow is a visible band from the shelf.

@@ -1,5 +1,14 @@
 # HANDOFF — tethys
 
+**v11.82 (22 Sep 2026): the snow off the field — PLANKTON.md §13 pass 2.** The marine snow's `live` kind takes its weight from the plankton's crop at
+the point (atmosphere.js `snCrop` on the maps' texel through world.js `bloomC`), so the ring, the fed flank, the lee and the deep maximum at 95 m are in
+the snow with no noise function; its colour is the mix of the kinds winning there (`SN_PIG`, subtle by design); and a chain kind seeds one or two followers
+28 cm apart that fall together (`SN_K[5]`, `snL`, `SN_CHW` 0.12). The person's "blue snow out of place in the dark" was the live kind's old colour by `nut`;
+now it is the water's own. Seen: `test/render/v82_snow_*.png` (the chains are sub-pixel in a wide still; the test's numbers have them at 20% of the
+ring's box). **Ask first** whether the snow's colour now sits in the dark water rather than on it, then whether the chains read as strings at swimming
+distance (`SN_CHW`; their spacing 0.28 m in `snowSeed`), then whether the deep maximum reads as a layer when descending through 95 m. Next: pass 3,
+the day and the year (the tilt, `YEAR_D`, the seasonal wind, the mixed layer; census at four points in the year) — the person's answers in §15 stand.
+
 **v11.81 (22 Sep 2026): the plankton — PLANKTON.md §13 pass 1.** The water's own life as a field (world.js `plank`, `bloomC`, `bloomTint`, the
 knobs `PLK` and `PIGK`): a standing stock in mg/m³ from the food, the shallow floor's return and the retention field, in three pigment kinds —
 green (the shelf, the lagoon), gold (the stirred flank, the front, days after a storm) and red (the deep maximum at 95 ± 35) — and the water's colour
@@ -10,6 +19,8 @@ stripped (§12): `leeW` places the fleets and the buttons and feeds the crop, an
 against `v81_after_*.png` at the flank, the lagoon, the thermocline, the basin and the man-o'-war's patch. The person looked (22 Sep): "looks actually really beautiful", the
 shelf and the ring too green; v11.81.1 raised `PLK.k1` 0.8 → 1.5 and lowered `front` 2.0 → 1.2, so the shelf is teal-green and the ring a band.
 Still open after their look: whether the water seen from above should be as green as the column below it (it is the same veil; the sky is not).
+The person on v11.81 (22 Sep): "it looks actually really beautiful"; asked whether the clouds move (no: the map of where the water is fed; the ring
+breathes over 13 days, the gold after a storm).
 
 **v11.80.1 (22 Sep 2026): the combs swing with the body.** The person on v11.80: the camera "seems to be fixed"; the frontal combs still did not move
 with the animal. They are merged geometry in a group, not a chain, so v11.80's `SWAY` could not reach them. fx.js `bodyPose` now keeps the body's eased

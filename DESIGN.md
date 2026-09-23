@@ -1283,6 +1283,19 @@ pass at 1.2 m/s, 7.7 / 1.05 / 3.3 m. v10.1 swayed about the vertical: "the plant
 as is only if its first element compares as a number — a NaN there would crash the upload, so nothing writes NaN into
 them.
 
+**The snow off the field (v11.82, PLANKTON.md §9, pass 2).** The `live` kind's weight is the plankton field's crop at the point: `snowSeed` caches
+the maps' texel (`wmBloom`: the two crops, X, the floor — `pf` slots 6–9) and `snCrop` runs world.js `bloomC` on it at the point's height, so the
+ring, the lee, the fed flank, the deep maximum at 95 and the thermocline's pile appear in the snow with no noise function: weight = 0.12 × a
+floor of the finest debris in lit water + 0.9 × C/(C + `SN_CK` 0.6) × (1 + 0.5 × the thermocline's Gaussian). Its colour is the mix of the three
+kinds' crops there (`SN_PIG`: green 0.70/0.86/0.62, gold 0.86/0.78/0.48, red 0.78/0.62/0.68) blended from `SN_PALE` by C/(C+0.5), so the shelf's
+snow is greenish, the flank's warm, the deep maximum's plum-grey and poor water's pale; subtle by design ("a tiny bit more colour variation").
+The **chain** kind (`SN_K[5]`, 0.5 size, 1.2 cm/s): a leader drawn at `SN_CHW` 0.12 of the live weight seeds one or two followers 28 cm apart
+along a random direction (`snL` their leader; the followers share its look, fall and eddy phase, are never refreshed on their own, and re-roll
+when the leader leaves the box, parks or changes kind — `snFree`, and a per-frame check for an orphan). Points are square, so this is the
+only two-pixel thing without a texture fetch. Headless at the ring: live 59%, floc 21%, chain 20%; at the deep maximum the live weight 0.43
+against 0.10 at 140 in the same column; the loop 0.25 ms a frame. Two knobs: `SN_CK` (how much crop fills the count), `SN_CHW` (the chains'
+share; 0.4 gave a box that was 42% chains, since each leader brings 1.5 followers).
+
 **The snow** (`atmosphere.js` `updatePlankton`, `snowW`, `snowSeed`, `SN_K`; `physics.js` `flowAt/FLOW`). Since v11.24 the snow is what
 the column holds where the camera is, not one even cloud. Five kinds, each with a source, a sink and a size, and every point one of
 them or *parked* (at the camera, clipped) where the water is sparse — so `Q.snow` points (1800 / 1000) are spent where the snow is:

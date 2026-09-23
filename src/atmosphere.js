@@ -381,9 +381,15 @@ const waterDome=(function(){const mat=new THREE.MeshBasicMaterial({color:0x00000
 // What is in the water, by what the column is doing (the person's ask, 10 Sep: the stuff at the bottom of the world is not the stuff
 // at the top). Marine snow is not one thing evenly spread: it is five populations, each with a source, a sink and a size, and
 // the column is layered by density, so it is sparse in the middle and piles up at the interfaces. Five kinds (SN_K):
-//   live   — the lit layer's own life and its finest debris: tiny, greenish-pale, all but weightless (0.5 cm/s), stirred by the
-//            wind's turbulence in the mixed layer. Most under the surface, and again at the thermocline where the nutrients sit
-//            (a chlorophyll maximum, real); more where the water is fed (`nut`).
+//   live   — the lit layer's own life and its finest debris: tiny, all but weightless (0.5 cm/s), stirred by the wind's turbulence in
+//            the mixed layer. Since v11.82 (PLANKTON.md §9, pass 2) its weight is the plankton field's crop at the point (world.js bloomC
+//            off the maps' texel, far.js wmBloom: the ring, the lee, the fed flank, the deep maximum at 95 and the thermocline's pile
+//            appear in the snow for free) and its colour is the mix of the three pigment kinds winning there — green on the shelf, gold on
+//            the flank, plum in the deep maximum, pale where the water is poor. To v11.81 it was a smooth function of depth and `nut`.
+//   chain  — v11.82: two or three points seeded adjacent and falling together — diatom-like chains, faecal strings, the discarded mucus
+//            houses of filter-feeding drifters (the biggest single contributor to real marine snow); where the life is, a share of it.
+//            An untextured point is always square, so this is the only way to a thing two pixels long without a texture fetch or a
+//            discard. The followers ride the leader's eddy phase (snL) and are re-rolled when it changes kind or parks.
 //   floc   — the snow proper: the aggregates (dead cells, mucus, pellets) that form under the lit layer and sink through the
 //            dark. Fewer with depth as bacteria eat them (the Martin curve, flux ~ (d/90)^-0.86), bigger and browner as the
 //            small ones go; a thin layer on the thermocline (-64) and the particle maximum at the chemocline (-450: iron and
@@ -410,8 +416,9 @@ const waterDome=(function(){const mat=new THREE.MeshBasicMaterial({color:0x00000
 // by depth and daylight, updateAtmosphere) plus the player's light by distance — so the snow shows in a torch's reach in the
 // dark and is invisible outside it. The shader patch reads r128's points chunks; if a line isn't found it warns and the snow
 // draws uniform (the old look) rather than not at all.
-const PN=Q.snow,SN_HW=30,pp=new Float32Array(PN*3),pv=new Float32Array(PN*3),pc=new Float32Array(PN*3),ps=new Float32Array(PN*2),pk=new Uint8Array(PN),pr=new Float32Array(PN),ph=new Float32Array(PN),pf=new Float32Array(PN*6);
-const SN_K=[{sz:0.5,fall:0.005},{sz:1.0,fall:0.02},{sz:0.6,fall:0.05},{sz:0.55,fall:-0.28},{sz:1.35,fall:0.006}]; // size × the material's, m/s down
+const PN=Q.snow,SN_HW=30,pp=new Float32Array(PN*3),pv=new Float32Array(PN*3),pc=new Float32Array(PN*3),ps=new Float32Array(PN*2),pk=new Uint8Array(PN),pr=new Float32Array(PN),ph=new Float32Array(PN),pf=new Float32Array(PN*10),snL=new Uint16Array(PN); // pf (v11.82): the six fields, then the maps' texel (the two crops, X, the floor); snL: a chain follower's leader (its own index otherwise)
+const SN_K=[{sz:0.5,fall:0.005},{sz:1.0,fall:0.02},{sz:0.6,fall:0.05},{sz:0.55,fall:-0.28},{sz:1.35,fall:0.006},{sz:0.5,fall:0.012}]; // size × the material's, m/s down; 5 the chain (v11.82)
+const SN_PIG=[[0.70,0.86,0.62],[0.86,0.78,0.48],[0.78,0.62,0.68]],SN_PALE=[0.82,0.90,0.78],SN_CHAIN=[0.80,0.78,0.66],SN_CK=0.6,SN_CHW=0.12; // the live kind's colour by pigment kind (green, gold, red) and in poor water; the chain's; the crop (mg/m³) at which the live kind is half its full weight; the chains' share of the live weight
 const SN_TH=-64,SN_CH=CHEMO,SN_W0=0.9,SN_GAIN=3.0,SN_REF=63; // the thermocline, the chemocline (y); the weight that fills the count; weight → alpha; the refresh mask (one point in 64 a frame: a point re-rolls about once a second)
 const pg=new THREE.BufferGeometry();pg.setAttribute('position',new THREE.BufferAttribute(pp,3));pg.setAttribute('color',new THREE.BufferAttribute(pc,3));pg.setAttribute('aSz',new THREE.BufferAttribute(ps,2));
 const plU={value:new THREE.Vector4(0,0,0,0)},plCU={value:new THREE.Color(0x6fbfe0)};
@@ -427,12 +434,15 @@ pm.onBeforeCompile=function(sh){sh.uniforms.uPL=plU;sh.uniforms.uPLc=plCU;let n=
   if(n!==5)console.warn('snow: points chunks not as expected ('+n+' of 5); the snow draws uniform');};
 pm.customProgramCacheKey=function(){return 'snow';};
 const plankton=new THREE.Points(pg,pm);plankton.frustumCulled=false;scene.add(plankton);
-const snF=new Float32Array(NF),snW=[0,0,0,0,0],snLast=V3(1e9,0,0);let snFrame=0; // snLast: the camera last frame — a jump (spawn, the zoo, a respawn) reseeds the whole cloud at once
+const snF=new Float32Array(NF),snW=[0,0,0,0,0,0],snB=[0,0,0,0],snC=[0,0,0],snLast=V3(1e9,0,0);let snFrame=0,snCi=-1,snCy=0; // snB, snC: the maps' texel and the crops at the point being weighed (snCrop); snCi/snCy: which point and height they hold // snLast: the camera last frame — a jump (spawn, the zoo, a respawn) reseeds the whole cloud at once
 function snGauss(u){return Math.exp(-u*u);}
-// the kind's weight at a point: y and the point's cached conditions (pf: sub, flow, expo, nut, heat, shel; ph: the floor)
-function snowW(k,i,y){const b=i*6,d=TIDE-y,hf=y-ph[i];if(d<0.3||hf<0)return 0;
+// the crops at point i at height y (world.js bloomC off the texel cached at its seed), once per point and height: snC = [green, gold, red], returns their sum
+function snCrop(i,y){if(i!==snCi||y!==snCy){const b=i*10;snB[0]=pf[b+6];snB[1]=pf[b+7];snB[2]=pf[b+8];bloomC(snB,pf[b+9],TIDE-y,snC);snCi=i;snCy=y;}return snC[0]+snC[1]+snC[2];}
+// the kind's weight at a point: y and the point's cached conditions (pf: sub, flow, expo, nut, heat, shel, then the maps' texel; ph: the floor)
+function snowW(k,i,y){const b=i*10,d=TIDE-y,hf=y-ph[i];if(d<0.3||hf<0)return 0;
   switch(k){
-    case 0:return (0.35+0.65*pf[b+3])*(0.7*Math.exp(-d/40)+0.75*snGauss((y-SN_TH+2)/9));
+    case 0:{const C=snCrop(i,y);return 0.12*smooth(200,20,d)+0.9*C/(C+SN_CK)*(1+0.5*snGauss((y-SN_TH)/6));} // v11.82: the field's crop here (the vertical is bloomC's), a floor of the finest debris in lit water, the thermocline's pile
+    case 5:return SN_CHW*snowW(0,i,y);
     case 1:{const form=smooth(4,45,d),martin=Math.pow(Math.max(d,90)/90,-0.86);
       return (0.4+0.6*pf[b+3])*(form*martin+0.9*snGauss((y-SN_TH)/6)+1.6*snGauss((y-SN_CH)/7))*0.9*smooth(SN_CH-15,SN_CH,y);}
     case 2:{const stir=pf[b+2]*(0.35+0.65*SEA_CHOP)*(0.3+0.7*Math.exp(-hf/12)),bed=(0.15+0.85*pf[b+1])*(1.2*Math.exp(-hf/6)+0.4*Math.exp(-hf/30)),lag=0.4*pf[b+5]*Math.exp(-hf/10); // the bed: a sharp layer in the bottom few metres inside the thicker bottom mixed layer
@@ -444,28 +454,34 @@ function snowW(k,i,y){const b=i*6,d=TIDE-y,hf=y-ph[i];if(d<0.3||hf<0)return 0;
 // moved into the water if it was in air or under the floor; if there is no water in the box's column there, the point parks.
 // `keep`: a refresh of a live point — its velocity and look stay if it draws the same kind again (no pop).
 let snDirty=true;
+// a chain's followers (the next one or two points, snL === the leader) re-rolled where they are, when the leader changes
+function snFree(i){for(let m=1;m<=2;m++){const j=i+m;if(j<PN&&snL[j]===i){snL[j]=j;snowSeed(j,pp[j*3],pp[j*3+1],pp[j*3+2]);}}}
 function snowSeed(i,x,y,z,keep){
-  const ch=chunkAt(x,z),b=i*6,k0=keep?pk[i]:255;let f,h;if(ch){f=ch.f(x,z);h=ch.h(x,z);}else{const s=sample(x,z,snF);f=s.f;h=s.h;}
-  pf[b]=f[FI.sub];pf[b+1]=f[FI.flow];pf[b+2]=f[FI.expo];pf[b+3]=f[FI.nut];pf[b+4]=f[FI.heat];pf[b+5]=f[FI.shel];ph[i]=h; // v11.81: the canopy's weight (pf[b+6]) went with the canopy; the crop at the point is pass 2's (PLANKTON.md §9, plankAt)
+  const ch=chunkAt(x,z),b=i*10,k0=keep?pk[i]:255;let f,h;if(ch){f=ch.f(x,z);h=ch.h(x,z);}else{const s=sample(x,z,snF);f=s.f;h=s.h;}
+  pf[b]=f[FI.sub];pf[b+1]=f[FI.flow];pf[b+2]=f[FI.expo];pf[b+3]=f[FI.nut];pf[b+4]=f[FI.heat];pf[b+5]=f[FI.shel];ph[i]=h;wmBloom(x,z,snB);pf[b+6]=snB[0];pf[b+7]=snB[1];pf[b+8]=snB[2];pf[b+9]=snB[3];snCi=-1; // the maps' texel for the crop (v11.82; the canopy's weight sat here to v11.80)
+  if(snL[i]!==i)snL[i]=i;else if(!keep)snFree(i); // a re-rolled point is its own; a leader that leaves the box frees its followers (they re-roll where they are); a refresh frees them only if it changes kind (below)
   const cy=camera.position.y,lo=Math.max(cy-SN_HW,h+0.3),hi=Math.min(cy+SN_HW,TIDE-0.4);
-  const park=()=>{pk[i]=255;pp[i*3]=camera.position.x;pp[i*3+1]=cy;pp[i*3+2]=camera.position.z;ps[i*2+1]=0;}; // parked at the camera: clipped by the near plane
+  const park=()=>{pk[i]=255;pp[i*3]=camera.position.x;pp[i*3+1]=cy;pp[i*3+2]=camera.position.z;ps[i*2+1]=0;snFree(i);}; // parked at the camera: clipped by the near plane
   if(hi<=lo){park();return;}
   if(y<lo||y>hi)y=lo+Math.random()*(hi-lo);
-  let W=0;for(let k=0;k<5;k++){snW[k]=snowW(k,i,y);W+=snW[k];}
+  let W=0;for(let k=0;k<6;k++){snW[k]=snowW(k,i,y);W+=snW[k];}
   if(Math.random()*SN_W0>=W){park();return;} // parked: sparse water here
-  let k=0,acc=snW[0];const pick=Math.random()*W;while(k<4&&pick>acc){k++;acc+=snW[k];}
+  let k=0,acc=snW[0];const pick=Math.random()*W;while(k<5&&pick>acc){k++;acc+=snW[k];}
+  if(k0===5&&k!==5)snFree(i); // the chain's leader became something else: its followers re-roll
   pk[i]=k;pp[i*3]=x;pp[i*3+1]=y;pp[i*3+2]=z;ps[i*2+1]=Math.min(1,snW[k]*SN_GAIN);if(k===k0)return; // the alpha is set here, at the seed and the refresh, not every frame: it moves as slowly as the point sinks. A refresh that drew the same kind keeps the point's look
   pr[i]=Math.random();pv[i*3]=pv[i*3+1]=pv[i*3+2]=0;snDirty=true;
   const d=TIDE-y,q=pr[i],j=(q-0.5)*0.1;let cr,cg,cb;
-  if(k===0){const nt=pf[b+3];cr=lerp(0.82,0.66,nt);cg=lerp(0.9,0.86,nt);cb=lerp(0.78,0.6,nt);}
+  if(k===0||k===5){const C=snCrop(i,y),sat=C/(C+0.5)*(k===5?0.5:1),P=k===5?SN_CHAIN:SN_PALE;let mr=0,mg=0,mb=0;if(C>1e-6)for(let m=0;m<3;m++){const w=snC[m]/C,S=SN_PIG[m];mr+=w*S[0];mg+=w*S[1];mb+=w*S[2];}cr=lerp(P[0],mr,sat);cg=lerp(P[1],mg,sat);cb=lerp(P[2],mb,sat);} // v11.82: the mix of the kinds winning here, pale where the water is poor
   else if(k===1){const dk=smooth(60,260,d),ru=smooth(SN_CH+32,SN_CH+10,y),mk=snGauss((y-SN_CH)/7);
     cr=lerp(lerp(lerp(0.86,0.6,dk),0.72,ru),0.92,mk);cg=lerp(lerp(lerp(0.86,0.56,dk),0.44,ru),0.92,mk);cb=lerp(lerp(lerp(0.82,0.48,dk),0.26,ru),0.88,mk);}
   else if(k===2){const sd=smooth(0.05,0.33,pf[b]),ht=pf[b+4];cr=lerp(lerp(0.5,0.7,sd),0.25,ht);cg=lerp(lerp(0.47,0.68,sd),0.23,ht);cb=lerp(lerp(0.42,0.5,sd),0.22,ht);}
   else if(k===3){cr=cg=cb=1;}
   else{const ht=pf[b+4];if(ht>0.05&&q>0.7){cr=cg=0.85;cb=0.83;}else{cr=lerp(0.09,0.28,ht);cg=lerp(0.10,0.27,ht);cb=lerp(0.12,0.27,ht);}}
   pc[i*3]=cr+j;pc[i*3+1]=cg+j;pc[i*3+2]=cb+j;ps[i*2]=SN_K[k].sz*(0.7+0.6*q);
+  if(k===5){const n=q<0.5?1:2,a=Math.random()*TAU,c=Math.random()*2-1,s=Math.sqrt(1-c*c),dx=s*Math.cos(a)*0.28,dy=c*0.28,dz=s*Math.sin(a)*0.28; // the chain (v11.82): one or two followers strung along a random direction, sharing the leader's look, fall and eddy
+    for(let m=1;m<=n;m++){const j=i+m;if(j>=PN)break;if(snL[j]!==j&&snL[j]!==i)continue;pk[j]=5;snL[j]=i;pp[j*3]=x+dx*m;pp[j*3+1]=y+dy*m;pp[j*3+2]=z+dz*m;pv[j*3]=pv[j*3+1]=pv[j*3+2]=0;pr[j]=q;ph[j]=h;for(let c2=0;c2<10;c2++)pf[j*10+c2]=pf[b+c2];pc[j*3]=pc[i*3];pc[j*3+1]=pc[i*3+1];pc[j*3+2]=pc[i*3+2];ps[j*2]=ps[i*2];ps[j*2+1]=ps[i*2+1];}}
 }
-for(let i=0;i<PN;i++){pk[i]=255;pf.fill(0,i*6,i*6+6);} // all parked until the first frame under water seeds them where the camera is
+for(let i=0;i<PN;i++){pk[i]=255;snL[i]=i;pf.fill(0,i*10,i*10+10);} // all parked until the first frame under water seeds them where the camera is
 function updatePlankton(dt){
   const cx=camera.position.x,cy=camera.position.y,cz=camera.position.z,kd=Math.exp(-2.5*dt),kf=Math.min(1,8*dt),K=SKY;
   currentAt(cx,cz,cy,CURV);const cux=CURV.x*dt,cuz=CURV.z*dt; // the snow drifts with the current
@@ -473,7 +489,7 @@ function updatePlankton(dt){
   snFrame++;const ref=snFrame&SN_REF;
   if(Math.abs(cx-snLast.x)+Math.abs(cy-snLast.y)+Math.abs(cz-snLast.z)>SN_HW){for(let i=0;i<PN;i++)snowSeed(i,cx+(Math.random()-0.5)*2*SN_HW,cy+(Math.random()-0.5)*2*SN_HW,cz+(Math.random()-0.5)*2*SN_HW);}snLast.set(cx,cy,cz);
   for(let i=0;i<PN;i++){
-    const k=pk[i],b=i*6;
+    const k=pk[i],b=i*10;
     if(k===255){if((i&SN_REF)===ref)snowSeed(i,cx+(Math.random()-0.5)*2*SN_HW,cy+(Math.random()-0.5)*2*SN_HW,cz+(Math.random()-0.5)*2*SN_HW);else{pp[i*3]=cx;pp[i*3+1]=cy;pp[i*3+2]=cz;}continue;} // parked: ride at the camera (clipped); one in 64 a frame tries the water at a random spot in the box
     let x=pp[i*3],y=pp[i*3+1],z=pp[i*3+2],vx=pv[i*3]*kd,vy=pv[i*3+1]*kd,vz=pv[i*3+2]*kd;
     for(let bb=0;bb<flowN;bb++){const f=FLOW[bb],rx=x-f.x;if(rx>f.a4||rx<-f.a4)continue;const ry=y-f.y,rz=z-f.z,r2=rx*rx+ry*ry+rz*rz;if(r2>f.a4*f.a4)continue; // physics.js flowAt, inlined: this is the hot loop
@@ -487,7 +503,7 @@ function updatePlankton(dt){
     if(heat>0.02)fall-=0.12*heat*Math.exp(-hf/45);
     // turbulence: the wind's in the mixed layer, the current's over the bed, the vent's; the deep and the anoxic water are still
     const amp=0.22*smooth(75,25,d)*wind+0.15*pf[b+1]*Math.exp(-hf/5)+0.2*heat*Math.exp(-hf/40);
-    let ux=0,uz=0,uy=0;if(amp>0.004){const ang=i*0.37+t*(0.5+0.4*q),sa=Math.sin(ang),ca=Math.cos(ang);ux=amp*sa;uz=amp*ca*(q<0.5?1:-1);uy=0.4*amp*ca*(q<0.25||q>0.75?1:-1);} // an eddy per point at its own rate, two trig; none for the still water of the deep
+    let ux=0,uz=0,uy=0;if(amp>0.004){const ang=snL[i]*0.37+t*(0.5+0.4*q),sa=Math.sin(ang),ca=Math.cos(ang);ux=amp*sa;uz=amp*ca*(q<0.5?1:-1);uy=0.4*amp*ca*(q<0.25||q>0.75?1:-1);} // an eddy per point at its own rate, two trig; none for the still water of the deep
     if(d<15){ // the swell's orbits: u along the wave in phase with the crest, w a quarter behind (deep-water linear theory); cut where they are under 13% (e^-kd)
       const p0=(x*w0.dx+z*w0.dz)*w0.k-t0,a0=e0*Math.exp(-w0.k*d),s0=Math.sin(p0),c0=Math.cos(p0);ux+=a0*s0*w0.dx;uz+=a0*s0*w0.dz;uy-=a0*c0;
       if(d<6){const p1=(x*w1.dx+z*w1.dz)*w1.k-t1,a1=e1*Math.exp(-w1.k*d),s1=Math.sin(p1),c1=Math.cos(p1);ux+=a1*s1*w1.dx;uz+=a1*s1*w1.dz;uy-=a1*c1;}}
@@ -498,7 +514,7 @@ function updatePlankton(dt){
     if(z-cz>SN_HW){z-=2*SN_HW;wrap=true;}else if(z-cz<-SN_HW){z+=2*SN_HW;wrap=true;}
     if(wrap){snowSeed(i,x,y,z);continue;}
     pp[i*3]=x;pp[i*3+1]=y;pp[i*3+2]=z;pv[i*3]=vx;pv[i*3+1]=vy;pv[i*3+2]=vz;
-    if((i&SN_REF)===ref)snowSeed(i,x,y,z,true);else if(y>TIDE-0.3||y<ph[i])ps[i*2+1]=0; // out of the water or into the floor between refreshes: hidden // the refresh: every point re-rolls where it is (keeping its look if the kind holds), so the live share tracks the water's density and a point that has sunk out of its layer changes kind
+    if((i&SN_REF)===ref&&snL[i]===i)snowSeed(i,x,y,z,true);else if(y>TIDE-0.3||y<ph[i])ps[i*2+1]=0; // a chain's follower is not refreshed on its own: it goes when its leader does (snFree) // out of the water or into the floor between refreshes: hidden // the refresh: every point re-rolls where it is (keeping its look if the kind holds), so the live share tracks the water's density and a point that has sunk out of its layer changes kind
   }
   pg.attributes.position.needsUpdate=true;pg.attributes.aSz.needsUpdate=true;if(snDirty){pg.attributes.color.needsUpdate=true;snDirty=false;}
   plU.value.set(plight.position.x,plight.position.y,plight.position.z,plight.intensity*1.6);
