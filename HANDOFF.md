@@ -1,5 +1,12 @@
 # HANDOFF — tethys
 
+**v11.83.1 (22 Sep 2026): the hood is a player-sized hunter.** The person: the burrowing hingeshell that comes out at you "needs to be just another variant
+for a player-sized predator"; the look liked, the claws for small prey. So: `SPECS.hood` size 2 at 0.42 of its build (a 3.6 m body, the tail spine and flaps
+beyond), `DEFS.hood` a hunter of the sand flats and the lagoon floor (reach 4.6, dmg 18, a strike, the small prey and you), the same spawn envelopes,
+no longer buried. The combat matrix has it landing on everything it lists; the moult check in `test/combat.js` uses the ridge now. Seen only as
+`test/preview/hood.png` (the build unchanged but for scale). **Ask first** whether the eyes under the body still suit a swimmer (the person said
+the look may change if the niche wants it), then whether one per three cells over the flats is enough to meet.
+
 **v11.83 (22 Sep 2026): the year — PLANKTON.md §13 pass 3, less the day's migration.** The sun has a declination (world.js `skyDir(ha,out,dec)`,
 `TILT` 15°, `YEAR_D` 185 as PLANET decided, boot at phase 0.6); the day runs 14.5–15.6 h and eclipses are seasonal now (the moon stays at declination 0).
 The season is the wind: `seasonAt` (+1 windy, −1 still) biases the calms and the showers in `weatherAt` and rides `uFogB.w` into `bloomC`, which

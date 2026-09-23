@@ -310,8 +310,9 @@ choice (CHANGELOG v11.9.1 lists them), five looks in `RAPTORS` — keel (the sic
 The Earth tells that no look repeats together: stalked eyes + claw pair + plate mouth under + flap rows + tail fan. Each look keeps two of
 the five at most. Open: which looks live in the world, and whether the niche wants two sizes of one look or one each of several.
 **Answered v11.66 (the person's default, to be overridden in chat): all five live, one each, placed by what the build implies** — the keel on the
-rockfall and the terraces, the splay in the weed forests, the hood buried on the sand flats and the lagoon floor as an ambusher from below, the
-lash on the ledges, the ram slow and big in the open water over the flank. Their prey is what their claws can open (COMBAT.md §7, answered).
+rockfall and the terraces, the splay in the weed forests, the hood buried on the sand flats and the lagoon floor as an ambusher from below (to v11.83;
+since v11.83.1, the person's ask of 22 Sep, a player-sized hunter over the same flats and the lagoon, the look kept at 0.42 of its build, its claws
+for the small prey), the lash on the ledges, the ram slow and big in the open water over the flank. Their prey is what their claws can open (COMBAT.md §7, answered).
 
 ## The variety pass (built, v11.66 — seen in the pane)
 

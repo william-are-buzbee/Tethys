@@ -5559,3 +5559,25 @@ swarms of pass 4, which will carry the dusk rise.
 **Unseen, ask in this order**: whether a season no single animal can see is worth its numbers or wants a shorter year after all (§14 — 185 days is
 123 real hours; one session sees a few days of it), then whether the seasonal eclipses are wanted (v11.17.1 kept every full moon eclipsed), then
 whether the still half's blue reads as clearer water or as duller, then the sun's noon height at the two peaks (11.5° and 26.5° off the zenith).
+
+## v11.83.1 — the hood is a player-sized hunter (22 Sep 2026)
+
+The person, before pass 4: "the hingeshell that burrows and comes out and attacks you — that one needs to be just another variant for a
+player-sized predator. As opposed to what it is now. If it needs different eyes or shape … fine, but if it doesn't, I like how it looks. The
+claws seem useful for grabbing small prey and putting them into the mouth."
+
+- **The hood** (`SPECS.hood`: size 5 → 2, `s` 1 → 0.42 — the build itself untouched, so the look stands: the hooded valves, the rear flaps, the
+  legs, the claws, the tail spine; the body 3.6 m, 6.5 with the spine, against the finback's 4.4). `DEFS.hood`: role `ambush` → `hunter` of the
+  sand flats and the lagoon floor, the same two spawn envelopes but no longer buried (`placeKind` by role); reach 4.6 (3.2 left the bite 1.3 m
+  short of the player in the matrix), dmg 18, biteCD 1.4, a strike (tell 0.35, dur 0.35, speed 12, range 1.8), bursts, home 50, cruise 16, cool 4;
+  prey the small things its claws can take — flicker, darter, needle, scuttle, rasp, sifter, arrow — and the player. COMBAT.md §7 still holds: its
+  claws get through neither the grazer's nor the finback's hide, so against you it holds for a moment and lets go, and it is a hunter of what it
+  can open. The roster's niche line says so; `floor` is off it (it swims).
+- **Tests**: the combat matrix's hood rows land on every prey it lists; `test/combat.js`'s moult check ("a hungry hunter that hunts no sickle takes
+  a soft one") used the size-5 hood and now uses the ridge (the ram at size 4 is only just heavy enough for a sickle at its mean size, and fails
+  on a large individual). `node build.js --test` green on both tiers.
+- **Seen**: `test/preview/hood.png` — the look as it was, smaller. Not looked at in the world.
+
+**Unseen, ask in this order**: whether the eyes under the body still suit a swimmer (the burrower's eyes looked up from the sand; a hunter over
+the sand might want them forward — the person allowed a change if the niche wants it), then whether it is met often enough (0.3 a cell over the
+flats, 0.4 in the lagoon — the buried one's numbers), then the strike's speed 12 against a fleeing darter.

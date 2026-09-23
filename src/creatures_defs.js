@@ -63,7 +63,7 @@ const DEFS={
   // finding — the hood's, lash's and ram's claws get through neither the grazer's nor the finback's hide — is answered by prey they can open: the forage
   // (dies at the touch), the ringmouths' skin, and any hingeshell at its moult (creatures_ai.js MOULT: a soft body is prey to whatever is big enough).
   // v11.10: every species whose build is compile(SPECS.x) is a spec (creatures_spec.js); the lab (#lab) edits them. A hand builder is a species without one.
-  hood:{build:()=>compile(SPECS.hood),size:5,hp:150,role:'ambush',prey:['player','flicker','darter','needle','scuttle','rasp','sifter'],radius:13,lunge:12,reach:6.4,dmg:30,strikeOnLunge:true,home:40,clear:0.55}, // buried on the sand flats and the lagoon floor like the trap, it lunges like the lurker (the legs and the rear flaps: a short burst up from under)
+  hood:{build:()=>compile(SPECS.hood),size:2,hp:60,role:'hunter',prey:['player','flicker','darter','needle','scuttle','rasp','sifter','arrow'],detect:24,reach:4.6,dmg:18,biteCD:1.4,strike:{tell:0.35,dur:0.35,speed:12,range:1.8},burst:{on:0.5,off:1.1},home:50,cruise:16,cruiseF:0.4,cool:4}, // v11.83.1 (the person, 22 Sep): a player-sized hunter of the sand flats and the lagoon floor, the look kept at 0.42 of its build — the claws take the small prey, and you; to v11.83 it was the ambusher from under the sand (size 5, buried, a lunge like the lurker's)
   lash:{build:()=>compile(SPECS.lash),size:3,hp:90,role:'hunter',prey:['player','needle','darter','flicker','arrow','rasp','sifter'],detect:30,reach:5.0,dmg:20,biteCD:1.5,strike:{tell:0.4,dur:0.35,speed:17,range:2.0},burst:{on:0.6,off:1.2},home:60,cruise:20,cruiseF:0.4,cool:4}, // on the ledges, whips out
   ram:{build:()=>compile(SPECS.ram),size:4,hp:200,role:'hunter',prey:['sifter','flicker','darter','arrow'],detect:38,reach:5.5,dmg:34,biteCD:2.0,strike:{tell:0.6,dur:0.5,speed:14,range:2.4},burst:{on:0.8,off:2.0},home:180,cruise:45,cruiseF:0.4,cool:6}, // slow and big in the open water over the flank: its blow stuns a shoal (combat.js RAM), never the player's hunter
   comb:{build:()=>compile(SPECS.comb),size:7,pace:0.14,hp:260,role:'wander',burst:{on:1.4,off:3},home:180,cruise:60,cruiseF:1},
@@ -115,7 +115,7 @@ const SPAWN=[
   {kind:'rasp',n:14,env:{h:[-40,-3],sub:[0.55,1]}}, // rasps graze the rock of the shallows and the reef's rim
   {kind:'trap',n:3.5,env:{h:[-40,-5],sub:[0,0.45],expo:[0,0.6]}}, // buried in the sand where the ribbons pass — sand the surf does not strip (v11.66)
   {kind:'plough',n:2,env:{h:[-80,-8],sub:[0,0.4]}}, // v11.66: the flats' deposit feeder, on the sand the grazers pasture, the lagoon's floor and the terraces' sand
-  {kind:'hood',n:0.3,env:{h:[-60,-6],sub:[0,0.45]}}, // v11.66: buried on the sand flats, an ambusher from below
+  {kind:'hood',n:0.3,env:{h:[-60,-6],sub:[0,0.45]}}, // v11.66: over the sand flats (buried there to v11.83; a hunter since v11.83.1)
   {kind:'hood',n:0.4,env:{h:[-40,-4],shel:[0.5,1]}}, // and the lagoon's floor (v11.66)
   {kind:'hose',n:1.7,env:{h:[-62,-14],sub:[0.5,1],nut:[0.4,1],flow:[0.15,0.85]}}, // in the weed forests (the stipe's own band, v11.66), after the flickers
   {kind:'lash',n:0.3,env:{h:[-80,-8],sub:[0.5,1],rel:[0.6,1]}}, // v11.66: the ledges and the lips — rock that stands above its surroundings (rel is 0.5 on flat ground)
@@ -188,7 +188,7 @@ const ROSTER=[
   {id:'flicker',clade:'hingeshells',family:'paddlers',niche:'small forage'},
   {id:'hose',clade:'hingeshells',family:'paddlers',niche:'small-prey hunter of the towers — the splay look'},
   {id:'sickle',clade:'hingeshells',family:'paddlers',niche:'player-size predator, burst and coast — the keel look'},
-  {id:'hood',clade:'hingeshells',family:'paddlers',niche:'ambusher from under the sand — the hood look',floor:true},
+  {id:'hood',clade:'hingeshells',family:'paddlers',niche:'a player-sized hunter of the sand flats and the lagoon, a claw for small prey — the hood look'},
   {id:'lash',clade:'hingeshells',family:'paddlers',niche:'hunter of the ledges, whips out — the lash look'},
   {id:'ram',clade:'hingeshells',family:'paddlers',niche:'a blow on the swarms over the flank — the ram look'},
   {id:'comb',clade:'hingeshells',family:'paddlers',niche:'big filter feeder, the minor one'},

@@ -3742,8 +3742,8 @@ const SPECS = {
   hood: {
     id: 'hood',
     clade: 'hingeshells',
-    size: 5,
-    s: 1,
+    size: 2,
+    s: 0.42,
     coat: 'hood',
     core: {kind: 'trunk', L: 8.5, n: 7, w0: 3.0, w1: 1.2, h0: 0.9, h1: 0.5, hw: 2.6, hh: 0.9, hl: 1.8, beat: [1.6, 0.8]},
     parts: [

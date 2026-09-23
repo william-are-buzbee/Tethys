@@ -1756,7 +1756,7 @@ debits. Nothing respawns. The unloaded cells run the model; the loaded cells run
 
 **The fields in the table** (v11.66, the hingeshell variety pass): the hingeshells' `SPAWN` rows read `expo`, `rel`, `shel`, `flow`, `nut`, `young`,
 `heat`, `turb` and `grp` where the mechanism says, not the depth alone (creatures_defs.js, the comment over the table); the raptor family's hood,
-lash and ram spawn (the hood as an `ambush` at its own clearance, `placeKind` by role), and five new kinds (sifter, cinder, wedge, plough, relict —
+lash and ram spawn (the hood as an `ambush` at its own clearance to v11.83; a `hunter` of size 2, reach 4.6, since v11.83.1 — the person: "just another variant for a player-sized predator"), and five new kinds (sifter, cinder, wedge, plough, relict —
 PLANET's roster). Envelopes are drawn against a per-region capacity table (K at 2×2 samples a cell, split ours / the giant / the sill / the basin):
 the giant's shelf is ~30× ours, so a world K is mostly the giant's. **The 120-day census is the rule** (`node test/census.js 120`; `--test` runs
 40 days, which never saw the abyssal collapsing 70 → 12 over the sill's flank and the far floor where no comb is within its reach — its band is the
