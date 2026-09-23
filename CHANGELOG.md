@@ -5455,3 +5455,20 @@ goes olive; the gold's `PIGK[1]`), then whether the ring at the side break reads
 then whether the lagoon's green is enough (`shallow` 1.5), then whether the thermocline's plum shows at all over the deep slope (`red` 0.5, the
 red's `PIGK[2]`), then whether the storm's bloom after a rainy stretch reads as an event (`storm` 4, `calm` 0.15), then the sound under the old
 patches — the column bed lost its 0.35 lid there and nothing was heard from here.
+
+## v11.81.1 — the green turned down (22 Sep 2026)
+
+The person looked at v11.81 with nine stills: "it looks actually really beautiful … curious if it's too green or if it looks like too much". Their
+stills said where: the shelf forest at (330, 0) went pea-green frame-wide, a "green ring around the kelp area" they swam into as "intense green
+fog rolling in" (the tidal front at the break, tripling the crop), and the palette flip at the surface (the column green below, the sky above —
+that one is physics, and stays). They also asked whether the clouds move: they do not, they are the map of where the water is fed; only the ring
+breathes with the spring–neap cycle and the gold swells after a storm.
+
+- `PLK.k1` 0.8 → 1.5: how much crop it takes to show. Shelf water at ~1 mg/m³ is teal-green now, not pea-green; the fed flank keeps its olive.
+- `PLK.front` 2.0 → 1.2: the ring at the break is a band of richer water (× 2.2 at its crest), not a wall (× 3).
+- **Seen** (`test/render/v811_forest.png`, `v811_ring.png`, `v811_flank.png`): the shelf forest with the sand grey-teal under a green-teal
+  column; the side break's ring teal-green with the floor visible through it; the fed flank still olive-green.
+- Tests green (`test/plankton.js` unchanged in its assertions; the ring still feeds the break × 2.2 over the shelf).
+
+**Unseen, ask in this order**: the shelf forest at their own screen (the person's still was greener than mine — their pane is 1600×900 on the 4060,
+the same shader), then the blue snow against the dark water — v11.82, pass 2, colours the snow by the pigment kind and spends it where the crop is.

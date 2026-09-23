@@ -7,9 +7,9 @@ is which kind is winning, applied in the veil at each sample's own depth. The ti
 onto the shelf at neaps, broken on the current's axis (`xc` 2.1, `front` 2.0). The crops and the front's X ride the water and floor maps' free
 channels (far.js `wmFill`): a map of their own put the shaders past WebGL's 16 texture units and nothing tinted compiled. The canopy ghost is
 stripped (§12): `leeW` places the fleets and the buttons and feeds the crop, and nothing else is painted. Seen: `test/render/v81_before_*.png`
-against `v81_after_*.png` at the flank, the lagoon, the thermocline, the basin and the man-o'-war's patch. **Ask first** whether the fed flank's
-olive is right or too heavy (`PLK.k1`, `k2`, the gold's tint), then whether the ring at the side break reads as richer water or a wall (`front`,
-`xs`), then the lagoon's green, then the thermocline's plum. Next: pass 2, the snow off the field (`plankAt` is there for it).
+against `v81_after_*.png` at the flank, the lagoon, the thermocline, the basin and the man-o'-war's patch. The person looked (22 Sep): "looks actually really beautiful", the
+shelf and the ring too green; v11.81.1 raised `PLK.k1` 0.8 → 1.5 and lowered `front` 2.0 → 1.2, so the shelf is teal-green and the ring a band.
+Still open after their look: whether the water seen from above should be as green as the column below it (it is the same veil; the sky is not).
 
 **v11.80.1 (22 Sep 2026): the combs swing with the body.** The person on v11.80: the camera "seems to be fixed"; the frontal combs still did not move
 with the animal. They are merged geometry in a group, not a chain, so v11.80's `SWAY` could not reach them. fx.js `bodyPose` now keeps the body's eased

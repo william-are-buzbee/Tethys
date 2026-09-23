@@ -446,7 +446,7 @@ function waterColor(s,out){const c=wcolAt(-s.h);
 // stored: it is the lit crop's under the mixed layer, derived in bloomC from the two crops and the floor's depth, the floor map's red, the
 // same way in the JS and the GLSL below, generated from these tables so the shader and bloomC cannot drift. plankAt(x,y,z) is the field
 // exactly (from sample), for the snow (pass 2) and the tests.
-const PLK={c0:0.035,cexp:2.1,shallow:1.5,lee:1.5,red:0.5,xc:2.1,xs:0.3,front:2.0,storm:4.0,calm:0.15,k1:0.8,k2:6.0,cmin:0.03,cmax:20}; // mg/m³ and log10 units; front, storm, shallow, lee are multipliers (+1); calm: the pulse the trades' own showers keep (a shower most days), below which the gold is not fed
+const PLK={c0:0.035,cexp:2.1,shallow:1.5,lee:1.5,red:0.5,xc:2.1,xs:0.3,front:1.2,storm:4.0,calm:0.15,k1:1.5,k2:6.0,cmin:0.03,cmax:20}; // mg/m³ and log10 units; front, storm, shallow, lee are multipliers (+1); calm: the pulse the trades' own showers keep (a shower most days), below which the gold is not fed
 const PIGK=[{m1:[1.05,1.06,0.62],m2:[1.15,0.92,0.70]},{m1:[1.35,1.06,0.58],m2:[1.20,0.88,0.60]},{m1:[0.90,0.70,0.83],m2:[1,1,1]}]; // green, gold, red: the tint at saturation, and the heavy stage
 const PLK_ENC=Math.log2(PLK.cmax/PLK.cmin); // the log scale's span
 function plankEnc(C){return clamp(Math.log2(Math.max(C,PLK.cmin)/PLK.cmin)/PLK_ENC,0,1);}

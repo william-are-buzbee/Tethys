@@ -91,13 +91,13 @@ water map's alpha — filled and blurred with the colour and the floor (`wmFill`
 were at WebGL's 16 texture units and a third map could not be bound (seen: the world was the veil alone). **The clock** (`uFogB`, `FOG_B`,
 far.js `bloomTick` per frame): the front is a Gaussian on X about `xc` 2.1 (width `xs` 0.3), shifted by 3·log10(amp/springAmp) — the ring sits
 on the shelf break (~125 m where the stream round the rim's cylinder is 1 m/s, ~55 m where it is 0.75) at springs and moves onto the shelf
-(~38 m) at neaps, and is broken at the two stagnation points on the current's axis; it feeds the lit layer × (1 + `front` 2.0) and unmakes the
+(~38 m) at neaps, and is broken at the two stagnation points on the current's axis; it feeds the lit layer × (1 + `front` 1.2; 2.0 to v11.81) and unmakes the
 deep maximum × (1 − 0.7). The storm's pulse: the rain of the past four days (`weatherAt`, 2 h steps) through a kernel rising over a day and
 decaying over three, less `calm` 0.15 (the trades' own showers — one most days — are the climatology, not a storm), × `storm` 4 on the gold:
 ×1.7 at the peak of a 24-day run. **The vertical** (`bloomC`, from a texel, the floor's depth and the point's depth): green to 45 m fading
 out by 85, gold to 60 fading by 110, red a Gaussian at 95 ± 35 (the deep chlorophyll maximum; gone by ~165, TAXA's deep-rind floor); the red is
 not stored but derived — the lit crop × `red` 0.5 × a floor deeper than 60–140 × (1 − 0.6 stirred). **The colour** (`bloomTint`, `PIGK`): a
-kind's crop saturates twice, w1 = C/(C+`k1` 0.8) toward the kind's multiplier (green 1.05/1.06/0.62, gold 1.35/1.06/0.58, red 0.90/0.70/0.83:
+kind's crop saturates twice, w1 = C/(C+`k1` 1.5; 0.8 to v11.81 — the person's look: the shelf went pea-green and the ring was a wall) toward the kind's multiplier (green 1.05/1.06/0.62, gold 1.35/1.06/0.58, red 0.90/0.70/0.83:
 pigment absorbs blue and red; the reds leave a dimmer plum) and w2 = C/(C+`k2` 6) toward the heavy stage (green olive 1.15/0.92/0.70, gold brown
 1.20/0.88/0.60) — multipliers on the column's colour, applied in `fogVeil` at each of its two samples' own depth and on the CPU for the ambient
 (`bloomAt`, updateAtmosphere), so depth's darkening stands. The GLSL is generated from the same tables (`BLOOM_GLSL`). Every number is a start
