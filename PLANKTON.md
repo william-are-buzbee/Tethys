@@ -1,6 +1,6 @@
 # PLANKTON.md — the water's own life: the field, the day, the year, the colour and the swarm
 
-**Status: pass 1 built as v11.81 (22 Sep 2026) — the field (`plank`), the three kinds through the veil, the front ring by the tide, the storm's pulse, the canopy strip of §12; the bloom map went into the water and floor maps' free channels (the shaders were at 16 texture units); v11.81.1 turned the green down after the person's look. Pass 2 built as v11.82 (22 Sep): the snow's `live` off the field, its colour by kind, the chain kind. Passes 3–6 designed, not built.** Written from a discussion of 22 Sep about marine snow — the person: marine snow is Written from a discussion of 22 Sep about marine snow — the person: marine snow is
+**Status: pass 1 built as v11.81 (22 Sep 2026) — the field (`plank`), the three kinds through the veil, the front ring by the tide, the storm's pulse, the canopy strip of §12; the bloom map went into the water and floor maps' free channels (the shaders were at 16 texture units); v11.81.1 turned the green down after the person's look. Pass 2 built as v11.82 (22 Sep): the snow's `live` off the field, its colour by kind, the chain kind. Passes 3–6 designed, not built; the year's length answered 22 Sep (§15: ~185 days).** Written from a discussion of 22 Sep about marine snow — the person: marine snow is
 "one of the more important effects in the game visually for keeping orientation, space and size disparity intact", and refining it
 asks the microbial question. This doc answers it once for the whole game: what lives in the water, what decides it, what it does to
 the light, and how much of it the simulation actually carries. Upstream: `PLANET.md` (the chemocline, the upwelling, the trades, the
@@ -111,9 +111,12 @@ The person (22 Sep): seasons yes, "even if they're subtle". They are worth havin
   is bigger. So a stable, modest tilt is the physically motivated choice: **15°**, against the existing latitude `LAT` 0.2 rad
   (11.5° N). At that combination the sun passes overhead twice a year, which is a tropical year with two mild peaks, not a temperate
   one with a summer.
-- **The length.** `YEAR_D` **24 game days** ≈ 16 real hours, deliberately *not* commensurate with the 13-day spring–neap cycle so
-  the two drift against each other. A soft-arm's 5.7-day life is then a season long: one animal knows one season, and **the line
-  is what sees the year** — which is exactly what `LINEAGE.md` wants generations to be for.
+- **The length.** `YEAR_D` **185 game days** ≈ 123 real hours (the person, 22 Sep; §15), derived from the star by Kepler — PLANET,
+  "Decided 22 Sep 2026", has the arithmetic. The first proposal here, 24 days, needed an M dwarf and was struck. 185 is not
+  commensurate with the spring–neap cycle (13 days now, ~4 after the half-distance moon), so the two drift against each other. The
+  life is compressed against the sky and the sky is not: a season is some thirty soft-arm lives long, so no animal knows the year and
+  **the line is what sees it** — which is what `LINEAGE.md` wants generations to be for. One session sees a few days of it; the season
+  reaches the player through the line (open, §14).
 - **What the season actually is.** Not temperature — the mixed layer stays 26–28 °C. It is the **wind**: the trades blow harder and
   steadier for half the year and slacken for the other half (`weatherAt().wind`, already 1 in the trades and 0 in a calm about a
   quarter of the time, gets a seasonal bias). From that everything else follows:
@@ -131,7 +134,7 @@ The person (22 Sep): seasons yes, "even if they're subtle". They are worth havin
   collapses under a fifth. So the season must mostly move food **around** rather than switch it off: a swing of about **±20%**
   basin-wide and up to **±60%** locally on the flank and in the lee, with the two out of phase. Census runs at four points in the
   year before this ships, not one.
-- **What it buys, honestly.** Three things. The sea looks different across a long session instead of only across a 40-minute day;
+- **What it buys, honestly.** Three things. The sea looks different across a line's lives instead of only across a 40-minute day;
   populations breathe, so the ecology is not a still pond; and a lineage acquires history — "the year my line lived through" is the
   cheapest generational memory the game can have.
 
@@ -268,8 +271,10 @@ and only if 1–5 look right.
 
 ## 14. Open — the person's
 
-- **The year's length.** 24 game days is a proposal, not a fact. Longer makes the season a thing lineages inherit; shorter makes it
-  something one animal can watch turn.
+- ~~**The year's length.**~~ Answered 22 Sep: ~185 days (§15).
+- **How the year reaches the player.** At 185 days a session sees a few days of it. The honest levers: the world run on at the
+  handovers (the clutch's run-on to the hatch, a death to the child), and `CLOCK_RATE`, which compresses every clock together. Not a
+  separate clock for the year — that is the fudge the length was chosen to avoid.
 - **Whether the season may move creatures**, not just food — a migration term in the ledger. Bigger change, better world.
 - **Whether the player may ever be told the season**, or only see it.
 
@@ -285,3 +290,6 @@ and only if 1–5 look right.
   it stands or falls on the burglar-alarm mechanism and on the cost to the player, and it is last in the build order so it can still
   be thrown away.
 - **The canopy strip:** folded in (§12), as pass 1.
+- **The year's length:** ~185 days of 30 h, the day unchanged — derived from the star (PLANET, "Decided 22 Sep 2026"), over the 24
+  days first proposed, which only an M dwarf gives. Taken knowing that the season then spans some thirty soft-arm generations and
+  belongs to the line, not the animal; a shorter year would have to come from a cooler star, not a number.

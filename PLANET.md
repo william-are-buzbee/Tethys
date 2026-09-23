@@ -429,6 +429,23 @@ once the hold is won (paralysis in the hunters, an anticoagulant in the rasp; th
 arthropods do not — and are poisonous to eat when they have fed at the seep line, so poison follows the animal's feeding, not its
 species; the **drifters'** stinging cells are the one cell-level invention. The roster it lands on is in COMBAT.md.
 
+## Decided 22 Sep 2026 — the year (PLANKTON.md §6, §15)
+
+**The year is ~185 local days** of 30 h (`YEAR_D` 185 when built), derived, not chosen: the star above (~5300 K, ~0.9 M☉, ~0.5 L☉)
+puts Earth's sunlight at √L ≈ 0.70 AU, and Kepler gives √(0.70³/0.9) ≈ 0.63 Earth years ≈ 5,500 h. The star's uncertainty allows 170–200.
+A shorter year is the star's to give, not a number's: ~90 days needs a ~4400 K K5 and a more orange light; the 24 days PLANKTON first
+proposed needs an M dwarf at ~0.18 AU, whose red light the greens would not like and which would lock the spin to the star — so it was
+struck. **The day stays ~30 h**: it is the one free number (the primordial spin less the braking), bounded by the moon — shorter than the
+month or the moon falls in, longer than Earth's under a bigger moon's braking. A moon still close with the day only 30 h asks for weak
+braking, and an ocean of islands with no continental shelves dissipates little tide, so both stand. **What follows for the moon pass**
+(the half-distance moon above): Kepler gives a sidereal month of 27.3/2^1.5 ≈ 9.7 Earth days ≈ 7.7 local days, synodic ~8.0 against
+this year; the lunar day 1/(1/30−1/240) ≈ 34.3 h and springs every ~4 local days — the "~10-day month, springs every five days" above is
+in Earth days, and `LUNAR_H` 31.2 and `SPRING_D` 13 in world.js are still the old 3× moon's 26-day month until that pass is built.
+
+The consequence, accepted by the person: the life is compressed against the sky (ecology.js: rates per game day, a soft-arm's 5.7-day
+life against a real octopus's year) and the sky is not, so a season spans some thirty soft-arm generations. The season is something a
+line lives through, not something one animal adapts to — `LINEAGE.md`'s generations are what sees the year.
+
 ## Open
 
 Asked and not yet answered; do not decide these for the person.

@@ -7,7 +7,7 @@ the snow with no noise function; its colour is the mix of the kinds winning ther
 now it is the water's own. Seen: `test/render/v82_snow_*.png` (the chains are sub-pixel in a wide still; the test's numbers have them at 20% of the
 ring's box). **Ask first** whether the snow's colour now sits in the dark water rather than on it, then whether the chains read as strings at swimming
 distance (`SN_CHW`; their spacing 0.28 m in `snowSeed`), then whether the deep maximum reads as a layer when descending through 95 m. Next: pass 3,
-the day and the year (the tilt, `YEAR_D`, the seasonal wind, the mixed layer; census at four points in the year) — the person's answers in §15 stand.
+the day and the year (the tilt, `YEAR_D` 185 — PLANET "Decided 22 Sep 2026", the seasonal wind, the mixed layer; census at four points in the year) — the person's answers in §15 stand.
 
 **v11.81 (22 Sep 2026): the plankton — PLANKTON.md §13 pass 1.** The water's own life as a field (world.js `plank`, `bloomC`, `bloomTint`, the
 knobs `PLK` and `PIGK`): a standing stock in mg/m³ from the food, the shallow floor's return and the retention field, in three pigment kinds —
