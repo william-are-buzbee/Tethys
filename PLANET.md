@@ -107,7 +107,7 @@ consequence of "a young oceanic shield volcano, almost drowned", and world.js `s
   replacement rocks — just normal geography based on what's nearby".)
 - **The rift arms.** Two, at 2.6 and 5.6 rad: low ridges of younger flows from the summit out. Arm 0 carries a **pit
   crater** at r 470 (the pit) and, at its deep end (r 1200–1420), the **hydrothermal fissure**: a line of chimneys,
-  sulfur mats, the warm water the straightshells visit. Arm 1 carries a **flank cone** at r 500: the island.
+  sulfur mats, the warm water the straightshells visit. Arm 1 carries a **flank cone** at r 500: the island — a tuff cone since v11.86 (23 Sep 2026): a breached ring round a tidal crater, high downwind where the ash fell, cliffed to windward, cold (a monogenetic vent, erupted once into shallow water; the fumarole of 10 Sep is struck).
 - **Wind and current.** One prevailing wind: the waves strike the old flank (0.35 rad) — surf, cones, stirred sand; the lee
   (3.5 rad, the collapse's side) is where sand settles: the flats. One prevailing current: it strikes the north-east flank
   (5.44 rad) — upwelling, food, the weed forests and the filter-feeder gardens; its wake (2.3 rad) is where the eddies

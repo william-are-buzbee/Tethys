@@ -119,7 +119,7 @@ const Cf=X.player.clade;check(['speed','accel','turn','mass','bite','cam','sprin
   // v11.72.1: out of the world while the window is open — a hungry eel 7 m off neither sees nor takes the parent; back in the world on the close, it does
   floor();L.setT(L.cur().grown+2);const eel=V.hunter('eel',7);V.open();__step(180);
   check(V.gone()&&P.g.visible===false&&eel.target!==P&&!P.hold&&!(P.bleed>0),'the window open: the parent is hidden and a hungry eel 7 m off leaves it alone for 3 s (its target: '+(eel.target?(eel.target===P?'the player':eel.target.kind):'none')+')');
-  V.close(true);const vis=P.g.visible;let took=false;for(let i=0;i<40&&!took;i++){eel.pos.set(P.pos.x+7,P.pos.y+1,P.pos.z);eel.hunger=1;eel.state='wander';__step(15);took=eel.target===P;}
+  V.close(true);const vis=P.g.visible;let took=false;for(let i=0;i<40&&!took;i++){eel.pos.set(P.pos.x+7,P.pos.y+1,P.pos.z);eel.hunger=1;eel.state='wander';eel.cool=0;eel.target=null;__step(15);took=eel.target===P;} // v11.86: the cooldown a lost chase leaves (dropTarget) and a stray target cleared each try — the check failed once on the world's own creatures drifting past the spawn
   check(!V.gone()&&vis===true&&took,'the window closed: the body is back, and the eel takes it as prey');eel.alive&&(eel.target=null);L.setT(L.t+L.DAY_S);wait();
   floor();V.open();check(V.lab.conceive&&V.lab.conceive.gen===2&&V.lab.conceive.budget===V.budget(2)&&X.specToJSON(V.lab.conceive.parent)===X.specToJSON(kid2),'and its own conception starts from its spec with generation 2\'s budget ('+V.budget(2)+')');V.close(true);
 }

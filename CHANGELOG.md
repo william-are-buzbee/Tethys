@@ -5664,3 +5664,42 @@ not from a bite, since a swarm has no capsule to hold."
 **Unseen, ask in this order**: whether a veil or a ram is ever seen feeding in a swarm (it circles inside; the cloud thins), then whether the sifter
 schools find the swarms by night, then whether ~45 s for the veil's meal and the half-swarm it takes read right (`FILTER.eff`), then whether a
 comb-built child is worth playing yet — no founder with a sieve exists until a veil, comb, sifter or ram has been seen.
+
+## v11.86 — the island as a tuff cone; the fumarole struck (23 Sep 2026)
+
+The person (23 Sep): the starting zone's island — a round 40 m hill with a steam plume on a round tidal flat — "looks too neat to feel like it
+could've been any island in the game", a tutorial zone; "open to anything from demolishing 100% of the stuff above ground to leaving it mostly
+intact but removing the smoke", and the lagoon itself is liked ("looks like a nursery"). The lagoon is a real caldera and stays; the cone is the
+fake part. A small vent erupting into shallow water on a shield's flank builds a tuff cone, and its shape is the forces on it.
+
+- **The shape** (world.js `CONE`, the `R.isle` block of `islandH`; DESIGN Land): within 270 m of the cone's centre only — a ring of radius 70
+  round a crater instead of a hill; the rim highest downwind (48 m where the trades drop the ash, 12 upwind, `lean` 0.6), breached on the upwind
+  axis to −2.5 where the sea broke in (`gapA` 0.8 rad); the crater floor at 0.8 m, a tidal pond through the gap; the windward outer slope cut to a
+  cliff over a wave-cut platform at −3; the lee's flat of bars and pools kept, reaching 120 all round, 200 down the current (the spit, pointing
+  at the caldera rim — v11.85's reach there, so the saddle to the lagoon is untouched) and 160 downwind. Outside 270 m nothing moved: 24,649
+  samples over the island's square bit-identical to v11.85 in the ground and every field. The cone has its own exposure (`expoW` by its aspect)
+  and its ring is rock (`coneRock` → `sub`). Land within 300 m: 2.9 → 6.9 ha (the ring's 34° flanks need the foot).
+- **The colour**: palagonite — tuff altered by hot water — is tan to ochre (Diamond Head's), so `terrainColor` blends the land to `tuff`
+  0.62/0.50/0.32 by `coneK` (world.js: 1 on the ring, 0 past its foot) from the strand up, near and far; `placeCliffs` tints the ledges on the
+  cone the same (a first look had a crown of black boulders on a tan ring).
+- **The strike**: the fumarole's plume (`FUME`, `updateFume`) and the vog (`VOG`, the third mist layer's greying, the readout's `vog`) are gone —
+  a monogenetic cone erupts once and goes cold; steam would mean it is years old and bare. The person's call of 10 Sep (v11.17.1) is reversed by
+  their call of 23 Sep. The dawn mist keeps the third layer alone.
+- **The plants**: `scrub` wants `expo` ≤ 0.65 now (salt-blasted off the shore the waves strike), so it grows in the crater and on the lee flat and
+  not on the windward rim. The tussock is everywhere it was.
+- **Tests**: `node build.js --test` green on both tiers (the ledger's scuttle capacity follows the land area; nothing in the census moved past
+  noise). One flake on the way: test/player.js's "the window closed: the body is back, and the eel takes it as prey" failed once on the high tier and
+  passed on the rerun — the eel kept the cooldown a lost chase leaves; the check clears `cool` and the target each try now.
+- **Seen** (dev.html in the app's browser, the loop driven by hand, the same eight fixed views before and after: `test/render/v86_before_1..5.png`,
+  `v86_after_1..8.png`): from the air (3) the round dome with scattered boulders became a tan ring, its crater floor green with a pond in it, the
+  breach open to the sea with surf in it, the high rim a wall of tan ledges; from the windward side in the air (7) and from the high rim across
+  the crater to the breach (8) it reads as a place with a wind. From the caldera rim at the surface (2) the hill is a lower, longer, tan island —
+  the crater does not show from sea level, only the lopsidedness does. From the spawn underwater (1) nothing changed. To windward underwater (4)
+  the platform is a flat rock-strewn shelf; the old lee view (5) is inside the ring's foot now (the ground there rose from −8 to +5.5), so (6)
+  looks along the spit from 6 m up: the flat's bars and pools with the scrub's tall stalks all over them and the tan slope behind. Not seen:
+  the pond at a high tide, the cone in rain or at night, the far layer's version from the giant's shore.
+
+**Unseen, ask in this order**: whether the island now reads as a place that could be anywhere (the person's test), then whether it is too big
+(`CONE.h` sets it: a 30 m rim at 34° needs a 190 m foot; 24 would shrink it a fifth), then whether the scrub's 8 m stalks on the lee flat are the
+"cute trees" and want thinning (`scrub` `per` 110 or its size), then the ledges' size on the inner wall (the cliff kit's `s` 5–26 scaled by the
+drop), then whether the tan reads as rock or as sand (`tuff` in `terrainColor`; the strand's own sand is olive-green and stays below it).

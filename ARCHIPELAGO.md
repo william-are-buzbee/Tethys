@@ -28,7 +28,7 @@ young shield's rift, stacks and a drowned rim on the giant's old side, slide blo
 
 Seen from our surface: the giant's summit stands ~2.6° above the horizon at 18 km after the curvature's drop of 25 m; visible to ~110
 km in clear air, the haze allows 15–30, so it comes and goes with the weather. From the giant's shore our rim is under the horizon; only
-the flank cone's hill shows.
+the flank cone's ring shows (a tuff ring since v11.86, its downwind rim 49 m).
 
 ## The build, in order
 

@@ -66,7 +66,8 @@ function terrainColor(x,z,h,f,sl,tc,n){
       const ks=smooth(-4,-1.5,h);r=lerp(r,sand[0]*k,ks);g=lerp(g,sand[1]*k,ks);bl=lerp(bl,sand[2]*k,ks);
       const kw=smooth(-1.6,-0.6,h)*smooth(1.2,0.3,h);r=lerp(r,wet[0]*k,kw);g=lerp(g,wet[1]*k,kw);bl=lerp(bl,wet[2]*k,kw);
       const kd=smooth(1.5,4,h);r=lerp(r,dry[0]*k,kd);g=lerp(g,dry[1]*k,kd);bl=lerp(bl,dry[2]*k,kd);
-      const kl=smooth(6,18,h)*(0.4+0.6*m),kr=smooth(0.55,0.8,fbm(x*0.05+21,z*0.05+8,2))*0.7;r=lerp(r,lerp(land[0],rust[0],kr)*k,kl);g=lerp(g,lerp(land[1],rust[1],kr)*k,kl);bl=lerp(bl,lerp(land[2],rust[2],kr)*k,kl);}
+      const kl=smooth(6,18,h)*(0.4+0.6*m),kr=smooth(0.55,0.8,fbm(x*0.05+21,z*0.05+8,2))*0.7;r=lerp(r,lerp(land[0],rust[0],kr)*k,kl);g=lerp(g,lerp(land[1],rust[1],kr)*k,kl);bl=lerp(bl,lerp(land[2],rust[2],kr)*k,kl);
+      const kt=coneK(x,z)*smooth(1.5,4,h);if(kt>0){const tuff=[0.62,0.50,0.32],q=kt*(0.85+0.15*m);r=lerp(r,tuff[0]*k,q);g=lerp(g,tuff[1]*k,q);bl=lerp(bl,tuff[2]*k,q);}} // the tuff cone (v11.86, world.js CONE): palagonite — ash altered by hot water — is tan to ochre, Diamond Head's colour, from the strand up; the same rule on the far terrain
     const q=smooth(0.9,1.9,sl);
     r=lerp(r,rock[0]*k,q);g=lerp(g,rock[1]*k,q);bl=lerp(bl,rock[2]*k,q);
     tc[n*3]=r;tc[n*3+1]=g;tc[n*3+2]=bl;
@@ -296,7 +297,7 @@ function placeCliffs(ch,rng){
     d.rotation.set(0.06+rng()*0.24,Math.atan2(ux,uz),(rng()-0.5)*0.2,'YXZ'); // pitch lifts the downhill lip, yaw lays local x along the contour
     d.scale.set(sc*(0.8+rng()*0.5),sc,sc*(0.8+rng()*0.4));d.updateMatrix();
     addLumps(ch,f.lumps,d.matrix,sc*0.9);
-    list.push({m:d.matrix.clone()});
+    const ck=coneK(x,z);if(ck>0){const tt=f.tints[Math.floor(rng()*f.tints.length)];list.push({m:d.matrix.clone(),tint:[lerp(tt[0],0.62,ck),lerp(tt[1],0.50,ck),lerp(tt[2],0.32,ck)]});}else list.push({m:d.matrix.clone()}); // v11.86: on the tuff cone the ledges are tuff — tan, the terrain's own colour (world.js CONE, coneK); the tint's pick is drawn here so the cell's rng runs as before
   }
   if(list.length)makeInstanced(ch,rng,f.geo,f.mat,f.tints,list,false,false,f);
 }

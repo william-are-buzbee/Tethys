@@ -1,5 +1,16 @@
 # HANDOFF — tethys
 
+**v11.86 (23 Sep 2026): the island as a tuff cone; the fumarole struck.** The person: the starting zone's round hill with a plume "looks too neat to feel
+like it could've been any island in the game"; the lagoon (a real caldera) is liked and stays. The cone is a tuff cone now (world.js `CONE`, DESIGN Land):
+a ring of radius 70 round a tidal crater, the rim 48 m downwind where the ash fell and 12 upwind, breached on the upwind axis where the sea broke in, a
+cliff over a wave-cut platform to windward, the flat of bars and pools kept in the lee with the spit down the current (its reach toward the caldera rim
+unchanged, so the saddle to the lagoon is as it was); tan (palagonite) near and far, the cliff kit's ledges tinted with it; scrub off the windward rim
+(`expo` ≤ 0.65). Nothing outside 270 m of the cone moved (bit-identical to v11.85). The fumarole and the vog (v11.17.1) are struck: a monogenetic cone
+is cold. Seen before and after from eight fixed views (`test/render/v86_before_*.png`, `v86_after_*.png`, the loop driven by hand). **Ask first** whether
+the island now reads as a place that could be anywhere, then whether it is too big (`CONE.h` 30: a lower rim shrinks the whole foot), then whether the
+scrub's tall stalks on the lee flat are the "cute trees" and want thinning, then the ledges' size on the inner wall, then whether the tan reads as rock.
+Undo is one revert of the commit.
+
 **v11.85 (23 Sep 2026): filter feeding — PLANKTON.md §13 pass 5 (§11).** The swarms are food. `derive` reads a sieve's area off the build (`filter`, m²:
 the frontal `combs`; a `comb` part or a webbed net marked `sieve`, the creator's switch — the ram's rake is on, the tread's floor combs and the pall's net
 off): the veil ~100 m², the comb 13, the ram 1.2, the sifter 0.08. A kind with any hunts the swarm on the ledger (`ecoOf`; the swarm `edible`, mortal) and
@@ -681,7 +692,7 @@ of flashing squares, distance-faded streaks, the patter and the rush instead of 
 the finback's mouth, then a shower seen from just under the surface, then a sailer from 150 m.
 
 **v11.17.1: the person's calls built (10 Sep): declination 0 kept and its eclipses modelled (the moon dark red at every full-moon midnight; the
-solar one exists but never falls by day with PLANET's clock), the flank cone's fumarole (a steam plume, vog downwind), calms (a quarter of
+solar one exists but never falls by day with PLANET's clock), the flank cone's fumarole (a steam plume, vog downwind; struck v11.86), calms (a quarter of
 the time: the chop dies to the swell, the spray stops, and a clear calm dawn mists the lagoon). CHANGELOG v11.17.1. Ask first for the
 first night's eclipse (~19.5 real minutes in), the plume from the water, a calm.**
 

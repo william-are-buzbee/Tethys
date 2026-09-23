@@ -105,7 +105,7 @@ function updateSurface(){surface.position.set(Math.round(camera.position.x/SSTEP
 // read by the dome shader, the lights, the fog, the surface and the readout. Nothing here is a place: the whole world sees one sky.
 const SKY={sun:V3(0,1,0),moon:V3(0,-1,0),lum:V3(0,1,0),sunAlt:1,moonAlt:-1,illum:1,dayK:1,moonUp:0,moonL:0,skyL:1,skyLw:1,sunL:1,lumL:1,lumLw:1,night:0,cover:0,rain:0,rainA:0,
   zen:[0,0,0],hor:[0,0,0],glow:[0,0,0],sunC:[1,1,1],lumC:[1,1,1],tint:[1,1,1],bow:0,wind:[0,0],windOff:[0,0],starT:0,
-  cirrus:0,upperOff:[0,0],cirrC:[1,1,1],plan:PLANETS.map(()=>V3(0,1,0)),spray:0,windK:1,eclS:0,eclL:0,vog:0,dawn:0,lag:0}; // v11.17: the cirrus cover, the upper wind's drift, the cirrus' colour (sunlit after sunset), the planets' directions, the surf's spray at the camera
+  cirrus:0,upperOff:[0,0],cirrC:[1,1,1],plan:PLANETS.map(()=>V3(0,1,0)),spray:0,windK:1,eclS:0,eclL:0,dawn:0,lag:0}; // v11.17: the cirrus cover, the upper wind's drift, the cirrus' colour (sunlit after sunset), the planets' directions, the surf's spray at the camera
 const WX={},cirrTmp=[0,0,0];
 function skyLerp(out,keys,idx,s){let a=keys[0],b=keys[keys.length-1];for(let i=1;i<keys.length;i++)if(s<=keys[i][0]){a=keys[i-1];b=keys[i];break;}
   const u=clamp((s-a[0])/(b[0]-a[0]),0,1),ca=a[idx],cb=b[idx];out[0]=lerp(ca[0],cb[0],u);out[1]=lerp(ca[1],cb[1],u);out[2]=lerp(ca[2],cb[2],u);return out;}
@@ -278,33 +278,12 @@ function updateHaze(dt,above){const K=SKY,rk=K.rainA,wk=K.windK;
   K.spray+=(sp-K.spray)*(1-Math.exp(-0.7*dt));K.lag+=(lg-K.lag)*(1-Math.exp(-0.7*dt));
   SEA_CHOP=chopU.value=FOG_TC[1]=0.25+0.75*wk;
   MIST_P[0]=HAZE.dens*(1+2.5*rk);MIST_P[1]=1/(HAZE.h*(1+1.5*rk));MIST_P[2]=HAZE.spray*K.spray*K.spray*wk*wk*(1+0.8*rk);MIST_P[3]=1/HAZE.sprayH;MIST_W[0]=TIDE;
-  // the vog: the plume's axis runs downwind from the cone; s along it, q across; the half-width grows; in a calm it pools round the cone
-  {const dx=player.pos.x-FUME.x,dz=player.pos.z-FUME.z,wx=Math.cos(WIND_A),wz=Math.sin(WIND_A),sA=dx*wx+dz*wz,q=-dx*wz+dz*wx;
-    const w=VOG.w0+VOG.spread*Math.max(sA,0)*(0.3+0.7*wk)+(1-wk)*300,vg=Math.exp(-q*q/(2*w*w))*(VOG.w0/w)*smooth(-VOG.w0*1.5,VOG.w0,sA)*smooth(VOG.reach,VOG.reach*0.5,sA);
-    K.vog+=(vg-K.vog)*(1-Math.exp(-0.5*dt));}
+  // the vog and the fumarole's plume (v11.17.1) are struck (v11.86: the cone is a cold tuff cone — world.js CONE); the third mist layer is the dawn mist's alone now
   // the dawn mist: clear, calm, sheltered water, the hours round sunrise (the sun's altitude in hours: 15 h of night, 360/30 = 12 deg an hour)
   {const hs=Math.asin(clamp(K.sunAlt,-1,1))*180/Math.PI/12,rising=K.sun.x>0;const win=rising?smooth(MIST_DAWN.from,MIST_DAWN.peak,hs)*smooth(MIST_DAWN.to,MIST_DAWN.peak,hs):0; // K.sun.x>0: the sun is east of the meridian (rising; east is +x)
     K.dawn=win*smooth(0.45,0.15,K.cover)*smooth(0.5,0.1,wk)*K.lag*K.lag;}
-  MIST_W[1]=VOG.dens*K.vog+MIST_DAWN.dens*K.dawn;MIST_W[2]=1/lerp(MIST_DAWN.h,VOG.h,K.vog*VOG.dens/Math.max(MIST_W[1],1e-9));
-  const g=clamp(K.lumL/Math.max(K.skyL,0.02),0,1.2),vk=Math.min(1,K.vog*2);for(let i=0;i<3;i++)MIST_C[i]=lerp(K.hor[i],0.96*K.tint[i]*K.skyL,HAZE.lift)*lerp(1,[0.93,0.89,0.80][i],vk);MIST_C[3]=HAZE.glow*g;
-  updateFume(dt,above);}
-// The fumarole's plume (v11.17.1; world.js FUME): FUME.n puffs as points, each born at the summit with a rise that decays, carried by
-// the wind, growing from r0 to r1 and fading over its life; a soft disc, lit by the sky, fogged by distance toward the mist's colour.
-// Above the water only. One draw. (Points: the size is clamped by the GPU's point limit — a puff nearer than ~80 m may draw small.)
-const fmP=new Float32Array(FUME.n*3),fmA=new Float32Array(FUME.n),fmS=new Float32Array(FUME.n),fmT=new Float32Array(FUME.n);
-for(let i=0;i<FUME.n;i++)fmT[i]=rnd(0,FUME.life);
-const fmG=new THREE.BufferGeometry();fmG.setAttribute('position',new THREE.BufferAttribute(fmP,3));fmG.setAttribute('aA',new THREE.BufferAttribute(fmA,1));fmG.setAttribute('aS',new THREE.BufferAttribute(fmS,1));
-const fmU={uCol:{value:new THREE.Vector3(0.9,0.9,0.9)},uMistC:{value:MIST_C},uScale:{value:450},uCam:{value:new THREE.Vector3()}};
-const fmM=new THREE.ShaderMaterial({uniforms:fmU,transparent:true,depthWrite:false,depthTest:true,
-  vertexShader:'attribute float aA;attribute float aS;uniform float uScale;uniform vec3 uCam;varying float vA;varying float vD;void main(){vec4 mv=modelViewMatrix*vec4(position,1.0);vD=length(mv.xyz);vA=aA;gl_PointSize=aS*uScale/max(vD,1.0);gl_Position=projectionMatrix*mv;}',
-  fragmentShader:'uniform vec3 uCol;uniform vec4 uMistC;varying float vA;varying float vD;void main(){float r=length(gl_PointCoord-0.5)*2.0;float a=(1.0-smoothstep(0.35,1.0,r))*vA;vec3 c=mix(uCol,uMistC.rgb,1.0-exp(-vD*0.0028));gl_FragColor=vec4(c,a);}'});
-const fume=new THREE.Points(fmG,fmM);fume.frustumCulled=false;fume.visible=false;fume.renderOrder=2;scene.add(fume);
-function updateFume(dt,above){const K=SKY;fume.visible=above;if(!above)return;const L=FUME.life;
-  for(let i=0;i<FUME.n;i++){let a=fmT[i]+dt;if(a>=L)a-=L;fmT[i]=a;const u=a/L,rise=FUME.rise*L*(1-Math.exp(-a/(L*0.35)))*0.35; // the rise slows as the plume cools
-    fmP[i*3]=FUME.x+K.wind[0]*a*0.85+Math.sin(i*7.1+a*0.15)*(3+u*12);fmP[i*3+1]=FUME.y+rise;fmP[i*3+2]=FUME.z+K.wind[1]*a*0.85+Math.cos(i*3.7+a*0.11)*(3+u*12);
-    fmS[i]=lerp(FUME.r0,FUME.r1,Math.sqrt(u))*2;fmA[i]=0.55*(1-u)*(1-u)*smooth(0,0.06,u);}
-  fmG.attributes.position.needsUpdate=true;fmG.attributes.aA.needsUpdate=true;fmG.attributes.aS.needsUpdate=true;
-  fmU.uCol.value.set(0.92*K.tint[0]*K.skyL+0.05,0.92*K.tint[1]*K.skyL+0.05,0.92*K.tint[2]*K.skyL+0.05);fmU.uScale.value=innerHeight*Q.pr*0.5;}
+  MIST_W[1]=MIST_DAWN.dens*K.dawn;MIST_W[2]=1/MIST_DAWN.h;
+  const g=clamp(K.lumL/Math.max(K.skyL,0.02),0,1.2);for(let i=0;i<3;i++)MIST_C[i]=lerp(K.hor[i],0.96*K.tint[i]*K.skyL,HAZE.lift);MIST_C[3]=HAZE.glow*g;}
 // The shimmer sprite (v11.6–v11.42.4: an additive glow plane in the light's direction over the surface) is gone in v11.43: the window shows the
 // sun itself, refracted through each facet (SURF_MAT, WATER.md B).
 // Light shafts (v11.13, POLISH.md 3, the person: "as long as it's not forced and is believably based on appropriate water physics").

@@ -18,6 +18,18 @@ const RIM_R=245,RIM_W=34; // the caldera rim: crest radius, width
 const FLANK_R=1560,FLANK_W=250,FLANK_S0=0.30,FLANK_S1=0.22,FLANK_A=600,FLANK_B=2600; // the lower flank (sample(), v11.28): the apron's toe, the ramp's width, the slopes (tan) at the top and eased, the easing's span beyond the toe
 const VENT={a:2.6,r0:1200,r1:1420}; // the hydrothermal fissure: the deep end of rift arm 0
 const ISLE={x:Math.cos(5.5)*500,z:Math.sin(5.5)*500}; // a flank cone on rift arm 1: the island
+// The island as a tuff cone (v11.86, the person, 23 Sep 2026: the round hill with a plume "looks too neat to feel like it could've been any island
+// in the game"). A small vent erupting into shallow water on a shield's flank builds a tuff cone — Diamond Head, Koko Crater, Capelinhos — and
+// its shape is the forces on it: a ring round a crater, not a hill; the rim highest downwind, where the ash fell (Diamond Head's high point is on
+// its trade-wind rim), h × (1 + lean) there and × (1 − lean) upwind; the sea broke in on the windward side, so the rim is breached there (a gap
+// gapA rad either side of the upwind axis, its floor gapH) and the crater floor is a pond at floor, tidal through the gap; the windward outer slope
+// is cut back to a cliff over a wave-cut platform at plat, with a boulder apron below (sub reads the ring as rock); the lee keeps the flat of
+// bars and pools at flat, reaching flatR all round, spit further down-current and leeR further downwind — the spit points down the current, which
+// here runs toward the caldera rim, and its reach is v11.85's 200 so the saddle between the cone and the rim is untouched. The tuff is
+// palagonite, tan (chunks.js terrainColor, coneK), and the cone is cold: no plume (the strike above).
+const CONE={r:70,wIn:16,wOut:60,h:30,lean:0.6,gapA:0.8,gapH:-2.5,floor:0.8,flat:-0.6,plat:-3,flatR:120,spit:80,leeR:40}; // the rim's radius and its inner and outer widths (m), its height and the downwind lean; the breach's half-angle (rad) and floor; the crater floor; the lee flat, the windward platform; the flat's reach and its extra down-current and downwind
+function coneK(x,z){let k=0;for(const R of ISLANDS){if(!R.isle)continue;let lx=x-R.x,lz=z-R.z;if(R.rot){const c=Math.cos(R.rot),s=Math.sin(R.rot),tx=lx*c+lz*s;lz=lz*c-lx*s;lx=tx;}if(R.sc!==1){lx/=R.sc;lz/=R.sc;}
+  k=Math.max(k,smooth(CONE.r+CONE.wOut*1.6,CONE.r+CONE.wOut*0.4,Math.hypot(lx-R.isle.x,lz-R.isle.z)));}return k;} // 1 on the ring, 0 past its foot: the tuff's colour (chunks.js)
 const PIT=[Math.cos(2.6)*470,Math.sin(2.6)*470]; // a pit crater on rift arm 0
 // ---------- the basin and the sill (v11.58) ----------
 // DIRECTION.md (12 Sep) and PLANET, The basin: the island stands in a silled basin far larger than the world. The floor is abyssal
@@ -161,14 +173,9 @@ const WIND_U=7.0,UPPER_A=WIND_A+2.6,UPPER_U=18.0; // WIND_U is the trades'; a ca
 // air) and a calm — the trades slackening — under which a clear night could put a dawn mist on the lagoon.
 const CLOUD_H=650,CLOUD_T=900,CIRRUS_H=9500;
 let SEA_CHOP=1; // the short waves' amplitude now, 0.25 in a calm to 1 in the trades (atmosphere.js updateHaze; read by waveH and the wave GLSL's uChop): the swell (L ≥ 20) is from weather far away and keeps running
-// The fumarole (v11.17.1, the person's call, 10 Sep): the flank cone is a young cone on a live shield — hot at the vents and the chimney
-// below — and young cones on such shields degas: fumaroles at the summit venting steam and SO2 (Kilauea, Piton de la Fournaise). Two
-// consequences, both real: a steam plume off the summit that rises, leans downwind and thins (FUME: the puffs' rise, lifetime, size),
-// and vog — the SO2 gone to sulfate aerosol downwind, a warm-grey haze in a widening plume (VOG: a Gaussian plume from the summit,
-// half-width w0 growing by spread per metre, deeper than the salt haze since the plume is buoyant; sampled at the camera like the
-// spray). Vog reddens a sunset and greys the sky; no sulphur rain, no ash — a quiet vent, not an eruption.
-const FUME={x:ISLE.x,z:ISLE.z,y:40,rise:1.6,life:70,r0:4,r1:22,n:96}; // the summit; the puffs' rise (m/s at birth), life (s), radius at birth and death, count
-const VOG={dens:4.0e-4,w0:70,spread:0.16,h:140,reach:2400}; // extinction at the plume's axis near the cone, the plume's half-width and its growth, its scale height, how far it is felt
+// The fumarole and the vog (v11.17.1, the person's call of 10 Sep) are struck (v11.86, the person, 23 Sep 2026: the summit read as a "cute little
+// volcano", a tutorial zone): the island is a tuff cone now (CONE, below) — a monogenetic vent that erupted once into shallow water and went cold,
+// so it neither steams nor degasses. The steam plume (FUME) and the sulfate haze downwind (VOG) went with it; the dawn mist stays.
 // A dawn mist on the lagoon (v11.17.1, the person's call): on a clear calm night the rim's flat and the shallow lagoon radiate and cool
 // below the sea's mixed layer, and the lagoon's water, warmer than the air over it by dawn, steams — the same evaporation mist a
 // tropical mangrove creek makes at first light. It needs all three (clear: cover low; calm: wind low; the sheltered water: the lagoon
@@ -258,7 +265,7 @@ function islandH(R,x,z,o){
   const rw=r*(1+0.16*angNoise(aw,1.2,29+ns)); // warped radius: wavy contours
   let awn=aw%TAU;if(awn<0)awn+=TAU;
   const ag=R.rot?a+R.rot:a,ca=Math.cos(ag),sa=Math.sin(ag); // the wind and the current are the world's, so they read the unrotated angle (v11.62; rot 0 on both records, the same doubles)
-  const expoW=0.5-0.5*(ca*Math.cos(WIND_A)+sa*Math.sin(WIND_A)); // 1 on the shore the waves strike
+  let expoW=0.5-0.5*(ca*Math.cos(WIND_A)+sa*Math.sin(WIND_A)); // 1 on the shore the waves strike (let since v11.86: the cone has its own aspect)
   const upW=0.5-0.5*(ca*Math.cos(CUR_A)+sa*Math.sin(CUR_A)); // 1 on the flank the current strikes (upwelling); 0 in its wake
   const C=R.coll,collW=C?sectorW(awn,C.a,C.hw*(1+0.55*smooth(380,1000,rw)),0.14):0,cw=C?collW*smooth(300,350,rw)*smooth(1250,1000,rw):0;
   const D=R.dike,dikeW=D?sectorW(awn,D.a,D.hw,0.2):0,dk=D?dikeW*smooth(700,790,rw)*smooth(1220,1080,rw):0;
@@ -330,11 +337,21 @@ function islandH(R,x,z,o){
     if(lag>0)h=lerp(h,R.lagH+1.5*(fbm(lx*0.02+5+ns,lz*0.02+3,2)-0.5)*2,lag);
     rimA=smooth(0.3,0.62,0.5+0.5*angNoise(aw,2.4,77+ns));rimK=smooth(R.rimR-R.rimW,R.rimR-R.rimW*0.3,rw)*smooth(R.rimR+R.rimW,R.rimR+R.rimW*0.3,rw);
     if(rimK>0){h=lerp(h,2.5+3.5*(fbm(lx*0.02+5+ns,lz*0.02+3,2)-0.5)*2,rimK*rimA);h-=3*(1-rimA)*rimK;}}
-  // the island: a flank cone with a tidal flat of bars and pools and a hill behind it
-  if(R.isle){const I=R.isle,id=Math.hypot(lx-I.x,lz-I.z);
-    if(id<270){const dw=id*(1+0.3*(fbm(lx*0.008+7+ns,lz*0.008+3,3)-0.5)*2);const k=smooth(200,105,dw);
-      if(k>0)h=lerp(h,-0.6+2.6*(fbm(lx*0.03+11+ns,lz*0.03+2,2)-0.5)*2,k)+40*smooth(88,18,dw)*(1+0.3*(fbm(lx*0.02+9+ns,lz*0.02+8,2)-0.5)*2);}}
-  o.h=h;o.hs=hSmooth;o.rw=rw;o.cw=cw;o.dkr=dkr;o.young=young;o.heat=heat;o.lag=lag;o.rimK=rimK;o.rimA=rimA;o.pass=(1-rimA)*rimK;o.shelfEdge=smooth(T.r0-50,T.r0+30,rw)*smooth(T.r1+150,T.r1-50,rw);o.upW=upW;o.expoW=expoW;
+  // the island: a tuff cone (v11.86, CONE above; to v11.85 a round 40 m hill on a round flat of bars and pools) — a breached ring round a tidal
+  // crater, high downwind, cliffed to windward, the flat and its spit in the lee and down the current. Within 270 m of the cone only
+  let coneRock=0;
+  if(R.isle){const I=R.isle,idx=lx-I.x,idz=lz-I.z,id=Math.hypot(idx,idz);
+    if(id<270){const C=CONE,dw=id*(1+0.3*(fbm(lx*0.008+7+ns,lz*0.008+3,3)-0.5)*2);
+      const ac=Math.atan2(idz,idx)+(R.rot||0),cd=Math.cos(ac-WIND_A),cc=Math.cos(ac-CUR_A),up=smooth(-0.1,0.6,-cd); // the cone's own aspect: cd 1 downwind (the lee), −1 on the face the waves strike; cc 1 down-current; up 1 on the windward face
+      let dA=(ac-WIND_A-Math.PI)%TAU;if(dA<0)dA+=TAU;if(dA>Math.PI)dA=TAU-dA; // the angle off the upwind axis
+      const hr=lerp(C.h*(1+C.lean*cd)*(1+0.25*(fbm(lx*0.02+9+ns,lz*0.02+8,2)-0.5)*2),C.gapH,smooth(C.gapA,C.gapA*0.45,dA)); // the rim: highest downwind, breached upwind
+      const w=dw<C.r?C.wIn:C.wOut,g=Math.exp(-(dw-C.r)*(dw-C.r)/(w*w)),ridge=hr*g*(1-up*smooth(C.r+6,C.r+22,dw)); // the ring, its outer slope cut to a cliff on the windward face
+      const n2=(fbm(lx*0.03+11+ns,lz*0.03+2,2)-0.5)*2,flat=lerp(C.flat+2.6*n2,C.plat+1.2*n2,up); // the lee's bars and pools; the windward wave-cut platform
+      const fEnd=C.flatR+C.spit*Math.max(0,cc)+C.leeR*Math.max(0,cd),k=smooth(fEnd+80,fEnd,dw),inK=smooth(C.r-C.wIn*0.5,C.r-C.wIn*1.8,dw); // the flat's reach by side; inside the crater
+      h=lerp(lerp(h,flat,k),C.floor+0.5*n2,inK)+ridge;
+      coneRock=smooth(2,8,ridge); // the ring stands as tuff rock (sub); its foot and the crater are ash and sand
+      expoW=lerp(expoW,0.5-0.5*cd,smooth(240,150,dw));}} // the exposure round the cone is the cone's own: the waves strike its windward face, its lee is sheltered
+  o.coneRock=coneRock;o.h=h;o.hs=hSmooth;o.rw=rw;o.cw=cw;o.dkr=dkr;o.young=young;o.heat=heat;o.lag=lag;o.rimK=rimK;o.rimA=rimA;o.pass=(1-rimA)*rimK;o.shelfEdge=smooth(T.r0-50,T.r0+30,rw)*smooth(T.r1+150,T.r1-50,rw);o.upW=upW;o.expoW=expoW;
   return h;
 }
 // sample(x,z) → {h, f}: the ground and the conditions. `out` may be passed to reuse the field array.
@@ -345,8 +362,8 @@ function sample(x,z,out){
   for(const R of ISLANDS){const d=Math.hypot(x-R.x,z-R.z);if(d<rNear)rNear=d;if(d>R.reach*R.sc)continue;
     if(best){islandH(R,x,z,spare);if(spare.h>o.h){h=smax(spare.h,h,BASIN.knee);hSmooth=smax(spare.hs,hSmooth,BASIN.knee);const t=o;o=spare;spare=t;best=R;}else{h=smax(h,spare.h,BASIN.knee);hSmooth=smax(hSmooth,spare.hs,BASIN.knee);}}
     else{h=islandH(R,x,z,o);hSmooth=o.hs;best=R;}}
-  if(!best){o.rw=rNear;o.cw=0;o.dkr=0;o.young=0;o.heat=0;o.lag=0;o.rimK=0;o.rimA=0;o.pass=0;o.shelfEdge=0;o.upW=0;o.expoW=0;} // open water: the basin's conditions alone
-  const rw=o.rw,cw=o.cw,dkr=o.dkr,heat=o.heat,lag=o.lag,rimK=o.rimK,pass=o.pass,shelfEdge=o.shelfEdge,upW=o.upW,expoW=o.expoW;let young=o.young;
+  if(!best){o.rw=rNear;o.cw=0;o.dkr=0;o.young=0;o.heat=0;o.lag=0;o.rimK=0;o.rimA=0;o.pass=0;o.shelfEdge=0;o.upW=0;o.expoW=0;o.coneRock=0;} // open water: the basin's conditions alone
+  const rw=o.rw,cw=o.cw,dkr=o.dkr,heat=o.heat,lag=o.lag,rimK=o.rimK,pass=o.pass,shelfEdge=o.shelfEdge,upW=o.upW,expoW=o.expoW,coneRock=o.coneRock;let young=o.young;
   // the basin and the sill (v11.58; BASIN, SILL above). Skipped within 2400 of an island's centre: the warped radius is under 2900 there, the
   // flank above -600, the floor under -1040, and smax is exact past its knee — the island is untouched to the bit
   let isl=1,gapF=0,summitK=0;
@@ -370,6 +387,7 @@ function sample(x,z,out){
   let sub=clamp(1-cover,0,1);sub=lerp(sub,0.66,cw*(1-0.5*smooth(500,1000,rw)));sub=lerp(sub,0.33,lag); // the fan is rubble; the lagoon floor is sand
   sub=Math.max(sub,Math.min(1,dkr*1.6),rimK,Math.min(1,1.6*cw*smooth(350,430,rw)*smooth(470,430,rw))); // bare rock: the dikes' crests, the rim band, the fan's blocks near the scarp (v11.12: a lost newline had left this line inside the comment above, so it never ran)
   if(h>0.5)sub=Math.max(sub,0.3);
+  if(coneRock>0)sub=Math.max(sub,0.85*coneRock); // the tuff cone's ring and its cliffs are rock (v11.86)
   if(summitK>0)sub=Math.max(sub,0.9*summitK); // the sill's drowned summits are bare rock (v11.58)
   const turb=clamp(expo*(1-sub)*0.7+0.4*nut*light+0.5*heat,0,1);
   const rel=clamp(0.5+(h-hSmooth)/40,0,1);
