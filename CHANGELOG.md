@@ -5803,3 +5803,36 @@ minutes from 6 km upwind to gone; `SHWR.u` 2.2 is the pace, `SHWR.ahead` the war
 iceberg (it is the lumps' look at 3× height); (4) the sea going dark ahead of the rain; (5) the bow on the shaft from the sea at a low sun;
 (6) the cover lifting a quarter near a cell — too little for a shower's sky, or right; (7) the frame cost of the two extra Gaussians in every
 field read.
+
+## v11.89 — the cloud volume: the deck marched from a baked atlas, the light banded after the cloud (24 Sep 2026)
+
+The person, on the stills of v11.87–88: the near lumps are "clearly 3d" and the far deck "more like a paper you fully color in" — two good
+systems that "are not cohesive and in combination look worse"; is there a foundational change we have been avoiding for the low-poly vibe?
+CLOUDS.md §8: yes — the deck's density was flat, so no stylising could make it read as solid. Built on their full confidence.
+
+- **The noise tiles** (clouds.js `CLD_NOISE_GLSL`, `cldV(p,per,seed)`, the JavaScript twin): the hash folded into a period per octave (16 base
+  cells doubling, a lacunarity of exactly 2), the field repeating every 20 km; the shadows and the beam use it procedurally as before.
+- **The atlas** (`CLD_ATLAS`, `cldBake`, `cldTexU`, `cldRT`): the GPU bakes the noise once into 32 slices of 256² in a 2048×1024 half-float
+  target (bytes if half float cannot be rendered); `cldFT` reads it, the tile inset a texel, the height mixed between slices. Read back it
+  matches the JavaScript noise to three decimals.
+- **The density** (`cldDensT`): the field at a world point with the local deck's depth (a shower's deeper), the caps, the cells, the
+  threshold rising with the height; `cldRowW` the streets' wander once a ray.
+- **The march** (atmosphere.js `VOL_GLSL` `cloudVol`, `VOL_SIG` 1/120, `VOL_SIGL` 1/150, `VOL_L1`/`VOL_L2` 120/300 m, `VOL_FAR` 16 km, `VOL_DT`
+  30 m / 1.8%; `Q.vol` 80 steps desktop, 0 low): the slab's entry and exit (a camera inside starts at itself), steps growing with the
+  distance from an ordered 4×4 dither, two light samples toward the luminary at every step with cloud, the sun's share averaged over the
+  ray's cloud and quantised to three steps, the ambient by the mean height, the silver lining, the fog by the mean distance. `uVol` picks
+  the volume or the old `cloudDeck` live (`cloud volume` on the effects list; the low tier and a failed bake fall back on their own);
+  `uVolT` the deck's depth and the deepest cell's; `uCldTex` the atlas.
+- **The lumps stand down**: `near clouds` off by default (`FX_V` 89 resets an old 'on'); the code stays behind the switch. `CLD.sc` 1/1000.
+
+**Seen** (`test/render/v89d_*.png`, `v89e_*.png`): the boot sky as cumulus in three tones with forms to the horizon, a cel-shaded volume
+overhead, the broken deck at 0.62, the sunset backlit toward the sun and pink-lit away from it, small fair-weather cumulus on the clearest day,
+a shower's plateau with the shaft under it, the giant's cap from 300 m, dark shapes over the stars at night. The first cut was a solid ceiling
+(a comment swallowed the line writing the field's uniforms — the threshold read 0); a hashed jitter was speckle, a small one bands. Cost in
+the pane within the frame's noise. `node build.js --test` green on both tiers.
+
+**Unseen, ask in this order:** (1) the readout's `render` ms above water on the 4060 with the volume on and off (the `cloud volume` switch;
+`Q.vol` is the knob); (2) whether the three bands read as the low-poly world's own light or want a fourth (`floor(q·3+0.5)/3`); (3) the
+clouds' size (`CLD.sc`); (4) a cloud sliding over in play — the shadow on the sea and the light under water against the volume overhead;
+(5) the dither at the edges at 1600×900; (6) the lowest degrees of the sky, empty of cloud past 16 km (`VOL_FAR`); (7) the crossing of the
+surface and the volume through it from below; (8) a shower's tower from the sea.

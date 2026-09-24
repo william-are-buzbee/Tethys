@@ -1,8 +1,10 @@
 # CLOUDS.md — the sky's clouds and the weather's clocks
 
 Status: **passes A, B and C built as v11.87 (24 Sep 2026), with the low-poly exploration (§5) behind the `near clouds` switch; pass D (§6,
-showers with a place) built as v11.88 the same day — the person, on v11.87: "Looks awesome. Go ahead on D."** Storms proper (§6's last paragraph) are
-the next sky pass. Written from the discussion of
+showers with a place) built as v11.88 the same day; the deck as a ray-marched volume (§8) built as v11.89 the same day — the person, on the
+stills of v11.87–88: two systems, one clearly 3D and one "a paper you fully color in", that "in combination look worse"; the analysis in §8
+and the build, on their full confidence.** The lumps are off by default and the slices are the low tier's; storms proper (§6's last paragraph)
+are the next sky pass. Written from the discussion of
 23–24 Sep 2026: the person asked whether the sky's several cloud kinds were designed or accreted, what this planet's sky should be and how
 it should change by the day, the week and the year, for as much variety as is believable and no more, and how the clouds meet the rest of
 the sky. §7 has the person's answers.
@@ -144,3 +146,52 @@ event, thunder by the distance, a squall line; and a distant shower's hush.
   believable and no more; the clouds against the rest of the sky; rain and storms only if they fit.
 - **24 Sep 2026:** "Let's explore that direction [the near clouds as low-poly lumps] and let's put D off for the next pass. Go right ahead."
 - **24 Sep 2026, on v11.87:** "Wow. Looks awesome. Go ahead on D if you're ready."
+- **24 Sep 2026, on the stills of v11.87–88:** the two cloud systems "are not cohesive and in combination look worse"; asked what is believable (one morphing layer that gets visually split, §1–2), whether one could replace the other (§8: the volume replaces the slices; the lumps stand down), and whether a foundational change had been avoided for the low-poly vibe ("quantize the shit out of it until it looks compressed enough" — built as the banded light); "go ahead and implement this", with full confidence.
+
+## 8. The volume (v11.89): one cloud system, marched
+
+**The seam, named.** After v11.88 the sky had two cloud systems drawn two ways: the near lumps, lit as forms, and the far deck, a stack of five
+slices of a flat map shaded by its density thresholds. The first read as objects, the second as paper, and the join between them fell at the
+wrong distance — a real cumulus changes its look with its angle (a flat grey base overhead, its sides and bumpy top from 5° to 30° up, a
+painted band at the horizon), and five slices cannot show a side. The person (24 Sep): is there a foundational change we have been avoiding
+for the low-poly vibe — real clouds, quantised until they look compressed enough? Yes: the project already derives everything physically and
+shows it stylised (the caustic, the fog, the pigments); the clouds were the one place the rule broke, since they started from a fake, flat
+density. The fix is the density.
+
+**Built.** The same field (§3), read as a true 3D density and ray-marched by the dome (atmosphere.js `cloudVol`, `VOL_*`):
+- **The noise tiles** (clouds.js `CLD_NOISE_GLSL`, the JavaScript twin): the cell's hash folded into a period per octave (`CLD_ATLAS.per` 16
+  base cells, doubling with each octave, a lacunarity of exactly 2), so the field repeats every 20 km and an atlas holds one tile; the
+  shadows and the beam at the player use the same tiled noise procedurally (their materials are at WebGL's 16 texture units).
+- **The atlas** (`cldBake`, once when the renderer is up): the GPU runs the noise over 32 slices of 256² (8 by 4 in a 2048×1024 half-float
+  target, bytes where half float cannot be rendered), the slices from z 0 to 0.6 noise units (the deck's height × `CLD.zk`); read back it
+  matches the JavaScript noise to three decimals. `cldFT` reads it with the tile inset a texel from the slice's edge and the height mixed
+  between two slices.
+- **The density** (`cldDensT`): the field's coordinate at a world point — the wind's frame, the streets' stretch, the lean, the height in the
+  *local* deck (`uVolT.x` × (1 + 2·cellK): a shower cell's is deeper), the caps and the cells as in `cldN`, the threshold rising with the
+  height — so towers, the giant's cap and a shower's congestus are the volume's own shapes.
+- **The march**: the ray's entry and exit of the slab (base to the deepest top; a camera inside it starts at itself — fogged in on the
+  giant's summit), up to `Q.vol` 80 steps growing with the distance (`VOL_DT`: the greater of 30 m and 1.8% of the distance) from an
+  ordered 4×4 dither of the start (the sky's own dither hides it; a hashed jitter was speckle, a small one bands), to `VOL_FAR` 16 km. The
+  transmittance by `VOL_SIG` 1/120 per metre of full density (a 300 m path is 92% opaque). At every step with cloud two samples toward the
+  luminary (`VOL_L1` 120, `VOL_L2` 300 m) give the light that reaches it (`VOL_SIGL`).
+- **The light, banded after the cloud**: the sun's share is the mean over the ray's cloud, quantised to three steps — terminator lines on a
+  form, not contours of a map; the ambient by the mean height in the deck (the base darker, `amb` 0.85–1.15 of a shade that is the sky's
+  blue-grey pulled a third toward grey); a low sun lights the bases and the sunward sides on its own, since the light samples from a base
+  leave the cloud sideways into clear air; the silver lining stays (forward scatter for thin cloud); the whole fogged toward the horizon by
+  the mean distance of what was seen. The old `cloudDeck` stays as the fallback: `Q.vol` 0 (the low tier), no atlas, or the `cloud
+  volume` switch off — live, so the two can be compared.
+- **The lumps stand down** (`near clouds` off by default; the stored record's version bumped so an old 'on' does not survive): they were
+  the second system. The code stays behind the switch.
+- The noise's scale went to 1/1000 m (from 1/1250): at half cover one cloud filled the sky overhead; trade cumulus are smaller and more.
+
+**Seen** (`test/render/v89d_*.png`, `v89e_*.png`, the loop driven by hand): boot (cover 0.53, the trades) — cumulus in three tones, white
+tops, grey sides, blue-grey bases, forms to the horizon; overhead a cel-shaded volume; the broken deck at 0.62 with lit patches; the sunset
+toward the sun as backlit silhouettes with silver rims, away from it as pink-lit faces; the clearest day as small fair-weather cumulus; a
+shower cell as a dark plateau with the rain shaft under it; the giant's cap as a bank over its outline from 300 m up; a moonless night as dark
+shapes over the stars. The first cut was a solid grey ceiling — a comment swallowed the line that writes the field's uniforms, so the
+threshold was 0 — then speckle from a hashed jitter, then stripes from a small one. Cost in the app's pane: within the noise of the frame at
+1536×1152 (10.7 against 10.2 ms with the slices); the 4060 at 1600×900 is the number to ask for.
+
+**Open, for the person**: the three bands (`floor(q·3+0.5)/3`) against a smoother light; the clouds' size (`CLD.sc`); whether the low tier
+should march at fewer steps or keep the slices; the horizon band (the march ends at 16 km, the old deck faded at 3° — the lowest degrees are
+empty of cloud); the cirrus is still the 2D field of v11.87 (a thin layer at 9.5 km needs no volume).
