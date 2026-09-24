@@ -9,7 +9,7 @@ unchanged, so the saddle to the lagoon is as it was); tan (palagonite) near and 
 is cold. Seen before and after from eight fixed views (`test/render/v86_before_*.png`, `v86_after_*.png`, the loop driven by hand). **Ask first** whether
 the island now reads as a place that could be anywhere, then whether it is too big (`CONE.h` 30: a lower rim shrinks the whole foot), then whether the
 scrub's tall stalks on the lee flat are the "cute trees" and want thinning, then the ledges' size on the inner wall, then whether the tan reads as rock.
-Undo is one revert of the commit.
+Undo is one revert of the commit. v11.86.1: from the crater floor the sky was the horizon mesh's tan underside (its 100 m triangles span the crater); the land mesh now draws only past 0.75 of the far plane, where the sea disc starts. The person's look (23 Sep): the stalks, the ledges and the tan are fine for now; whether it reads as any island is "a moving goalpost" until the chain gives it neighbours.
 
 **v11.85 (23 Sep 2026): filter feeding — PLANKTON.md §13 pass 5 (§11).** The swarms are food. `derive` reads a sieve's area off the build (`filter`, m²:
 the frontal `combs`; a `comb` part or a webbed net marked `sieve`, the creator's switch — the ram's rake is on, the tread's floor combs and the pall's net

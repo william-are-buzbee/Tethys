@@ -5703,3 +5703,19 @@ fake part. A small vent erupting into shallow water on a shield's flank builds a
 (`CONE.h` sets it: a 30 m rim at 34° needs a 190 m foot; 24 would shrink it a fifth), then whether the scrub's 8 m stalks on the lee flat are the
 "cute trees" and want thinning (`scrub` `per` 110 or its size), then the ledges' size on the inner wall (the cliff kit's `s` 5–26 scaled by the
 drop), then whether the tan reads as rock or as sand (`tuff` in `terrainColor`; the strand's own sand is olive-green and stays below it).
+
+## v11.86.1 — the sky over the crater was the horizon mesh (23 Sep 2026)
+
+The person, from the crater: "the skybox turns tan when you get closer to the land structure. inside the pond area, the skybox has zero clouds and is
+100% tan colored." Reproduced from the crater floor looking over the rim (`test/render/v86_sky_before_9.png`): the whole sky above the rim tan.
+The horizon tier's land mesh is sampled at `Q.hz` 100 m (200 on low) and drawn from `HZ_NEAR` 20 m out; at that spacing the crater does not
+exist, so its triangles span from rim to rim over the camera's head, and the main pass, which overdraws the mesh wherever it has ground, has
+nothing in the sky to cover them. The old hill never showed it because a dome has no hollow. The fix (horizon.js): the land mesh's fragment
+discards nearer than `uHzMin` = `FAR` × `HZ_SEA0` (1200 on high) — where the sea disc already starts and the main pass hands over; the far
+regions stream to `FAR_R` past the far plane, so the handover is covered both ways and the cut is under the far layer. Seen after
+(`v86_sky_after_9/10/11.png`): sky and cloud over the rim from the floor, the sea through the breach, and from 60 m up the far side of the
+caldera and the giant on the horizon still drawn, no hole. `node build.js --test` green on both tiers.
+
+Also the person's look at v11.86 (23 Sep): the scrub's stalks are fine for now ("they will be overhauled eventually along with all other land
+plants"), the ledges are fine, the tan reads as rock; whether the island reads as any island "is a moving goalpost" with only two landmasses to
+judge against — SEAFLOOR.md's chain is where that answer comes from.
