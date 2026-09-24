@@ -146,10 +146,22 @@ function moonHA(h){return TAU*(h-MOON_T0)/LUNAR_H;}
 // own slow noise: the chop dies to the swell, the spray stops, the clouds hang, and a clear calm night can mist the lagoon at dawn.
 // v11.17 adds `cirrus`: the high ice cloud's cover on its own slower noise — not the trades' cloud but the outflow of convection far
 // away (the planet has a rain belt somewhere), so it comes and goes on its own and moves with the upper wind.
-function weatherAt(h,out){const o=out||{};const w=fbm(h*0.13+22.1,17.3,3),q=fbm(h*0.85+5.1,5.1,2),c=fbm(h*0.055+41.7,9.9,2); // seeds chosen so boot is fair (cover 0.44) with the first shower 3 h in
-  o.rain=smooth(0.71,0.78,q);o.cover=clamp(0.15+1.4*(w-0.32)+0.5*o.rain,0.08,0.92);o.cirrus=clamp(2.4*(c-0.36),0,1); // the cover reads the year's mean rain; the seasonal rain is set below
-  const s=seasonAt(h);o.rain=smooth(0.71-0.02*s,0.78-0.02*s,q);o.season=s; // v11.83: more showers in the windy half
-  o.wind=Math.max(smooth(0.33-0.06*s,0.46-0.06*s,fbm(h*0.09+77.3,2.2,2)),o.rain);return o;} // rain ~10% of the time; wind 1 the trades, 0 a calm (~25% of the time at the year's mean — v11.83: ~15% at the windy peak, ~40% at the still one, hours at a stretch; a shower is a gust front)
+// v11.87 (CLOUDS.md §2) gives the weather its clocks. The day: over a tropical sea cloud and showers peak in the last hours of the night and at dawn
+// (the cloud tops cool by radiation all night and the deck destabilises; the sea's own surface hardly warms by day) and thin by mid afternoon — a
+// fifteen-hour night deepens that, so `day` is +1 at local 5 h (two and a half hours before sunrise) and −1 at 20 h. The waves: in the trades the
+// weather comes in easterly waves every three to five days — a day or two of thicker deck and squalls, then suppressed clear days (`wave`, −1..1 on
+// a noise with ~4-day features). The year: with the sun south the rain belt is far and the trades strong and steady (streets, brief showers, a
+// clear upper sky); with the sun north the belt comes near 11.5° N — calms, deeper congestus, and cirrus as the outflow of that convection, so the
+// cirrus is the still season's (to v11.86 it was a coin toss, 69% of hours), the congestus deeper (`deep`), the haze whiter with the humidity
+// (`hazeK`). `spread`: a full deck without rain at the night's end and in the morning spreads its tops flat under the inversion (stratocumulus from
+// cumulus, the morning look in the trades) — the deck's threshold rises less with height.
+function weatherAt(h,out){const o=out||{};const s=seasonAt(h),lh=(h+SOLAR_H0)%DAY_H,di=Math.cos(TAU*(lh-5.0)/DAY_H),wv=clamp((fbm(h*0.011+3.3,8.8,2)-0.5)*3.2,-1,1); // the season; the local hour (noon 15, sunrise ~7.5); the day's cycle; the easterly waves
+  const w=fbm(h*0.13+22.1,17.3,3),q=fbm(h*0.85+5.1,5.1,2),c=fbm(h*0.055+41.7,9.9,2); // seeds chosen so boot is fair (cover ~0.4) with the first shower a few hours in
+  const rt=0.71-0.02*s-0.035*wv-0.025*di;o.rain=smooth(rt,rt+0.07,q); // v11.83: more showers in the windy half; v11.87: on a disturbed day and toward dawn
+  o.cover=clamp(0.15+1.4*(w-0.32)+0.10*wv+0.06*di+0.5*o.rain,0.08,0.92);o.cirrus=clamp(2.4*(c-0.36)-0.22-0.35*s+0.15*wv,0,1);
+  o.wind=Math.max(smooth(0.33-0.06*s,0.46-0.06*s,fbm(h*0.09+77.3,2.2,2)+0.05*wv),o.rain); // rain ~8% of the time; wind 1 the trades, 0 a calm (~25% of the time at the year's mean — v11.83: ~15% at the windy peak, ~40% at the still one, hours at a stretch; a shower is a gust front)
+  o.deep=1+0.5*Math.max(0,-s)+0.3*Math.max(0,wv);o.spread=smooth(0.5,0.75,o.cover-0.5*o.rain)*(1-o.rain)*smooth(-0.3,0.6,di);o.hazeK=1+0.5*Math.max(0,-s);
+  o.season=s;o.wave=wv;o.day=di;return o;}
 // The wind (PLANET, Wind and current): one prevailing wind toward WIND_A at WIND_U m/s — the waves travel with it and so do the
 // clouds and the rain; the wind blows harder under a shower. Real time, not game time: a cloud crossing the sky at 45× would be
 // a film run fast, and the waves are already real-time.
@@ -171,7 +183,10 @@ const WIND_U=7.0,UPPER_A=WIND_A+2.6,UPPER_U=18.0; // WIND_U is the trades'; a ca
 // the wave-exposure field at the camera), and under a shower rain and mist to a few km. The two things that could change this are
 // not decided and are the person's: a fuming vent above water (vog — a sulfate haze downwind — and steam where hot water meets
 // air) and a calm — the trades slackening — under which a clear night could put a dawn mist on the lagoon.
-const CLOUD_H=650,CLOUD_T=900,CIRRUS_H=9500;
+const CLOUD_H=650,CLOUD_T=900,CIRRUS_H=9500,CLD_SHADE=0.85; // the cumulus base and the deck's thickness (the inversion caps it), the cirrus height (m); how much of the beam a cloud takes (v11.87: the shadow at the player and in the shaders, clouds.js)
+// v11.87: the deck itself is clouds.js — one field in the wind's frame (streets while the trades blow, the tops leaning downwind, a cap over the giant, whose
+// summit at 900 m stands into a deck based at 650: the trades forced up its flank wear a cloud on it all day that swells through the afternoon), read by
+// the dome, the sea, the land and the beam at the player alike. Our own island is still too small to make cloud.
 let SEA_CHOP=1; // the short waves' amplitude now, 0.25 in a calm to 1 in the trades (atmosphere.js updateHaze; read by waveH and the wave GLSL's uChop): the swell (L ≥ 20) is from weather far away and keeps running
 // The fumarole and the vog (v11.17.1, the person's call of 10 Sep) are struck (v11.86, the person, 23 Sep 2026: the summit read as a "cute little
 // volcano", a tutorial zone): the island is a tuff cone now (CONE, below) — a monogenetic vent that erupted once into shallow water and went cold,
@@ -181,7 +196,6 @@ let SEA_CHOP=1; // the short waves' amplitude now, 0.25 in a calm to 1 in the tr
 // tropical mangrove creek makes at first light. It needs all three (clear: cover low; calm: wind low; the sheltered water: the lagoon
 // field at the camera), lies a few metres deep (MIST_DAWN.h) and burns off within the hour after sunrise.
 const MIST_DAWN={dens:0.020,h:6,from:-3.0,peak:0.0,to:1.2}; // extinction at the water at full mist; its depth; the hours before sunrise it builds from, the peak, when it is gone
- // the cumulus base and the deck's thickness (the inversion caps it), the cirrus height (m)
 const HAZE={dens:1.7e-4,h:70,spray:0.0025,sprayH:4.0,glow:0.8,lift:0.3}; // the marine haze's extinction at the water and its scale height (m); the spray's over the surf and its height; the forward glow toward the light; how far the haze's colour is lifted from the horizon's toward the light
 // ---------- the sea surface ----------
 // The surface is a sum of directional waves obeying deep-water dispersion (long waves travel faster) with crests sharpened by

@@ -5719,3 +5719,53 @@ caldera and the giant on the horizon still drawn, no hole. `node build.js --test
 Also the person's look at v11.86 (23 Sep): the scrub's stalks are fine for now ("they will be overhauled eventually along with all other land
 plants"), the ledges are fine, the tan reads as rock; whether the island reads as any island "is a moving goalpost" with only two landmasses to
 judge against — SEAFLOOR.md's chain is where that answer comes from.
+
+## v11.87 — the clouds and the weather's clocks; the near clouds as lumps (24 Sep 2026)
+
+The person (23 Sep): there are several kinds of cloud — little stringy ones, larger ones with darker patches — "figure out if that's intentional, or
+just layers of added implementation on top of each other"; ask what the planet actually is and what clouds belong, and how they change by the
+season, the week and the day; as much visual variety as is believable and no more; look at how the clouds meet the skybox; rain and storms only
+if they fit. Answered in CLOUDS.md: the three layers were designed in one pass (v11.17), but the deck's dark patches were nested contours of one
+2D noise (v11.17's own unseen question, never answered) and the cirrus a field of dashes at partial cover; and the weather had one mode with no
+clock but the wind's season. The person (24 Sep): explore the low-poly direction for the near clouds; showers with a place (pass D) to the next pass.
+
+- **The field** (clouds.js, new): the deck as one function of a point, written in GLSL and in JavaScript from a hash exact in float32, so the dome,
+  the sea, the land and the beam at the player agree. 3D noise (each slice its own shape), the first octave plain and three billowed, in the wind's
+  frame — streets along the trades (`CLD.street`, `rowL` 4200, `rowA`), the tops leaning downwind (`lean`), a cap over the giant (`CLD_CAPS`, `capR`,
+  `capOff`, `CLD_S.cap` 0.22–0.42 by the afternoon × the trades). The threshold is the cover's quantile (`CLD_TH`, `cldThOf`): cover 0.45 is 0.469 of
+  the field. `CLD_SHADE` 0.85 (world.js) is what a cloud takes of the beam.
+- **The deck's light** (atmosphere.js `CLOUD_GLSL`): lit by the sun's elevation — tops under a high sun, bases and sunward sides under a low one —
+  in the deck's own sunlight (`CLD_S.deckC/deckL`: the keyframe at the sun's altitude plus 0.8° of depression, dimmed 45% at the horizon, lit
+  until 0.8° under), so the undersides go amber and pink at sunset where they went blue-grey; a silver lining near the sun; the thickness
+  darkening smooth. The cirrus on a coarse field for where it is and a fine one for its fibres (fewer streaks at half cover, not shorter ones);
+  unlit it is darker than the twilight; under an overcast the grey sky's colour (it was brown through a shower's gaps).
+- **The weather's clocks** (world.js `weatherAt`): `day` (+1 at local 5 h, −1 at 20 h) on the cover and the showers — showers before dawn 0.125
+  against the afternoon's 0.06; `wave` (the easterly waves, ~4-day features) on the cover, the showers, the wind and the congestus; the season on
+  the cirrus (the still season's: 0.40 against 0.12), the congestus (`deep`) and the haze (`hazeK`); `spread` flattens a full deck's tops toward
+  dawn. The year: showers 8.5%, calms 27%, mean cover 0.44; boot cover 0.53, the first shower 3.25 h in.
+- **The sky touches the world**: `sunL` reads the cloud over the player along the luminary (`cloudAt` → `K.cloudHere`), not cover^1.5 — full
+  sun in a gap, shade as a cloud drifts over at 7 m/s, the caustics, shafts and shadows with it; the surface's direct light and the land in air
+  read `cloudSh` (in every fogged material's fog chunk; `Q.cldSh` 1 desktop, 0 low), relative to the player's own shade.
+- **The lumps** (clouds.js; `near clouds` on the effects list, on): the near clouds as heaps of 14–21 dodecahedra, flat-based, countershaded,
+  shaded in the deck's three steps on each puff's own normal, at the field's maxima within 2400 m (a 0.6 ms scan every half second, keyed by
+  cell, measured by a walk), drawn in the horizon pass while the dome's deck fades out under them (`uLump`, `CLD.near`); the giant's cap as
+  five fixed lumps in front of its summit. Off, the deck fills the near sky as before.
+- `node test/sky.js` (new, in `--test`): the calibration, the year's statistics, the lumps' scan, the costs. The stub needed nothing new.
+
+**Seen** (dev.html in the app's browser, the loop driven by hand — the pane hides itself between calls, so the canvas was posted as PNGs:
+`test/render/v87c_*.png`, `v87d_*.png`): the first cut's deck was ribbons (the along-wind stretch 2.2× — now 1.5×) and the cirrus a fan of
+dashes across the whole sky (the fine-field threshold — now a coarse field first); the first lumps (6–9 puffs, flat facets) read as faceted
+grey slabs filling the sky from below — now many small puffs with smooth per-puff normals, and they read as low-poly cumulus with banded
+shading; the second cut's deck at 0.62 was a field of cells (every octave billowed — now the first plain, the gain 0.45). The last cut: boot
+(cover 0.53, the trades) streets of cumulus to the horizon with lit tops and grey bases; a low-poly cumulus overhead beside a long street
+ribbon; the broken deck at 0.62; the sunset from the sea with pink undersides and the sea's glow, the lump above lit on its sunward side; the
+clearest day (0.08) a few small clouds; the cirrus streaking along the upper wind, sparser; from 40 m up the sea darker under a cloud's shadow;
+the shower's overcast a proper grey with the rain and the bow. `node build.js --test` green on both tiers.
+
+**Unseen, ask in this order:** (1) the lumps in motion at 1600×900 — whether a cloud sliding overhead reads as a cloud or as a mesh, whether they
+want the switch off (CLOUDS.md §5 has the judgement so far); (2) the readout's `render` ms above water with the deck overhead (the dome does
+~400 hashes a pixel now; `Q.cloud` 3 halves it) and over open sea (`Q.cldSh` 0 strips the shadows from every material in air); (3) under water:
+the light coming and going as a cloud passes over — the caustics dying and returning — and whether the deck through the surface reads the
+same as from above; (4) the sunset: the undersides amber (`CLD_S.deckC`, the 0.55 dim), the silver lining near the sun; (5) whether the
+streets read as rows of cloud or as stripes (`CLD.street` 0.5, `CLD.rowA` 0.07); (6) the giant's cap from a height (the haze hides it from
+the water); (7) a calm — the streets dissolving; (8) the still season (`skip(120)`): the cirrus most days, the deeper congestus, the whiter haze.

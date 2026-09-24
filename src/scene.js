@@ -15,10 +15,11 @@ const Q=(function(){
   const small=Math.min(screen.width||9999,screen.height||9999)<900;
   const tier=HASH_TIER||((isTouch&&small)?'low':'high');
   return tier==='low'
-    ?{tier:tier,pr:1.0,far:1000,flora:0.45,creatures:0.6,lights:2,phong:false,aa:false,budgetMs:8,farMs:2,farQ:6,surf:96,lodNear:0.7,rockLvl:1,target:14,casters:6,shafts:2,cau:3,hrtf:0,vol:1,cloud:2,snow:1000,hz:200}
-    :{tier:tier,pr:1.5,far:1600,flora:1.0,creatures:1.0,lights:4,phong:true,aa:true,budgetMs:6,farMs:3,farQ:12,surf:192,lodNear:1.0,rockLvl:2,target:7.5,casters:16,shafts:4,cau:5,hrtf:1,vol:1,cloud:5,snow:1800,hz:100};
+    ?{tier:tier,pr:1.0,far:1000,flora:0.45,creatures:0.6,lights:2,phong:false,aa:false,budgetMs:8,farMs:2,farQ:6,surf:96,lodNear:0.7,rockLvl:1,target:14,casters:6,shafts:2,cau:3,hrtf:0,vol:1,cloud:2,snow:1000,hz:200,cldSh:0}
+    :{tier:tier,pr:1.5,far:1600,flora:1.0,creatures:1.0,lights:4,phong:true,aa:true,budgetMs:6,farMs:3,farQ:12,surf:192,lodNear:1.0,rockLvl:2,target:7.5,casters:16,shafts:4,cau:5,hrtf:1,vol:1,cloud:5,snow:1800,hz:100,cldSh:1};
   // snow (v11.24): the marine snow's points (atmosphere.js); the deep is sparse, so many of them are dormant at a time
   // cloud (v11.17): the slices the sky shader marches up through the cumulus deck (atmosphere.js SKY_FS), two 4-octave noises per slice per sky pixel
+  // cldSh (v11.87): the clouds' shadows on the sea and the land in air — one 3D billow noise per fragment (clouds.js cloudSh); off on the low tier until measured there
   // hrtf, vol (v11.14, the sound): HRTF panning on the placed voices (front/back and up/down; the audio thread's one real cost) or equal-power; the master volume
   // casters (v11.23): the creatures that cast into the shadow map each frame (the nearest by size; the player always); shafts, cau (v11.13, the light pass): the
   // light-shaft grid's side (4 = sixteen shafts round the camera); the caustic's ripple trains (CAU_RINGS; 5 the sea, 3 its long rings — v11.37)
@@ -574,7 +575,9 @@ const LIGHT_GLSL=LIGHT_FX?'\n#ifdef USE_FOG\n{float dep=uTint.x-vFogPos.y;if(uSu
   'vec3 pxp=vFogPos;if(uPix>0.5&&abs(fn.y)>0.3){vec2 q=(floor(vFogPos.xz*'+(1/CAU_PX).toFixed(4)+')+0.5)*'+CAU_PX.toFixed(4)+';pxp=vec3(q.x,vFogPos.y-(fn.x*(q.x-vFogPos.x)+fn.z*(q.y-vFogPos.z))/fn.y,q.y);}'+ // the receiver snapped to the caustic's grid, along its face (v11.38)
   'float sh=1.0;'+SH_GLSL('')+SH_GLSL('S')+ // the creatures' map, then the world's (v11.30): the darker of the two
   'float nl=clamp(dot(fn,uShL.xyz)*2.5,0.0,1.0);'+ // the shadow takes away the beam, so a face the beam never reached loses nothing (v11.34.1)
-  'float dl='+DL_GLSL('vFogPos.y')+';gl_FragColor.rgb*=1.0-uLightK.y*(1.0-sh)*uSunW.w*dl*nl;}}\n#endif\n':'';
+  'float dl='+DL_GLSL('vFogPos.y')+';gl_FragColor.rgb*=1.0-uLightK.y*(1.0-sh)*uSunW.w*dl*nl;}'+
+  (Q.cldSh?'if(dep<0.0&&uSunW.w>0.002){vec3 fc=normalize(cross(dFdx(vFogPos),dFdy(vFogPos)));float ncl=clamp(dot(fc,uFogS.xyz)*2.5,0.0,1.0);float cs=cloudSh(vFogPos),ch=1.0-'+CLD_SHADE.toFixed(2)+'*uCld.w;gl_FragColor.rgb*=1.0-uSunW.w*ncl*(1.0-clamp(cs/max(ch,0.05),0.0,1.0));}':'')+ // the clouds' shadows in air (v11.87, clouds.js): the beam's share taken where the deck stands between the point and the luminary, relative to the shade over the player (the sun light is already the player's own: a face under more cloud than the player darkens, one under less is left as it is — the surface restores its direct light exactly, atmosphere.js SURF_MAT)
+  '}\n#endif\n':'';
 // shDepth: three's RGBA depth packing undone (packing.glsl's unpackRGBAToDepth, written out so no chunk is relied on); shTap: one tap of
 // the map, a shadow if the caster is nearer the light than the fragment, faded by the metres between them
 const LIGHT_PARS=CAU_PARS+'uniform float uTime;uniform float uChop;uniform vec4 uSunW;uniform vec2 uLightK;uniform sampler2D uShMap;uniform mat4 uShMat;uniform vec4 uShP;uniform vec4 uShL;uniform sampler2D uShMapS;uniform mat4 uShMatS;uniform vec4 uShPS;uniform vec4 uShLS;\n'+
