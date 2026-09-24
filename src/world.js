@@ -157,8 +157,8 @@ function moonHA(h){return TAU*(h-MOON_T0)/LUNAR_H;}
 // cumulus, the morning look in the trades) — the deck's threshold rises less with height.
 function weatherAt(h,out){const o=out||{};const s=seasonAt(h),lh=(h+SOLAR_H0)%DAY_H,di=Math.cos(TAU*(lh-5.0)/DAY_H),wv=clamp((fbm(h*0.011+3.3,8.8,2)-0.5)*3.2,-1,1); // the season; the local hour (noon 15, sunrise ~7.5); the day's cycle; the easterly waves
   const w=fbm(h*0.13+22.1,17.3,3),q=fbm(h*0.85+5.1,5.1,2),c=fbm(h*0.055+41.7,9.9,2); // seeds chosen so boot is fair (cover ~0.4) with the first shower a few hours in
-  const rt=0.71-0.02*s-0.035*wv-0.025*di;o.rain=smooth(rt,rt+0.07,q); // v11.83: more showers in the windy half; v11.87: on a disturbed day and toward dawn
-  o.cover=clamp(0.15+1.4*(w-0.32)+0.10*wv+0.06*di+0.5*o.rain,0.08,0.92);o.cirrus=clamp(2.4*(c-0.36)-0.22-0.35*s+0.15*wv,0,1);
+  const rt=0.71-0.02*s-0.035*wv-0.025*di;o.rain=smooth(rt,rt+0.07,q); // v11.83: more showers in the windy half; v11.87: on a disturbed day and toward dawn; v11.88: the trigger only — an episode births a shower cell with a place (clouds.js updateCells), whose rain at the camera is the rain
+  o.cover=clamp(0.15+1.4*(w-0.32)+0.10*wv+0.06*di,0.08,0.92);o.cirrus=clamp(2.4*(c-0.36)-0.22-0.35*s+0.15*wv,0,1);
   o.wind=Math.max(smooth(0.33-0.06*s,0.46-0.06*s,fbm(h*0.09+77.3,2.2,2)+0.05*wv),o.rain); // rain ~8% of the time; wind 1 the trades, 0 a calm (~25% of the time at the year's mean — v11.83: ~15% at the windy peak, ~40% at the still one, hours at a stretch; a shower is a gust front)
   o.deep=1+0.5*Math.max(0,-s)+0.3*Math.max(0,wv);o.spread=smooth(0.5,0.75,o.cover-0.5*o.rain)*(1-o.rain)*smooth(-0.3,0.6,di);o.hazeK=1+0.5*Math.max(0,-s);
   o.season=s;o.wave=wv;o.day=di;return o;}

@@ -107,13 +107,13 @@ function updateSurface(){surface.position.set(Math.round(camera.position.x/SSTEP
 // read by the dome shader, the lights, the fog, the surface and the readout. Nothing here is a place: the whole world sees one sky.
 const SKY={sun:V3(0,1,0),moon:V3(0,-1,0),lum:V3(0,1,0),sunAlt:1,moonAlt:-1,illum:1,dayK:1,moonUp:0,moonL:0,skyL:1,skyLw:1,sunL:1,lumL:1,lumLw:1,night:0,cover:0,rain:0,rainA:0,
   zen:[0,0,0],hor:[0,0,0],glow:[0,0,0],sunC:[1,1,1],lumC:[1,1,1],tint:[1,1,1],bow:0,wind:[0,0],windOff:[0,0],starT:0,
-  cirrus:0,upperOff:[0,0],cirrC:[1,1,1],plan:PLANETS.map(()=>V3(0,1,0)),spray:0,windK:1,eclS:0,eclL:0,dawn:0,lag:0,cloudHere:0}; // cloudHere (v11.87): the deck's density over the player along the luminary, what the beam reads // v11.17: the cirrus cover, the upper wind's drift, the cirrus' colour (sunlit after sunset), the planets' directions, the surf's spray at the camera
+  cirrus:0,upperOff:[0,0],cirrC:[1,1,1],plan:PLANETS.map(()=>V3(0,1,0)),spray:0,windK:1,eclS:0,eclL:0,dawn:0,lag:0,cloudHere:0,cellNear:0}; // cloudHere (v11.87): the deck's density over the player along the luminary, what the beam reads // v11.17: the cirrus cover, the upper wind's drift, the cirrus' colour (sunlit after sunset), the planets' directions, the surf's spray at the camera
 const WX={},cirrTmp=[0,0,0];
 function skyLerp(out,keys,idx,s){let a=keys[0],b=keys[keys.length-1];for(let i=1;i<keys.length;i++)if(s<=keys[i][0]){a=keys[i-1];b=keys[i];break;}
   const u=clamp((s-a[0])/(b[0]-a[0]),0,1),ca=a[idx],cb=b[idx];out[0]=lerp(ca[0],cb[0],u);out[1]=lerp(ca[1],cb[1],u);out[2]=lerp(ca[2],cb[2],u);return out;}
 function updateSky(dt){const K=SKY;
   skyDir(sunHA(clockH),K.sun,sunDec(clockH));skyDir(moonHA(clockH),K.moon);K.sunAlt=K.sun.y;K.moonAlt=K.moon.y;K.illum=0.5*(1-K.sun.dot(K.moon)); // the lit fraction from the geometry (v11.17.1; moonIllum(h) was a cosine on the hour, an hour out of step with the conjunctions)
-  weatherAt(clockH,WX);K.cover=WX.cover;K.rain=WX.rain;K.rainA+=(K.rain-K.rainA)*(1-Math.exp(-0.5*dt)); // a shower arrives over a few seconds
+  weatherAt(clockH,WX);updateCells(dt);K.cover=clamp(WX.cover+0.25*K.cellNear,0.08,0.92);K.rainA+=(K.rain-K.rainA)*(1-Math.exp(-0.5*dt)); // v11.88: the rain is the shower cell's at the camera (clouds.js updateCells; WX.rain is only the trigger), the cover lifted a quarter near one; a shower arrives over a few seconds
   // the cloud field's state (v11.87, clouds.js): the threshold by the cover's quantile, the streets while the trades blow, the tops spreading, the giant's cap (the trades over its flank
   // all day, swelling through the afternoon as the land heats), and the cloud over the player — the deck's base along the luminary, eased over a second or so, which the beam reads below
   CLD_S.th=cldThOf(K.cover);CLD_S.street=WX.wind*(1-0.7*K.rainA);CLD_S.rise=CLD.rise*(1-0.6*WX.spread);
@@ -127,7 +127,7 @@ function updateSky(dt){const K=SKY;
   // the eclipses (v11.17.1; world.js UMBRA_R): the sun's disc covered by the moon's, and the moon's disc in the planet's shadow
   K.eclS=discOverlap(Math.acos(clamp(K.sun.dot(K.moon),-1,1)),SUN_R,MOON_R);K.eclL=discOverlap(Math.acos(clamp(-K.sun.dot(K.moon),-1,1)),MOON_R,UMBRA_R);
   K.dayK*=1-0.97*K.eclS; // totality is deep twilight: the light, the sky's colours below and the stars follow
-  K.windK=WX.wind;
+  K.windK=Math.max(WX.wind,K.rain); // a shower is a gust front (v11.88: the cell's, here)
   K.moonUp=smooth(-0.05,0.25,K.moonAlt);K.moonL=MOONL*K.moonUp*Math.pow(K.illum,1.8)*(1-0.97*K.eclL); // a half moon gives a tenth of a full one's light; an eclipsed moon almost none
   const shade=1-0.30*K.cover-0.20*K.rain; // cloud takes what it takes from the whole sky (v11.18: a shower leaves ~0.52 of noon; it left 0.24, under a full-moon night's 0.31 — 'much worse than nighttime'. The beam still dies under it, below)
   // The night's cloud (v11.34). Rain reached the night twice: weatherAt adds 0.5*rain straight into cover, and the night term then
@@ -156,7 +156,7 @@ function updateSky(dt){const K=SKY;
   // the light's colour relative to noon, for everything that scales a noon look: warm at dusk, blue-grey by moonlight, grey under rain
   for(let i=0;i<3;i++){const w=K.dayK*(1-0.6*gk);K.tint[i]=(K.sunC[i]/SKYC[4][4][i]*w+MOONC[i]*(1-K.dayK)+[0.9,0.92,0.95][i]*K.dayK*0.6*gk)/(w+(1-K.dayK)+K.dayK*0.6*gk);}
   K.night=Math.max(smooth(-0.02,-0.14,K.sunAlt),0.8*smooth(0.93,1.0,K.eclS))*(1-0.55*K.moonUp*K.illum*(1-K.eclL))*(1-0.9*gk); // how much the stars show: from the sun a degree under to eight (civil twilight's end), washed by the moon and hidden by cloud (v11.17: it was (1-dayK)², which had stars out at sunset with the sun still up)
-  K.bow=K.rainA*K.sunL*smooth(0.66,0.35,K.sunAlt)*smooth(0.0,0.04,K.sunAlt); // a bow needs sun behind you and rain in front; below 42° or there is no bow above the horizon
+  K.bow=Math.max(K.rainA,K.cellNear)*K.sunL*smooth(0.66,0.35,K.sunAlt)*smooth(0.0,0.04,K.sunAlt); // v11.88: a cell in reach, and the dome draws the bow only on its curtain (or in the rain here) // a bow needs sun behind you and rain in front; below 42° or there is no bow above the horizon
   {const u=WIND_U*(0.15+0.85*K.windK)*(1+0.8*K.rainA);K.wind[0]=Math.cos(WIND_A)*u;K.wind[1]=Math.sin(WIND_A)*u;} // a calm leaves a breath of the trades
   K.windOff[0]+=K.wind[0]*dt;K.windOff[1]+=K.wind[1]*dt;windOffU.value.set(K.windOff[0]%CAU_GUST[0],K.windOff[1]%CAU_GUST[0]); // the clouds' drift, real time; and the caustic's gusts' (scene.js, v11.39), modulo the gust tile
   K.starT=sunHA(clockH); // the stars turn with the sun (no year is decided: the same stars every night)
@@ -198,7 +198,7 @@ function updateSky(dt){const K=SKY;
 const skyU={uZen:{value:new THREE.Vector3()},uHor:{value:new THREE.Vector3()},uGlow:{value:new THREE.Vector3()},uSunC:{value:new THREE.Vector3()},uLumC:{value:new THREE.Vector3()},uCirrC:{value:new THREE.Vector3()},
   uSun:{value:new THREE.Vector3()},uMoon:{value:new THREE.Vector3()},uLum:{value:new THREE.Vector3()},uCam:{value:new THREE.Vector3()},uWind:{value:new THREE.Vector2()},uUpper:{value:new THREE.Vector2()},
   uDay:{value:1},uNight:{value:0},uCover:{value:0},uRain:{value:0},uMoonL:{value:0},uLumL:{value:1},uStarT:{value:0},uTime:timeU,uBow:{value:0},uCloudH:{value:CLOUD_H},uCloudT:{value:CLOUD_T},uCirrusH:{value:CIRRUS_H},uCirr:{value:0},uCamH:{value:0},uEclS:{value:0},uEclL:{value:0},uFxCloud:{value:1},
-  uDeckC:{value:new THREE.Vector3(1,1,1)},uDeckL:{value:0},uLump:{value:0},uCld:{value:FOG_CLD},uCldB:{value:FOG_CLDB}, // v11.87 (clouds.js): the deck's sunlight and its colour, the lumps' share (the deck fades out under them), the field's state
+  uDeckC:{value:new THREE.Vector3(1,1,1)},uDeckL:{value:0},uLump:{value:0},uCld:{value:FOG_CLD},uCldB:{value:FOG_CLDB},uCellA:{value:FOG_CELLA},uCellB:{value:FOG_CELLB}, // v11.87 (clouds.js): the deck's sunlight and its colour, the lumps' share (the deck fades out under them), the field's state
   uMist:{value:MIST_P},uMistC:{value:MIST_C},uMistW:{value:MIST_W},uPlanD:{value:new Float32Array(9)},uPlanC:{value:new Float32Array(PLANETS.map(p=>[p[1][0],p[1][1],p[1][2],p[2]]).flat())}};
 const SKY_VS='varying vec3 vDir;void main(){vDir=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}';
 // The sky's noise and its clouds as strings (v11.49): the cumulus deck (marched base to top), the scud and the cirrus were inline in SKY_FS; the surface's
@@ -219,15 +219,17 @@ const CLOUD_GLSL=['float cirrusA(vec3 d){float up=d.y;float cv=0.0;',
   '  if(up>0.004&&uFxCloud>0.5){float ds0=uCloudH/max(up,0.02);float hf=smoothstep(0.004,0.05,up)*mix(1.0,smoothstep('+CLD.near[0].toFixed(1)+','+CLD.near[1].toFixed(1)+',ds0),uLump);vec2 lm=normalize(uLum.xz+vec2(1e-4,0.0))*180.0;',
   '    vec3 dayLit=mix(zen*2.2+hor*0.8,uDeckC*1.3,uDeckL*0.9),nightLit=zen*1.6+hor*0.6+uLumC*uMoonL*0.30;vec3 litC=mix(nightLit,dayLit,max(uDay,uDeckL));',
   '    vec3 shdC=mix(mix(zen*0.9+hor*0.2,zen*0.42+hor*0.36,uDay),hor*0.5,uRain*0.5);float accA=0.0;vec3 accC=vec3(0.0);float sunUp=clamp(uLum.y*2.5,0.0,1.0);float fw=pow(max(dot(d,uLum),0.0),16.0)*uDeckL*uDay;',
-  '    float T=min(uCloudT,up*800.0);for(int i=0;i<'+Q.cloud+';i++){float fz=(float(i)+0.5)/'+Q.cloud.toFixed(1)+';float ds=(uCloudH+T*fz)/max(up,0.02);vec2 q=uCam.xz+d.xz*ds;float n=cldN(q,q+uCld.xy,fz);float thi=uCld.z+uCldB.z*fz*fz;float c=smoothstep(thi,thi+'+CLD.edge.toFixed(3)+',n);',
+  '    float T=min(uCloudT*(1.0+2.0*cellK(uCam.xz+d.xz*ds0+uCld.xy)),up*800.0);for(int i=0;i<'+Q.cloud+';i++){float fz=(float(i)+0.5)/'+Q.cloud.toFixed(1)+';float ds=(uCloudH+T*fz)/max(up,0.02);vec2 q=uCam.xz+d.xz*ds;float n=cldN(q,q+uCld.xy,fz);float thi=uCld.z+uCldB.z*fz*fz;float c=smoothstep(thi,thi+'+CLD.edge.toFixed(3)+',n);',
   '      if(c>0.003){float n2=cldN(q+lm,q+lm+uCld.xy,fz);float lit=clamp((n-n2)*12.0*(2.0-sunUp)+0.30+0.45*fz*sunUp+0.40*(1.0-fz)*(1.0-sunUp)*uDeckL,0.0,1.0);lit=floor(lit*3.0+0.5)/3.0;float thick=smoothstep(0.0,0.30,n-thi)*(0.45-0.30*fz);',
   '        vec3 ci=(mix(shdC,litC,lit)+uDeckC*fw*(1.0-c)*1.2)*(1.0-thick)*(1.0-0.35*uRain);accC+=(1.0-accA)*c*ci;accA+=(1.0-accA)*c;}if(accA>0.995)break;}',
   '    if(uRain>0.02){float ds=uCloudH*0.45/max(up,0.02);vec2 p=(uCam.xz+d.xz*ds+uWind*1.4)*(1.0/380.0);float n=fbm(p);float c=smoothstep(0.66,0.80,n)*uRain;vec3 sc=shdC*0.8;accC=accC*(1.0-c)+sc*c;accA=accA*(1.0-c)+c;}',
   '    ca=accA*hf;if(ca>0.001){cc=accC/max(accA,1e-3);float fk=1.0-exp(-(uCloudH/max(up,0.02))/9000.0);cc=mix(cc,hor,fk*0.85);}}return vec4(cc,ca);}'].join('\n')+'\n';
 const SKY_FS=[DITHER_PARS,'uniform vec3 uZen,uHor,uGlow,uSunC,uLumC,uCirrC,uSun,uMoon,uLum,uCam,uDeckC;uniform vec2 uWind,uUpper;uniform float uDay,uNight,uCover,uRain,uMoonL,uLumL,uStarT,uTime,uBow,uCloudH,uCloudT,uCirrusH,uCirr,uCamH,uEclS,uEclL,uFxCloud,uDeckL,uLump;',
-  'uniform vec4 uMist,uMistC,uMistW,uCld,uCldB;uniform vec3 uPlanD[3];uniform vec4 uPlanC[3];varying vec3 vDir;',
+  'uniform vec4 uMist,uMistC,uMistW,uCld,uCldB,uCellA,uCellB;uniform vec3 uPlanD[3];uniform vec4 uPlanC[3];varying vec3 vDir;',
   MIST_GLSL,
   SKY_NOISE_GLSL,CLD_GLSL,CLOUD_GLSL,
+  'float curtain(vec3 d,inout vec3 col,vec4 C,vec3 shd){if(C.w<0.01||d.y<0.0)return 0.0;vec2 c=C.xy-uCld.xy-uCam.xz;float R=inversesqrt(C.z)*'+SHWR.shaft.toFixed(2)+';float hz=max(length(d.xz),1e-4);vec2 dd=d.xz/hz;float tc=dot(c,dd),h2=dot(c,c)-tc*tc;if(h2>R*R||tc+R<0.0)return 0.0;',
+  '  float w=sqrt(R*R-h2),t0=max(tc-w,0.0),t1=min(tc+w,uCloudH*hz/max(d.y,1e-3));if(t1<=t0)return 0.0;float a=(1.0-exp(-(t1-t0)/(hz*'+SHWR.vis.toFixed(1)+')))*C.w*smoothstep(0.0,0.35,1.0-h2/(R*R));float fk=1.0-exp(-t0/9000.0),mh=1.0-exp(-mistRay(uCamH,uCamH+d.y*(t0/hz),t0/hz));col=mix(col,mix(mix(shd*0.9,uHor,fk*0.85),uMistC.rgb,mh),a);return a;}', // a ray\'s ground-distance entry and exit of the shaft (a circle in xz), the exit cut where the ray reaches the base; denser toward the axis; fogged toward the horizon by its distance
   'vec3 rotAx(vec3 v,vec3 ax,float a){float c=cos(a),s=sin(a);return v*c+cross(ax,v)*s+ax*dot(ax,v)*(1.0-c);}',
   // a star: the cell of a 3D grid over the unit sphere holds one at a hashed point, its angular size by its brightness (the chord
   // is the angle at these sizes), a core and a faint halo on the brightest, a twinkle, a tint by hash
@@ -263,22 +265,24 @@ const SKY_FS=[DITHER_PARS,'uniform vec3 uZen,uHor,uGlow,uSunC,uLumC,uCirrC,uSun,
   '  col=mix(col,uCirrC,cirrusA(d));',
   // the cumulus deck, marched base to top
   '  vec4 cdk=cloudDeck(d,uZen,uHor);float ca=cdk.a;if(ca>0.001)col=mix(col,cdk.rgb,ca);',
+  // the showers' rain curtains (v11.88): the shaft under each cell as a vertical cylinder from the sea to the base, the ray's path through it
+  '  float cta=0.0;if(uFxCloud>0.5){vec3 shdC=mix(uZen*0.42+uHor*0.36,uHor*0.5,0.5)*(0.85-0.35*uRain);cta=max(curtain(d,col,uCellA,shdC),curtain(d,col,uCellB,shdC));}',
   // the boundary layer seen edge on: the marine haze (and the spray) to infinity, whitening the lowest degrees and glowing toward the light
-  '  float hm=1.0-exp(-mistFar(uCamH,up));{vec3 hc=uMistC.rgb*(1.0+uMistC.w*pow(max(dot(d,uLum),0.0),6.0));col=mix(col,hc,hm);}',
+  '  float hm=(1.0-exp(-mistFar(uCamH,up)))*(1.0-cta);{vec3 hc=uMistC.rgb*(1.0+uMistC.w*pow(max(dot(d,uLum),0.0),6.0));col=mix(col,hc,hm);}', // v11.88: a ray into a rain curtain takes the haze to the curtain, not to infinity (the curtain fogs itself to its own distance)
   // the sun's disc, over the haze (a low sun through haze is still a disc, dimmed and reddened by it) and under the clouds
   '  float disc=smoothstep('+Math.cos(SUN_R*1.3).toFixed(6)+','+Math.cos(SUN_R*0.85).toFixed(6)+',cs)*uDay*(1.0-ca);col=mix(col,uSunC*mix(1.6,1.0,hm),disc*(1.0-mm));col+=uSunC*0.6*exp(-(1.0-cs)*9000.0)*smoothstep(0.9,1.0,uEclS)*(1.0-mm); // the moon over the sun; the corona in totality',
   '  col+=uSunC*(pow(max(cs,0.0),300.0)*0.7+pow(max(cs,0.0),10.0)*0.13)*uDay*(1.0-0.85*ca)*(1.0-0.6*hm);', // the glare, less through the haze (the disc has to read at the horizon)
   // the bow: 42 degrees from the point opposite the sun, violet inside to red outside, and the fainter reversed one at 51
   '  if(uBow>0.002&&up>-0.02){float ang=acos(clamp(dot(d,-uSun),-1.0,1.0));float x=(ang-0.7243)/0.0157;float x2=(0.9076-ang)/0.0175;',
   '    float w=1.0-smoothstep(0.8,1.0,abs(x)),w2=(1.0-smoothstep(0.8,1.0,abs(x2)))*0.35;float xx=w>w2?x:x2;float ww=max(w,w2);',
-  '    vec3 rb=vec3(smoothstep(-0.25,0.65,xx),1.0-min(abs(xx)*1.3,1.0),1.0-smoothstep(-0.6,0.35,xx));col+=rb*0.30*ww*uBow*smoothstep(-0.02,0.1,up)*(1.0-0.6*ca);}',
+  '    vec3 rb=vec3(smoothstep(-0.25,0.65,xx),1.0-min(abs(xx)*1.3,1.0),1.0-smoothstep(-0.6,0.35,xx));col+=rb*0.30*ww*uBow*max(cta,uRain)*smoothstep(-0.02,0.1,up)*(1.0-0.6*ca);}', // v11.88: the bow stands on the rain — the curtain along the ray, or the rain here
   '  gl_FragColor=vec4(dithering(col),1.0);}'].join('\n'); // dithered (v11.29): the dusk gradient bands like the deep does
 const sky=(function(){const g=new THREE.SphereGeometry(FAR*0.94,24,12);
   const m=new THREE.Mesh(g,new THREE.ShaderMaterial({uniforms:skyU,vertexShader:SKY_VS,fragmentShader:SKY_FS,side:THREE.BackSide,depthWrite:false,fog:false}));m.frustumCulled=false;m.renderOrder=-10;m.visible=false;scene.add(m);return m;})();
 function pushSky(){const K=SKY,U=skyU;U.uZen.value.fromArray(K.zen);U.uHor.value.fromArray(K.hor);U.uGlow.value.fromArray(K.glow);U.uSunC.value.fromArray(K.sunC);U.uLumC.value.fromArray(K.lumC);U.uCirrC.value.fromArray(K.cirrC);
   U.uSun.value.copy(K.sun);U.uMoon.value.copy(K.moon);U.uLum.value.copy(K.lum);U.uCam.value.copy(camera.position);U.uWind.value.set(K.windOff[0],K.windOff[1]);U.uUpper.value.set(K.upperOff[0],K.upperOff[1]);
   U.uDay.value=K.dayK;U.uNight.value=K.night;U.uCover.value=K.cover;U.uRain.value=K.rainA;U.uMoonL.value=K.moonL/MOONL;U.uLumL.value=clamp(K.lumL,0,1);U.uStarT.value=K.starT;U.uBow.value=K.bow;U.uCirr.value=K.cirrus;U.uEclS.value=K.eclS;U.uEclL.value=K.eclL;U.uFxCloud.value=FX.clouds?1:0;
-  const cy=camera.position.y;U.uCloudH.value=CLOUD_H*(1-0.35*K.rainA)-cy;U.uCloudT.value=CLOUD_T*(1+2.0*K.rainA)*(WX.deep||1);U.uCirrusH.value=CIRRUS_H-cy;U.uCamH.value=cy-TIDE; // under a shower the base drops and the deck grows to congestus; v11.87: deeper in the still season and on a disturbed day (weatherAt deep)
+  const cy=camera.position.y;U.uCloudH.value=CLOUD_H*(1-0.35*K.rainA)-cy;U.uCloudT.value=CLOUD_T*(WX.deep||1);U.uCirrusH.value=CIRRUS_H-cy;U.uCamH.value=cy-TIDE; // under a shower the base drops and the deck grows to congestus; v11.87: deeper in the still season and on a disturbed day (weatherAt deep)
   U.uDeckC.value.fromArray(CLD_S.deckC);U.uDeckL.value=CLD_S.deckL;U.uLump.value=CLD_S.lump;FOG_CLD[0]=K.windOff[0];FOG_CLD[1]=K.windOff[1];FOG_CLD[2]=CLD_S.th;FOG_CLD[3]=CLD_S.here;FOG_CLDB[0]=CLD_S.street;FOG_CLDB[1]=CLD_S.cap;FOG_CLDB[2]=CLD_S.rise;FOG_CLDB[3]=CLOUD_H*(1-0.35*K.rainA); // the field's state for every shader that reads it (v11.87, clouds.js): the dome, the sea's topside, the land in air
   const pd=U.uPlanD.value;for(let i=0;i<3;i++){const v=K.plan[i];pd[i*3]=v.x;pd[i*3+1]=v.y;pd[i*3+2]=v.z;}
   for(let i=0;i<3;i++){FOG_SKA[i]=K.zen[i];FOG_SKB[i]=K.hor[i];FOG_SKC[i]=K.glow[i];FOG_SKD[i]=K.sunC[i];}FOG_SKA[3]=K.dayK;FOG_SKB[3]=K.cover;FOG_SKC[3]=K.moonL/MOONL;FOG_SKE[0]=K.sun.x;FOG_SKE[1]=K.sun.y;FOG_SKE[2]=K.sun.z;FOG_SKF[0]=K.moon.x;FOG_SKF[1]=K.moon.y;FOG_SKF[2]=K.moon.z;} // the same sky for every material's skyLite/skyFar (v11.45, scene.js)

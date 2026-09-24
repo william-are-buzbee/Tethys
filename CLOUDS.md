@@ -1,7 +1,8 @@
 # CLOUDS.md — the sky's clouds and the weather's clocks
 
-Status: **passes A, B and C built as v11.87 (24 Sep 2026), with the low-poly exploration (§5) built behind the `near clouds` switch; pass D
-(§6, showers with a place) designed, not built — the person's call of 24 Sep: "put D off for the next pass".** Written from the discussion of
+Status: **passes A, B and C built as v11.87 (24 Sep 2026), with the low-poly exploration (§5) behind the `near clouds` switch; pass D (§6,
+showers with a place) built as v11.88 the same day — the person, on v11.87: "Looks awesome. Go ahead on D."** Storms proper (§6's last paragraph) are
+the next sky pass. Written from the discussion of
 23–24 Sep 2026: the person asked whether the sky's several cloud kinds were designed or accreted, what this planet's sky should be and how
 it should change by the day, the week and the year, for as much variety as is believable and no more, and how the clouds meet the rest of
 the sky. §7 has the person's answers.
@@ -109,17 +110,37 @@ The judgement, for the person: the lumps read as low-poly clouds when they are t
 slabs when a single cloud fills the sky from below (the first cut: 6–9 puffs, flat facets). Whether the near sky should be lumps at all, and
 whether the whole deck should some day be lumps (a far field of small ones, instanced), is theirs to say after a look.
 
-## 6. Pass D, designed: showers with a place
+## 6. Pass D, built (v11.88): showers with a place
 
-A shower cell is a position and a radius that drift downwind at the wind's speed; `weatherAt` seeds them on the same clock (one born upwind
-every shower-hour on the wave's and the day's odds, alive 20–120 game minutes); at the camera `rain` is the nearest cell's profile at its
-distance; the deck's congestus and the scud only over the cell (a term in the field like the cap, moving); a rain curtain under its base in
-the dome (a vertical grey smear from the base to the sea in the cell's direction, fogged); the haze, the audio and the wind read the
-distance. You watch it come across the water, the sea dark under it, the sun after it. The bow follows for free. After D: cumulonimbus in the
-still season — an anvil spreading downwind at the tropopause (the cirrus), lightning as a light event, thunder by the distance, a squall.
+A shower is a cell with a place (clouds.js `SHWR`, `CELLS`, `updateCells`). The weather's rain (`weatherAt().rain`, ~8% of hours, before dawn and
+on a disturbed day) is only the trigger now: an episode (its start hour, walked back a quarter hour at a time) births one cell `SHWR.ahead` 6 km
+upwind of the player, on a track across the wind hashed from the episode (±`SHWR.band` 4.5 km: most pass beside you, about a quarter over you),
+radius 2.2–3.2 km. It is steered along the wind at `SHWR.u` 2.2 × the trades — the flow at 1–3 km that carries a congestus outruns the surface
+wind and the deck's drift, so a shower visibly overtakes the cumulus round it — and lives `SHWR.life` 800 real seconds (the deck drifts in
+real time; a shower crossing at the game clock's 45× would be a film run fast), growing over 120 s and dying over 220 s; two at once at most (an
+episode every ~7 game hours, a cell alive 13 real minutes). Its congestus is a Gaussian bump in the cloud field at its anchor (`cellK`, `CLD.bump`
+0.5: the deck thickens there, `T` up to 3× under it, the lumps grow to 3× their height — a tower — and the sea goes dark under it through
+`cloudSh`). Its rain at the camera is the cell's profile at the camera's distance (`SHWR.shaft` 0.5 of the radius: the rain shaft is narrower
+than the cloud), and the dome draws the shaft as a curtain from the base to the sea (`SKY_FS` `curtain`: the ray's path through a vertical
+cylinder, denser toward the axis, fogged to its own distance, the far haze cut behind it; `SHWR.vis` 2500 m hides half). Everything that read
+the weather's rain reads the cell's here: the rain and its rings, the patter, the haze, the gust (`windK`), the base's drop, the scud, the sky's
+darkening. The bow needs a cell in reach (`cellNear`, within three radii) and stands only on the curtain along the ray or in the rain here. The
+cover lifts a quarter near a cell (the weather's own +0.5·rain lift is gone). The lumps stand down as the cover closes (`CLD_S.lump` × smooth
+0.82→0.5 of the cover): a broad plateau of cloud gets one lump at its maximum, so under an overcast the near sky was a bare hole — the deck
+draws it. A save loaded mid-episode gets no cell (the shower passed).
+
+Seen (`test/render/v88c_*.png`, `v88d_*.png`, a cell placed by hand on the clearest day): from the sea a cell 4 km upwind is a towering lump
+over a thickened deck with a grey shaft under its base to the horizon; at 1.8 km the tower fills the sky; over the camera rain, rings on the
+sea, a dark ceiling, the beam gone (`sunL` 0.05); passed 2.5 km downwind the sun back, the tower behind; with a low sun and the cell opposite
+it the bow arcs over the cell. Not seen: a cell born by the trigger in play and crossing at its own pace (13 real minutes), the curtain at
+night, the sound of a shower passing beside you (the patter is the rain here only).
+
+After D — the next sky pass: cumulonimbus in the still season — an anvil spreading downwind at the tropopause (the cirrus), lightning as a light
+event, thunder by the distance, a squall line; and a distant shower's hush.
 
 ## 7. The person's answers
 
 - **23 Sep 2026:** the four asks — is the layering deliberate; what belongs on this planet by the day, week and year; as much variety as is
   believable and no more; the clouds against the rest of the sky; rain and storms only if they fit.
 - **24 Sep 2026:** "Let's explore that direction [the near clouds as low-poly lumps] and let's put D off for the next pass. Go right ahead."
+- **24 Sep 2026, on v11.87:** "Wow. Looks awesome. Go ahead on D if you're ready."

@@ -5769,3 +5769,37 @@ the light coming and going as a cloud passes over — the caustics dying and ret
 same as from above; (4) the sunset: the undersides amber (`CLD_S.deckC`, the 0.55 dim), the silver lining near the sun; (5) whether the
 streets read as rows of cloud or as stripes (`CLD.street` 0.5, `CLD.rowA` 0.07); (6) the giant's cap from a height (the haze hides it from
 the water); (7) a calm — the streets dissolving; (8) the still season (`skip(120)`): the cirrus most days, the deeper congestus, the whiter haze.
+
+## v11.88 — showers with a place (24 Sep 2026)
+
+The person on v11.87: "Wow. Looks awesome. Go ahead on D if you're ready." CLOUDS.md §6, built. To v11.87 a shower was a number: the weather's
+`rain` lifted the whole sky's cover by half within forty real seconds and rained on the camera wherever it stood; you never saw one coming.
+
+- **A shower is a cell with a place** (clouds.js `SHWR`, `CELLS`, `updateCells`, called from `updateSky`): the weather's rain is the trigger; an
+  episode births one cell 6 km upwind of the player on a track across the wind hashed from the episode (±4.5 km — most pass beside you), radius
+  2.2–3.2 km, steered along the wind at 2.2 × the trades (the flow aloft that carries a congestus outruns the deck's drift), alive 800 real
+  seconds (grown over 120, gone over 220), two at once. Its congestus is a bump in the cloud field (`cellK`, `CLD.bump` 0.5): the deck thickens
+  and darkens there and grows to three times its depth, a lump under it grows to a tower, the sea goes dark under it through the shadows. Its
+  rain at the camera is its profile at the distance (`SHWR.shaft` half the radius). The dome draws the shaft as a curtain from the base to the
+  sea (`SKY_FS` `curtain`: the path through a vertical cylinder, denser toward the axis, fogged to its own distance, the far haze cut behind it).
+  The rain, its rings, the patter, the haze, the gust, the base's drop and the scud read the cell's rain; the bow needs a cell in reach and
+  stands only on the curtain or in the rain here; the cover lifts a quarter near a cell (world.js `weatherAt` no longer lifts it by the rain).
+- **The lumps stand down as the cover closes** (`CLD_S.lump` × smooth 0.82→0.5): a plateau of cloud gets one lump at its maximum, so under a
+  shower's overcast the near sky was a bare hole with the deck faded out; the deck draws it now. The scan collects its maxima before matching
+  (matching as they were found stole a lump whose own cloud came later, which then got a second — the sky filled with doubles), and a new cloud
+  takes the deadest lump rather than waiting for one to fade.
+- Uniforms `uCellA`/`uCellB` (the anchor in the field's frame, 1/R², the strength) shared through ShaderLib with `uCld`; `SKY.cellNear`.
+  `test/sky.js` gains the showers: the trigger, one cell an episode, born upwind within the band, its speed, growth, the field over its centre,
+  rain over the player and none three radii off, its death, no second cell for one episode.
+
+**Seen** (the loop driven by hand, `test/render/v88c_*.png`, `v88d_*.png`; the first cut's dome failed to compile — `zen`/`hor` in the curtain's
+call outside `cloudDeck` — and every v88b shot was the clear colour): a cell 4 km upwind on the clearest day as a towering lump over a thickened
+deck with the grey shaft under its base; at 1.8 km the tower filling the sky; over the camera the rain, the rings, the ceiling, `sunL` 0.05;
+gone downwind the sun back; the bow over a cell opposite a low sun. `node build.js --test` green on both tiers.
+
+**Unseen, ask in this order:** (1) a shower born by the trigger in play — whether it is seen coming across the water at its own pace (13 real
+minutes from 6 km upwind to gone; `SHWR.u` 2.2 is the pace, `SHWR.ahead` the warning), and whether a quarter of them over you is right
+(`SHWR.band`); (2) the curtain's read — a grey shaft or a smear (`SHWR.vis`, the 0.9 shade); (3) the tower lump: a towering cumulus or an
+iceberg (it is the lumps' look at 3× height); (4) the sea going dark ahead of the rain; (5) the bow on the shaft from the sea at a low sun;
+(6) the cover lifting a quarter near a cell — too little for a shower's sky, or right; (7) the frame cost of the two extra Gaussians in every
+field read.

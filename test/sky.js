@@ -7,7 +7,7 @@ const fs=require('fs'),path=require('path');
 const ROOT=path.join(__dirname,'..');
 const ORDER=fs.readFileSync(path.join(ROOT,'src','order.txt'),'utf8').split('\n').map(s=>s.trim()).filter(s=>s&&s[0]!=='#');
 let js=ORDER.map(n=>fs.readFileSync(path.join(ROOT,'src',n+'.js'),'utf8')).join('\n');
-js+='\nglobal.__sky={weatherAt,CLD_TH,cldThOf,cldTh0,cldN,cldDensity,cloudAt,CLD_S,CLD,CLD_CAPS,FZ0,DAY_H,SOLAR_H0,YEAR_D,seasonAt,SKY,CLOUD_H,LUMP_N,lumps,lumpFixed,lumpScan,updateClouds,camera,player,WX,ISLANDS,HALF,step:__step};';
+js+='\nglobal.__sky={weatherAt,CLD_TH,cldThOf,cldTh0,cldN,cldDensity,cloudAt,CLD_S,CLD,CLD_CAPS,FZ0,DAY_H,SOLAR_H0,YEAR_D,seasonAt,SKY,CLOUD_H,LUMP_N,lumps,lumpFixed,lumpScan,updateClouds,camera,player,WX,ISLANDS,HALF,step:__step,SHWR,CELLS,updateCells,WIND_A,setClock:h=>{clockH=h;}};';
 const tmp=path.join(require('os').tmpdir(),'tethys_sky_bundle.js');
 fs.writeFileSync(tmp,'(function(){"use strict";\n'+js+'\n})();');
 process.env.PICK='1';
@@ -54,6 +54,25 @@ S.camera.position.set(200,6,-300);S.player.pos.set(200,6,-300);
   S.lumpScan();const again=S.lumps.filter(L=>L.alive).map(L=>L.key).sort().join();ok(again===[...keys].sort().join(),'a second scan finds the same clouds');
   S.CLD_S.th=S.cldThOf(0.05);S.lumpScan();ok(S.lumps.filter(L=>L.alive).length<alive.length,'a clearer sky has fewer: '+S.lumps.filter(L=>L.alive).length);
   ok(S.lumpFixed.length===5*S.CLD_CAPS.length,S.lumpFixed.length+' fixed lumps for '+S.CLD_CAPS.length+' cap(s)');}
+// ---------- the showers (v11.88) ----------
+console.log('the showers');
+{const K=S.SKY,W=S.WX,px=200,pz=-300;S.player.pos.set(px,pz*0+6,pz);K.windOff[0]=0;K.windOff[1]=0;K.wind[0]=Math.cos(S.WIND_A)*7;K.wind[1]=Math.sin(S.WIND_A)*7;
+  // an episode: the first shower's hour (test above: 3.25 h in); the trigger births one cell upwind of the player, and one only
+  S.setClock(3.5);S.weatherAt(3.5,W);ok(W.rain>0.5,'the trigger is on at h 3.5 ('+T(W.rain)+')');
+  S.updateCells(0.02);S.updateCells(0.02);ok(S.CELLS.length===1,'one cell for the episode after two frames');
+  const c=S.CELLS[0],al0=(c.x-px)*Math.cos(S.WIND_A)+(c.z-pz)*Math.sin(S.WIND_A),cr0=-(c.x-px)*Math.sin(S.WIND_A)+(c.z-pz)*Math.cos(S.WIND_A);
+  ok(al0<-S.SHWR.ahead*0.9&&Math.abs(cr0)<=S.SHWR.band,'born '+(-al0|0)+' m upwind, '+(cr0|0)+' m across the wind');
+  ok(c.R>=S.SHWR.R[0]&&c.R<=S.SHWR.R[1],'its radius '+(c.R|0));
+  // it moves along the wind at SHWR.u × the trades; it grows; the field lifts at its anchor; it dies at its life's end
+  for(let i=0;i<100;i++)S.updateCells(1);const al1=(c.x-px)*Math.cos(S.WIND_A)+(c.z-pz)*Math.sin(S.WIND_A);
+  ok(Math.abs((al1-al0)-100*(S.SHWR.u-1)*7)<5,'100 s on it has moved '+((al1-al0)|0)+' m downwind through the field (its steering less the drift; the field itself is still here, so the world sees the trades × '+S.SHWR.u+')');
+  ok(c.s>0.5,'grown to '+T(c.s));
+  S.CLD_S.th=S.cldThOf(0.15);S.CLD_S.street=0;S.CLD_S.cap=0;ok(S.cldDensity(c.x,c.z,c.ax,c.az)>0.9,'the field is cloud over its centre under a clear sky (density '+T(S.cldDensity(c.x,c.z,c.ax,c.az))+')');
+  ok(S.cldDensity(c.x+4*c.R,c.z,c.ax+4*c.R,c.az)<0.5,'and not four radii off');
+  c.ax=px+K.windOff[0];c.az=pz+K.windOff[1];S.updateCells(0.02);ok(K.rain>0.9*c.s,'over the player it rains ('+T(K.rain)+' of its strength '+T(c.s)+')');
+  c.ax=px+K.windOff[0]+c.R*3.5;S.updateCells(0.02);ok(K.rain<0.01&&K.cellNear<0.2,'three and a half radii off, no rain and the cover barely lifted');
+  c.t=S.SHWR.life+1;S.updateCells(0.02);ok(S.CELLS.length===0,'gone at its life\'s end');
+  S.setClock(3.5);for(let i=0;i<3;i++)S.updateCells(0.02);ok(S.CELLS.length===0,'the same episode births no second cell');}
 // ---------- costs ----------
 {let t0=process.hrtime.bigint();for(let i=0;i<10000;i++)S.cloudAt(i*0.3,-5,i*0.1,{x:0.3,y:0.8,z:0.2});const us=Number(process.hrtime.bigint()-t0)/1e4/1000;
   t0=process.hrtime.bigint();for(let i=0;i<10;i++)S.lumpScan();const ms=Number(process.hrtime.bigint()-t0)/1e7;
