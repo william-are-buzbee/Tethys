@@ -120,7 +120,7 @@ plainly, slowbloods poorly, hingeshells not at all.
 | | proposed |
 |---|---|
 | the ring | kept as a ring of **short stiff mouth tentacles** closing to a point (v11.8.8; the rigid petals and flaps of 11.8.4–7 were tried and struck). The person's first idea, exactly: "rigid, muscular mouth tentacles... pointed into an arrow". `st.strike` opens them |
-| the bite | the petals' inner edges: needle ridges (needle, ridge), a thick plate on each (crusher: a vice from four sides beats a vice from two), a rake (grazer), none (the stone's suction) |
+| the bite | the petals' inner edges: needle ridges (needle, ridge), a thick plate on each (crusher: a vice from four sides beats a vice from two), a rake (grazer), none (the stone's suction) — all four the integument's plate rows on the petals' inner faces, reshaped (COMBAT §10.10, 24 Sep 2026): the saw once, in the sawmouths (ridge, abyssal, eel, basker) |
 | eyes | the **eye band**: an unbroken dark collar round the base of the snout, a visor. Prey: even all round. Predators: the band thickens into two forward lobes. **No pupil, no sphere, no tracking** — the whole head turns, slowly (poor tracking, the person's tier) |
 | fins | **three at 120°** — one dorsal, two ventro-lateral — and a **three-lobed tail** (one up, two down and out). The ring's relic in the fins; a fish has a different count everywhere you look |
 | integument | scratchy: **chevron rows of small plates** down the back (the crusher's rows, on everything); the platebacks in full armour |

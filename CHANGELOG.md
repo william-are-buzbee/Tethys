@@ -5862,3 +5862,64 @@ Not heard: the audio at 1× (the stub cannot play).
 **Unseen, ask in this order:** (1) the audio at its old level (a fresh load; nothing else in the sound changed); (2) the size now — 750 is a
 number, the person's to move (`CLD.sc`); (3) the bases — light enough, round enough (`CLD.base`, the 0.95 ambient, the grey mix); (4) the
 render ms on the 4060 (`Q.march`); (5) the low tier on a phone, marching at 28.
+
+## v11.91 — COMBAT pass A: the wound by the bite, blood as a volume that kills, one mass (24 Sep 2026)
+
+The person, after hours as the finback being bitten on purpose (COMBAT.md §10, the eight points): blood gushed with no damage done; blood was
+not by the injury (half a tail bled "moderately"); you never bled out; the hunter that took the tail left, fed by a fixed 0.15 of its hunger.
+Pass A of §10.8 builds the wound and the blood; B (contact and the hold as a joint), C (the edge's work) and D (the predators' behaviour) follow.
+
+- **One mass** (§10.2): `kgOfBody` — derive's mass (the build's volume at the world scale × the clade's density, tonnes) × 1000, per kind once
+  (`KG`), a body's by its build's scale (a juvenile, the size band). Every creature's `mass` (contact, the struggle; `mass0` its own under the
+  sitting ambusher's 1e6) and the player's (`playerClade.mass`) are kilograms: the finback 1770, the eel 2650, the ridge 45,450, a flicker 10 —
+  size³ had 5.8, 64, 729 and 0.6. `GRIP.k` is newtons per kg^(2/3) now (jaw 90, arms 70, claws 130; a 3 t white shark's 18 kN is ~85), set so
+  the eel pins the thrashing finback at 2 s (0.7 before) and the grazer still tears free of the player's jaws in half a second.
+- **The bite is the edge on the body** (`biteOn` → `cutAt`, §10.5): every bite in a hold (the jaw's and claws' clamp is the first) is the
+  holder's edge at the capsule the hold is on. The verdict table (`EDGE`) says whether the edge opens the covering at all — nothing through is a
+  **bruise** (`bruise`: the flinch and the flash, no wound, no blood). Through, the geometry decides: the bite's radius ρ (`EDGE_RHO` × the
+  gape: cut 0.8, crush 1, beak 1, claws 1, shred 0.7, point 0.35 with its depth the needle's or the spear's length, `pointDepth`) against the
+  struck capsule's radius r — a limb (a part with its own capsule) is **severed** at ρ ≥ `SEVER` 0.7 r, its share of the body the biter's food;
+  the trunk is **opened to the vitals** (the kill: opened, skewered, crushed, the nerve cord) when ρ (a point's depth) reaches `VITAL.core`
+  0.75 r along the capsule's front 60% or `VITAL.nape` 0.3 r at the nape — the zone behind the head (`nape0`–`nape1` 0.55–0.8 of the trunk
+  capsule) with the biter's mouth over the back (`napeY`; the hold point is on the axis, so the side is read off the mouth); else a **wound** of
+  area (ρ/r_trunk)², and the bite's volume is the biter's (`pieceShare`, `feedPiece`: its share of the body's food over the eater's meal, as a
+  kill feeds). A body with `TORN` 0.25 of its mass taken in pieces is dead, torn apart. Arms that have pinned a body have turned it: their placed
+  bite is at the nape wherever they took hold (the ringmouths' kill, §3). The ram's and the great's blows are `blow` (a shove and a daze, no
+  wound); a gripless body bumps. `placedAct` at the pin: swallowed by the gape; the nape and the thrash become the next bite's; an edge already
+  through has nothing to place; nothing to do, the hunter lets go (`PIN.bored`). `afterBite`: a severed limb is a mouthful — the hold let go,
+  `LOSE.cool` 4 s with it, **the target kept while the biter is hungry** (it comes back for the rest) and dropped fed.
+- **Blood as a volume** (`BLOOD`, §10.6): a share of the mass by clade (slowbloods 4%, ringmouths 6%, hingeshells 20%, drifters 2%); a wound
+  (`openWound`) drains q₀ = `k` 0.05 × its area × the part's vessels (`vessel`: the root of a torn-off tail 1.5, the head 1.2, the trunk 1, an
+  arm 0.6, a puncture 0.3) × the clade's pressure (`press`: ringmouths 1.3, slowbloods 1, hingeshells 0.3) of the volume a second, and clots
+  with τ = `BLEED_T` × (1 + area/`clot` 0.25); `o.wounds` holds up to `max` 6 (`updateWounds` drains and clots them; `o.bleed` is their sum,
+  `o.blood` the loss). The loss (`bloodK`, in `slowOf` and the grip's strength): whole under `weak` 0.15, half by `collapse` 0.30 (no sprint,
+  no ability: `collapsed`), a fifth at `dead` 0.40 — **bled out** (`bledOut`: the player's cause, a creature a carcass credited to its last
+  wounder within `near` 40 m). Fed, the blood comes back over `refill` game days (ringmouths 1, hingeshells 2, slowbloods 4). The burst at a
+  wound and the trail's rate follow q (`burst`, `trail`); a bruise shows nothing. `smellR`: `SMELL_R` × √(q/`qRef`), at most twice — a pouring
+  wound is read from 180 m, a thread from 40. A hunter losing blood past `weak` leaves what it was after (`bloodTick`; `FLEE` by a count of
+  bites is gone). Autotomy's arm feeds the holder by its share and bleeds as a graze (the drop is at a place built to close). The save carries
+  `blood`, `wounds` and `eaten` (`injuriesLoad`).
+- **Gone**: `dmg` as a thing combat reads (`dmgOf`; `DEFS.dmg` stays in the rows unread but for the drifters' sting flag, to be struck with pass
+  C), `GRIP.first/bite/bleed`, `HOLD_BIG` (the pin's bored release does it), `WOUND_SLOW`, `FLEE`, `LOSE.meal`/`floor`, `AUTOTOMY.meal`,
+  `wound()`, `bodyMass` as a physical mass (it is the ledger's unit). `rederive`'s speed floor is 0.05. `regrowTick` snaps a grow under 1e-6 to
+  0 (1 − 5 days/5 days is not always 0 in floating point at a large t: the stump test flaked).
+- The readout's hold line shows the blood: `blood 21.3% lost  −1.09%/s from 1 wound  weak  ×0.79`.
+- **On paper** (`test/combat.js`, rewritten to the rules — §3, §5, §9, the table over 60 s with the blood lost, §16 new): the eel's clamp on
+  the finback's flank is one wound at 1.09%/s (ρ 0.22 on r 0.53: short of the vitals); held and bitten every 1.5 s the finback is weak at
+  10 s and dead of it — "bled out after a eel's bite" — at 16 s; the finback's plain petals on a grazer's hide are bruises, no blood; a beak's
+  graze on an eel costs it 1.6% and clots; a ridge from behind severs the tail (ρ 0.55 against r 0.25), the root pours at 1.73%/s, the tail is
+  a snack (hunger 1 → 0.87) and the ridge keeps its target and swallows the cripple 5 s later; the tail alone, nothing else, bleeds the
+  finback out in 39 s; a soft sickle in a ridge's jaws is torn apart in pieces at 21 s (25% taken, 18% of its blood); the thread from 41 m, the
+  pour from 174. The hunter table: the eel bleeds you out, the lurker and the ortho bite the nerve cord once pinned (the arms have you),
+  the crusher, stone, basker, ridge and abyssal swallow, the sickle skewers, the claws let go of a hide.
+- **Lineage** (§10.10, PLANET, CLADES): the edge is one program — the clade's dermal plate rows on the petals' inner faces — and the saw arose
+  once, in the ancestor of the ridgebacks and the longbacks (the sawmouths); the basker moves from the finbacks to the ridgebacks. No spec
+  changes; the player's line reaches `cut` at conception at the budget's price.
+
+**Seen** (the app's browser pane, `dev.html` on another session's serve.js): the game boots and plays as the finback on the new mass (1770 kg on the player; a spawned eel 2650); an eel staged 7 m off in open water took the finback and the slot ended "bled out after a eel's bite" at 25 s of play — the pass's death, in the real game. The blood itself was not watched: the pane went dark mid-fight (the app's window hidden), so the wound's puff, the trail by the rate and the bruise's nothing are the tests' word and the readout's.
+
+**Unseen, ask in this order:** (1) whether a fight now reads as a wound and a bleed, not a shower — the eel on the finback, the bruise of the
+finback's own bite on a grazer (nothing); (2) the crippled death — a tail gone, the trail pouring, a hunter coming back (40 s to bleed out:
+`BLOOD.dead`, `BLOOD.k`, the root's `vessel` 1.5); (3) the eel's bites killing a held finback in 16 s — right, or should the struggle free you
+sooner (`GRIP.k`); (4) the blood's numbers by clade (`BLOOD.vol`, `press`) — a hingeshell barely bleeds and is torn apart instead; (5) the nape
+zone's placement (`VITAL.nape0–1`) once a beak hunter is seen killing; (6) `TORN` 0.25.

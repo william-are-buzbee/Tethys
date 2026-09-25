@@ -22,7 +22,7 @@ const FIXED={soft:{jet:true,jetImp:10,cam:6.5,size:1.6,sprint:undefined,venom:un
 for(const id in FIXED){const C=X.CLADES.find(c=>c.id===id),o=FIXED[id];if(!C){check(false,id+': no preset');continue;}
   const d=X.derive(X.SPECS[id]),bad=Object.keys(o).filter(k=>JSON.stringify(!!o[k]===o[k]?!!C[k]:C[k])!==JSON.stringify(o[k]));
   check(C.speed===d.speed&&C.accel===d.accel&&C.turn===d.turn,id+': speed '+C.speed+' accel '+C.accel+' turn '+C.turn+' off derive ('+d.mode+', '+d.length+' m)');
-  check(Math.abs(C.mass-Math.pow(C.size,3))<0.01,id+': the contact mass is size cubed, as for any creature ('+C.mass.toFixed(2)+')');
+  check(Math.abs(C.mass-d.mass*1000)<1,id+': the contact mass is derive\'s, in kilograms, as for any creature (v11.91; '+C.mass.toFixed(0)+' kg)');
   check(!bad.length,id+': the jet\'s kick, the sprint, the arm, the venom and the ability as v11.74 had them, off the build and the row (v11.75)'+(bad.length?' — '+bad.map(k=>k+' '+JSON.stringify(C[k])).join(', '):''));
   check(C.spec===X.SPECS[id],id+': built from SPECS.'+id);}
 {const locked=Object.keys(X.SPECS).filter(k=>X.SPECS[k].stats);check(!locked.length,'no species ships with a lock'+(locked.length?': '+locked.join(', '):' ('+Object.keys(X.SPECS).length+' specs)'));
@@ -38,7 +38,7 @@ for(const id in FIXED){const C=X.CLADES.find(c=>c.id===id),o=FIXED[id];if(!C){ch
 // ---- 2. a spec that is no preset: its numbers are derive's ----
 const sick=JSON.parse(JSON.stringify(X.SPECS.sickle));sick.id='mine';
 const Cs=X.playerClade(sick),st=X.statsOf(sick);
-check(Cs.speed===st.speed&&Cs.turn===st.turn&&Cs.accel===st.accel&&Math.abs(Cs.mass-Math.pow(sick.size,3))<0.01,'a hingeshell spec: speed '+Cs.speed+' turn '+Cs.turn+' accel '+Cs.accel+' off derive, mass '+Cs.mass);
+check(Cs.speed===st.speed&&Cs.turn===st.turn&&Cs.accel===st.accel&&Math.abs(Cs.mass-st.mass*1000)<1,'a hingeshell spec: speed '+Cs.speed+' turn '+Cs.turn+' accel '+Cs.accel+' off derive, mass '+Cs.mass);
 check(Cs.ability==='shut'&&!Cs.venom&&Cs.abilities.join()==='shut','the sickle\'s parts give it the valves\' shut and nothing else, and its row no venom (v11.75)');
 // ---- 3. the save: the spec on the record, back as it went; a version 1 record's clade id as its preset ----
 X.startNew(Cs);X.saveRefresh();

@@ -1,6 +1,6 @@
 # COMBAT.md — injury as states, not numbers
 
-**Status: designed and built in full 15 Sep 2026 (passes 1, 2, 4, 3: v11.54–v11.57)** (pass 1: the edge and the covering read off the spec, the hold knows what it is on, no capsule past the nose; pass 2: no hit points — the gape, the pin and the placed act, wounds that bleed and slow, paralysis and the sting, autotomy, death ends the slot's animal; pass 4: hunters read blood, the strike's miss rule, injuries in the save, the poison by feeding; pass 3: the wound as a spec edit — a tail torn off, the body re-derived, the stump and the regrowth; the numbers in DESIGN Combat). §7 has what the matrix found; §8 the passes as built. **§10 (24 Sep 2026): the physics pass, designed, not built** — the person's report after hours as the finback, the cause of each point in the code, and passes A–D (the wound and the blood; contact and the hold; the edge's work; predator behaviour); it strikes §4's "bleeding never kills", `MISS`, `PIN.t`, the reach sphere and the verdict table. Replaces the hit-point half of v11.31 (DESIGN Combat): the hold, the rope, the struggle by
+**Status: designed and built in full 15 Sep 2026 (passes 1, 2, 4, 3: v11.54–v11.57); §10 pass A built v11.91 (24 Sep 2026)** (pass 1: the edge and the covering read off the spec, the hold knows what it is on, no capsule past the nose; pass 2: no hit points — the gape, the pin and the placed act, wounds that bleed and slow, paralysis and the sting, autotomy, death ends the slot's animal; pass 4: hunters read blood, the strike's miss rule, injuries in the save, the poison by feeding; pass 3: the wound as a spec edit — a tail torn off, the body re-derived, the stump and the regrowth; the numbers in DESIGN Combat). §7 has what the matrix found; §8 the passes as built. **§10 (24 Sep 2026): the physics pass — A built v11.91, B–D designed** — the person's report after hours as the finback, the cause of each point in the code, and passes A–D (the wound and the blood; contact and the hold; the edge's work; predator behaviour); it strikes §4's "bleeding never kills", `MISS`, `PIN.t`, the reach sphere and the verdict table. Replaces the hit-point half of v11.31 (DESIGN Combat): the hold, the rope, the struggle by
 mass, the blood and the debris stay; `hp`, `dmg`, the bite clock's damage share and the bleed-as-hp-loss go. The person's ask, in
 their words: "instead of taking damage from a skewer, you are actually physically skewered, and die"; "instead of taking damage from a
 bite, you mostly just die from the bite"; dismemberment; "a realistic and believable combat system that is as scary and freaky as real
@@ -235,7 +235,7 @@ gape by geometry. Findings, for the person:
 
 Answered 15 Sep 2026: the chemistry per clade (§3b) — ringmouth venom by the beak, slowblood venom on the spines, hingeshell poison from the seep diet, the drifters' cells; and the roster it lands on.
 
-## 10. The physics pass (24 Sep 2026; designed, not built)
+## 10. The physics pass (24 Sep 2026; pass A built v11.91, B–D designed)
 
 The person, after hours as the finback being bitten on purpose (24 Sep 2026), separating what is the AI from what is the fight's
 physics. What each point is in the code:
@@ -415,11 +415,11 @@ blood's colours; the debris, the flinch, the flush; the save carrying the wounds
 
 **Knobs**, a table each with a comment per key: `EDGE_K` (K, σ, ρ's rule per edge), `COVER_T` (τ per covering), `VITAL` (0.75 r, the nape's
 0.3 r, the span), `SEVER` (0.7), `BLOOD` (volume and pressure by clade, the vessels by part, k, the clot's stretch, the loss's bands, the
-refill), `STAMINA` (by clade), `STRIKE` (the lock, the lunge's steering 0.3, the suction window), `SWALLOW` (1 + 4 ×).
+refill), `STAMINA` (by clade), `STRIKE` (the lock, the lunge's steering 0.3, the suction window), `SWALLOW` (1 + 4 ×). Built in A (combat.js): `EDGE_RHO`, `VITAL`, `SEVER`, `TORN`, `BLOOD`, `GRIP.k` in newtons per kg^(2/3).
 
 ### 10.8 The passes
 
-- **A — the wound and the blood** (points 3, 6, 7): one mass; blood as a volume with a rate and a clot; the wound by ρ against r at the
+- **A — the wound and the blood** (points 3, 6, 7) — **built v11.91** (the build added: the nape as a zone behind the head, nape0–nape1 of the trunk capsule with the biter's mouth over the back, the face core-deep; arms that have pinned a body have turned it, so their placed bite is at the nape wherever they took hold; a body with TORN 0.25 of its mass taken in pieces is dead, torn apart; the verdict table stays as the through/not gate until C): one mass; blood as a volume with a rate and a clot; the wound by ρ against r at the
   capsule the hold is on (today's holds); no penetration, no blood; bleeding out; the piece as food, and a hunter no longer quits a
   crippled body for one mouthful. Self-contained; three of the eight.
 - **B — contact and the hold** (points 1, 5): the mouth's sphere and cone, suction, the intercept, the committed lunge and the
@@ -448,3 +448,32 @@ Each pass rewrites the matrix and the hunter table in `test/combat.js` to its ve
    is big enough (§10.5's table).
 4. **Physics first** (A–C), **behaviour after** (D), and possibly another behaviour pass after that.
 5. §9 Open 5 falls: the miss is the geometry (§10.3).
+
+### 10.10 The edge's lineage (the person, 24 Sep 2026: "evolutionarily concrete, with an actual lineage … a genetic path you can trace")
+
+**The raw material is on every slowblood already.** The integument is scratchy: chevron rows of small chitinous plates down the back
+(CLADES, "the crusher's rows, on everything"; PLANET, armour chitinous in the clade's own plate pattern). The petals are the ring's relic
+and skinned like the body, and their inner faces carry the same rows — the ancestral mouth is a pad of platelets: a grip by friction,
+what `hold` is, PLANET's "none (suction)". One developmental program, the dermal row, expressed on the petal; what diet does to it is the
+whole variety of the clade's mouths, as Earth's teeth are dermal denticles that moved into the mouth and were reshaped there, more than once:
+
+| the row on the petal | the edge | who | the step |
+|---|---|---|---|
+| kept small and many, a comb | rake | the grazer | the pad as a scraper: no fusion |
+| fused at the tip into one spine per petal | point | the needle (finbacks) | a small-prey hunter's puncture; the hingeshells' spears are chitin too, from another clade — convergent |
+| fused along the inner edge into a serrated crest | cut | the sawmouths | the saw: pieces from prey past the gape |
+| the whole face one thick plate | crush | the crusher (platebacks) | the platebacks' full-armour program on the petal too: a vice from four sides |
+
+**The saw arose once.** The ridgebacks and the longbacks are sister lines, the **sawmouths**: one ancestor on the slope whose prey had
+outgrown its gape, the petal rows fused into a crest, and the whole line eats in pieces from then on. The ridge and the abyssal
+(ridgebacks) and the eel (longbacks) inherit it. The basker moves from the finbacks to the ridgebacks (PLANET's table, 24 Sep 2026): a
+vent-bound ridgeback — warm-muscled is what "quick in the warm water" is — that lost its back rows in the warm water, smooth-skinned,
+and kept the crest where selection kept it, as teeth outlast scales. So every `cut` on the roster is one lineage, and the finbacks are
+plain-mouthed but for the two derivations that are their own (the needle's spine, the grazer's comb). The platebacks kept the pad (the
+stone: gape alone) or grew the plate (the crusher).
+
+**The player's line.** A finback founder is a finback: the pad. The edit at conception (LINEAGE §13.4) offers the mouth's `edge` at the
+budget's price, and taking `cut` is what the sawmouths did — the rows the line already has on its back, fused along the petal: a third,
+parallel origin of the saw, small because the tissue is there (deep homology; Earth grew teeth from denticles the same way more than
+once). The line that takes it is its own family from then on: a sawmouth by descent from a finback, which the bestiary can say. `point`
+is the needle's step, the same price. Nothing on the roster changes by default, and no sub-clade is declared — a lineage is.

@@ -65,7 +65,7 @@ function hideSpot(ch,p,rng,d){const r=d.size*0.5,cl=(d.clear!==undefined?d.clear
   for(let k=0;k<12;k++){const a=rng()*TAU,dd=1+rng()*MOULT.hide,x=p.x+Math.cos(a)*dd,z=p.z+Math.sin(a)*dd,h=groundAt(x,z);if(h>-3)continue;
     T1.set(x,h+cl,z);if(solidPush(T1,r,null,ch,true))continue;T2.set(x,h+cl,z);if(!solidPush(T2,r+2,null,ch,true))continue;p.set(x,h+cl,z);return true;}
   p.y=groundAt(p.x,p.z)+cl;return false;}
-function softPrey(c,o){return bodyMass(c.def)>=MOULT.prey*bodyMass(o.def);} // whether c, a hunter, takes o, a soft body (findPrey)
+function softPrey(c,o){return kgOf(c)>=MOULT.prey*kgOf(o);} // whether c, a hunter, takes o, a soft body (findPrey)
 // the soft state's clock: hardened out of sight (a new adult in its place); true when c is gone
 function updateSoft(c,dt,dp){c.softT-=dt;if(c.softT>0)return false;if(dp>90||!c.g.visible){harden(c);return true;}c.softT=20;return false;}
 function harden(c){const a=spawn(c.chunk,c.kind,c.pos,Math.random,{ent:c.ent,soft:false});a.home.copy(c.home);removeCreature(c);return a;}
@@ -101,10 +101,11 @@ function spawn(ch,kind,pos,rng,opt){
   const f=vary&&ch?ch.f(pos.x,pos.z):null,cls=soft?'soft':f&&SPECS[kind]?coatClassAt(ch.h(pos.x,pos.z),pos.y,f,SPECS[kind].clade):'';
   const b=buildKind(D,kind,cls);if(k!==1){b.g.scale.multiplyScalar(k);b.gape*=k;}
   const c={kind:kind,def:d,g:b.g,anim:b.anim,pos:pos.clone(),vel:V3(0,0,0),home:pos.clone(),hp:d.hp,state:'wander',t0:rng()*100,lastSpd:0,lastYaw:0,roll:0,rollV:0,sq:0,stunSide:rng()<0.5?-1:1,target:null,biteT:0,wanderT:0,wander:pos.clone(),alive:true,gone:false,stun:0,bored:0,cool:rng()*3,scanT:rng()*0.5,alarm:0,fleeT:0,lungeT:0,ramT:0,school:null,off:null,offT:0,chunk:ch,lod:-1,parts:null,lodMeshes:null,sub:1,wet:true,grounded:false,flopT:0,
-    b:b,mass:bodyMass(d),bound:0,reach:0,shapesW:null,chainW:null,grab:null,holding:0,hold:null,held:0,bleed:0,paraT:0,stungT:0,hurtN:0,armsLost:0,regrow:null,sickT:0,poison:0,poisT:rng()*2,lungeC:0,missN:0,speedK:1,turnK:1,live:null,lost:null,cWith:null,d6:0,par:creatures.length&1, // hold: the hold it has on something, held: how many have hold of it, bleed: hp still to lose to its wounds (combat.js)
+    b:b,mass:0,mass0:0,bound:0,reach:0,shapesW:null,chainW:null,grab:null,holding:0,hold:null,held:0,bleed:0,blood:0,wounds:null,paraT:0,stungT:0,armsLost:0,regrow:null,sickT:0,poison:0,poisT:rng()*2,lungeC:0,missN:0,speedK:1,turnK:1,live:null,lost:null,cWith:null,d6:0,par:creatures.length&1, // hold: the hold it has on something, held: how many have hold of it, bleed: the rate its wounds drain at, blood: the share of its blood lost (combat.js, v11.91); mass: kg (combat.js kgOfBody; 1e6 while it sits), mass0 its own
     st:{tell:0,strike:0,jet:false},tellT:0,strikeT:0,recoverT:0,burstT:rng()*2,face:null,bit:false,accT:0,threat:null,
     ent:ent,hunger:EK.hunter?rng():0,starveT:0,hunt:0,feedT:0,feedAt:null,dead:false,flesh:0,deadT:0,scav:null,scavT:rng()*0.5,juv:juv?EK.grow*DAY_S*(0.8+0.4*rng()):0, // ent: the ledger entry; hunger 0 fed..1 starving (ecology.js); juv: seconds until it grows up // st: what the anim reads (creatures_builders.js); the tell and the strike as clocks
     k:k,cls:cls,soft:soft,softT:soft?MOULT.soft*Math.pow(EK.mass,0.25)*DAY_S*(0.7+0.6*rng()):0,moultT:vary&&!soft&&!juv&&moults(kind)&&D.role!=='boid'?MOULT.every*Math.pow(EK.mass,0.25)*DAY_S*(0.5+rng()):0}; // the individual (v11.66): its size factor, its coat class, the soft state and its clocks
+  c.mass=c.mass0=kgOfBody(kind,D,b); // one mass (v11.91, COMBAT.md §10.2): derive's, in kg, at this body's scale
   if(soft){c.b.cover=b.cover.map(()=>'skin');c.st.soft=1;c.state='sit';hideSpot(ch,c.pos,rng,d);c.home.copy(c.pos);}
   b.g.position.copy(c.pos);scene.add(b.g);
   // far LOD: the whole creature flattened into one mesh per material, hidden until needed
@@ -179,7 +180,7 @@ function findPrey(c,R){
 // The kill (v11.26): the ledger is debited and nothing comes back. Eaten whole (the player's bite, a small prey in a big mouth) the
 // body goes; otherwise it is a carcass — it stays in the scene, sinks, lies on its side, and is eaten away (updateCarcass) by what
 // killed it, by the scavengers it draws and by the water, ECO.carc days untouched. `by` is what killed it: it feeds
-function kill(c,by,whole){if(!c.alive)return;c.alive=false;c.target=null;c.grab=null;c.threat=null;c.scav=null;c.bleed=0;c.paraT=0;releaseAll(c);ecoDebit(c);POP.kills++;
+function kill(c,by,whole){if(!c.alive)return;c.alive=false;c.target=null;c.grab=null;c.threat=null;c.scav=null;c.bleed=0;c.wounds=null;c.paraT=0;releaseAll(c);ecoDebit(c);POP.kills++;
   const mass=bioMass(c.def);
   if(by){const K=eaterK(by),food=ecoOf(c.kind).food;if(c.poison>POISON.min&&!by.def.immune)sicken(by);else if(feeds(by)){by.hunger=Math.max(0,by.hunger-food/K.meal);by.starveT=0;}if(mass<=K.meal*0.35)whole=true;} // a body fed at the seeps is no meal: the eater is sick (combat.js POISON, v11.56). v11.73: the player's stomach is fed by the same line — its kind's meal, the prey's food. v11.74: a brooding ringmouth kills and is not fed (line.js feeds)
   if(whole||c.def.role==='boid'&&c.def.size<0.5){removeCreature(c);return;}
@@ -376,7 +377,7 @@ function scavenge(c,dt){const d=c.def;if(!d.scav)return false;
   if(dist>at)seek(c,f.pos,d.speed*0.7,dt,1.4);else{c.vel.multiplyScalar(1-3*dt);eatAt(c,f,dt);c.face=f.pos;}return true;}
 function updateCoil(c,dt){
   const d=c.def;c.cool-=dt;const dist=c.pos.distanceTo(player.pos);
-  if(c.state==='ram'){c.ramT-=dt;seek(c,player.pos,d.ram,dt,3);c.biteT-=dt;if(dist<reachOf(c,player)&&c.biteT<=0){c.biteT=2;wound(player,d.dmg,c,null,'snap');}if(c.ramT<=0||playerGone()){c.state='wander';c.cool=8;setWander(c);}}
+  if(c.state==='ram'){c.ramT-=dt;seek(c,player.pos,d.ram,dt,3);c.biteT-=dt;if(dist<reachOf(c,player)&&c.biteT<=0){c.biteT=2;blow(player,c);}if(c.ramT<=0||playerGone()){c.state='wander';c.cool=8;setWander(c);}}
   else{if(dist<d.radius&&c.cool<=0&&!playerGone()){c.state='ram';c.ramT=3.5;}wander(c,dt);}
 }
 // the ambushers (the lurker, the hook) lunge at their prey (v11.26: a prey list, not only the player), when hungry
@@ -521,7 +522,7 @@ function updateCreatures(dt0){
   }
   // contact: bodies near the player push apart by their actual shapes (the player among them), the player is kept out
   // of every arm and tail near it, then the arms and tails of everything at near LOD are simulated against the bodies.
-  for(const c of near){c.g.updateMatrix();worldShapes(c);c.shapeF=frameNo;if((c.def.role==='ambush'&&c.state==='sit')||c.def.role==='trap'||c.dead)c.mass=1e6;else c.mass=bodyMass(c.def);}
+  for(const c of near){c.g.updateMatrix();worldShapes(c);c.shapeF=frameNo;if((c.def.role==='ambush'&&c.state==='sit')||c.def.role==='trap'||c.dead)c.mass=1e6;else c.mass=c.mass0;}
   const P=player,live=mode==='play'&&!P.dead;let heldBy=0;bodies.length=0;for(const c of near)bodies.push(c);if(live)bodies.push(P);
   resolveBodies(bodies);
   updateHolds(dt0); // the holds' ropes (combat.js, v11.31): after the bodies have pushed apart, before the arms are simulated

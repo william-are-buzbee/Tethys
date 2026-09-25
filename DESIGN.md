@@ -1476,6 +1476,35 @@ readout's hold line shows them. **Nothing acts on the verdict yet** — pass 2 r
 matrix (every hunter at contact behind each of its prey, the player as all three clades) and fails if a grip is over a metre off the body it
 would hold; its findings are COMBAT.md §7.
 
+**The wound and the blood (v11.91, COMBAT.md §10 pass A).** The person's eight points after hours as the finback (§10's table: blood with no
+damage, blood not by the injury, no bleeding out, the hunter leaving after a tail, the petals' point, the orbit) — A is the first three. **One
+mass**: `kgOfBody` (combat.js) is derive's mass × 1000, kilograms, per kind once and by the body's scale; `c.mass`/`c.mass0` and `player.mass`
+carry it (the finback 1770 kg, the eel 2650, the ridge 45,450); `bodyMass` is the ledger's unit only. `GRIP.k` is N per kg^(2/3): jaw 90, arms
+70, claws 130. **Every bite in a hold is the edge on the body** (`biteOn` → `cutAt`): the verdict (`EDGE`) says whether the covering opens at
+all — not, a **bruise** (`bruise`: felt, no blood); through, the geometry: ρ = `EDGE_RHO[edge]` × the gape (cut 0.8, crush 1, beak 1, claws 1,
+shred 0.7, rasp 1, point 0.35 — a point's depth is the needle's petals or the spears' length, `pointDepth`) against the struck capsule's r. A
+limb (`hitOwn`) is **severed** at ρ ≥ `SEVER` 0.7 r (`losePart` returns its share of the body: the biter's food); the trunk is **opened to the
+vitals** when ρ (or the point's depth) ≥ `VITAL.core` 0.75 r along the front 60% of the capsule (`front` 0.4 from the tail end) or ≥ `VITAL.nape`
+0.3 r at the nape (`nape0`–`nape1` 0.55–0.8 of the capsule, the biter's mouth over `napeY` 0.25 r above the axis — the hold point is on the axis,
+so the side is the mouth's); arms that have pinned a body bite at the nape wherever they hold (`atNape`); else a **wound** (`openWound`) of area
+(ρ/r_trunk)² and the piece is eaten (`pieceShare`: (4/3)πρ³ × 1.05 t/m³ over the body, capped 0.3; `feedPiece`: its share of the body's food
+over the eater's meal), and past `TORN` 0.25 of the body taken the body is dead, torn apart. The clamp of a jaw or claws is the first bite;
+the arms only take hold. `placedAct` at the pin: the gape swallows; the nape's and the thrash's verdicts are the next bite's (`h.placed`); `yes`
+has nothing to place; nothing, `PIN.bored`. `afterBite`: a severed limb releases the hold, the biter has `LOSE.cool` 4 s with the mouthful and
+**keeps its target while hungry** (`ECO.hungry`). **Blood** (`BLOOD`): `vol` by clade (ringmouths 0.06, slowbloods 0.04, hingeshells 0.20,
+drifters 0.02 of the mass); a wound's rate q₀ = `k` 0.05 × area × `vessel` (trunk 1, head 1.2, root 1.5, tail 1, fins 0.5, arms 0.6, punct 0.3)
+× `press` (ringmouths 1.3, slowbloods 1, hingeshells 0.3, drifters 0.5) of the volume a second, decaying with τ = `BLEED_T` × (1 + area/`clot`
+0.25), gone under 1e-4/s; `o.wounds` (≤ `max` 6, each {ci, at, q, tau, by, tT}), `o.bleed` = Σq, `o.blood` = the loss. `updateWounds` drains,
+clots and trickles (`trail` 170 points/s per unit rate, 0.1–2 s apart; the burst `burst` 700 × q, 2–24); `bloodTick`: the loss over `weak`
+0.15 → `bloodK` 1 → 0.5 by `collapse` 0.30 (`collapsed`: no sprint, no ability) → 0.2 at `dead` 0.40 → `bledOut` (the player's cause "bled out
+after a ridge's bite"; a creature a carcass, its last wounder within `near` 40 m credited); fed and clotted the blood refills over `refill`
+game days (ringmouths 1, slowbloods 4, hingeshells 2); a hunter past `weak` flees `LOSE.flee` (the life–dinner rule). `bloodK` multiplies
+`slowOf` and the grip's strength. `smellR` = `SMELL_R` 90 × √(q/`qRef` 0.0086), ≤ 2×. Autotomy: the arm feeds by its share, the base bleeds as a
+graze (ρ 0.15 r, `vessel.arms`). The save: `blood`, `wounds`, `eaten`. **Gone**: `dmg` in combat (`dmgOf`, `wound()`), `GRIP.first/bite/bleed`,
+`HOLD_BIG`, `WOUND_SLOW`, `FLEE`, `LOSE.meal/floor`, `AUTOTOMY.meal`. On paper (`test/combat.js` §3, §5, §9, §16; the hunter table over 60 s):
+the eel's flank wound 1.09%/s, the held finback weak at 10 s and bled out at 16; the tail severed by a ridge, the root 1.73%/s, 39 s to bleed
+out alone; a beak's graze 1.6% and clotted; a soft sickle torn apart in a ridge's jaws at 21 s.
+
 ## The canopy
 
 **Struck in v11.81 (PLANKTON.md §12): the mask is the retention field `leeW` (world.js, the `EDDY` table) and places only the sailer fleets and

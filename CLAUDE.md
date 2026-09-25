@@ -185,11 +185,11 @@ Docs, most upstream first. When a doc's Open list says a choice is the person's,
   dense over 57,600 cells but every loop walks `POP.cells[ei]` (the cells an entry can live in; `ecoMark` adds, `ecoIndexAll` rebuilds after a
   load, v11.65) — a new loop over the ledger goes over the lists, never `ECO_CELLS`.
 - **Combat** (combat.js): a fight is a hold — a rope between a grip (jaws, arms, claws, read off the spec by `compile`) and the
-  held body's hit capsule; struggle by mass; bites on the hold's clock; wounds bleed; blood a pooled cloud in the clade's colour.
+  held body's hit capsule; struggle by mass (kilograms since v11.91: `kgOfBody`, derive's); bites on the hold's clock; wounds bleed; blood a pooled cloud in the clade's colour.
   Drifters and the coil's withdraw bypass holds by design. Since v11.54 a body also has an edge and a covering per capsule (compile,
   COMBAT.md §2) and a hold knows what it is on (`h.edge`, `h.cover`, `h.thru`, `EDGE`). **There are no hit points (v11.55):** a hold kept past
   its pin time (`PIN`) is a pin and the placed act follows from the verdict (swallowed by the gape, opened, skewered, crushed, the nerve cord)
-  or the hunter lets go; a bite that is not the act is a wound that bleeds for the clade's `BLEED_T` and slows the body; venom (`DEFS.venom`:
+  or the hunter lets go; **since v11.91 (COMBAT.md §10, pass A) every bite is the edge on the body where the hold is** (`biteOn`, `cutAt`): nothing through the covering is a bruise (no blood); through, the bite's radius (`EDGE_RHO` × the gape) against the capsule's decides — a limb severed (`SEVER`), the trunk opened to the vitals (`VITAL`: the axis along the front, shallow at the nape), else a wound that bleeds by its area from a blood volume (`BLOOD`: weak at 15% lost, collapsed at 30%, dead at 40% — "bled out"; the piece is the biter's food, a body `TORN` 0.25 eaten is dead); venom (`DEFS.venom`:
   the lurker's paralysis, the spined slowbloods' sting) and autotomy (a ringmouth drops the held arm) ride the same hold. `DEFS.hp` is only the
   forage (≤1) / immortal (≥1e8) flag. The player's death ends the slot's animal (save.js `slotDeath`); since v11.69 you continue as the nearest living child of that life, an unhatched clutch running the world on to its hatch, and with none the save is over (line.js). A hunter commits its bite 0.25 s out
   with its mouth open and misses prey that dodges across the line (`MISS`); hungry hunters take a bleeding body within `SMELL_R` as their

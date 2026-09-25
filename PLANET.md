@@ -190,7 +190,7 @@ radial, stinging, eyeless; bells in the water, floats on the surface (the button
 - **The eye ring** (v11.8.7, CLADES): a ring of small dark eyes round the base of the snout, on every one, no band;
   predators carry two of them forward on lobes of the head's flesh, big, pupilled — a shark's eyes: they track, but dark on dark you
   see it only close (the person, 9 Sep 2026). The weapon is the bite: the ring of arms kept as a ring of **short stiff mouth
-  tentacles** closing to a point (v11.8.8) that bloom on the bite, and the petals' inner edges are the variable: needle (fish-eater), plate (a crusher that eats shells — the
+  tentacles** closing to a point (v11.8.8) that bloom on the bite, and the petals' inner edges are the variable — the clade's dermal plate rows, carried onto the petals' inner faces and reshaped by diet (COMBAT §10.10): needle (fish-eater), plate (a crusher that eats shells — the
   coilshell player's specific enemy), rake (grazer), none (suction). Fins in threes at 120°, a three-lobed tail: the ring's relic.
 - **Armour** when present is chitinous with the clade's own plate pattern — rows of plates along an unsegmented body,
   barbels, a mandible-ish jaw: the "bug presence" on a reptile. Skin scratchy or smooth otherwise.
@@ -327,6 +327,9 @@ the clever ones) and **the deep line** (below the light, low metabolism, webbed 
 Ancestor: a hand-length fusiform swimmer with two eyes, a backbone and a simple jaw in the warm shallows. First split
 **swimmers / sitters**. Swimmers → **finbacks** (plain fusiform), **ridgebacks** (spined, warm-muscled or gigantic),
 **longbacks** (eel-shaped). Sitters → **platebacks** (armoured, torpid, benthic).
+The ridgebacks and the longbacks are sisters, the **sawmouths** (24 Sep 2026, COMBAT §10.10): one ancestor on the slope whose petal rows fused
+into a cutting crest when its prey outgrew its gape; the finbacks and the platebacks keep the plain pad, or derive the rows their own way (the
+needle's spine, the grazer's rake, the crusher's plate).
 
 | species | family | niche | where | size | what it is |
 |---|---|---|---|---|---|
@@ -334,7 +337,7 @@ Ancestor: a hand-length fusiform swimmer with two eyes, a backbone and a simple 
 | darter, glim | finbacks | small forage | shallows, kelp | 0.6 | exist, unspawned (boids later) |
 | **needle** | finbacks | small-prey hunter | shallows, flats, kelp, bladders | 0.9 | a pencil with a needle jaw, in threes; hunts flickers and darters; edible. The arrow's counterpart: slower, but cheap to run in warm water |
 | grazer | finbacks | floor grazer, herd | flats, bladders, terraces | 2.6 | exists; gets a rake jaw |
-| **basker** | finbacks | mid predator, vent-bound | the vent field | 5 | smooth-skinned, iron-black with rust; quick in the warm water round the vents, sluggish if it strays; hunts what comes to the warmth (pickers, the player) |
+| **basker** | ridgebacks (24 Sep 2026: moved from the finbacks — a sawmouth, COMBAT §10.10) | mid predator, vent-bound | the vent field | 5 | smooth-skinned (the back rows lost in the warm water; the petals' crest kept, as teeth outlast scales), iron-black with rust; quick in the warm water round the vents, sluggish if it strays; hunts what comes to the warmth (pickers, the player) |
 | ridge | ridgebacks | player-size predator, mixotherm | the drop, terraces, plain, the arch | 9 | exists; forward eyes |
 | abyssal | ridgebacks | apex, gigantotherm | **the rim** of the dark, forays below | 15 | exists; home moves to the rim |
 | eel | longbacks | structure hunter | kelp towers | 4 | exists |

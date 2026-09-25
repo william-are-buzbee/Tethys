@@ -34,14 +34,14 @@ function presetFor(spec){const id=spec.clade==='ringmouths'?(spec.core&&spec.cor
 function playerClade(spec,pre,j){ // the player's clade object from a spec (and its preset, if it is one): what player.js, combat.js and the rest read as player.clade. j: a hatchling's scale (v11.69: ECO.juv until grown; v11.76 a hingeshell's steps at its moults), the numbers scaled as the world's juveniles' are (creatures_ai.js scaledDef)
   pre=pre||presetFor(spec);j=j||1;const st=statsOf(spec),base=SPECS[pre.spec],fd=founderDef(spec),ab=abilitiesOf(spec),sq=Math.sqrt(j);
   return {id:pre.id,name:spec===base?pre.name:(spec.id&&spec.id!==pre.spec?spec.id:pre.name),spec:spec,preset:pre,build:j===1?()=>compile(spec):()=>compile(spec,j*(spec.s||1)),juv:j<1?j:0,
-    speed:st.speed*sq,accel:st.accel,turn:st.turn,mass:+(Math.max(BODY_MIN,spec.size*spec.size*spec.size)*j*j*j).toFixed(3),bite:Math.round(st.mass*3+2)*j*j,size:spec.size*j,jet:!!st.jet,legs:!!st.legs,landSpeed:st.legs?st.walk*sq:undefined, // bite for a spec without the lock: the lab's DEFS rule (specExport, dmg = mass × 3)
-    sprint:st.burst>1?st.burst:undefined,jetImp:st.jet?st.jetImp*sq:undefined,buoy:st.buoyancy,mode:st.mode,canSwim:st.mode!=='walk',legsBack:legsBackOf(spec),clear:fd&&fd.clear!==undefined?fd.clear*j:spec.size*j*0.35,cam:+(CAM_BODY.at+CAM_BODY.per*st.length*j).toFixed(1),venom:fd?fd.venom:undefined,immune:!!(fd&&fd.immune),founder:founderOf(spec),abilities:ab,ability:ab[0]||null}; // v11.75: every number off the build or the founder's row; a hatchling's arm and kick with its scale
+    speed:st.speed*sq,accel:st.accel,turn:st.turn,mass:+(st.mass*1000*j*j*j).toFixed(1),bite:Math.round(st.mass*3+2)*j*j,size:spec.size*j,jet:!!st.jet,legs:!!st.legs,landSpeed:st.legs?st.walk*sq:undefined, // bite for a spec without the lock: the lab's DEFS rule (specExport, dmg = mass × 3)
+    sprint:st.burst>1?st.burst:undefined,jetImp:st.jet?st.jetImp*sq:undefined,buoy:st.buoyancy,mode:st.mode,canSwim:st.mode!=='walk',legsBack:legsBackOf(spec),clear:fd&&fd.clear!==undefined?fd.clear*j:spec.size*j*0.35,cam:+(CAM_BODY.at+CAM_BODY.per*st.length*j).toFixed(1),venom:fd?fd.venom:undefined,immune:!!(fd&&fd.immune),founder:founderOf(spec),abilities:ab,ability:ab[0]||null}; // v11.75: every number off the build or the founder's row; a hatchling's arm and kick with its scale. mass (v11.91): derive's, in kg — every body's (combat.js kgOfBody)
 }
 const CLADES=CLADE_PRESETS.map(p=>playerClade(SPECS[p.spec],p));
 let floor0=-1e9;for(let a=0;a<TAU;a+=0.3)for(let r=0;r<=16;r+=4)floor0=Math.max(floor0,sample(Math.cos(a)*r,Math.sin(a)*r).h);
 const dispY=floor0+4.5,spawnPos=V3(0,floor0+3,0);
 const player={clade:null,pos:V3(0,dispY,0),vel:V3(0,0,0),yaw:0,pitch:0,byaw:0,bpitch:0,angV:0,g:null,b:null,anim:null,inkT:0,withdrawn:false,cd:0,jetT:0,hurtT:0,lastHurt:-100,dead:true,pulse:0,spd:0,biteCD:0,sub:1,wet:true,grounded:false,flopT:0,camAbove:false,camFlipT:0,fp:false,
-  mass:6,bound:0,reach:0,shapesW:null,chainW:null,grab:null,grabT:0,heldT:0,heldK:1,holding:0,hold:null,held:0,grabKey:false,grabCD:0,bleed:0,woundL:null,paraT:0,stungT:0,sickT:0,hunger:0,starveT:0,waste:0,soft:false,shut:false,armsLost:0,regrow:null,cause:'',speedK:1,turnK:1,live:null,lost:null,cWith:null,onPad:null,def:{size:1.6},hitRk:0,hitFl:0,landV:0,wasGrounded:false}; // hitRk/hitFl: this frame's push was against rock / a plant; landV: the speed of the last landing on the floor (audio.js consumes both) // def.size: creatures read it when the player is their target
+  mass:6,bound:0,reach:0,shapesW:null,chainW:null,grab:null,grabT:0,heldT:0,heldK:1,holding:0,hold:null,held:0,grabKey:false,grabCD:0,bleed:0,blood:0,wounds:null,paraT:0,stungT:0,sickT:0,hunger:0,starveT:0,waste:0,soft:false,shut:false,armsLost:0,regrow:null,cause:'',speedK:1,turnK:1,live:null,lost:null,cWith:null,onPad:null,def:{size:1.6},hitRk:0,hitFl:0,landV:0,wasGrounded:false}; // hitRk/hitFl: this frame's push was against rock / a plant; landV: the speed of the last landing on the floor (audio.js consumes both) // def.size: creatures read it when the player is their target
 // Out of the world (v11.72.1, the person, 21 Sep 2026: "the game should teleport the player out of existence temporarily or make them invis/invuln while
 // they edit"): while the editor at conception is open (line.js conceiveOpen) the body is hidden and nothing in the world can see, smell, chase, hold,
 // sting or flee it — every read of the player as a thing to react to in creatures_ai.js and combat.js asks playerGone(), which death answers too.
@@ -120,17 +120,17 @@ function hurtPlayer(dmg,from){
   if(from){T4.copy(P.pos).sub(from).normalize();P.vel.addScaledVector(T4,7);}
 }
 function die(cause){ // v11.55: a placed act (combat.js killBy) — swallowed, opened, skewered, crushed, the nerve cord; the slot's animal is dead (the person, 15 Sep 2026): its world kept, the menu, a new animal on continue
-  const P=player;if(P.dead)return;camNote();P.dead=true;P.cause=cause||'';P.bleed=0;P.paraT=0;P.stungT=0;releaseAll(P);fadeEl.style.opacity=1;const slot=curSave; // camNote (save.js, v11.47.2): the title screen opens from the spot you died in
+  const P=player;if(P.dead)return;camNote();P.dead=true;P.cause=cause||'';P.bleed=0;P.blood=0;P.eaten=0;P.wounds=null;P.paraT=0;P.stungT=0;releaseAll(P);fadeEl.style.opacity=1;const slot=curSave; // camNote (save.js, v11.47.2): the title screen opens from the spot you died in
   setTimeout(()=>{if(slot&&curSave!==slot)return;if(curSave&&mode==='play'){slotDeath(P.cause);return;} // v11.74: a death is the slot's it happened in — a new game started inside the fade (seen driving the look by hand) must not be ended by it // a slot: the death is written and the menu comes back (save.js); without one (the tests, the lab) the respawn as before
-    P.pos.copy(spawnPos);P.vel.set(0,0,0);P.inkT=0;P.bleed=0;P.hold=null;P.held=0;P.camAbove=false;P.camFlipT=0;snapMed=true;P.wet=true;P.sub=1;for(const c of creatures){if(c.target===player)dropTarget(c);}camera.position.copy(P.pos).add(V3(0,2,8));setTimeout(()=>{fadeEl.style.opacity=0;P.dead=false;},500);},2800);
+    P.pos.copy(spawnPos);P.vel.set(0,0,0);P.inkT=0;P.bleed=0;P.blood=0;P.wounds=null;P.hold=null;P.held=0;P.camAbove=false;P.camFlipT=0;snapMed=true;P.wet=true;P.sub=1;for(const c of creatures){if(c.target===player)dropTarget(c);}camera.position.copy(P.pos).add(V3(0,2,8));setTimeout(()=>{fadeEl.style.opacity=0;P.dead=false;},500);},2800);
 }
 function bite(){playerBite();} // v11.31: combat.js — a gulp, a mouthful of a carcass, or a wound (a tear on what you hold)
 function ability(){
-  const P=player,C=P.clade;if(mode!=='play'||P.dead||!C||P.cd>0||P.paraT>0)return; // paralysed, nothing answers (v11.55)
+  const P=player,C=P.clade;if(mode!=='play'||P.dead||!C||P.cd>0||P.paraT>0||collapsed(P))return; // paralysed, nothing answers (v11.55); collapsed by blood loss, nothing either (v11.91)
   if(C.ability==='ink'){spawnInk(P.pos);P.inkT=6;P.cd=12;for(const c of creatures){if(c.target===player)dropTarget(c,6);}} // v11.31.1: dropTarget lets go of the arms too, not only the target
   else if(C.ability==='stun'){let hit=false;for(const c of creatures){if(!c.alive)continue;const r=c.def.role;if(!(r==='hunter'||r==='ambush'||r==='coil'))continue;if(c.pos.distanceTo(P.pos)<6+c.def.size*0.3){c.stun=2.5;T1.copy(c.pos).sub(P.pos).normalize();c.vel.addScaledVector(T1,9);dropTarget(c,5);hit=true;}}P.cd=hit?9:1.5;P.pulse=1;thump(0.7,60,25,null,0.25,0.12);}
   else if(C.ability==='ram'){const tg=playerTarget(false);P.pulse=1;P.snapT=0.1; // v11.75: the ram's blow, the world's rule on the striker (combat.js combatBite, RAM): a knock on what is ahead in reach — stunned, thrown, nothing through
-    if(tg&&tg.alive){T1.set(0,0,1).applyQuaternion(P.g.quaternion);tg.stun=Math.max(tg.stun||0,RAM.stun);tg.vel.addScaledVector(T1,9);if(tg.target===P)dropTarget(tg,RAM.cool);wound(tg,C.bite,P,null,'snap');P.cd=RAM.cool;thump(0.7,70,30,null,0.3,0.1);}else{P.cd=1.5;thump(0.3,130,50,null,1.2,0.04);}}
+    if(tg&&tg.alive){T1.set(0,0,1).applyQuaternion(P.g.quaternion);tg.stun=Math.max(tg.stun||0,RAM.stun);tg.vel.addScaledVector(T1,9);if(tg.target===P)dropTarget(tg,RAM.cool);blow(tg,P);P.cd=RAM.cool;thump(0.7,70,30,null,0.3,0.1);}else{P.cd=1.5;thump(0.3,130,50,null,1.2,0.04);}}
   // shut and withdraw are held, not fired (updatePlayer reads the key)
 }
 // ink clouds (soft-arm ability)
@@ -216,7 +216,7 @@ function updatePlayer(dt){
   const th=still||!swims?0:dirK?al:mz<0?-rev:0,brake=!still&&mz<0&&!walker&&!dirK&&P.vel.dot(bf)>0; // any direction key drives it forward along the body it is turning; s alone backs — and while the body is still going forward that thrust is a brake, so it stops at STEER.brake and then swims backwards (v11.79)
   const move=T1.copy(bf).multiplyScalar(th);
   const moving=th!==0;
-  let spd=walker?(C.landSpeed||4):C.speed;if(!walker&&C.sprint&&sprint)spd*=C.sprint; // a walker's Froude speed is its ceiling (v11.75)
+  let spd=walker?(C.landSpeed||4):C.speed;if(!walker&&C.sprint&&sprint&&!collapsed(P))spd*=C.sprint; // a walker's Froude speed is its ceiling (v11.75); collapsed by blood loss there is no burst (v11.91)
   P.heldT=Math.max(0,P.heldT-dt);if(P.heldT>0)spd*=0.8; // brushed by something's arms
   spd*=P.heldK||1; // held (combat.js updateHolds sets it): in jaws or claws you thrash, in arms you barely swim
   spd*=slowOf(P); // bleeding, or stung (combat.js, v11.55)
