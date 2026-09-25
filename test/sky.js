@@ -1,13 +1,12 @@
 // Headless sky check (v11.87, CLOUDS.md): the cloud field's JavaScript twin against its own calibration — the threshold table monotone, the cloud
 // fraction equal to the cover it was asked for, no NaN over the world (the giant's cap included), the beam's shadow in range — the weather's
 // clocks over a year (showers ~8% of hours and twice as likely before dawn as in the afternoon, the cirrus the still season's, the calms a
-// quarter, boot fair with a shower a few hours in), and the lumps' scan (a pool never exceeded, every lump measured, the caps present), with
-// the costs. It proves the numbers; it says nothing about how the sky looks — test/render/v87*.png are the looks.
+// quarter, boot fair with a shower a few hours in), with the cost. It proves the numbers; it says nothing about how the sky looks — test/render/v87*.png are the looks.
 const fs=require('fs'),path=require('path');
 const ROOT=path.join(__dirname,'..');
 const ORDER=fs.readFileSync(path.join(ROOT,'src','order.txt'),'utf8').split('\n').map(s=>s.trim()).filter(s=>s&&s[0]!=='#');
 let js=ORDER.map(n=>fs.readFileSync(path.join(ROOT,'src',n+'.js'),'utf8')).join('\n');
-js+='\nglobal.__sky={weatherAt,CLD_TH,cldThOf,cldTh0,cldN,cldDensity,cloudAt,CLD_S,CLD,CLD_CAPS,FZ0,DAY_H,SOLAR_H0,YEAR_D,seasonAt,SKY,CLOUD_H,LUMP_N,lumps,lumpFixed,lumpScan,updateClouds,camera,player,WX,ISLANDS,HALF,step:__step,SHWR,CELLS,updateCells,WIND_A,setClock:h=>{clockH=h;}};';
+js+='\nglobal.__sky={weatherAt,CLD_TH,cldThOf,cldTh0,cldN,cldDensity,cloudAt,CLD_S,CLD,CLD_CAPS,FZ0,DAY_H,SOLAR_H0,YEAR_D,seasonAt,SKY,CLOUD_H,camera,player,WX,ISLANDS,HALF,step:__step,SHWR,CELLS,updateCells,WIND_A,setClock:h=>{clockH=h;}};';
 const tmp=path.join(require('os').tmpdir(),'tethys_sky_bundle.js');
 fs.writeFileSync(tmp,'(function(){"use strict";\n'+js+'\n})();');
 process.env.PICK='1';
@@ -43,17 +42,6 @@ console.log('the weather');
   ok(spread/n>0.01&&spread/n<0.2,'the tops spread '+T(spread/n)+' of the time');ok(deepMax>1.3&&deepMax<2,'the congestus at most '+T(deepMax)+' deep');
   S.weatherAt(0,o);ok(o.rain<0.05&&o.cover>0.3&&o.cover<0.6,'boot is fair: cover '+T(o.cover)+', rain '+T(o.rain));
   let first=-1;for(let h=0;h<40;h+=0.25){S.weatherAt(h,o);if(o.rain>0.5){first=h;break;}}ok(first>1&&first<8,'the first shower '+first+' h in');}
-// ---------- the lumps ----------
-console.log('the lumps');
-for(let i=0;i<30;i++)S.step(1);
-S.camera.position.set(200,6,-300);S.player.pos.set(200,6,-300);
-{const K=S.SKY;S.CLD_S.th=S.cldThOf(0.55);S.CLD_S.street=1;S.CLD_S.cap=S.CLD.capA;K.windOff[0]=1234;K.windOff[1]=-777;
-  S.lumpScan();const alive=S.lumps.filter(L=>L.alive);ok(alive.length>0&&alive.length<=S.LUMP_N,alive.length+' lumps found at cover 0.55 within the scan');
-  let bad=0;for(const L of alive){if(!(L.rx>=50&&L.rx<=1500&&L.rz>=50&&L.rz<=1500&&isFinite(L.fx)&&isFinite(L.fz)))bad++;}ok(bad===0,'every lump measured: rx '+alive.map(L=>L.rx|0).join(' ')+' / rz '+alive.map(L=>L.rz|0).join(' '));
-  const keys=new Set(alive.map(L=>L.key));ok(keys.size===alive.length,'no two lumps on one cloud');
-  S.lumpScan();const again=S.lumps.filter(L=>L.alive).map(L=>L.key).sort().join();ok(again===[...keys].sort().join(),'a second scan finds the same clouds');
-  S.CLD_S.th=S.cldThOf(0.05);S.lumpScan();ok(S.lumps.filter(L=>L.alive).length<alive.length,'a clearer sky has fewer: '+S.lumps.filter(L=>L.alive).length);
-  ok(S.lumpFixed.length===5*S.CLD_CAPS.length,S.lumpFixed.length+' fixed lumps for '+S.CLD_CAPS.length+' cap(s)');}
 // ---------- the showers (v11.88) ----------
 console.log('the showers');
 {const K=S.SKY,W=S.WX,px=200,pz=-300;S.player.pos.set(px,pz*0+6,pz);K.windOff[0]=0;K.windOff[1]=0;K.wind[0]=Math.cos(S.WIND_A)*7;K.wind[1]=Math.sin(S.WIND_A)*7;
@@ -75,7 +63,6 @@ console.log('the showers');
   S.setClock(3.5);for(let i=0;i<3;i++)S.updateCells(0.02);ok(S.CELLS.length===0,'the same episode births no second cell');}
 // ---------- costs ----------
 {let t0=process.hrtime.bigint();for(let i=0;i<10000;i++)S.cloudAt(i*0.3,-5,i*0.1,{x:0.3,y:0.8,z:0.2});const us=Number(process.hrtime.bigint()-t0)/1e4/1000;
-  t0=process.hrtime.bigint();for(let i=0;i<10;i++)S.lumpScan();const ms=Number(process.hrtime.bigint()-t0)/1e7;
-  console.log('  cost: cloudAt '+us.toFixed(2)+' µs, a scan '+ms.toFixed(2)+' ms (every '+0.5+' s in the air)');ok(us<20&&ms<8,'the costs are small');}
+  console.log('  cost: cloudAt '+us.toFixed(2)+' µs');ok(us<20,'the cost is small');}
 console.log(failed?'sky: FAILED':'sky: ok');
 process.exit(failed?1:0);

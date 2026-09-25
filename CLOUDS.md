@@ -3,8 +3,10 @@
 Status: **passes A, B and C built as v11.87 (24 Sep 2026), with the low-poly exploration (§5) behind the `near clouds` switch; pass D (§6,
 showers with a place) built as v11.88 the same day; the deck as a ray-marched volume (§8) built as v11.89 the same day — the person, on the
 stills of v11.87–88: two systems, one clearly 3D and one "a paper you fully color in", that "in combination look worse"; the analysis in §8
-and the build, on their full confidence.** The lumps are off by default and the slices are the low tier's; storms proper (§6's last paragraph)
-are the next sky pass. Written from the discussion of
+and the build, on their full confidence. v11.90 (the same day, the person on v11.89: "this is definitely the system we are going with", "we 100% can
+remove the old cloud system"): the slice deck and the lumps (§5) are struck, the clouds are the volume alone on both tiers; the clouds smaller, the
+bases lighter and rounded; and `Q.vol` renamed `Q.march` — it had shadowed the master volume's key, the "hilariously bass boosted" audio.** Storms proper
+(§6's last paragraph) are the next sky pass. Written from the discussion of
 23–24 Sep 2026: the person asked whether the sky's several cloud kinds were designed or accreted, what this planet's sky should be and how
 it should change by the day, the week and the year, for as much variety as is believable and no more, and how the clouds meet the rest of
 the sky. §7 has the person's answers.
@@ -86,7 +88,7 @@ where it is, a fine one (`0.50–0.76`) for its fibres; unlit it is darker than 
   under less. One 3D noise per fragment in air.
 - **The cap** as above.
 
-## 5. The low-poly exploration: the lumps (clouds.js second half; `near clouds` on the effects list)
+## 5. The low-poly exploration: the lumps (struck v11.90 — the record of what was tried; the volume of §8 replaced them)
 
 The person's ask of 24 Sep: the deck is the one thing in the frame that is not low-poly; explore the near clouds as flat-shaded lumps with
 real parallax. Built: a pool of `LUMP_N` 24 meshes, each a heap of 14–21 dodecahedra of the kit (detail 1), flattened, packed, their
@@ -195,3 +197,13 @@ threshold was 0 — then speckle from a hashed jitter, then stripes from a small
 **Open, for the person**: the three bands (`floor(q·3+0.5)/3`) against a smoother light; the clouds' size (`CLD.sc`); whether the low tier
 should march at fewer steps or keep the slices; the horizon band (the march ends at 16 km, the old deck faded at 3° — the lowest degrees are
 empty of cloud); the cirrus is still the 2D field of v11.87 (a thin layer at 9.5 km needs no volume).
+
+**v11.90, the person's look at v11.89** (24 Sep): "WOW … much more inside the world, it has a real sense of scale that is incredibly helpful for
+context against the vastness of the ocean." Their points, and what was done: **too large?** — trade cumulus are 0.5–1.5 km across and wider than
+tall, so `CLD.sc` went from 1/1000 to 1/750 (the threshold recalibrates itself); at other sizes they would also look right, and the knob is theirs.
+**Too dark, and a clear line where the clouds stop** — the ambient by height is 0.95–1.2 of a shade pulled half way to a light grey (0.62),
+and the base is rounded: the threshold rises again under `CLD.base` 0.12 of the deck's height (a cumulus base is flat, the condensation
+level is a plane, but it is not a cut). **The old system** — struck: `cloudDeck` (the slices), the scud slice, the lumps, the `near clouds`
+and `cloud volume` switches, `Q.cloud`; the low tier marches too (`Q.march` 28, unmeasured there). **The audio** — `Q.vol` was the master
+volume's key since v11.14; v11.89's `vol:80` for the march's steps shadowed it in the same object literal, and the game played at 80× gain
+through the compressor. Renamed `Q.march`.

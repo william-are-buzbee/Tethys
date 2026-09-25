@@ -15,11 +15,10 @@ const Q=(function(){
   const small=Math.min(screen.width||9999,screen.height||9999)<900;
   const tier=HASH_TIER||((isTouch&&small)?'low':'high');
   return tier==='low'
-    ?{tier:tier,pr:1.0,far:1000,flora:0.45,creatures:0.6,lights:2,phong:false,aa:false,budgetMs:8,farMs:2,farQ:6,surf:96,lodNear:0.7,rockLvl:1,target:14,casters:6,shafts:2,cau:3,hrtf:0,vol:1,cloud:2,snow:1000,hz:200,cldSh:0,vol:0}
-    :{tier:tier,pr:1.5,far:1600,flora:1.0,creatures:1.0,lights:4,phong:true,aa:true,budgetMs:6,farMs:3,farQ:12,surf:192,lodNear:1.0,rockLvl:2,target:7.5,casters:16,shafts:4,cau:5,hrtf:1,vol:1,cloud:5,snow:1800,hz:100,cldSh:1,vol:80};
+    ?{tier:tier,pr:1.0,far:1000,flora:0.45,creatures:0.6,lights:2,phong:false,aa:false,budgetMs:8,farMs:2,farQ:6,surf:96,lodNear:0.7,rockLvl:1,target:14,casters:6,shafts:2,cau:3,hrtf:0,vol:1,snow:1000,hz:200,cldSh:0,march:28}
+    :{tier:tier,pr:1.5,far:1600,flora:1.0,creatures:1.0,lights:4,phong:true,aa:true,budgetMs:6,farMs:3,farQ:12,surf:192,lodNear:1.0,rockLvl:2,target:7.5,casters:16,shafts:4,cau:5,hrtf:1,vol:1,snow:1800,hz:100,cldSh:1,march:80};
   // snow (v11.24): the marine snow's points (atmosphere.js); the deep is sparse, so many of them are dormant at a time
-  // cloud (v11.17): the slices the sky shader marches up through the cumulus deck (atmosphere.js SKY_FS), two 4-octave noises per slice per sky pixel
-  // vol (v11.89): the steps of the cloud volume's march per sky pixel (atmosphere.js cloudVol), 0 for the slice deck of v11.17–88 (the low tier: unmeasured there, and the atlas is a 16 MB texture)
+  // march (v11.89; v11.90: the name — `vol` was the master volume's key above, and the clouds' 80 steps played the game at 80× gain, the person's "hilariously bass boosted"): the most steps of the cloud volume's march per sky pixel (atmosphere.js cloudVol); the low tier's 28 unmeasured there
   // cldSh (v11.87): the clouds' shadows on the sea and the land in air — one 3D billow noise per fragment (clouds.js cloudSh); off on the low tier until measured there
   // hrtf, vol (v11.14, the sound): HRTF panning on the placed voices (front/back and up/down; the audio thread's one real cost) or equal-power; the master volume
   // casters (v11.23): the creatures that cast into the shadow map each frame (the nearest by size; the player always); shafts, cau (v11.13, the light pass): the

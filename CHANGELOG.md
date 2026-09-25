@@ -5836,3 +5836,29 @@ the pane within the frame's noise. `node build.js --test` green on both tiers.
 clouds' size (`CLD.sc`); (4) a cloud sliding over in play — the shadow on the sea and the light under water against the volume overhead;
 (5) the dither at the edges at 1600×900; (6) the lowest degrees of the sky, empty of cloud past 16 km (`VOL_FAR`); (7) the crossing of the
 surface and the volume through it from below; (8) a shower's tower from the sea.
+
+## v11.90 — the volume alone: the slices and the lumps struck; smaller, lighter, rounded; the audio's 80× gain (24 Sep 2026)
+
+The person on v11.89: "WOW, that looks absolutely awesome. We 100% can remove the old cloud system … it has a real sense of scale that is
+incredibly helpful for context against the vastness of the ocean." Then: almost too large (if believable, conceded); too dark; the bottoms flat
+with "a clear line where the clouds go and stop"; and the audio "hilariously bass boosted … compressed or distorted".
+
+- **The audio**: `Q.vol` has been the master volume's key since v11.14 (audio.js `AU_K.vol*(Q.vol||1)`); v11.89 added `vol:80` — the march's
+  steps — to the same object literal, so the later key won and the game played at 80× gain into the compressor. The march's knob is `Q.march`
+  (80 desktop, 28 low). One line, the whole bug.
+- **The old system struck** (clouds.js, atmosphere.js, effects.js, scene.js): `cloudDeck` and the scud slice (v11.17–89), the lumps
+  (v11.87–89: `LUMP_*`, `lumpScan`, the horizon-pass meshes), the `near clouds` and `cloud volume` switches, `uLump`, `uVol`, `uCloudT`,
+  `Q.cloud`, `CLD.near`; `updateClouds` is the atlas's one bake; `FZ0` is 0.1 (the shadows' and the beam's height in the deck). The low tier
+  marches at 28 steps rather than keeping the slices.
+- **Smaller**: `CLD.sc` 1/750 (from 1/1000) — trade cumulus are 0.5–1.5 km across, wider than tall. **Lighter**: the ambient 0.95–1.2 of a
+  shade half way to a light grey (0.62,0.64,0.67). **Rounded bases**: `CLD.base` 0.12 — the threshold rises again under it (0.8·rise at the
+  base plane), so the bottom of a cloud is a curve, not the slab's cut.
+- `test/sky.js` loses the lumps' section.
+
+**Seen** (`test/render/v90_*.png`, 1280×720): boot — a field of smaller cumulus in three tones, mid-grey bases; overhead a bright cel-shaded
+ceiling; the broken deck at 0.62 as scattered small clouds; the sunset silhouettes with rounded undersides; the clearest day's small cumulus.
+Not heard: the audio at 1× (the stub cannot play).
+
+**Unseen, ask in this order:** (1) the audio at its old level (a fresh load; nothing else in the sound changed); (2) the size now — 750 is a
+number, the person's to move (`CLD.sc`); (3) the bases — light enough, round enough (`CLD.base`, the 0.95 ambient, the grey mix); (4) the
+render ms on the 4060 (`Q.march`); (5) the low tier on a phone, marching at 28.
