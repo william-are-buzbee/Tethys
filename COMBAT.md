@@ -1,6 +1,6 @@
 # COMBAT.md — injury as states, not numbers
 
-**Status: designed and built in full 15 Sep 2026 (passes 1, 2, 4, 3: v11.54–v11.57)** (pass 1: the edge and the covering read off the spec, the hold knows what it is on, no capsule past the nose; pass 2: no hit points — the gape, the pin and the placed act, wounds that bleed and slow, paralysis and the sting, autotomy, death ends the slot's animal; pass 4: hunters read blood, the strike's miss rule, injuries in the save, the poison by feeding; pass 3: the wound as a spec edit — a tail torn off, the body re-derived, the stump and the regrowth; the numbers in DESIGN Combat). §7 has what the matrix found; §8 the passes as built. What is left is tuning by play. Replaces the hit-point half of v11.31 (DESIGN Combat): the hold, the rope, the struggle by
+**Status: designed and built in full 15 Sep 2026 (passes 1, 2, 4, 3: v11.54–v11.57)** (pass 1: the edge and the covering read off the spec, the hold knows what it is on, no capsule past the nose; pass 2: no hit points — the gape, the pin and the placed act, wounds that bleed and slow, paralysis and the sting, autotomy, death ends the slot's animal; pass 4: hunters read blood, the strike's miss rule, injuries in the save, the poison by feeding; pass 3: the wound as a spec edit — a tail torn off, the body re-derived, the stump and the regrowth; the numbers in DESIGN Combat). §7 has what the matrix found; §8 the passes as built. **§10 (24 Sep 2026): the physics pass, designed, not built** — the person's report after hours as the finback, the cause of each point in the code, and passes A–D (the wound and the blood; contact and the hold; the edge's work; predator behaviour); it strikes §4's "bleeding never kills", `MISS`, `PIN.t`, the reach sphere and the verdict table. Replaces the hit-point half of v11.31 (DESIGN Combat): the hold, the rope, the struggle by
 mass, the blood and the debris stay; `hp`, `dmg`, the bite clock's damage share and the bleed-as-hp-loss go. The person's ask, in
 their words: "instead of taking damage from a skewer, you are actually physically skewered, and die"; "instead of taking damage from a
 bite, you mostly just die from the bite"; dismemberment; "a realistic and believable combat system that is as scary and freaky as real
@@ -151,7 +151,7 @@ nothing regrows a mantle, a head or a trunk. Regrowth is the part put back into 
 ## 4. Blood, the trail, the second predator
 
 Blood is built (combat.js: the pooled cloud in the clade's colour). Two changes: an open wound bleeds by the clade's clotting
-(`BLEED_T`: ringmouths clot fast, slowbloods slow, hingeshells barely bleed) and stops on its own — bleeding never kills by itself; and
+(`BLEED_T`: ringmouths clot fast, slowbloods slow, hingeshells barely bleed) and stops on its own — bleeding never kills by itself (*struck 24 Sep 2026, §10.6: blood is a volume, and bleeding out kills*); and
 **hunters read the blood**: a hungry hunter (creatures_ai.js hunger, built) within `SMELL_R` of a bleeding body takes it as a target
 past its `detect`, so a wounded animal, or a wounded player, is found. That is the consequence that makes the graze frightening without
 a number: the flank bite you survived is what brings the ridge.
@@ -227,8 +227,224 @@ gape by geometry. Findings, for the person:
    **Answered 15 Sep 2026: later, by the creator.** The default slowblood swallows; blades on the petals are derived, in the lineages that
    take prey past their gape (ridge, abyssal, basker; the eel's knot is its thrash). A 3.5 m swimmer has a diet that fits whole; it earns
    the edge when it is big enough to take pieces from a grazer. Until then its answer to the ridge is the sprint and the blow.
+   *24 Sep 2026: widened — the edge is the clade's, a real thing in the lines that have it, not a default (§10.9, 2).*
 4. **The rasp as a player path** (latch on a basker and feed): a fourth playable, or the rasp's own thing? Not now, but it decides
    whether the sucker grip gets a player branch.
 5. **How much the hunters miss:** `MISS` at the escape-reflex rule, or looser for the first hours of a slot?
+   *Falls 24 Sep 2026 (§10.3): the miss is the geometry of a committed lunge and the turning radius.*
 
 Answered 15 Sep 2026: the chemistry per clade (§3b) — ringmouth venom by the beak, slowblood venom on the spines, hingeshell poison from the seep diet, the drifters' cells; and the roster it lands on.
+
+## 10. The physics pass (24 Sep 2026; designed, not built)
+
+The person, after hours as the finback being bitten on purpose (24 Sep 2026), separating what is the AI from what is the fight's
+physics. What each point is in the code:
+
+| # | the person | the cause |
+|---|---|---|
+| 1 | the slowbloods' "pointy beak": the mouth tentacles point at you, turn and clip through the animal's own face, catch you from odd angles; you cannot swerve close to one; worst on the big ones | the petals are a chain rig (creatures_builders.js `mouthArms`) closed to a point at rest — PLANET's look (v11.8.8), which stays. With `c.grab` set inside `armReach` × 1.3, physics.js `stepRigs` draws every tip to the prey's *centre*, so stiff roots on a ring swing sideways through the head when the prey is off the axis. And a bite is not a touch: it lands when the centres are within `reachOf` (the DEFS reach, floored by the two bodies' contact + `BITE_M`) — a sphere round the hunter, 6.8 m on the ridge, with no test that the mouth is what arrived |
+| 2 | every part swappable and every fight physical and ecological; no game logic | the verdicts are tables and thresholds: `EDGE` (edge × covering → yes, no, nape, joint, thrash, time), the gape for slowbloods only, `WHOLE` for the beaks, `HOLD_BIG`, `PIN.t` by the mass ratio, `FLEE` by a count of bites, `MISS` by a width |
+| 3 | blood gushes when no damage is done | `startHold` wounds on every clamp and the hold on every bite (`GRIP.first`, `GRIP.bite` × `dmg` — the numbers §6 struck and the code kept for the blood's size), and `wound()` always bursts and starts the clock, whatever `h.thru` said |
+| 4 | a mouth too small to swallow can do nothing; in nature animals bite, tear, pull, or break one part to be sure | only `cut` (with a thrash), `point`, `crush`, the beak at the nape and claws at a joint get through anything, and the size of what they take is never asked; the default petals (`hold`) kill by the gape alone |
+| 5 | the ortho runs at you, then orbits you on impact, mouth pointed, until the momentum settles and the point rests on your face; "not what murder looks like" | before contact `seek` steers at where the prey is now at chase speed — pure pursuit with a limited turn circles its target, the textbook result. After, the hold is a rope from the grip to the *nearest* point of the held with nothing on either body's orientation, `resolveBodies` pushing the two apart while the holder's steering still seeks. No momentum changes hands at the strike |
+| 6 | blood is not relative to the injury; half a tail bleeds moderately | bleeding is a clock (`BLEED_T`, 14 s on a slowblood), the same for a graze and a lost tail; the burst is 4 + dmg × 0.4 points, 14 for a lost part |
+| 7 | you should bleed out; the tail went and you lived, because the tail fed the hunter and it left | §4, "bleeding never kills by itself"; `actOn` on a lost part releases the hold, `dropTarget(a, LOSE.cool)`, and takes `LOSE.meal` 0.15 off the hunter's hunger — a fixed piece whatever the part was |
+| 8 | dying should be a murder: know you are done and watch it come | behaviour: pass D (§10.8) |
+
+Found on the way: two masses, neither in kilograms. Contact and the struggle use `bodyMass`, size³ (the finback 5.8, the ridge 729);
+derive's `mass` is the build's volume × density at the spec's own scale and not comparable across kinds (the eel 2.65, the lurker 28.2).
+Every force below wants one mass.
+
+### 10.1 What nature does (added to §1)
+
+- **Capture and kill are separate acts.** Approach, strike, subdue, kill, eat. Most attempts fail at the strike; most injuries to the
+  predator happen while it subdues. Weapons divide by the stage: arms, claws and jaws capture; an edge kills; the gape or the edge eats.
+- **Ram and suction.** A moving head pushes a bow wave that shoves small prey away, so an aquatic engulfer sucks (reaching about one
+  mouth-width, in milliseconds) or grabs first. The bite follows the capture; a mouth that arrives without contact takes nothing.
+- **The gape limits the engulfers only.** §1 stands for them. An edge frees an animal of it: sharks saw with the teeth and shake,
+  morays knot for leverage, cookiecutters twist a plug out of something a hundred times their size, crocodiles roll, squid hold and
+  cut pieces with the beak, crabs take prey apart at the joints.
+- **The body is the weapon; the mouth is where it lands.** A shake uses the whole length as a lever, a roll is torque along the body,
+  a lunge is mass × speed. The mouth applies it.
+- **A wound is geometry.** A bite takes out about the volume of its mouth, and what it hits decides it: through a limb's root, the limb
+  is gone; to the nerve cord or the heart, dead; the flank, a wound that bleeds by its size.
+- **Blood is a volume.** It is lost at a rate set by the wound's size and the pressure; clotting closes small wounds in seconds and does
+  nothing for a torn-off limb (autotomy is the exception: the arm drops at a place built to close). Loss past about 15% weakens, past
+  30% collapses, past 40% kills — the hemorrhage classes, the same shape in fish and cephalopods.
+- **Prey escape by turning.** Turning radius grows with length; a big predator is faster in a line and wider in a turn, and the prey's
+  answer is the fast start at the last moment. The miss is geometry.
+- **Subdued means exhausted or hurt.** A held animal fights in bursts its metabolism pays for, and the struggle fades. Here that is the
+  stalemate rule showing: slowbloods, with no metabolism, fight hard for seconds; ringmouths for longer; hingeshells barely struggle
+  and barely need to.
+- **Predators avoid injury and follow the wounded.** They let go of dangerous prey, bite and wait on a big one, track a bleeding one,
+  and do not quit a crippled meal for one mouthful.
+
+### 10.2 One mass
+
+Kilograms: derive's volume at the world scale × the clade's density × 1000. Contact, the struggle, the impulse, the blood's volume and
+the bite's force read it, and `bodyMass` (size³) goes as the physical mass. A lathe and a chain of one size stop weighing the same (the
+eel is lighter than the grazer, which is true). `bioMass` stays the ledger's (the allometry, the flesh, the food): a piece feeds its share
+of the body's mass × the body's food, so the census does not move.
+
+### 10.3 The strike: contact, not reach
+
+- **The mouth is a sphere** at the mouth part (the frame's nose), its radius the gape, in a forward cone the petals' joint limit sets
+  (`cosMax` 0.85, about 32°). A bite lands when that sphere touches one of the prey's hit capsules, and the capsule it touches is where
+  the bite is (`h.ci`: the covering, the part, §10.5). A jaw's DEFS `reach`, `reachOf`, `BITE_M` and CLAUDE.md's rule that reach exceed
+  contact go. Reach stays where a part reaches: arms (the rig's length), claws, spears, whips (derive's `reach`).
+- **Suction.** Petals with no edge (`hold`; PLANET: "none (suction)") draw a body under the gape within one gape-width ahead into the
+  mouth over the strike's last 0.15 s. The only reach an engulfer has.
+- **The approach is an intercept; the strike a commitment.** The chase aims where the prey will be (its velocity × the time to close,
+  capped), not where it is. In strike range (what its burst covers in half a second) the hunter commits: the heading locks on the
+  intercept point, it bursts (derive's `burst`), and its steering in the lunge is its turn rate × 0.3. Contact in the lunge is the bite.
+  None is a miss: it coasts past on its momentum and comes round on its own turning radius (speed ÷ turn: the ridge 7.7 m at 9.5 m/s, the
+  finback 2 m at 6). `MISS` goes. The tell stays — the mouth opening, the cock — because it is what you read.
+- **The impact is momentum.** At contact the two bodies' velocities along the strike share by mass (inelastic: the jaws close on it),
+  so a ridge carries a finback off at nearly its own speed. A strike that takes no hold (the ram's blow, claws off plate) is the same push,
+  elastic, and stuns by the impulse over the struck mass (`RAM.stun` from a Δv, not a flat 2.5 s).
+- **Arms and claws are the same rule with their own geometry**: the tips touching the prey is the grab (a ringmouth takes hold at arm's
+  length and reels in, as built); a claw closing on a capsule is its grip.
+- **The petals follow the contact.** `c.grab` draws the tips to the struck point on the prey's surface, not its centre, and only while
+  that point is inside the cone; outside it they keep their pose and the head has to turn. They bloom on the strike (as built) and close
+  on the bite; no tip passes behind its root. The point at rest is PLANET's look and stays; it reaches nothing.
+
+### 10.4 The hold: a joint, not a rope
+
+- **Welded at the struck point.** The point on the prey's capsule is fixed to the mouth from the first frame: no rope closing, no
+  re-anchoring to the nearest point, and no body push between the holder's head and the held while it stands.
+- **The pair moves as one.** The joint shares momentum exactly (`HOLD_DRAG` and `close` go); the heavier drags. The holder steers its
+  own body at its turn rate × m_holder ÷ (m_holder + m_held); the held hangs from the joint and trails the way the pair moves, swinging by
+  its own thrust. The struggle is a body thrashing in the jaws, not a body sliding round a sphere.
+- **The holder does what its build does**, not the chase (it has the prey):
+  - a cutting edge **shakes** — the head yawed ±25° at its tail-beat rate; the prey's inertia is the anvil and the edge saws (§10.5);
+  - a chain body **rolls** — the eel spins on its long axis or knots its tail round to brace; the same shear;
+  - a plain jaw **clamps and waits** — until the held is subdued, then swallows it if the gape takes it, else lets go;
+  - arms **reel in** — the held is drawn to the beak, which goes for the nape once it is subdued (§3, as built);
+  - claws **pull** — the hingeshell backs off holding a limb, the limb tears at its root when the pull passes the root's strength
+    (§10.5), and the mouthparts shred.
+- **Subdued** replaces `PIN.t`: the held is subdued when its struggle has stayed under the grip's strength for a second. The struggle is
+  its thrust × its blood loss (§10.6) × its stamina, a clock that drains while it struggles and fills at rest (`STAMINA`: slowbloods
+  full for ~6 s, then falling to a third; ringmouths ~12 s; hingeshells weak but for ~40 s; the player by its clade). A paralysed body is
+  subdued at once (the venom, as built). The stamina is the struggle's only; the sprint is untouched.
+- **A swallow takes time**: 1 + 4 × (the held's length ÷ the swallower's) seconds (the ridge on the finback, 2.6 s), the held in the mouth
+  with the grip doubled. A spined body stings the swallower (as built); one that tears free mid-swallow keeps the wound where it was held.
+  The swallowed death is seen coming.
+
+### 10.5 The wound: the size of the bite against the size of the part
+
+Every edge has a **bite radius** ρ, the size of what it takes out, read off its part, and a **force**:
+
+| edge | ρ, the piece | force | what it is |
+|---|---|---|---|
+| cut (petals) | 0.8 × the gape | the jaw's | a crescent the size of the mouth: a shark's bite |
+| point (needle jaw, spears) | depth: the needle's or spear's length; width nil | the jaw's, or the strike's impulse | a puncture; a skewer holds |
+| crush (plate jaw) | the gape | 2 × the jaw's | a covering broken whole; the soft body under it pulped |
+| beak | the beak's R | the beak's, with the arms' pull | small pieces; the nape |
+| claws, fold, whips | half the claw's span | the claw's: the strongest per mass | a pinch at a point; a pull at a joint |
+| shred (the hingeshells' plates) | the mouthparts' size | small | slow pieces from what the claws hold |
+| rasp | the disc's R, growing while latched | — | the lamprey's wound |
+| hold (plain petals) | 0 | the jaw's | grips, takes nothing, swallows |
+| ram | 0 | the impulse | a blow |
+
+- **The force** is F = K × M^(2/3) (muscle by its cross-section, §1), K by the edge and the clade's lever: bone jaws, a beak on a muscular
+  buccal mass, a claw's lever (on Earth a 4 kg coconut crab closes at ~3.3 kN, a 3 t white shark at ~18 kN).
+- **Through** when F × σ ≥ τ × r: σ the edge's sharpness (point ≫ beak ≈ cut > claws > shred), τ the covering's toughness, r the struck
+  capsule's radius (a covering's thickness scales with its body). A crush is tested against τ × r² instead: a shell breaks whole or not
+  at all. Not through is a bruise — no wound, no blood — and the hold still holds (a grip is closure and friction, not a cut). A cutting
+  edge not through a hide gets there by the shake: each cycle multiplies σ by 1.5, to 3×. K, σ and τ are set so the verdicts §7 agreed
+  come out (the ridge through the finback's hide with a shake, the crusher through the coil, nothing through the plough's shell but the
+  crusher), in a table with the Earth numbers in its comments.
+- **What it did** is geometry at the struck capsule of radius r:
+  - a **limb** (a part with its own capsule, `hitOwn`: the tail, a fin, an arm): ρ ≥ 0.7 r at its root **severs** it (a cut or a crush;
+    claws pulling past the root's strength the same); less is a wound on the part;
+  - the **trunk or the head**: the vitals are the axis — the nerve cord and the heart, 0.75 r deep along the core's front 60%, and 0.3 r at
+    the nape (just behind the head, dorsal, where the cord runs shallow: why a beak kills there, §3). ρ past that depth where it bit
+    **kills** (opened, the nerve cord, crushed); less is a **wound** of area ~ρ²;
+  - a **point**: its depth against the same vitals along its line. Through the core kills; through the flank is a puncture that bleeds
+    little and holds.
+- **A piece is food**: a severed part or a bite's volume feeds its share of the body's mass × the body's food (a finback's tail is about a
+  fifth of it: to a ridge a snack, to an eel half a meal). `LOSE.meal` and `AUTOTOMY.meal` go. A hunter eats the piece where it fell and,
+  still hungry, the rest is the crippled animal (pass D).
+
+Worked on today's bodies (world scale, the matrix's radii):
+
+| hunter (edge, ρ) | on the finback (trunk r 0.53, tail r 0.25) |
+|---|---|
+| ridge (cut, 0.54) | any trunk bite passes the vitals — dead (or swallowed: its gape, 0.68, takes 0.53 whole); a tail bite severs it. From behind, the tail; broadside or head-on, the end |
+| basker (cut, 0.59) | the same |
+| eel (cut, 0.22) | a flank bite is a wound (0.42 r, short of the vitals); the nape kills (past 0.3 r); the tail is severed |
+| ortho (beak, 0.20) | a flank wound; the nape kills — "bitten at the nerve cord", as built |
+| the soft-arm (beak, 0.18) on a grazer (r 0.93) | a wound of 0.19 r and never the nape (0.28 m deep): it can bleed a grazer, not kill one; an arrow it kills at the nape |
+| the finback (hold, 0) | through nothing: it eats what its gape takes (0.26 with the stretch: the arrow, the needle, the scuttle) |
+
+The crippling bite is the eel's, and anything's from behind; the ridge's is death unless it lands on the tail.
+
+### 10.6 Blood: a volume, a rate, a clot
+
+- **Volume**, a share of the body's mass by clade (`BLOOD`): slowbloods 4% (iron, closed, low pressure: the metabolism they lack),
+  ringmouths 6% (copper, closed, high pressure), hingeshells 20% (vanadium, open, barely driven), drifters none to speak of.
+- **A wound's rate**, as a share of the volume a second: q₀ = k × a, with a = (ρ ÷ r_trunk)² × the part's vessels (trunk 1, head 1.2, a
+  tail's or fin's root 1.5, an arm 0.6, a fin's web 0.2) × the clade's pressure (ringmouths 1.3, slowbloods 1, hingeshells 0.3). Wounds add.
+- **The clot**: each wound's rate decays with τ = `BLEED_T` × (1 + a ÷ 0.25) — the clade's clotting time, kept (ringmouths 6 s, slowbloods
+  14, hingeshells 3), stretched by the wound's size. A graze stops in seconds; a torn-off tail runs on. Autotomy closes: a dropped arm
+  bleeds as a graze.
+- **The loss** L (0..1 of the volume) does the rest, in one factor in `slowOf` beside the live spec's: under 0.15 the trail and nothing
+  else; 0.15–0.30 weak, thrust, turn and grip falling to half; 0.30–0.40 collapse, no burst, no struggle, a body denser than water
+  sinking; **0.40 dead, "bled out"** — a carcass like any kill, and the slot's animal (§9 Open 2). Blood comes back fed over game days
+  (ringmouths 1, hingeshells 2, slowbloods 4). The save carries L and each open wound.
+- **Worked** (k 0.05/s), the finback: the eel's flank bite, a 0.17 → 0.0086/s, τ 24 s, 20% lost: weak, and alive if it gets away. Two such
+  bites are 40%: dead. The tail severed, a 0.33 → 0.017/s, τ 33 s: 40% at about 45 s. That is the crippled death — the trail pouring for
+  most of a minute, with the hunter free to come back for the rest. The soft-arm's beak on the flank is 12%: a trail. The eel's bite on the
+  soft-arm, a ringmouth, clots at 10%.
+- **The look follows the rate**: the burst at the wound ∝ q₀ (none when nothing went through), the trail's emission ∝ the current rate — a
+  torn tail pours, a graze threads, a bruise shows nothing. `SMELL_R` by the rate: SMELL_R × √(q ÷ q_ref), at most twice, so a pouring
+  wound is found from 180 m and a thread from 40 (downcurrent is the true direction of a scent: pass D).
+
+### 10.7 What goes, what stays, the knobs
+
+**Goes**: `EDGE` as a verdict table (the edges stay as styles; the verdict is F × σ against τ × r); `GRIP.first/bite/bleed`, every `dmg`
+in `DEFS` and the player's `bite` (§6 struck them; the code kept them for the blood's size); a jaw's `reach`, `reachOf`, `BITE_M` and
+CLAUDE.md's reach rule; `HOLD_BIG` (a jaw lets go when its edge does nothing and its gape does not take the body: the verdict, not a mass
+share); `PIN.t`, `PIN.mass` (subdued by stamina); `MISS` (the geometry); `FLEE` (a hunter hurt past L 0.15 or missing a part leaves:
+pass D); `LOSE.meal`, `AUTOTOMY.meal`, `LOSE.floor` (the live spec and the loss decide what a body can do); `WOUND_SLOW`; the rope's
+closing (`close`, `HOLD_DRAG`); `bodyMass` as size³; §4's "bleeding never kills".
+
+**Stays**: the hold as the fight; the struggle as force against a grip by mass^(2/3); the coverings; the edges as styles; the gape; the
+live spec and the lost part (pass 3); autotomy, the stump and the regrowth; venom, the sting, the poison; the moult's soft state; the
+blood's colours; the debris, the flinch, the flush; the save carrying the wounds.
+
+**Knobs**, a table each with a comment per key: `EDGE_K` (K, σ, ρ's rule per edge), `COVER_T` (τ per covering), `VITAL` (0.75 r, the nape's
+0.3 r, the span), `SEVER` (0.7), `BLOOD` (volume and pressure by clade, the vessels by part, k, the clot's stretch, the loss's bands, the
+refill), `STAMINA` (by clade), `STRIKE` (the lock, the lunge's steering 0.3, the suction window), `SWALLOW` (1 + 4 ×).
+
+### 10.8 The passes
+
+- **A — the wound and the blood** (points 3, 6, 7): one mass; blood as a volume with a rate and a clot; the wound by ρ against r at the
+  capsule the hold is on (today's holds); no penetration, no blood; bleeding out; the piece as food, and a hunter no longer quits a
+  crippled body for one mouthful. Self-contained; three of the eight.
+- **B — contact and the hold** (points 1, 5): the mouth's sphere and cone, suction, the intercept, the committed lunge and the
+  overshoot, the impact's momentum, the joint at the struck point, the orientation, the petals to the surface; `MISS` and `reachOf` out.
+  The biggest change to the look; scripted checks as in `test/steer.js` for the orbit (the holder's angular speed about the held under a
+  bound) and the petals (no tip behind its root, none inside its own head).
+- **C — the edge's work** (points 2, 4): the shake, the roll, the claws' pull, the crush; subdued by stamina; the swallow as a sequence;
+  the edge as a line's trait (§10.9).
+- **D — predator behaviour** (point 8; the person's own pass, with another after it): commit to a crippled animal and follow its trail
+  downcurrent; bite and wait on dangerous or bigger prey; break off when hurt (the life–dinner rule); the return — you bleeding, knowing,
+  and it coming round.
+
+Each pass rewrites the matrix and the hunter table in `test/combat.js` to its verdicts, and re-runs `test/census.js` and `test/live.js`
+(the kills on screen change; the ledger's rates do not).
+
+### 10.9 The person's answers (24 Sep 2026)
+
+1. **Bleeding kills.** §4's line is struck.
+2. **The edge is the clade's, not the finback's.** The finback is the start of the player's experience, not its average. The edge must
+   be a real thing, not a default: a variant of the larger slowbloods, or a sub-clade. Proposed: cutting petals are the slowbloods'
+   answer wherever prey outgrew the gape — a family trait of the ridgebacks and the longbacks (the ridge, the abyssal, the eel), by
+   species among the finbacks and platebacks (the basker's cut, the needle's point, the crusher's plates: convergent) — and a player's
+   line reaches it as an edit at conception at the budget's price (LINEAGE §13.4). The founder's slowblood (the finback, the grazer, the
+   darter) is the engulfer. *Open: that family split, or the edge as a sub-clade of its own.*
+3. **As realistic as it comes.** The geometry decides; a crippled death is the common one and the instant death is real where the mouth
+   is big enough (§10.5's table).
+4. **Physics first** (A–C), **behaviour after** (D), and possibly another behaviour pass after that.
+5. §9 Open 5 falls: the miss is the geometry (§10.3).
