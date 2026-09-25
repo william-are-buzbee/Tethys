@@ -1,6 +1,6 @@
 # ARCHIPELAGO.md — the chain (15 Sep 2026)
 
-Status: **steps 1–4 built** (v11.61 the islands as records; v11.62 the giant's record and the land term; v11.64 the horizon tier and a trade-wind air; v11.65 the world at 240 cells with the ledger's index); step 5 designed nowhere yet. The person's decisions are at the end.
+Status: **steps 1–4 built** (v11.61 the islands as records; v11.62 the giant's record and the land term; v11.64 the horizon tier and a trade-wind air; v11.65 the world at 240 cells with the ledger's index); step 5 designed nowhere yet. The person's decisions are at the end. **Revised 25 Sep 2026 (GLOBE.md):** the "one chain" below is one lobe of a hotspot *cluster* on a slow plate with a seamount province round it; the built members stay where they are, and the region is drawn from the planet before any more are placed.
 Read PLANET.md first (the basin, the shield's rules) and DESIGN.md World shape; the maps are `map.html` and `node test/map.js`.
 
 ## What it is
