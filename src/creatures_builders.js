@@ -124,7 +124,7 @@ function coilShell(S,pal,o){
 function mouthArms(g,pal,z,r,len,n,w,segs,capG){ // capG: where the cap goes (the spec's body frame, so it sways with the hull; the rig stays in g)
   // the mouth: n short stiff tentacles on a ring of radius r at z, converging to a point len ahead at rest (the ring's curve carries
   // each tip to the axis), blooming on the bite. The same chain rig as a ringmouth's arms, stiffer; ringPose every frame from open().
-  const rig=armRing(g,n,z,r,len,w,pal.top,segs,-r/len,{ks:150,damp:14,cosMax:0.85,c2:pal.belly,taper:0.68,phase:0.5});
+  const rig=armRing(g,n,z,r,len,w,pal.top,segs,-r/len,{ks:150,damp:14,cosMax:0.85,c2:pal.belly,taper:0.68,phase:0.5});for(const c of rig.chains)c.mouth=true; // mouth (v11.92): physics.js draws these to the struck point on the prey's surface, and only inside the mouth's cone — never to its centre through the head
   // the nose: a rounded cap the tentacles grow out of (the lathe is open at its front, and single-sided: without it you see into the
   // hull between the arms — seen v11.8.8), with the dark mouth at its centre, seen open
   (capG||g).add(new THREE.Mesh(merge([part(G.sph(r*1.12,8,6),0,0,z-r*0.15,pal.top,{s:[1,1,0.62],c2:pal.belly}),part(G.sph(r*0.55,6,5),0,0,z+len*0.18,pal.mouth||pal.band,{s:[1,1,0.6]})]),MAT));

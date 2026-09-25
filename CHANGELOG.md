@@ -5923,3 +5923,64 @@ finback's own bite on a grazer (nothing); (2) the crippled death — a tail gone
 `BLOOD.dead`, `BLOOD.k`, the root's `vessel` 1.5); (3) the eel's bites killing a held finback in 16 s — right, or should the struggle free you
 sooner (`GRIP.k`); (4) the blood's numbers by clade (`BLOOD.vol`, `press`) — a hingeshell barely bleeds and is torn apart instead; (5) the nape
 zone's placement (`VITAL.nape0–1`) once a beak hunter is seen killing; (6) `TORN` 0.25.
+
+## v11.92 — COMBAT pass B: contact, not reach; the intercept and the committed lunge; the hold as a joint; the petals to the skin (24 Sep 2026)
+
+The person on pass A: "this pass looked good"; go ahead on B. Points 1 and 5 of COMBAT.md §10: the slowbloods' pointed mouth turning through its
+own face to nab you from any angle, and a hunter that runs at you, hits, and orbits you with its mouth pointed until the momentum settles.
+
+- **A bite is a touch** (combat.js `mouthOn`, `landsOn`; §10.3): a jaw's mouth is a sphere at the mouth part (the grip's point), its radius the gape
+  × `STRIKE.slack` 1.3, biting within `STRIKE.cone` (60°) of the body's axis — the bite lands when it touches one of the prey's hit capsules, and that
+  capsule is where the bite is. A plain jaw (hold petals: suction) draws a body it can swallow from `STRIKE.suck` 2 gapes off — the engulfer's only
+  reach. Arms and claws bite at their reach as before (a part's reach: `reachOf`, `armReach`). The DEFS `reach` no longer lands a jaw's bite;
+  `MISS` (the dodge across the strike's line as a rule, v11.56) is gone with `missWin`, `dodged`, `commitAt`. The player's jaw finds its target the same
+  way, `PLAYER_BITE` 1 m past the sphere for the click.
+- **The chase turns, it does not flip** (creatures_ai.js `seekTurn`): a chasing swimmer's heading comes round toward the way it wants at its turn rate
+  (derive's, rad/s), so its turning radius is its speed over that rate (the ridge 7.7 m at 9.5 m/s) and an overshoot is a circle back, nose first; a
+  tight turn is taken slower (`TURN_BRAKE`: a C-start — or a prey inside the circle is never reached), and turning right round it yaws (a target astern
+  and a little below is not a dive the floor undoes). Its facing follows the velocity `TURN_FACE` 5× faster than the rate (it points where it goes).
+  `seek`'s lerp let a hunter reverse in place and wobble on a prey beside its own trunk — the orbit.
+- **The strike** (§10.3): the chase aims where the prey will be (`aimAt`: led by the time to close at the closing speed, at most `STRIKE.lead` 0.8 s);
+  a jaw hunter steers for the point a nose-length short of the prey along its facing (`approachPt`, `noseD`) and, with the prey beside or behind its
+  mouth, out to a run-up point `STRIKE.runup` 5 m past that on its own side, to come at it again. In range (`strikeRange`: the contact plus
+  `STRIKE.range` 0.3 s of the sprint) with the prey ahead of the mouth (`mouthAhead`, `STRIKE.face` 0.55) it **commits**: `commitT` = `STRIKE.dur`
+  0.6 s, the heading locked on the point aimed, a burst at derive's sprint (`d.sprint` on every row, `defPhysics`), the steering `STRIKE.steer` 0.5 of
+  the rate, the head snapped to the point (`c.face`, `TURN_STRIKE` 6×: the mouth dips to a prey under it — the centre rides the floor's clearance),
+  the mouth open (the tell). Contact in the lunge is the bite; none by its end is a miss (`missed`, `STRIKE.cool`) and it coasts past on its momentum
+  (`STRIKE.coast` 0.5 s). The strikers' strike phase is the same commit (the bite on contact, a miss at its end); the ambushers' lunge too. The
+  pursuit's clock (`ECO_CHASE`) restarts at a commit. The escape is geometry: turn across it late.
+- **The impact** (`impact`): at the clamp the two velocities become one, the momentum shared by mass — a ridge carries a finback off at nearly its own
+  speed. A blow (`blow`: the ram's, the great's, the player's ram) is an elastic knock by the striker's speed and the masses, the stun by the Δv.
+- **The hold is a joint** (§10.4, `updateHolds`): the grip and the struck point — on the prey's *skin* now, the axis point moved out by the
+  capsule's radius toward the mouth — are one point: the gap closed by mass share every frame, the velocities made one with the momentum shared
+  exactly. The rope, `HOLD_DRAG` and `GRIP.close` are gone; the bodies of a pair are not pushed apart (physics.js `resolveBodies`); the holder does
+  not seek into a body it already has (the pair drifts as one; the shake is pass C) and turns by its share of the pair's mass; the arms that hold you
+  no longer shove you out of themselves. What the joint takes off the held body every frame is its whole thrust — a fresh finback from rest is 3 g,
+  55 kN — so `GRIP.k` is five times pass A's (jaw 450, arms 350, claws 650): an eel holds a fresh finback for seconds, not for good, until pass C's
+  stamina makes the struggle fade.
+- **The petals follow the contact** (physics.js `stepRigs`, `simChain`; creatures_builders.js `mouthArms` marks its chains `mouth`): the mouth's
+  chains go for the point the hold has on the prey's skin — before a hold, the nearest point of the prey's surface to the mouth — and only while that
+  point is inside the mouth's cone (`MOUTH_CONE` 0.85, the petals' own joint limit); outside it they keep their pose and the head has to turn. The
+  arms still reach for the centre. To v11.91 every tip went for the centre, and a prey beside the head pulled the petals through the face.
+- **The stub** (test/stub.js): `Matrix4.lookAt`, `Quaternion.setFromRotationMatrix`, `slerp` and `Vector3.crossVectors` are three's now, and an
+  object's matrix composes from its quaternion — to here every headless creature faced +z for ever (a no-op `lookAt`), which the reach sphere never
+  noticed and the mouth's contact does. `mouthOn` composes both bodies' frames itself: past the near list nothing else does, and a far hunt must land.
+- **Found on the way and reverted**: the floor clearance by the body's own radius (a ridge hangs 3 m up on 0.35 × size, its mouth over any floor prey)
+  wedges big bodies in the floor's rocks — the head-dip does the job instead. `curComp` in the turned steering cancels the turn (it subtracts the
+  current from an incrementally rotated heading every frame): the current carries the body by its position drift there.
+- **On paper** (`test/combat.js`; the hunter table's hunters face the finback now, and §17 is new): a ridge 6 m beside the finback is within the old
+  reach (6.8 m) but its mouth is on nothing; nose to it, it bites. The ortho takes the thrashing finback and sweeps 26° about it in 1.8 s of the hold
+  (then the nerve cord), the ridge 0° in 0.7 s (then swallowed); the joint's two points never part by more than 0.35 m (0.00). The ridge holding the
+  finback off its axis: no mouth tentacle folds behind its root (2 of 264 samples 15 cm behind, the flinch). A chasing ridge commits its lunge and a
+  grazer that moved 2.5 m across it is missed — the mouth touches nothing — and one that holds still is taken in 1.3 s. The finback's mouth takes an
+  arrow 0.57 m off its nose (suction). The table: the eel bleeds the finback out in 14 s, the lurker and the ortho bite the nerve cord, the crusher,
+  stone, basker, ridge and abyssal swallow it, the sickle skewers and bleeds it out, the trap, hood and hook let go of a hide, the lash bleeds it out.
+
+**Seen** (the app's browser pane, `dev.html`, a game started and a ridge spawned 14 m behind the finback facing it, the state read each two seconds): the ridge came in at 4.7 m/s, committed, and at 8 s of play its clamp from behind took the tail (the live spec at speedK 0.15, the root pouring at 1.62%/s, 3.5% lost), let go with the mouthful and kept the chase (6.5 m off a moment later), came straight back and tore the crippled finback apart — the slot over, "torn apart by a ridge", the menu. The bite itself was not framed: the impact swung the camera, and the ridge was behind the player's view the whole approach. The petals, the joint and the miss's circle back are the tests' word.
+
+**Unseen, ask in this order:** (1) whether the mouth now bites where it is — a slowblood passing beside you is nothing, one coming nose-on is
+the bite — and the petals never through its own face; (2) the ortho and the ridge on impact: carried off, held at the point, no orbit; (3) the
+turning: a hunter that misses coasting past and coming round on a real circle, and whether the circle reads as a fish's (`TURN_BRAKE`, `STRIKE.coast`);
+(4) how often hunters miss now (`STRIKE.range`, `.steer`, `.face`, `.slack`) — most attacks should fail, but a ridge should get you within a few tries;
+(5) the run-up when a hunter finds you beside its head (`STRIKE.runup`); (6) the eel holding a fresh finback ~14 s and the finback tearing free of
+smaller jaws (`GRIP.k`) — pass C's stamina is the real answer; (7) the head snapping down to a prey under it (`TURN_STRIKE`).

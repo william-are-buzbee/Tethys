@@ -1,6 +1,6 @@
 # COMBAT.md — injury as states, not numbers
 
-**Status: designed and built in full 15 Sep 2026 (passes 1, 2, 4, 3: v11.54–v11.57); §10 pass A built v11.91 (24 Sep 2026)** (pass 1: the edge and the covering read off the spec, the hold knows what it is on, no capsule past the nose; pass 2: no hit points — the gape, the pin and the placed act, wounds that bleed and slow, paralysis and the sting, autotomy, death ends the slot's animal; pass 4: hunters read blood, the strike's miss rule, injuries in the save, the poison by feeding; pass 3: the wound as a spec edit — a tail torn off, the body re-derived, the stump and the regrowth; the numbers in DESIGN Combat). §7 has what the matrix found; §8 the passes as built. **§10 (24 Sep 2026): the physics pass — A built v11.91, B–D designed** — the person's report after hours as the finback, the cause of each point in the code, and passes A–D (the wound and the blood; contact and the hold; the edge's work; predator behaviour); it strikes §4's "bleeding never kills", `MISS`, `PIN.t`, the reach sphere and the verdict table. Replaces the hit-point half of v11.31 (DESIGN Combat): the hold, the rope, the struggle by
+**Status: designed and built in full 15 Sep 2026 (passes 1, 2, 4, 3: v11.54–v11.57); §10 passes A–B built v11.91–92 (24 Sep 2026)** (pass 1: the edge and the covering read off the spec, the hold knows what it is on, no capsule past the nose; pass 2: no hit points — the gape, the pin and the placed act, wounds that bleed and slow, paralysis and the sting, autotomy, death ends the slot's animal; pass 4: hunters read blood, the strike's miss rule, injuries in the save, the poison by feeding; pass 3: the wound as a spec edit — a tail torn off, the body re-derived, the stump and the regrowth; the numbers in DESIGN Combat). §7 has what the matrix found; §8 the passes as built. **§10 (24 Sep 2026): the physics pass — A and B built v11.91–92, C–D designed** — the person's report after hours as the finback, the cause of each point in the code, and passes A–D (the wound and the blood; contact and the hold; the edge's work; predator behaviour); it strikes §4's "bleeding never kills", `MISS`, `PIN.t`, the reach sphere and the verdict table. Replaces the hit-point half of v11.31 (DESIGN Combat): the hold, the rope, the struggle by
 mass, the blood and the debris stay; `hp`, `dmg`, the bite clock's damage share and the bleed-as-hp-loss go. The person's ask, in
 their words: "instead of taking damage from a skewer, you are actually physically skewered, and die"; "instead of taking damage from a
 bite, you mostly just die from the bite"; dismemberment; "a realistic and believable combat system that is as scary and freaky as real
@@ -235,7 +235,7 @@ gape by geometry. Findings, for the person:
 
 Answered 15 Sep 2026: the chemistry per clade (§3b) — ringmouth venom by the beak, slowblood venom on the spines, hingeshell poison from the seep diet, the drifters' cells; and the roster it lands on.
 
-## 10. The physics pass (24 Sep 2026; pass A built v11.91, B–D designed)
+## 10. The physics pass (24 Sep 2026; passes A and B built v11.91–92, C–D designed)
 
 The person, after hours as the finback being bitten on purpose (24 Sep 2026), separating what is the AI from what is the fight's
 physics. What each point is in the code:
@@ -422,8 +422,8 @@ refill), `STAMINA` (by clade), `STRIKE` (the lock, the lunge's steering 0.3, the
 - **A — the wound and the blood** (points 3, 6, 7) — **built v11.91** (the build added: the nape as a zone behind the head, nape0–nape1 of the trunk capsule with the biter's mouth over the back, the face core-deep; arms that have pinned a body have turned it, so their placed bite is at the nape wherever they took hold; a body with TORN 0.25 of its mass taken in pieces is dead, torn apart; the verdict table stays as the through/not gate until C): one mass; blood as a volume with a rate and a clot; the wound by ρ against r at the
   capsule the hold is on (today's holds); no penetration, no blood; bleeding out; the piece as food, and a hunter no longer quits a
   crippled body for one mouthful. Self-contained; three of the eight.
-- **B — contact and the hold** (points 1, 5): the mouth's sphere and cone, suction, the intercept, the committed lunge and the
-  overshoot, the impact's momentum, the joint at the struck point, the orientation, the petals to the surface; `MISS` and `reachOf` out.
+- **B — contact and the hold** (points 1, 5) — **built v11.92** (the build added: the chase steers by a rate-limited heading, `seekTurn`, braking into tight turns and yawing to turn round; a run-up point when the prey is beside the mouth; the head snapped to the strike's point, so the mouth dips to a prey under a hunter riding the floor's clearance; `reachOf` stays for arms and claws — a part's reach): the mouth's sphere and cone, suction, the intercept, the committed lunge and the
+  overshoot, the impact's momentum, the joint at the struck point, the orientation, the petals to the surface; `MISS` out.
   The biggest change to the look; scripted checks as in `test/steer.js` for the orbit (the holder's angular speed about the held under a
   bound) and the petals (no tip behind its root, none inside its own head).
 - **C — the edge's work** (points 2, 4): the shake, the roll, the claws' pull, the crush; subdued by stamina; the swallow as a sequence;
@@ -444,6 +444,7 @@ Each pass rewrites the matrix and the hunter table in `test/combat.js` to its ve
    species among the finbacks and platebacks (the basker's cut, the needle's point, the crusher's plates: convergent) — and a player's
    line reaches it as an edit at conception at the budget's price (LINEAGE §13.4). The founder's slowblood (the finback, the grazer, the
    darter) is the engulfer. *Open: that family split, or the edge as a sub-clade of its own.*
+*Pass A seen (the person, 24 Sep 2026): "this pass looked good"; go ahead on B.*
 3. **As realistic as it comes.** The geometry decides; a crippled death is the common one and the instant death is real where the mouth
    is big enough (§10.5's table).
 4. **Physics first** (A–C), **behaviour after** (D), and possibly another behaviour pass after that.

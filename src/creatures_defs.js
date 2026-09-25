@@ -102,7 +102,7 @@ function founderDef(spec){const k=founderOf(spec);return k?DEFS[k]:null;}
 // The physics off the build (v11.71): top is derive's speed, speed is what the AI has always read (top × pace), flee the top speed where a kind bolts,
 // turn and accel derive's. A kind made later (the lab's, the line's young) goes through the same function. accel reaches the AI through seek
 // (creatures_ai.js ACC_REF): a heavy body closes on the speed it wants more slowly than a light one.
-function defPhysics(d,spec){const st=derive(spec);d.top=st.speed;d.speed=+(st.speed*(d.pace||1)).toFixed(2);if(d.flee)d.flee=st.speed;d.turn=st.turn;d.accel=st.accel;d.filter=st.filter||0;return d;} // v11.85: filter, the sieve's m² off the build — a kind with any is a filter feeder (ecology.js ecoOf puts the swarm on its prey; creatures_ai.js filterIntake feeds it)
+function defPhysics(d,spec){const st=derive(spec);d.top=st.speed;d.speed=+(st.speed*(d.pace||1)).toFixed(2);if(d.flee)d.flee=st.speed;d.turn=st.turn;d.accel=st.accel;d.filter=st.filter||0;d.sprint=st.burst||1;return d;} // sprint (v11.92): derive's burst over the top speed — the committed lunge's speed (creatures_ai.js) // v11.85: filter, the sieve's m² off the build — a kind with any is a filter feeder (ecology.js ecoOf puts the swarm on its prey; creatures_ai.js filterIntake feeds it)
 for(const k in DEFS)if(SPECS[k])defPhysics(DEFS[k],SPECS[k]);
 // The world's capacity (v11.26): n is the individuals per cell of a kind at full tolerance, scaled by the cell's mean tolerance for the
 // envelope (ecology.js ecoCap; chunks.js cellW) — it is the carrying capacity K of the ledger, not a spawn count. The ledger runs at

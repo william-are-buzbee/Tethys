@@ -199,6 +199,7 @@ function resolveBodies(list){
   for(let i=0;i<list.length;i++){const A=list[i];
     for(let j=i+1;j<list.length;j++){const B=list[j];
       const dd=A.pos.distanceTo(B.pos);if(dd>A.bound+B.bound)continue;
+      if((A.hold&&A.hold.b===B)||(B.hold&&B.hold.b===A))continue; // a hold is a joint (combat.js, v11.92): the jaws are on the body — the two are not pushed apart
       const wa=B.mass/(A.mass+B.mass),wb=A.mass/(A.mass+B.mass);
       for(const sa of A.shapesW)for(const sb of B.shapesW){
         const cd=len3(sa.cx-sb.cx,sa.cy-sb.cy,sa.cz-sb.cz);if(cd>sa.br+sb.br)continue;
@@ -231,7 +232,7 @@ function makeChain(n,sign,upx,upy,upz,o){
 // ever), but the part of the rest's motion that is the body turning under them, and the stroke moving them, is water they have to push: SWAY of it is
 // left out of the drag reference, which parks the tip damp/ks × SWAY × that speed behind its rest — 0.18 s of it — for as long as the curve lasts.
 const SWAY=0.5;
-const SIM={shapes:[],grab:null,self:null,ch:null,vx:0,vy:0,vz:0},JOINT_SOFT=0.2; // the joint limit's ramp width in cos: 0.55 -> 0.75 is 57 -> 41 degrees
+const SIM={shapes:[],grab:null,grabM:null,self:null,ch:null,vx:0,vy:0,vz:0},JOINT_SOFT=0.2; // grabM (v11.92): the mouth chains' point, the prey's surface inside the cone, or null // the joint limit's ramp width in cos: 0.55 -> 0.75 is 57 -> 41 degrees
 const CPT={x:0,y:0,z:0};
 function chainGround(x,z){const ch=SIM.ch;return ch&&x>=ch.x0&&x<ch.x0+CELL&&z>=ch.z0&&z<ch.z0+CELL?ch.h(x,z):groundAt(x,z);}
 function simChain(c,e,s,dt){
@@ -245,7 +246,7 @@ function simChain(c,e,s,dt){
   const jump=len3(RW[0]-P[0],RW[1]-P[1],RW[2]-P[2]),stale=t-c.lastT>0.25;c.lastT=t; // stale: not simulated lately (far LOD), so its memory is no use
   if(c.fresh||stale||jump>8){for(let k=0;k<=n;k++){P[k*3]=RW[k*3];P[k*3+1]=RW[k*3+1];P[k*3+2]=RW[k*3+2];}V.fill(0);c.fresh=false;c.touch=0;return;}
   P[0]=RW[0];P[1]=RW[1];P[2]=RW[2];
-  const G=SIM.grab,kd=Math.exp(-c.damp*dt),ks=c.ks*dt*(G?0.3:1);
+  const G=c.mouth?SIM.grabM:SIM.grab,kd=Math.exp(-c.damp*dt),ks=c.ks*dt*(G?0.3:1); // a mouth chain (v11.92) goes for the surface point inside its cone, or holds its pose
   const Q=simChain.Q||(simChain.Q=new Float32Array(3*40));
   const bvx=SIM.vx,bvy=SIM.vy,bvz=SIM.vz,kw=1-SWAY; // the owner's own travel (carried whole) and the share of the rest's motion under it that is carried (v11.80: SWAY of the turn and the stroke is not)
   for(let k=1;k<=n;k++){const i=k*3;const rvx=bvx+((RW[i]-RP[i])/dt-bvx)*kw,rvy=bvy+((RW[i+1]-RP[i+1])/dt-bvy)*kw,rvz=bvz+((RW[i+2]-RP[i+2])/dt-bvz)*kw;
@@ -336,12 +337,22 @@ function stepRigs(o,near,dt){
    px[0]=ox;px[1]=oy;px[2]=oz;SIM.vx=vx;SIM.vy=vy;SIM.vz=vz;}
   if(o.shapesW)for(const w of o.shapesW)S.push(w);
   if(near)for(const q of near){if(q===o||!q.shapesW)continue;if(q.pos.distanceTo(o.pos)>o.reach+q.bound+1)continue;for(const w of q.shapesW)S.push(w);}
-  const G=o.grab;if(G&&G.pos){SIM.grab=stepRigs.G;stepRigs.G.x=G.pos.x;stepRigs.G.y=G.pos.y;stepRigs.G.z=G.pos.z;stepRigs.G.own=G;if(G.shapesW&&(!near||near.indexOf(G)<0))for(const w of G.shapesW)S.push(w);}else SIM.grab=null;
+  // the grab (v11.92, COMBAT.md §10.3): the arms reach for the prey's centre as before; the mouth's chains (c.mouth) for the point the hold has on the prey's
+  // surface — or, before a hold, the nearest point of the prey's surface to the mouth — and only while that point is inside the mouth's cone (MOUTH_CONE
+  // about the body's axis): outside it they keep their pose and the head has to turn. To v11.91 every tip went for the centre, and a prey beside the head
+  // pulled the petals through the face (the person, 24 Sep 2026)
+  const G=o.grab;if(G&&G.pos){const gp=stepRigs.G;gp.x=G.pos.x;gp.y=G.pos.y;gp.z=G.pos.z;gp.own=G;SIM.grab=gp;SIM.grabM=null;
+    const h=o.hold,gr=b.grip,mp=stepRigs.M;let sx,sy,sz;
+    if(h&&h.b===G&&h.at){sx=h.at.x;sy=h.at.y;sz=h.at.z;}else{const m=gr?localToWorld(o,gr.at,T1):T1.copy(o.pos);if(G!==player)freshShapes(G);bodyPointNear(G,m,T2);const W=G.shapesW,r=W&&W[bpIdx]?W[bpIdx].r:0;let ddx=m.x-T2.x,ddy=m.y-T2.y,ddz=m.z-T2.z;const dl=len3(ddx,ddy,ddz)||1;sx=T2.x+ddx/dl*r;sy=T2.y+ddy/dl*r;sz=T2.z+ddz/dl*r;}
+    const fl=len3(e[8],e[9],e[10])||1,vx=sx-o.pos.x,vy=sy-o.pos.y,vz=sz-o.pos.z,vl=len3(vx,vy,vz)||1;
+    if((vx*e[8]+vy*e[9]+vz*e[10])/(fl*vl)>=MOUTH_CONE){mp.x=sx;mp.y=sy;mp.z=sz;mp.own=G;SIM.grabM=mp;}
+    if(G.shapesW&&(!near||near.indexOf(G)<0))for(const w of G.shapesW)S.push(w);}else{SIM.grab=null;SIM.grabM=null;}
   let touch=0;
   for(const rig of b.rigs){for(const c of rig.chains){simChain(c,e,s,dt);touch+=c.touch;}rigSkin(rig,e);}
   o.holding=touch;
 }
-stepRigs.G={x:0,y:0,z:0,own:null};
+stepRigs.G={x:0,y:0,z:0,own:null};stepRigs.M={x:0,y:0,z:0,own:null};
+const MOUTH_CONE=0.85; // cos of the half-angle about the body's axis the mouth's chains reach within (the petals' joint limit: ~32°)
 
 // ---------- disturbance ----------
 // What the flora bends away from and what the marine snow flows around: the player as a short capsule along its path with

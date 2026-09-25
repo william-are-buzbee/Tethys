@@ -1505,6 +1505,24 @@ graze (ρ 0.15 r, `vessel.arms`). The save: `blood`, `wounds`, `eaten`. **Gone**
 the eel's flank wound 1.09%/s, the held finback weak at 10 s and bled out at 16; the tail severed by a ridge, the root 1.73%/s, 39 s to bleed
 out alone; a beak's graze 1.6% and clotted; a soft sickle torn apart in a ridge's jaws at 21 s.
 
+**Contact, not reach; the intercept and the lunge; the hold as a joint (v11.92, COMBAT.md §10 pass B).** A jaw's bite is a touch: the mouth is a
+sphere at the grip's point of radius gape × `STRIKE.slack` 1.3, biting within `STRIKE.cone` 0.5 (cos) of the axis; it lands on the prey capsule it
+touches (`mouthOn`, `landsOn`; a plain jaw draws a body it can swallow from `STRIKE.suck` 2 gapes: suction). Arms and claws bite at their reach
+(`reachOf`, `armReach`, `BITE_M`). `MISS` is gone. The chase steers by `seekTurn` (creatures_ai.js): the heading turns at the turn rate (× `turnK` in a
+lunge), braking into tight turns (`TURN_BRAKE` 0.9 at a reversal, floor 0.3 of the speed) and yawing past 2.3 rad; the facing follows the velocity at
+`TURN_FACE` 5× the rate, and in a strike snaps to the point at `TURN_STRIKE` 6× (`c.face`). The aim (`aimAt`) leads by the time to close at the closing
+speed, ≤ `STRIKE.lead` 0.8 s; a jaw hunter steers for `approachPt` — a nose-length (`noseD`) short of the prey along its facing, or the run-up point
+`STRIKE.runup` 5 m past that on its own side when the prey is beside or behind its mouth. The commit (`c.commitT` = `STRIKE.dur` 0.6 s) at
+`strikeRange` (contact + `STRIKE.range` 0.3 s of the sprint, `d.sprint` = derive's burst) with the prey ahead of the mouth (`mouthAhead`,
+`STRIKE.face` 0.55): the heading locked on the point, the sprint, the steering `STRIKE.steer` 0.5, the bite on contact, a miss at the end
+(`missed`, `STRIKE.cool` 1.5 cooldowns) then `STRIKE.coast` 0.5 s of coasting; strikers and ambushers commit the same way; `ECO_CHASE` restarts at a
+commit. `impact`: an inelastic collision at the clamp (the centre-of-mass velocity to both); `blow`: elastic, the stun by the Δv. The hold: the grip and
+the struck point (the capsule's surface toward the mouth) are one point, the gap closed by mass share and the velocities made one each frame
+(`updateHolds`; no rope, no `HOLD_DRAG`, no `GRIP.close`); `resolveBodies` skips a held pair; the holder drifts (no seek) and turns by its mass share;
+the arms holding the player do not push it out. `GRIP.k` jaw 450, arms 350, claws 650 (the joint takes the held body's whole thrust: 3 g from rest).
+The mouth's chains (`mouthArms` marks `c.mouth`) are drawn to the hold's point on the skin, or the nearest surface point to the mouth, only inside
+`MOUTH_CONE` 0.85 (physics.js `stepRigs`, `SIM.grabM`). The stub has real `lookAt`/`setFromRotationMatrix`/`slerp` and composes from the quaternion.
+
 ## The canopy
 
 **Struck in v11.81 (PLANKTON.md §12): the mask is the retention field `leeW` (world.js, the `EDDY` table) and places only the sailer fleets and

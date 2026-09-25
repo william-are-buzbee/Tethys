@@ -101,7 +101,7 @@ function spawn(ch,kind,pos,rng,opt){
   const f=vary&&ch?ch.f(pos.x,pos.z):null,cls=soft?'soft':f&&SPECS[kind]?coatClassAt(ch.h(pos.x,pos.z),pos.y,f,SPECS[kind].clade):'';
   const b=buildKind(D,kind,cls);if(k!==1){b.g.scale.multiplyScalar(k);b.gape*=k;}
   const c={kind:kind,def:d,g:b.g,anim:b.anim,pos:pos.clone(),vel:V3(0,0,0),home:pos.clone(),hp:d.hp,state:'wander',t0:rng()*100,lastSpd:0,lastYaw:0,roll:0,rollV:0,sq:0,stunSide:rng()<0.5?-1:1,target:null,biteT:0,wanderT:0,wander:pos.clone(),alive:true,gone:false,stun:0,bored:0,cool:rng()*3,scanT:rng()*0.5,alarm:0,fleeT:0,lungeT:0,ramT:0,school:null,off:null,offT:0,chunk:ch,lod:-1,parts:null,lodMeshes:null,sub:1,wet:true,grounded:false,flopT:0,
-    b:b,mass:0,mass0:0,bound:0,reach:0,shapesW:null,chainW:null,grab:null,holding:0,hold:null,held:0,bleed:0,blood:0,wounds:null,paraT:0,stungT:0,armsLost:0,regrow:null,sickT:0,poison:0,poisT:rng()*2,lungeC:0,missN:0,speedK:1,turnK:1,live:null,lost:null,cWith:null,d6:0,par:creatures.length&1, // hold: the hold it has on something, held: how many have hold of it, bleed: the rate its wounds drain at, blood: the share of its blood lost (combat.js, v11.91); mass: kg (combat.js kgOfBody; 1e6 while it sits), mass0 its own
+    b:b,mass:0,mass0:0,bound:0,reach:0,shapesW:null,chainW:null,grab:null,holding:0,hold:null,held:0,bleed:0,blood:0,wounds:null,paraT:0,stungT:0,armsLost:0,regrow:null,sickT:0,poison:0,poisT:rng()*2,commitT:0,coastT:0,missN:0,speedK:1,turnK:1,live:null,lost:null,cWith:null,d6:0,par:creatures.length&1, // hold: the hold it has on something, held: how many have hold of it, bleed: the rate its wounds drain at, blood: the share of its blood lost (combat.js, v11.91); mass: kg (combat.js kgOfBody; 1e6 while it sits), mass0 its own
     st:{tell:0,strike:0,jet:false},tellT:0,strikeT:0,recoverT:0,burstT:rng()*2,face:null,bit:false,accT:0,threat:null,
     ent:ent,hunger:EK.hunter?rng():0,starveT:0,hunt:0,feedT:0,feedAt:null,dead:false,flesh:0,deadT:0,scav:null,scavT:rng()*0.5,juv:juv?EK.grow*DAY_S*(0.8+0.4*rng()):0, // ent: the ledger entry; hunger 0 fed..1 starving (ecology.js); juv: seconds until it grows up // st: what the anim reads (creatures_builders.js); the tell and the strike as clocks
     k:k,cls:cls,soft:soft,softT:soft?MOULT.soft*Math.pow(EK.mass,0.25)*DAY_S*(0.7+0.6*rng()):0,moultT:vary&&!soft&&!juv&&moults(kind)&&D.role!=='boid'?MOULT.every*Math.pow(EK.mass,0.25)*DAY_S*(0.5+rng()):0}; // the individual (v11.66): its size factor, its coat class, the soft state and its clocks
@@ -152,6 +152,20 @@ function growUp(c){const ch=c.chunk,a=spawn(ch,c.kind,c.pos,Math.random,{ent:c.e
 const TURN_MIN=0.35; // the least share of its turn rate a slow body keeps (the veil at a fifth of its speed turns at 0.41 rad/s; its hand number was 0.35)
 const ACC_REF=2; // 1/s: the accel the behaviours' urgencies were tuned at (the roster's median derived accel; v11.71) — seek's rate is the behaviour's urgency × the body's accel over this, so the abyssal (0.8) answers at 0.4 of what the needle (3.6) does at 1.8
 function seek(c,target,speed,dt,accel){speed*=slowOf(c);accel*=(c.def.accel||ACC_REF)/ACC_REF;T1.copy(target).sub(c.pos);const L=T1.length();if(L<0.001)return;T1.multiplyScalar(speed/L);curComp(c,T1,speed);c.vel.lerp(T1,1-Math.exp(-accel*dt));}
+// the chase's steering (v11.92, COMBAT.md §10.3): a swimmer turns, it does not flip — its heading (the velocity's, or the body's when still) comes round toward
+// the way it wants at its turn rate (rad/s, derive's; × turnK in the committed lunge), so its turning radius is its speed over that rate (the ridge 7.7 m at
+// 9.5 m/s) and an overshoot is a circle back, nose first. seek's lerp let a hunter reverse in place and wobble on a prey beside its own trunk (the orbit)
+function seekTurn(c,target,speed,dt,accel,turnK){speed*=slowOf(c);const d=c.def,rate=(d.turn||2)*(c.turnK||1)*(turnK||1);T1.copy(target).sub(c.pos);const L=T1.length();if(L<0.001)return;T1.multiplyScalar(1/L);
+  const v=c.vel.length();if(v<0.3)T2.set(0,0,1).applyQuaternion(c.g.quaternion);else T2.copy(c.vel).multiplyScalar(1/v);
+  const cs=clamp(T2.dot(T1),-1,1),ang=Math.acos(cs),mx=rate*dt;
+  if(ang>mx){const s=Math.sin(ang);if(s>0.03)T3.copy(T1).addScaledVector(T2,-cs).multiplyScalar(1/s);else{T3.crossVectors(T2,UP);if(T3.lengthSq()<1e-6)T3.set(1,0,0);T3.normalize();} // the unit perpendicular toward the target; dead astern there is none, so any (the body picks a side)
+    if(ang>2.3){T4.crossVectors(T2,UP);if(T4.lengthSq()>1e-6){T4.normalize();if(T4.dot(T1)<0)T4.multiplyScalar(-1);T3.add(T4).normalize();}} // turning right round, a swimmer yaws: the turn goes mostly sideways, to the side the target is on — a target astern and a little below is not a dive the floor undoes
+    T3.multiplyScalar(Math.sin(mx));T2.multiplyScalar(Math.cos(mx)).add(T3);}else T2.copy(T1);
+  if(ang>0.5)speed*=clamp(1-TURN_BRAKE*ang/Math.PI,0.3,1); // a tight turn is taken slower (a C-start: the body brakes and comes round) — the circle shrinks with the speed, or a prey inside it is never reached
+  const sp=lerp(v,speed,1-Math.exp(-accel*(d.accel||ACC_REF)/ACC_REF*dt));T2.multiplyScalar(sp);c.vel.copy(T2);c.turnedF=frameNo;} // no curComp here: it subtracts the current from an incrementally turned heading every frame and cancels the turn (seen 24 Sep 2026) — the current carries the body by its position drift instead // turnedF: steered by the rate this frame — the facing may follow the velocity fast (updateCreatures)
+const TURN_BRAKE=0.9,TURN_FACE=5,TURN_STRIKE=6; // TURN_FACE: how much faster than its turn rate a steered body's facing follows its velocity; TURN_STRIKE: the facing's rate toward the strike's point, × the turn rate // the share of the speed given up at a full reversal in seekTurn (linear in the angle past 0.5 rad)
+// is the prey ahead of the hunter, within cos `k` of its axis
+function ahead(c,tpos,k){T3.set(0,0,1).applyQuaternion(c.g.quaternion);T2.copy(tpos).sub(c.pos);const l=T2.length()||1;return T2.dot(T3)/l>=k;}
 // the way through the water that gives the wanted way over the ground in this current, no faster than CUR_FIGHT times the speed asked
 const CUR_FIGHT=1.2;
 function curComp(c,v,speed){if(!c.carried||!c.cur)return;v.sub(c.cur);const l=v.length(),m=speed*CUR_FIGHT;if(l>m)v.multiplyScalar(m/l);}
@@ -235,7 +249,7 @@ function armReach(c,tg,k){return Math.max((c.def.reach||0)*k,reachOf(c,tg))+(tg.
 // a kill each cleared a different subset and left c.grab pointing at the old target, so a rigged hunter's arms went on reaching for
 // the player out of wander. Everything that ends a pursuit goes through here.
 function dropTarget(c,cool){
-  c.target=null;c.grab=null;c.bored=0;c.tellT=0;c.strikeT=0;c.face=null;c.chaseT=0;c.lungeC=0;
+  c.target=null;c.grab=null;c.bored=0;c.tellT=0;c.strikeT=0;c.face=null;c.chaseT=0;c.commitT=0;c.coastT=0;
   if(c.hold)releaseHold(c.hold);
   if(cool!==undefined)c.cool=cool;
   if(c.state!=='feed'&&c.state!=='sit'){c.state=c.def.role==='ambush'?'return':'wander';if(c.state==='wander')setWander(c);}
@@ -275,23 +289,27 @@ function updateHunter(c,dt){
     if(!c.hold)c.chaseT=(c.chaseT||0)+dt;const chaseK=tg===player?1:1+0.6*smooth(6,2,c.chaseT);
     const lost=!tg||(tg!==player&&!tg.alive)||ashore||dist>(bleeding(tg)?Math.max(d.detect*1.6,SMELL_R*1.2):d.detect*1.6)||(tg===player&&(playerGone()||(player.inkT>0&&dist>3.5)))||c.bored>2||c.pos.distanceTo(c.home)>(d.home||30)*1.9||(tg!==player&&c.chaseT>ECO_CHASE);
     if(lost){dropTarget(c,d.cool||4);}
+    else if(c.hold){c.vel.multiplyScalar(1-1.5*dt);c.biteT-=dt;c.grab=c.b.rigs?tg:null;c.commitT=0;c.coastT=0;c.strikeT=0;c.tellT=0;} // holding (v11.92, COMBAT.md §10.4): the pair drifts as one and the holder does not seek into a body it already has (that was the orbit); the bites are the hold's (combat.js updateHolds), the shake is pass C
     else if(d.strike){
       // the strike (PLANET, hingeshells; the platebacks' bite): in range, the tell first — it slows, cocks and turns to the prey —
       // then a burst at the prey with the strike pose on, the bite landing once if it gets within reach; then the cooldown
       const S=d.strike;c.biteT-=dt;
-      if(c.strikeT>0){c.strikeT-=dt;c.st.strike=1;seek(c,tpos,S.speed,dt,8);if(!c.bit&&dist<reachOf(c,tg)){c.bit=true;if(dodged(tpos,c.strikeP,c.strikeN)<missWin(tg,S.dur))landBite(c,tg);else missed(c,tg);}if(c.strikeT<=0){c.biteT=d.biteCD||1.5;c.grab=null;}} // the strike is the commit: prey that has moved its own width since it began is missed (v11.56)
-      else if(c.tellT>0){c.tellT-=dt;c.st.tell=Math.min(1,c.st.tell+dt/S.tell*1.5);c.vel.multiplyScalar(1-3*dt);c.face=tpos;if(c.tellT<=0){c.strikeT=S.dur;c.bit=false;c.face=null;[c.strikeP,c.strikeN]=commitAt(c,tpos,c.strikeP,c.strikeN);}}
-      else{const k=burstK(c,dt)*chaseK;seek(c,tpos,d.speed*k,dt,2.2*k);c.grab=null;
-        if(dist<reachOf(c,tg)*(S.range||1.6)&&c.biteT<=0){c.tellT=S.tell;c.st.tell=0;}}
+      if(c.strikeT>0){c.strikeT-=dt;c.st.strike=1;c.face=c.strikeP;seekTurn(c,c.strikeP,S.speed,dt,4,STRIKE.steer);if(!c.bit&&landsOn(c,tg)){c.bit=true;c.face=null;landBite(c,tg);}if(c.strikeT<=0){c.face=null;if(!c.bit)missed(c,tg);else c.biteT=d.biteCD||1.5;c.grab=null;}} // the strike is the commit (v11.92): a burst at the point aimed, the steering low (updateCreatures, STRIKE.steer), the bite on contact (landsOn); none by its end is a miss
+      else if(c.tellT>0){c.tellT-=dt;c.st.tell=Math.min(1,c.st.tell+dt/S.tell*1.5);c.vel.multiplyScalar(1-3*dt);c.face=tpos;if(c.tellT<=0){c.strikeT=S.dur;c.bit=false;c.face=null;aimAt(c,tg,c.strikeP||(c.strikeP=V3()));}}
+      else{const k=burstK(c,dt)*chaseK;aimAt(c,tg,T2);seekTurn(c,T2,d.speed*k,dt,2.2*k);c.grab=null;
+        if(dist<reachOf(c,tg)*(S.range||1.6)&&c.biteT<=0&&ahead(c,tpos,STRIKE.face)){c.tellT=S.tell;c.st.tell=0;c.chaseT=0;}}
       if(c.strikeT>0)c.grab=(c.b.rigs&&dist<armReach(c,tg,1.3))?tg:null;
     }
     else{
-      const k=burstK(c,dt)*chaseK;seek(c,tpos,d.speed*k,dt,2.2*k);c.biteT-=dt;
+      c.biteT-=dt;const k=burstK(c,dt)*chaseK;
       c.grab=(c.b.rigs&&dist<armReach(c,tg,1.3))?tg:null; // the arms reach for prey in range and close on it (physics.js)
-      // the commit (v11.56, COMBAT.md §5): in reach, the mouth opens (the tell) and the bite lands MISS.t later — on the prey if it has moved under its own
-      // width since and is still in reach, on water if it dodged; a miss costs the hunter MISS.cool cooldowns. The escape reflex as a rule
-      if(c.lungeC>0){c.lungeC-=dt;c.st.strike=1;c.vel.multiplyScalar(1-3*dt);if(c.lungeC<=0){c.lungeC=0;c.biteT=d.biteCD||1.2;if(dist<reachOf(c,tg)*MISS.range&&dodged(tpos,c.lungeP,c.lungeN)<missWin(tg,MISS.t))landBite(c,tg);else missed(c,tg);}}
-      else if(dist<reachOf(c,tg)&&c.biteT<=0){c.lungeC=MISS.t;[c.lungeP,c.lungeN]=commitAt(c,tpos,c.lungeP,c.lungeN);c.st.strike=1;}
+      // the strike (v11.92, COMBAT.md §10.3): the chase aims where the prey will be (aimAt); in strike range (strikeRange) it commits — the heading locked on
+      // that point, a burst at the sprint with the steering low (updateCreatures, STRIKE.steer), the mouth open (the tell) — and the bite is the contact
+      // (landsOn: a jaw's mouth on a capsule, arms and claws at their reach). None by the lunge's end is a miss: it coasts past on its momentum (STRIKE.coast)
+      // and comes round on its own turning radius. The escape is geometry: turn across it late
+      if(c.commitT>0){c.commitT-=dt;c.st.strike=1;c.face=c.lungeP;seekTurn(c,c.lungeP,d.top*(d.sprint||1.3),dt,4,STRIKE.steer);if(landsOn(c,tg)){c.commitT=0;c.face=null;landBite(c,tg);}else if(c.commitT<=0){c.face=null;missed(c,tg);c.coastT=STRIKE.coast;}} // the body faces the point it lunges at (the head dips to a prey under it; the centre rides the floor's clearance)
+      else if(c.coastT>0)c.coastT-=dt;
+      else{aimAt(c,tg,T2);approachPt(c,T2,T2,tpos);seekTurn(c,T2,d.speed*k,dt,2.2*k);if(c.biteT<=0&&dist<strikeRange(c,tg)&&mouthAhead(c,tpos,STRIKE.face)){c.commitT=STRIKE.dur;c.chaseT=0;aimAt(c,tg,c.lungeP||(c.lungeP=V3()),true);c.st.strike=1;}} // the pursuit's clock restarts at a strike (ECO_CHASE counts the run-up, not a hunter at its prey)
     }
   }else{
     if(c.scanT<=0){c.scanT=0.4;c.hunt=0;if(c.cool<=0&&c.hunger>ECO.hungry){const tb=findBleeding(c,SMELL_R);if(tb){c.state='chase';c.target=tb;c.bored=0;c.chaseT=0;}else{const tg=findPrey(c,d.detect*HUNT_SEEK); // the blood first (combat.js, v11.56): a bleeding body it eats within SMELL_R is the chase, past its eyes
@@ -306,8 +324,8 @@ function updateHunter(c,dt){
 // takes the bite. Then it settles for `cool` seconds. A sitting one is as heavy as a rock for contact (updateCreatures).
 function updateTrap(c,dt){
   const d=c.def,S=d.strike;c.vel.set(0,0,0);c.cool-=dt;
-  if(c.strikeT>0){c.strikeT-=dt;c.st.strike=1;const tg=c.target;if(tg&&!c.bit){const tpos=tg===player?player.pos:tg.pos;if(c.pos.distanceTo(tpos)<reachOf(c,tg)&&(tg===player||tg.alive)){c.bit=true;if(!c.strikeP||dodged(tpos,c.strikeP,c.strikeN)<missWin(tg,S.dur))landBite(c,tg);else missed(c,tg);}}if(c.strikeT<=0){c.cool=d.cool||2;c.face=null;if(!c.hold)c.target=null;c.state='sit';}return;} // v11.31: the target stays while it is held
-  if(c.tellT>0){c.tellT-=dt;c.st.tell=Math.min(1,c.st.tell+dt/S.tell*1.5);const tg=c.target;if(tg)c.face=tg===player?player.pos:tg.pos;if(c.tellT<=0){c.strikeT=S.dur;c.bit=false;if(tg)[c.strikeP,c.strikeN]=commitAt(c,c.face,c.strikeP,c.strikeN);}return;}
+  if(c.strikeT>0){c.strikeT-=dt;c.st.strike=1;const tg=c.target;if(tg&&!c.bit){const tpos=tg===player?player.pos:tg.pos;if((tg===player||tg.alive)&&landsOn(c,tg)){c.bit=true;landBite(c,tg);}}if(c.strikeT<=0){if(!c.bit&&tg)missed(c,tg);c.cool=d.cool||2;c.face=null;if(!c.hold)c.target=null;c.state='sit';}return;} // v11.31: the target stays while it is held
+  if(c.tellT>0){c.tellT-=dt;c.st.tell=Math.min(1,c.st.tell+dt/S.tell*1.5);const tg=c.target;if(tg)c.face=tg===player?player.pos:tg.pos;if(c.tellT<=0){c.strikeT=S.dur;c.bit=false;}return;}
   c.scanT-=dt;if(hungerTick(c,dt))return;if(c.scanT<=0){c.scanT=0.25;if(c.cool<=0&&c.hunger>ECO.hungry*0.4){const tg=findPrey(c);if(tg){c.target=tg;c.tellT=S.tell;c.st.tell=0;c.state='strike';}}} // a trap strikes at most things (a reflex), but not on a full stomach
 }
 // The watcher (PLANET: a curious omnivore that never attacks and never flees far): wanders the floor; within `detect` of the
@@ -384,9 +402,10 @@ function updateCoil(c,dt){
 function updateLurker(c,dt){
   const d=c.def;if(hungerTick(c,dt))return;
   if(c.state==='sit'){c.vel.set(0,0,0);c.cool-=dt;c.scanT-=dt;if(c.scanT<=0){c.scanT=0.25;if(c.cool<=0&&c.hunger>ECO.hungry){const tg=findPrey(c,d.radius);if(tg){c.state='lunge';c.target=tg;c.lungeT=1.3;}}}}
-  else if(c.state==='lunge'){const tg=c.target,tp=tg===player?player.pos:tg?tg.pos:c.home,dist=c.pos.distanceTo(tp);c.lungeT-=dt;seek(c,tp,d.lunge,dt,6);c.biteT-=dt;c.grab=c.b.rigs&&tg&&dist<armReach(c,tg,1.6)?tg:null;if(d.hang||d.strikeOnLunge)c.st.strike=1; // strikeOnLunge (v11.66): the hood's claws open on the way up
-    if(c.lungeC>0){c.lungeC-=dt;c.vel.multiplyScalar(1-2*dt);if(c.lungeC<=0){c.lungeC=0;c.biteT=1;if(tg&&dist<reachOf(c,tg)*MISS.range&&dodged(tp,c.lungeP,c.lungeN)<missWin(tg,MISS.t))landBite(c,tg);else if(tg)missed(c,tg);if(c.state!=='feed')c.state='return';}} // the lunge's commit (v11.56)
-    else if(tg&&dist<reachOf(c,tg)&&c.biteT<=0){c.lungeC=MISS.t;[c.lungeP,c.lungeN]=commitAt(c,tp,c.lungeP,c.lungeN);}if((c.lungeT<=0&&!(c.lungeC>0))||!tg||(tg!==player&&!tg.alive)||(tg===player&&playerGone())){c.state='return';c.lungeC=0;}}
+  else if(c.state==='lunge'){const tg=c.target,tp=tg===player?player.pos:tg?tg.pos:c.home,dist=c.pos.distanceTo(tp);c.lungeT-=dt;c.biteT-=dt;c.grab=c.b.rigs&&tg&&dist<armReach(c,tg,1.6)?tg:null;if(d.hang||d.strikeOnLunge)c.st.strike=1; // strikeOnLunge (v11.66): the hood's claws open on the way up
+    if(c.hold)c.vel.multiplyScalar(1-1.5*dt); // holding: the pair drifts (v11.92)
+    else{seek(c,tp,d.lunge,dt,6);if(tg&&c.biteT<=0&&landsOn(c,tg)){c.biteT=1;landBite(c,tg);if(!c.hold&&tg!==player&&!tg.alive)c.state='feed';}} // the lunge is the commit: the bite on contact (v11.92)
+    if(c.state==='lunge'&&((c.lungeT<=0&&!c.hold)||!tg||(tg!==player&&!tg.alive)||(tg===player&&playerGone()))){if(!c.hold&&c.lungeT<=0&&tg&&!c.bit)missed(c,tg);c.state='return';}}
   else if(c.state==='feed'){const f=c.feedAt;c.feedT-=dt;if(!f||f.gone||f.flesh<=0||c.feedT<=0){c.state='return';c.feedAt=null;return;}const dist=c.pos.distanceTo(f.pos);if(dist>reachOf(c,f)*0.8)seek(c,f.pos,3,dt,2);else{c.vel.multiplyScalar(1-3*dt);eatAt(c,f,dt);}}
   else{c.grab=null;if(!c.hold)c.target=null;seek(c,c.home,4,dt,2);if(c.pos.distanceTo(c.home)<0.8){c.state='sit';c.cool=3;c.pos.copy(c.home);}} // v11.31: what it has hold of comes home with it
   if(c.state==='flee')c.state='return';
@@ -501,7 +520,7 @@ function updateCreatures(dt0){
     c.carried=sub>0&&!c.grounded&&c.state!=='sit'&&d.role!=='trap'&&!d.floor;
     if(dp<200&&c.carried){if(!c.cur){c.cur=V3(0,0,0);c.curT=0;}c.curT-=dt;if(c.curT<=0){c.curT=0.4+Math.random()*0.2;currentAt(c.pos.x,c.pos.z,c.pos.y,c.cur);}c.pos.addScaledVector(c.cur,dt*sub);}
     let pad=null;if(dp<200&&!d.ghost)pad=bodyPush(c.pos,c.vel,c.g.quaternion,d.size*0.75,d.size*0.35,d.size*0.28);
-    const fh=groundAt(c.pos.x,c.pos.z)+(d.clear!==undefined?d.clear:d.size*0.35);c.grounded=false;if(c.pos.y<fh){c.pos.y=fh;if(c.vel.y<0)c.vel.y*=-0.15;c.grounded=true;} // clear: how high the origin sits over the floor (a buried trap sits low)
+    const fh=groundAt(c.pos.x,c.pos.z)+(d.clear!==undefined?d.clear:d.size*0.35);c.grounded=false;if(c.pos.y<fh){c.pos.y=fh;if(c.vel.y<0)c.vel.y*=-0.15;c.grounded=true;} // clear: how high the origin sits over the floor (a buried trap sits low). v11.92 tried the body's own radius (a ridge hangs 3 m up on 0.35 × size, its mouth over a floor prey's head) and wedged it in the floor's rocks: the lunge pitches down instead
     if(d.surface){c.pos.y=waveH(c.pos.x,c.pos.z)+(d.ys||0);c.vel.y=0;c.grounded=false;} // a float: on the wave, always (the sailers)
     if(pad){c.grounded=true;loadPad(pad,clamp(d.size*0.3/pad.r,0.02,0.5));} // a fish that lands on a lily pad lies on it (and flops off)
     // beached: a swimmer lies still, then flops downhill for the sea
@@ -510,8 +529,8 @@ function updateCreatures(dt0){
         c.vel.x+=-gx/gl*3.4+rnd(-0.5,0.5);c.vel.z+=-gz/gl*3.4+rnd(-0.5,0.5);c.vel.y=3.6+d.size*0.25;}}
     const wet=sub>0.5;if(wet!==c.wet){if(dp<160&&Math.abs(c.vel.y)>2.5)splash(c.pos,Math.abs(c.vel.y)*(0.5+d.size*0.12));c.wet=wet;}
     c.pos.x=clamp(c.pos.x,-HALF+12,HALF-12);c.pos.z=clamp(c.pos.z,-HALF+12,HALF-12);
-    if(!d.noOrient){if(c.face){_m.lookAt(c.face,c.pos,UP);_q.setFromRotationMatrix(_m);c.g.quaternion.slerp(_q,1-Math.exp(-(d.turn||2)*(c.turnK||1)*2*dt));} // turning to a thing (the tell, the watcher's stare)
-      else if(c.vel.lengthSq()>0.02){T2.copy(c.pos).add(c.vel);_m.lookAt(T2,c.pos,UP);_q.setFromRotationMatrix(_m);c.g.quaternion.slerp(_q,1-Math.exp(-(d.turn||2)*(c.turnK||1)*(d.top?clamp(c.vel.length()/d.top,TURN_MIN,1):1)*dt));}} // v11.71: d.turn is the rate at the top speed (derive); a turn is speed over a radius that goes as the length, so an ambling body comes round at its pace's share of it, floored at TURN_MIN
+    if(!d.noOrient){if(c.face){_m.lookAt(c.face,c.pos,UP);_q.setFromRotationMatrix(_m);c.g.quaternion.slerp(_q,1-Math.exp(-(d.turn||2)*(c.turnK||1)*(c.commitT>0||c.strikeT>0?TURN_STRIKE:2)*dt));} // in a strike the head snaps to the point (TURN_STRIKE, v11.92): the mouth dips to a prey under it // turning to a thing (the tell, the watcher's stare)
+      else if(c.vel.lengthSq()>0.02){T2.copy(c.pos).add(c.vel);_m.lookAt(T2,c.pos,UP);_q.setFromRotationMatrix(_m);c.g.quaternion.slerp(_q,1-Math.exp(-(d.turn||2)*(c.turnK||1)*(c.turnedF===frameNo?TURN_FACE:(d.top?clamp(c.vel.length()/d.top,TURN_MIN,1):1))*(c.hold?kgOf(c)/(kgOf(c)+kgOf(c.hold.b)):1)*dt));}} // v11.92: a body steered by seekTurn already turns its velocity at its rate, so its facing follows the velocity TURN_FACE times faster (it points where it goes; the lunge's low steering is seekTurn's); holding, the pair turns by the holder's share of its mass // v11.92: in the committed lunge the steering is STRIKE.steer of the rate (it overshoots a dodge); holding, the pair turns by the holder's share of its mass // v11.71: d.turn is the rate at the top speed (derive); a turn is speed over a radius that goes as the length, so an ambling body comes round at its pace's share of it, floored at TURN_MIN
     c.g.position.copy(c.pos);
     // the action state the anim reads: the tell and the strike are set by the behaviours above and let go here
     const st=c.st;if(c.tellT<=0&&c.strikeT<=0){st.tell*=Math.exp(-4*dt);st.strike*=Math.exp(-7*dt);if(d.role==='ambush'&&c.state!=='lunge')st.strike*=Math.exp(-7*dt);}st.jet=c.state==='chase'&&d.jetter===true;st.turn=c.turnV||0;st.acc=c.accV||0;
@@ -526,7 +545,7 @@ function updateCreatures(dt0){
   const P=player,live=mode==='play'&&!P.dead;let heldBy=0;bodies.length=0;for(const c of near)bodies.push(c);if(live)bodies.push(P);
   resolveBodies(bodies);
   updateHolds(dt0); // the holds' ropes (combat.js, v11.31): after the bodies have pushed apart, before the arms are simulated
-  if(live)for(const c of near){if(c.chainW&&c.chainW.length&&c.pos.distanceTo(P.pos)<c.reach+2)sphereOutOf(P.pos,0.75,P.vel,c.chainW);}
+  if(live)for(const c of near){if(c.chainW&&c.chainW.length&&c.pos.distanceTo(P.pos)<c.reach+2&&!(c.hold&&c.hold.b===P))sphereOutOf(P.pos,0.75,P.vel,c.chainW);} // not out of the arms that hold you (v11.92: the joint keeps you at the beak)
   for(const c of near){c.g.position.copy(c.pos);}
   for(const c of simList){if(near.indexOf(c)<0){c.g.updateMatrix();worldShapes(c);c.shapeF=frameNo;}stepRigs(c,bodies,dt0);if(c.grab===P&&c.holding)heldBy++;}
   if(heldBy)P.heldT=0.2;
