@@ -24,8 +24,19 @@
 // volume (BLOOD: a share of the mass by clade); a wound drains a share of it a second by its area, the part's vessels and the clade's pressure, and
 // clots on the clade's clock stretched by its size; the loss weakens (bloodK), collapses and at BLOOD.dead kills — "bled out". A piece is food by its
 // share of the body (feedPiece), and a hunter keeps its target after one. dmg, GRIP.first/bite/bleed, HOLD_BIG, WOUND_SLOW, FLEE, LOSE.meal and
-// LOSE.floor are gone. Contact and the hold as a joint are pass B; the edge's force against the covering's toughness (the verdict table's successor) pass C.
-const holds=[]; // {a: holder, b: held, K: GRIP[kind], la: the grip in a's frame, lb: the hold point in b's frame, len: the rope, biteT, load, pull, t}
+// LOSE.floor are gone. Contact and the hold as a joint are pass B (v11.92).
+// v11.93 (COMBAT.md §10, pass C — the edge's work; the person on B: "AWESOME. terrifying."). The verdict is physics: an edge is through a covering when its
+// force × its sharpness beats the covering's toughness × the struck capsule's radius (EDGE_K, COVER_T, thruK) — a crush against the radius squared, a shell
+// breaks whole or not at all — so a small jaw fails where a big one of the same edge gets in, and the same tables say what a line's mouth would do. The holder
+// does what its build does (holderWork): a cutting jaw shakes its head at its tail-beat rate (SHAKE) and a chain body rolls on its axis (SPIN), each cycle
+// sharpening the saw (h.saw, to 3×: the eel gets through the finback's hide on the second cycle, never through a plate); claws holding a limb back off and the
+// limb tears at its root when the pull passes the root's strength (PULL); a plain jaw clamps and waits. Subdued (SUBDUE) is by stamina, not a clock: the
+// held body's struggle is its thrust × its blood × a stamina that drains while it struggles and fills at rest (STAMINA, by clade — slowbloods hard for
+// seconds, ringmouths longer, hingeshells weak but long; stamK rides slowOf), and a struggle under half the grip for a second is subdued. A swallow is a
+// sequence (SWALLOW): 1 + 4 × (the held's length ÷ the swallower's) seconds with the grip doubled and the body drawn into the mouth — seen coming; a body
+// that tears free mid-swallow keeps its wounds. EDGE (the verdict table), PIN and pinTime are gone; the arms reach only inside a cone about the body
+// (physics.js ARM_CONE, the person's note b); the mouth's edge at conception is priced as a line's step (line.js BUDGET.edge, §10.10)
+const holds=[]; // {a: holder, b: held, K: GRIP[kind], la: the grip in a's frame (a copy: the swallow draws it in), lb: the hold point in b's frame, biteT, load, pull, t, ci, edge, cover, k, saw, calm, tear, swallowT}
 // by the way a body takes hold (creatures_spec.js compile → b.grip). k: the grip's strength, newtons per kg^(2/3) of the holder (muscle scales with
 // cross-section; v11.91: the mass is kilograms now, and the struggle F = m_held·Δv/dt is newtons — a 3 t white shark clamps at ~18 kN, which is ~85
 // per kg^(2/3); the claws' lever is the strongest per section, the arms the weakest. v11.92: the joint takes the held body's whole thrust off it every frame —
@@ -37,29 +48,58 @@ const GRIP={
   arms:{k:350,cd:0.9,slow:0.55,shake:0.8},
   claws:{k:650,cd:0.7,slow:0.7,shake:1.2}
 };
-// The edge against the covering (v11.54, COMBAT.md §2 — pass 1 of injury as states): what a hold can do where it is. A body's edge and the
-// covering of each of its hit capsules are read off its spec by compile (b.edge, b.cover, b.gape); a hold records the capsule it took (h.ci),
-// the covering there and the verdict (h.thru). v11.91: the verdict says whether the edge opens the covering at all; what the bite then does is
-// the geometry (cutAt). Pass C replaces this table with the edge's force against the covering's toughness (COMBAT.md §10.5).
-// yes: through; nape: only at a pinned animal's nape; joint: only at a joint of the armour; thrash: with the body's thrash; time: given time; no
-const EDGE={
-  beak:{skin:'yes',hide:'nape',plate:'joint',shell:'joint'}, // cuts pieces from what the arms hold; the kill is one placed bite at the nerve cord
-  rasp:{skin:'yes',hide:'no',plate:'no',shell:'time'}, // latches (the lamprey); drills a shell (the octopus)
-  hold:{skin:'no',hide:'no',plate:'no',shell:'no'}, // plain petals: a clamp that ends in a swallow or a release
-  cut:{skin:'yes',hide:'thrash',plate:'no',shell:'no'}, // cutting petals: a piece torn out, the hide with a thrash
-  point:{skin:'yes',hide:'yes',plate:'no',shell:'no'}, // a needle jaw or spears: skewers
-  crush:{skin:'yes',hide:'yes',plate:'yes',shell:'yes'}, // the crusher's plate jaw
-  shred:{skin:'yes',hide:'no',plate:'joint',shell:'no'}, // the hingeshells' mouthparts: dismember at the joints
-  claws:{skin:'yes',hide:'no',plate:'joint',shell:'no'}, // the hard grip: holds what is slower
-  ram:{skin:'no',hide:'no',plate:'no',shell:'no'} // a blow: the stun, nothing through
+// The edge against the covering (v11.54 as a table; v11.93, COMBAT.md §10.5, pass C: physics). A body's edge and the covering of each of its hit capsules are
+// read off its spec by compile (b.edge, b.cover, b.gape); a hold records the capsule it took (h.ci), the covering there and the verdict (h.k, h.thru). An
+// edge is through when F × σ ≥ τ × r: F = K × M^(2/3) its force (muscle by its cross-section; M the holder's kilograms), σ its sharpness, τ the covering's
+// toughness, r the struck capsule's radius (a covering's thickness scales with its body). A crush is a fracture, not a cut: F ≥ τc × r² — a shell breaks whole
+// or not at all. Not through is a bruise — no wound, no blood — and the hold still holds (a grip is closure and friction, not a cut); a cutting edge short of a
+// hide gets there by the shake (SHAKE.saw a cycle, to SHAKE.sawMax). What the bite then does is the geometry (cutAt).
+// K: N per kg^(2/3). Earth: a 3 t white shark bites at ~18 kN (85 per kg^(2/3)); a 4 kg coconut crab closes at ~3.3 kN (1300): the claw's lever is the
+// strongest per section; a beak on a muscular buccal mass with the arms' pull behind it, an octopus through a crab (150); the hingeshells' mouthparts and a
+// rasp are small. σ: point ≫ beak ≈ cut > rasp > shred > claws (a pinch, not a blade); hold and ram cut nothing
+const EDGE_K={
+  cut:{K:85,s:3}, // the sawmouths' serrated crest (§10.10): the ridge through the finback's hide at rest (k 6), the eel with a shake (0.9 → 1.4), neither through a plate
+  point:{K:85,s:6}, // a needle jaw, the spears: through skin and hide (the sickle on the finback k 6), never a plate or a shell
+  crush:{K:170,s:1}, // the crusher's plate jaw: twice the jaw's force, against τc × r² — the coil's shell (k 1.4), the plough's (3.6), the finback's hide (13)
+  beak:{K:150,s:5}, // the ringmouths' beak: through skin and hide (the ortho on the finback k 4.8, the soft-arm on a grazer 1.4 — it bleeds one), never plate or shell
+  claws:{K:1300,s:0.1}, // the hardest grip and the bluntest edge: a pinch through skin (the hood on a soft-arm k 1.3), not a hide (0.4–0.8); a limb goes by the pull (PULL)
+  shred:{K:40,s:1}, // the hingeshells' mouthparts: slow pieces from what the claws hold; through skin
+  rasp:{K:20,s:1.5}, // the lamprey's disc: latches on skin
+  hold:{K:85,s:0}, // plain petals (the platelet pad, suction): a clamp that swallows or lets go
+  ram:{K:0,s:0} // a blow, nothing through
 };
+// τ by covering: cut is N per m of radius against F × σ; crush is N per m² against F. skin: the ringmouths', the drifters', a fin or a tail, the moult's; hide:
+// the slowbloods' scratchy integument; plate: the chevron rows fused (the crusher, the stone), the hingeshells' armour; shell: the coiled shell, the big valves
+const COVER_T={skin:{cut:25e3,crush:20e3},hide:{cut:100e3,crush:50e3},plate:{cut:1200e3,crush:150e3},shell:{cut:4000e3,crush:200e3}};
 function edgeOf(o){return (o.b&&o.b.edge)||null;}
 function coverAt(o,i){if(o===player){if(player.soft)return 'skin';if(player.shut)return 'shell';}const C=o.b&&o.b.cover;return C&&C.length?(C[i]||C[0]):'skin';} // the player's state first (v11.75–76): through the moult it is skin to every edge, as the world's soft body is (creatures_ai.js spawn); shut, its valves are shell over everything
-function thruOf(edge,cover){const E=EDGE[edge];return E?(E[cover]||'no'):'no';}
+// the verdict as a ratio: a's edge against b's covering at capsule ci — 1 and over is through. immortals (hp ≥ 1e8) and a withdrawn shell take nothing
+function thruK(a,b,ci,cover){const e=edgeOf(a),E=EDGE_K[e];if(!E||!(E.K>0)||!(E.s>0))return 0;if(b!==player&&b.def&&b.def.hp>=1e8)return 0;if(b===player&&player.withdrawn)return 0;
+  const cv=cover||coverAt(b,ci),T=COVER_T[cv]||COVER_T.skin,W=b.shapesW,r=Math.max(0.03,W&&W[ci]?W[ci].r:trunkR(b)),F=E.K*Math.pow(Math.max(1,kgOf(a)),2/3)*bloodK(a);
+  return e==='crush'?F/(T.crush*r*r):F*E.s/(T.cut*r);}
+function thruOf(a,b,ci,cover){const k=thruK(a,b,ci,cover);return k>=1?'yes':k*SHAKE.sawMax>=1&&saws(a)?'shake':'no';} // the word for the readout and the tests: through at rest, through with the shake, never
+function saws(o){const e=edgeOf(o),g=gripOf(o);return e==='cut'&&!!g&&g.kind==='jaw';} // whose hold works the edge: a cutting jaw shakes or rolls (holderWork)
 let bpIdx=-1; // the capsule bodyPointNear last chose (an index into shapesW, which is the hit list's order)
 const WHOLE=0.12,WHOLE_P=0.25; // forage up to this share of the eater's mass is swallowed whole at the touch (the creatures; the player's gulp is WHOLE_P — arrows and needles, not a picker, which is killed and eaten at)
-// the states' knobs (v11.55)
-const PIN={t:2.5,pull:0.5,mass:0.6,bored:8}; // pinned: a hold kept t seconds × (m_held/m_holder)^mass (0.3..3) with the struggle under pull of the grip; bored: a hunter's cooldown when its edge can do nothing where it holds
+// subdued (v11.93, COMBAT.md §10.4; PIN's clock to v11.92): a hold whose struggle has stayed under k of the grip's strength for t seconds; a paralysed body at once;
+// past 95 m (no joint, no struggle) after the held clade's stamina has run out. bored: a hunter's cooldown when its edge can do nothing where it holds
+const SUBDUE={k:0.5,t:1,bored:8};
+// the stamina (§10.4): the struggle's clock, by clade — full: s of struggle at full thrust; fade: s more over which it falls to floor of it; rest: s at rest to fill
+// again. Slowbloods, with no metabolism, fight hard for seconds; ringmouths longer; hingeshells weak but for a long time (their thrust is small already). The player
+// by its clade. The sprint is untouched: this is the held body's only
+const STAMINA={slowbloods:{full:6,fade:6,floor:0.33,rest:40},ringmouths:{full:12,fade:10,floor:0.4,rest:50},hingeshells:{full:40,fade:20,floor:0.6,rest:90},drifters:{full:3,fade:3,floor:0.3,rest:20}};
+// the shake (§10.4): a cutting jaw yaws its head ±amp rad at hz × √(ref/size) a second (the eel 2.4 Hz, the ridge 1.6, the abyssal 1.2 — the tail-beat's order) with the
+// prey's inertia as the anvil; each cycle multiplies the edge's sharpness by saw, to sawMax. A chain body (the eel's core) rolls instead: SPIN rad/s on its own axis, the
+// held carried round it, a turn a cycle (the crocodile's roll, the moray's knot). Far from the player (no joint) the saw grows on the clock alone
+const SHAKE={amp:0.44,hz:1.6,ref:9,saw:1.5,sawMax:3};
+const SPIN={rate:3.2,yaw:0.15}; // rad/s; yaw: the roller's head yaws a little too (a body corkscrewing, not a spindle)
+// the claws' pull (§10.4–5): a claws hold on a limb (a part with its own capsule) backs off at back of its speed; the limb tears at its root when the pull — the claw's
+// own force, or the struggle's if that is more — passes the root's strength τ × r² (root: N/m², skin and tendon at a few MPa) for t seconds' worth. The sickle
+// (1.26 MN) takes the finback's tail (375 kN) in half a second, the lash (0.42 MN) in ten, the trap and the hood never
+const PULL={root:6e6,t:1,back:0.5};
+// the swallow (§10.4): base + k × (the held's length ÷ the swallower's) seconds (the ridge on the finback 2.3 s, the stone 6.8), the held drawn into the mouth by
+// draw of its length with the grip × grip; the death seen coming. One that tears free keeps its wounds
+const SWALLOW={base:1,k:4,grip:2,draw:0.9};
 const GAPE_K=1.15; // a mouth swallows a body whose widest capsule is under gape × this (prey deform; a fish takes prey to about its mouth's width)
 const BLEED_T={ringmouths:6,slowbloods:14,hingeshells:3,drifters:4}; // seconds a wound's rate falls by e (the clotting time), by clade (a ringmouth clots fast, a slowblood slowly, a hingeshell barely bleeds); a big wound stretches it (BLOOD.clot)
 const STING={t:0.45,slow:0.5,dur:6,cool:6,mass:4}; // a jaw or arms on a spined slowblood: a holder under mass × the spined body's mass lets go after t seconds, swims at slow for dur, waits cool before it hunts again (a ridge on a grazer swallows the spines)
@@ -80,9 +120,9 @@ const PLAYER_GRIP={soft:1.2,fin:1.0,coil:0.6}; // the clades' grips: the jetter'
 const BLOOD_COL={ringmouths:[0.16,0.24,0.34],slowbloods:[0.32,0.03,0.03],hingeshells:[0.52,0.5,0.32],drifters:[0.6,0.6,0.6]}; // copper, iron, vanadium (PLANET)
 // ---------- the wound and the blood (v11.91, COMBAT.md §10.5–6, pass A) ----------
 // The bite's radius ρ by the edge, as a share of the mouth's gape: the piece an edge takes out. cut: a crescent the size of the mouth (a shark's bite);
-// crush: the covering broken whole under the gape; beak: the beak's R; claws: a pinch the mouth's size (the pull at a joint is pass C); shred: slow
+// crush: the covering broken whole under the gape; beak: the beak's R; claws: a pinch at a point, a third of the mouth (the limb goes by the pull, v11.93 PULL); shred: slow
 // pieces; rasp: the disc; point: a puncture — its width nil, its depth the needle's or the spear's length (pointDepth); hold and ram take nothing
-const EDGE_RHO={cut:0.8,crush:1,beak:1,claws:1,shred:0.7,rasp:1,point:0.35,hold:0,ram:0};
+const EDGE_RHO={cut:0.8,crush:1,beak:1,claws:0.35,shred:0.7,rasp:1,point:0.35,hold:0,ram:0}; // claws 1 to v11.92: a hood pinching a tail bled a finback out in five seconds; a pinch is a point (§10.5), the limb goes by the pull
 // the vitals as depth into the struck capsule, a share of its radius: the nerve cord and the heart on the axis (core) along the trunk's front — the
 // capsule's length from `front` of the way from its tail end to its nose end — and shallow at the nape (from nape0 to nape1 of the capsule's length,
 // behind the head, dorsal: the biter's mouth over napeY × r above the axis), which is why a beak kills there (COMBAT.md §3); the face past nape1 is
@@ -120,6 +160,11 @@ function pieceShare(o,rho){return Math.min(0.3,4.19*rho*rho*rho*1050/Math.max(1,
 function trunkR(o){return widestR(o)||0.5;}
 function bloodK(o){const L=o.blood||0;return L<BLOOD.weak?1:L<BLOOD.collapse?lerp(1,0.5,(L-BLOOD.weak)/(BLOOD.collapse-BLOOD.weak)):L<BLOOD.dead?lerp(0.5,0.2,(L-BLOOD.collapse)/(BLOOD.dead-BLOOD.collapse)):0.2;} // the loss on the body: whole under weak, half by collapse, a fifth at the edge of death
 function collapsed(o){return (o.blood||0)>=BLOOD.collapse;} // no burst, no ability, no struggle to speak of
+// the stamina (v11.93): o.stam 1..0 — full thrust while it lasts, then falling to the clade's floor over the fade; drained by a struggle in a hold, filled at rest
+function stamOf(o){return o.stam===undefined?1:o.stam;}
+function stamK(o){const S=STAMINA[cladeOf(o)]||STAMINA.slowbloods,st=stamOf(o),f=S.fade/(S.full+S.fade);return st>=f?1:lerp(S.floor,1,st/f);}
+function stamTick(o,dt){const S=STAMINA[cladeOf(o)]||STAMINA.slowbloods,held=(o.held||0)>0&&!((o===player?player.paraT:o.paraT)>0);o.stam=clamp(stamOf(o)+(held?-dt/(S.full+S.fade):dt/S.rest),0,1);} // a paralysed body does not struggle, and does not tire
+function lengthOf(o){if(o.lenM!==undefined)return o.lenM;let L=0;try{const sp=specOf(o);L=sp?derive(sp).length*((o.b&&o.b.g?o.b.g.scale.x:1)/(sp.s||1)):0;}catch(e){L=0;}o.lenM=L||(o.def?o.def.size*2:3);return o.lenM;} // derive's length at the body's scale, m
 // the mouth on a covering it cannot open: felt (the flinch, the flash), nothing opened, no blood
 function bruise(o,by,at){if(o===player){if(!player.dead)hurtPlayer(0,null);}else hitFx(o,by,at,2);thump(0.25,100,45,o===player?null:at,0.8,0.05);}
 // a blow (the ram's, the great's): a shove and a daze, no wound
@@ -144,8 +189,8 @@ const WL=[0,0,0],WL2=[0,0,0];
 // axis, so which side the bite came from is read off the mouth: dorsal is the nape's side). Returns what it did
 function cutAt(o,by,ci,at,edge,rho,pd,from,atNape){
   const W=o.shapesW,r=W&&W[ci]?W[ci].r:trunkR(o),pi=partUnder(o,ci),H=o.b&&o.b.hit&&o.b.hit[ci];
-  if(losable(o,pi)){ // a limb: off at the root, or a wound on it
-    if(rho>=SEVER*r){const share=losePart(o,pi,by,at);feedPiece(by,o,share);if(o===player||o.alive)openWound(o,by,ci,Math.min(rho,r),at,BLOOD.vessel.root);return 'severed';}
+  if(losable(o,pi)){ // a limb: off at the root, or a wound on it. Claws pinch: a limb in them goes by the pull at the root (PULL, holderWork), never by the pinch's size (v11.93)
+    if(rho>=SEVER*r&&edge!=='claws')return severLimb(o,by,ci,pi,at,rho);
     const sp=specOf(o),kind=sp&&sp.parts[pi]?sp.parts[pi].kind:'tail';openWound(o,by,ci,rho,at,BLOOD.vessel[kind]||1);feedPiece(by,o,pieceShare(o,rho)*0.5);return 'wound';}
   const lb=worldToLocal(o,at,WL),lf=from?worldToLocal(o,from,WL2):lb;let frac=0.5,dorsal=false;
   if(H){const z0=Math.min(H.a[2],H.b[2]),z1=Math.max(H.a[2],H.b[2]);frac=z1>z0+1e-6?clamp((lb[2]-z0)/(z1-z0),0,1):0.5;dorsal=lf[1]>VITAL.napeY*H.r;}
@@ -154,19 +199,20 @@ function cutAt(o,by,ci,at,edge,rho,pd,from,atNape){
   if(edge==='point'){openWound(o,by,ci,rho,at,BLOOD.vessel.punct);return 'wound';}
   openWound(o,by,ci,rho,at,frac>VITAL.nape1?BLOOD.vessel.head:BLOOD.vessel.trunk);const sh=pieceShare(o,rho);feedPiece(by,o,sh);o.eaten=(o.eaten||0)+sh;
   if(o.eaten>=TORN){killAt(o,by,at,edge,'torn apart');return 'killed';}return 'wound';}
-// a bite in a hold: the holder's edge on the held at the capsule the hold is on. placed: the pin's condition is met (a nape bite, the thrash — the
-// verdicts that need the body pinned). Nothing through: a bruise, and false
+// the limb off at the root (the sever branch of cutAt, and the claws' pull): the piece is the biter's, the root pours
+function severLimb(o,by,ci,pi,at,rho){const W=o.shapesW,r=W&&W[ci]?W[ci].r:trunkR(o),share=losePart(o,pi,by,at);feedPiece(by,o,share);if(o===player||o.alive)openWound(o,by,ci,Math.min(rho||r,r),at,BLOOD.vessel.root);return 'severed';}
+// a bite in a hold: the holder's edge on the held at the capsule the hold is on. v11.93: through when the verdict's ratio × the saw the shake has worked up (h.k, h.saw)
+// reaches 1; nothing through is a bruise, and false. placed: the body is subdued — arms that have pinned a body have turned it, so their beak is at the nape
 function biteOn(h,placed){const a=h.a,b=h.b;if(b!==player&&!b.alive)return null;if(b===player&&playerGone())return null;
   const at=h.near&&h.at?h.at:localToWorld(b,h.lb,HP1);
   if(b===player&&player.withdrawn){if(a!==player)a.bored++;return false;}
   if(b!==player&&b.def.hp>=1e8){if(a!==player)a.bored++;bruise(b,a,at);return false;}
-  const v=h.thru,from=localToWorld(a,h.la,HP2);let thru=v==='yes'||(placed&&v==='thrash'),atNape=false;
-  if(v==='nape'&&placed){if(h.kind==='arms')thru=atNape=true;else{const lb=worldToLocal(b,at,WL),lf=worldToLocal(b,from,WL2),H=b.b&&b.b.hit&&b.b.hit[h.ci];if(H){const z0=Math.min(H.a[2],H.b[2]),z1=Math.max(H.a[2],H.b[2]),fr=z1>z0+1e-6?(lb[2]-z0)/(z1-z0):0.5;thru=fr>=VITAL.nape0&&fr<=VITAL.nape1&&lf[1]>VITAL.napeY*H.r;}}} // the beak gets in only at the nape: arms that have pinned the body have turned it there; a jaw only if the hold is behind the head with the mouth over the back
+  const from=localToWorld(a,h.la,HP2);h.k=thruK(a,b,h.ci,h.cover);const thru=h.k*h.saw>=1,atNape=!!placed&&h.kind==='arms';
   if(!thru){bruise(b,a,at);return false;}
   return cutAt(b,a,h.ci,at,h.edge,rhoOf(a),pointDepth(a),from,atNape);}
 // what follows a bite in a hold: a severed limb is a mouthful — the hold let go, a moment with it (LOSE.cool), the target kept while the biter is hungry (it
-// comes back for the rest, COMBAT.md §10.5) and dropped fed; a placed verdict (the nape, the thrash) that did nothing where it holds lets the hunter go
-function afterBite(h,r){const a=h.a;if(holds.indexOf(h)<0)return;if(r==='severed'){releaseHold(h);if(a===player)player.grabCD=0.8;else{a.biteT=LOSE.cool;if(a.hunger<ECO.hungry)dropTarget(a,LOSE.cool);}return;}if(a!==player&&h.placed&&r===false)dropTarget(a,PIN.bored);}
+// comes back for the rest, COMBAT.md §10.5) and dropped fed
+function afterBite(h,r){const a=h.a;if(holds.indexOf(h)<0)return;if(r==='severed'){releaseHold(h);if(a===player)player.grabCD=0.8;else{a.biteT=LOSE.cool;if(a.hunger<ECO.hungry)dropTarget(a,LOSE.cool);}return;}}
 // ---------- contact, not reach (v11.92, COMBAT.md §10.3, pass B) ----------
 // the mouth is a sphere at the mouth part (the grip's point), its radius the gape × STRIKE.slack, biting within STRIKE.cone of the body's axis: a jaw's bite lands when it
 // touches one of the prey's hit capsules — the capsule it touches is where the bite is. A plain jaw (hold petals) sucks: a body it can swallow is drawn from STRIKE.suck
@@ -214,13 +260,14 @@ function startHold(a,b){
   const wa=localToWorld(a,g.at,T1),wq=bodyPointNear(b,wa,T2),ci=bpIdx,rW=b.shapesW&&b.shapesW[ci]?b.shapesW[ci].r:0; // the axis point of the nearest capsule, and the surface point toward the mouth (v11.92: the joint is on the skin)
   {let dx=wa.x-wq.x,dy=wa.y-wq.y,dz=wa.z-wq.z;const dl=len3(dx,dy,dz);if(dl>1e-4&&rW>0){wq.x+=dx/dl*rW;wq.y+=dy/dl*rW;wq.z+=dz/dl*rW;}}
   const wb=wq,lb=worldToLocal(b,wb,[0,0,0]);
-  const edge=edgeOf(a),cover=coverAt(b,ci); // what the hold is on and what the edge can do there (v11.54)
-  const h={a:a,b:b,K:K,kind:g.kind,la:g.at,lb:lb,len:0,biteT:K.cd,load:0,pull:0,t:0,ci:ci,edge:edge,cover:cover,thru:thruOf(edge,cover),pinned:false,pinT:pinTime(a,b),stingT:stings(b)&&(g.kind==='jaw'||g.kind==='arms')&&massOf(a)<STING.mass*massOf(b)?STING.t:0,placed:false,bit:false,near:false,at:V3().copy(wb)}; // the states (v11.55): pinned at pinT unless the held tears free; a spined slowblood stings the mouth or arms on it
+  const edge=edgeOf(a),cover=coverAt(b,ci); // what the hold is on and what the edge can do there (v11.54; v11.93: the ratio k, the saw the shake works up)
+  const h={a:a,b:b,K:K,kind:g.kind,la:g.at.slice(),lb:lb,len:0,biteT:K.cd,load:0,pull:0,t:0,ci:ci,edge:edge,cover:cover,k:thruK(a,b,ci,cover),saw:1,thru:'',calm:0,tear:0,swallowT:0,swallowD:0,pinned:false,stingT:stings(b)&&(g.kind==='jaw'||g.kind==='arms')&&massOf(a)<STING.mass*massOf(b)?STING.t:0,placed:false,bit:false,near:false,at:V3().copy(wb)}; // the states (v11.55): subdued by the stamina (v11.93) unless the held tears free; a spined slowblood stings the mouth or arms on it
+  h.thru=thruOf(a,b,ci,cover);
   holds.push(h);a.hold=h;b.held=(b.held||0)+1;impact(a,b);
   if(g.kind==='arms')thump(0.3,90,40,b===player?null:wb,0.8,0.06);else afterBite(h,biteOn(h,false)); // the clamp is a jaw's or claws' first bite (v11.91: through the covering or a bruise); the arms only take hold
   return holds.indexOf(h)>=0?h:null;
 }
-function releaseHold(h){const k=holds.indexOf(h);if(k<0)return;holds.splice(k,1);if(h.a.hold===h)h.a.hold=null;h.b.held=Math.max(0,(h.b.held||0)-1);if(h.a!==player&&h.kind==='arms')h.a.grab=null;}
+function releaseHold(h){const k=holds.indexOf(h);if(k<0)return;holds.splice(k,1);if(h.a.hold===h)h.a.hold=null;h.b.held=Math.max(0,(h.b.held||0)-1);if(h.a!==player&&h.kind==='arms')h.a.grab=null;h.a.shakeYaw=0;h.a.spinV=0;} // the head stops shaking or rolling (creatures_ai.js, fx.js read them)
 function releaseAll(o){for(let i=holds.length-1;i>=0;i--){const h=holds[i];if(h.a===o||h.b===o)releaseHold(h);}}
 // the AI's bite (creatures_ai.js landBite): a hunter within reach of its prey. Forage dies at the touch as before; something that can
 // fight is taken hold of, and the hold does the biting from here; a body with nothing to hold with (none placed) bumps it
@@ -247,12 +294,13 @@ function updateHolds(dt){
     if(a===P){if(P.dead||mode!=='play'||!P.grabKey||P.withdrawn)drop=true;}else if(!a.alive||a.target!==b)drop=true;
     if(b===P){if(P.dead||mode!=='play')drop=true;}else if(!b.alive)drop=true;
     if(drop){releaseHold(h);continue;}
-    if(b===P){const cv=coverAt(P,h.ci);if(cv!==h.cover){h.cover=cv;h.thru=thruOf(h.edge,cv);}} // v11.75: the player's covering follows its state while held — shut under the jaws, or hardened in them
+    if(b===P){const cv=coverAt(P,h.ci);if(cv!==h.cover){h.cover=cv;h.k=thruK(a,P,h.ci,cv);h.thru=thruOf(a,P,h.ci,cv);}} // v11.75: the player's covering follows its state while held — shut under the jaws, or hardened in them
     const ma=massOf(a),mb=massOf(b),wa=ma===mb?0.5:mb/(ma+mb),wb=1-wa;
     const nearP=a===P||b===P||a.pos.distanceTo(P.pos)<95;
     // a holder does not run with what it holds: its steering still asks for the prey (the AI's seek, into a body it already has), so its
     // speed is capped at a cruise while the hold stands — it stays and bites, and what it holds is dragged only as far as that
     if(a!==P){const vm=(a.def.speed||(a.def.lunge||6)*0.3)*0.35,vl=a.vel.length();if(vl>vm)a.vel.multiplyScalar(vm/vl);}
+    if(a!==P)holderWork(h,dt,nearP); // the edge's work (v11.93): the shake, the roll, the claws' pull, the swallow's draw — before the joint closes, so the head's swing is what moves the held
     if(nearP){
       const A=localToWorld(a,h.la,HP1),B=localToWorld(b,h.lb,HP2);
       let dx=B.x-A.x,dy=B.y-A.y,dz=B.z-A.z;const d=len3(dx,dy,dz);
@@ -262,39 +310,63 @@ function updateHolds(dt){
       shiftBody(a,dx*wa,dy*wa,dz*wa);shiftBody(b,-dx*wb,-dy*wb,-dz*wb);
       const rx=b.vel.x-a.vel.x,ry=b.vel.y-a.vel.y,rz=b.vel.z-a.vel.z;
       a.vel.x+=rx*wa;a.vel.y+=ry*wa;a.vel.z+=rz*wa;b.vel.x-=rx*wb;b.vel.y-=ry*wb;b.vel.z-=rz*wb;const dv=len3(rx,ry,rz)*wb;
-      // the struggle: what the rope took off the held body this frame is a force on the grip (newtons: kg × m/s²); a grip has a strength by the
-      // holder's mass (GRIP.k × kg^(2/3)), weakened as its blood goes, and a struggle past half of it wears the hold down — at the grip's strength
-      // in two seconds, at twice it in under one
-      const F=mb*dv/dt,str=K.k*Math.pow(ma,2/3)*bloodK(a)*(a===P?PLAYER_GRIP[P.clade.id]||1:1);
+      // the struggle: what the joint took off the held body this frame is a force on the grip (newtons: kg × m/s²); a grip has a strength by the
+      // holder's mass (GRIP.k × kg^(2/3)), weakened as its blood goes, doubled through a swallow (SWALLOW.grip), and a struggle past half of it wears the
+      // hold down — at the grip's strength in two seconds, at twice it in under one. The struggle fades as the held body's stamina goes (stamK in slowOf)
+      const F=mb*dv/dt,str=K.k*Math.pow(ma,2/3)*bloodK(a)*(a===P?PLAYER_GRIP[P.clade.id]||1:1)*(h.swallowT>0?SWALLOW.grip:1);
       h.load=lerp(h.load,F,1-Math.exp(-5*dt));
       h.pull=Math.max(0,h.pull+dt*(h.load/str-0.5));
       if(h.pull>1){if(a===P)P.grabCD=1.2;else a.biteT=(a.def.biteCD||1.2)*2;releaseHold(h);thump(0.25,140,60,b===P?null:B,1.2,0.05);continue;}
+      h.calm=h.load<SUBDUE.k*str?h.calm+dt:0; // subdued (v11.93): the struggle under half the grip for SUBDUE.t
       if(h.kind==='arms')a.grab=b; // the arms close on what is held (physics.js stepRigs), whatever the behaviour says this frame
       if(b===P)P.heldK=Math.min(P.heldK,K.slow);
       h.at.copy(B);h.near=true;
-    }else h.near=false;
-    // the states, near or far (v11.55, COMBAT.md §2–3): the sting lets the holder go; a ringmouth about to be pinned drops the held arm; a hold
-    // kept past its pin time with the struggle under PIN.pull is a pin (a paralysed body is pinned at once), and the placed act follows from the
-    // edge's verdict where the hold is. Past 95 m there is no rope and no struggle, so a far fight resolves on the pin clock alone
+    }else{h.near=false;const S=STAMINA[cladeOf(b)]||STAMINA.slowbloods;if(h.t>S.full+S.fade)h.calm=SUBDUE.t;} // past 95 m there is no joint and no struggle: the held is subdued once its stamina would be gone
+    // the states, near or far (v11.55, COMBAT.md §2–3; v11.93 §10.4): the sting lets the holder go; a ringmouth about to be subdued drops the held arm; a
+    // body whose struggle has stayed under the grip for SUBDUE.t (a paralysed one at once) is subdued, and the placed act follows (the swallow, or the hunter
+    // that can do nothing where it holds lets go); a swallow under way ends in the mouth
     {const at=h.near?h.at:b.pos;
       if(h.stingT>0){h.stingT-=dt;if(h.stingT<=0){stung(a,b,at);releaseHold(h);continue;}}
       const para=(b===P?P.paraT:b.paraT)>0;
-      if(!h.pinned&&(para||h.t>h.pinT*0.7)&&a!==P&&h.kind!=='arms'&&canDropArm(b)){autotomy(h);continue;}
-      if(!h.pinned&&(para||(h.t>h.pinT&&h.pull<PIN.pull))){h.pinned=true;if(a!==P){placedAct(h);if(holds.indexOf(h)<0)continue;}}}
-    // the bites, on the hold's clock (the player bites by hand: playerBite). v11.91: each is the edge on the body where the hold is (biteOn); a placed
-    // verdict (the nape, the thrash) that does nothing where it holds lets the hunter go; a severed limb is a mouthful — a moment, the target kept
-    if(a!==P){h.biteT-=dt;if(h.biteT<=0){h.biteT=K.cd;const r=biteOn(h,h.placed);if(holds.indexOf(h)<0)continue;
+      if(!h.pinned&&(para||h.calm>=SUBDUE.t*0.7)&&a!==P&&h.kind!=='arms'&&canDropArm(b)){autotomy(h);continue;}
+      if(!h.pinned&&(para||h.calm>=SUBDUE.t)){h.pinned=true;if(a!==P){placedAct(h);if(holds.indexOf(h)<0)continue;}}
+      if(h.swallowT>0){h.swallowT-=dt;if(h.swallowT<=0){killBy(h,'swallowed');continue;}}}
+    // the bites, on the hold's clock (the player bites by hand: playerBite). v11.91: each is the edge on the body where the hold is (biteOn); a severed limb
+    // is a mouthful — a moment, the target kept. A swallowing mouth does not bite: it is full
+    if(a!==P&&!(h.swallowT>0)){h.biteT-=dt;if(h.biteT<=0){h.biteT=K.cd;const r=biteOn(h,h.pinned);if(holds.indexOf(h)<0)continue;
       if(!h.bit){h.bit=true;envenom(a,b);} // the first bite in the hold carries the holder's venom, if it has one (COMBAT.md §3b)
       afterBite(h,r);}}
   }
 }
+const SPQ=new THREE.Quaternion(),SPV=V3(),SPU=V3(0,1,0);
+// the holder does what its build does (v11.93, COMBAT.md §10.4), once a frame before the joint closes: a cutting jaw shakes its head (the yaw the orientation
+// composes on, creatures_ai.js updateCreatures: the grip moves with it and the joint swings the held) or, a chain body, rolls on its axis (SPIN: fx.js bodyPose
+// spins the frame; the held is carried round the axis here) — each cycle sharpens the saw; claws on a limb back off and the pull tears the root; a swallow
+// draws the held into the mouth along the grip's own axis. Far from the player nothing is seen and the saw grows on the clock alone
+function holderWork(h,dt,nearP){const a=h.a,b=h.b;
+  if(h.swallowT>0){const p=1-h.swallowT/h.swallowD,g=gripOf(a);if(g){h.la[2]=g.at[2]-p*SWALLOW.draw*lengthOf(b)/((a.b.g.scale.x)||1);}return;} // the joint's point on the swallower walks back into its body (in its own frame, unscaled)
+  if(saws(a)){const chain=(specOf(a)||{core:{}}).core.kind==='chain',rate=chain?SPIN.rate/TAU:SHAKE.hz*Math.sqrt(SHAKE.ref/Math.max(0.5,a.def.size||1));
+    const p0=a.shakeP||0,p1=p0+rate*dt;a.shakeP=p1;if(Math.floor(p1)>Math.floor(p0))h.saw=Math.min(SHAKE.sawMax,h.saw*SHAKE.saw); // a cycle done: the saw sharper
+    if(!nearP){a.shakeYaw=0;a.spinV=0;return;}
+    if(chain){a.spinV=SPIN.rate;a.shakeYaw=SPIN.yaw*Math.sin(p1*TAU);
+      // the held carried round the roller's axis through the grip: its position turned by the frame's spin, its facing with it (the player's position only: its facing is its own)
+      const e=a.g.matrix.elements,fl=len3(e[8],e[9],e[10])||1;SPV.set(e[8]/fl,e[9]/fl,e[10]/fl);const G=localToWorld(a,h.la,HP1),th=SPIN.rate*dt;SPQ.setFromAxisAngle(SPV,th);
+      T4.copy(b.pos).sub(G).applyQuaternion(SPQ).add(G);shiftBody(b,T4.x-b.pos.x,T4.y-b.pos.y,T4.z-b.pos.z);
+      if(b!==player){T4.set(SPQ.x,SPQ.y,SPQ.z);const w=SPQ.w;SPQ.copy(b.g.quaternion);b.g.quaternion.set(T4.x,T4.y,T4.z,w).multiply(SPQ);}} // q' = spin × q (a world-axis turn); no premultiply in the stub
+    else{a.spinV=0;a.shakeYaw=SHAKE.amp*Math.sin(p1*TAU);}
+    return;}
+  a.shakeYaw=0;a.spinV=0;
+  if(h.kind==='claws'&&losable(b,partUnder(b,h.ci))){ // the pull: back off holding the limb; the root tears under the claw's force or the struggle's
+    if(nearP){T4.copy(a.pos).sub(b.pos);T4.y*=0.3;const l=T4.length()||1;T4.multiplyScalar((a.def.speed||3)*PULL.back/l);a.vel.lerp(T4,1-Math.exp(-3*dt));}
+    const W=b.shapesW,r=W&&W[h.ci]?W[h.ci].r:0.2,rootF=PULL.root*r*r,F=Math.max(h.load,EDGE_K.claws.K*Math.pow(Math.max(1,kgOf(a)),2/3)*bloodK(a));
+    h.tear=Math.max(0,h.tear+dt*(F/rootF-1)/PULL.t);
+    if(h.tear>=1){const at=h.near?h.at:b.pos;afterBite(h,severLimb(b,a,h.ci,partUnder(b,h.ci),at,0));}}}
 // ---------- the states (v11.55) ----------
 function widestR(o){const H=o.b&&o.b.hit,s=o.b&&o.b.g?o.b.g.scale.x:1;let r=0;if(H)for(const h of H)if(h.r*s>r)r=h.r*s;return r;}
 // a slowblood swallows what fits its mouth (the gape by geometry: the prey's widest capsule against gape × GAPE_K); a ringmouth or a hingeshell takes
 // forage in pieces at the touch, by mass as before (WHOLE). The player is swallowed like anything else — the finback's death (COMBAT.md §3)
 function swallows(a,b){if(cladeOf(a)==='slowbloods')return widestR(b)<=(a.b.gape||0)*GAPE_K;return b!==player&&!!b.def.edible&&kgOf(b)<=WHOLE*kgOf(a);}
 function gulps(tg){const P=player;if(!tg.def||!tg.def.edible)return false;return P.clade.spec.clade==='slowbloods'?widestR(tg)<=(P.b.gape||0)*GAPE_K:kgOf(tg)<=WHOLE_P*P.mass;} // the player's gulp: the finback by its gape, the beaks by mass (pieces)
-function pinTime(a,b){return PIN.t*clamp(Math.pow(kgOf(b)/kgOf(a),PIN.mass),0.3,3);}
 function venomOf(o){return o===player?(player.clade&&player.clade.venom)||null:(o.def&&o.def.venom)||null;}
 function stings(o){const v=venomOf(o);return !!(v&&v.kind==='sting');}
 function stung(a,b,at){if(a===player){player.stungT=STING.dur;player.grabCD=STING.cool;hurtPlayer(0,null);}else{a.stungT=STING.dur;dropTarget(a,STING.cool);}thump(0.35,160,70,a===player?null:at,1.2,0.05);bloodBurst(at,2,cladeOf(a));}
@@ -332,19 +404,19 @@ function losePart(o,pi,by,at,quiet){const live=liveSpec(o);if(!live)return 0;con
   const m0=liveMass(o);rederive(o);const share=Math.max(0,(m0-o.liveMass)/(o.fullMass||m0||1));if(quiet)return share;at=at||o.pos;hitFx(o,by,at,20);thump(0.5,100,45,o===player?null:at,1,0.08);
   if(o===player)hurtPlayer(0,null);else{o.lastHurt=t;if(o.def.role==='hunter'||o.def.role==='ambush'){dropTarget(o);o.state='flee';o.fleeT=LOSE.flee;}}
   return share;}
-// the placed act once a hunter has pinned its prey (v11.91): swallowed by the gape; else the verdicts that wait on the pin (the nape, the thrash) are
-// the next bite's; an edge already through has nothing to place; nothing this edge can do where it holds, the hunter lets go and looks elsewhere.
-// The player's own hold acts on its bite
+// the placed act once a hunter has subdued its prey (v11.91; v11.93 §10.4): a gape that takes the body begins the swallow — SWALLOW.base + k × the lengths' ratio
+// seconds, the held drawn into the mouth (holderWork), the death at the end (updateHolds); an edge that gets through, at rest or with the saw worked up, goes on
+// biting; one that can do nothing where it holds lets go and looks elsewhere. The player's own hold acts on its bite
 function placedAct(h){const a=h.a,b=h.b;if(b!==player&&!b.alive)return;
-  if(cladeOf(a)==='slowbloods'&&swallows(a,b)&&!losable(b,partUnder(b,h.ci))){killBy(h,'swallowed');return;} // a gape swallows from the body, not from a tail (v11.57)
-  const v=h.thru;if(v==='yes')return;
-  if(v==='nape'||v==='thrash'){h.placed=true;return;}
-  dropTarget(a,PIN.bored);}
+  if(cladeOf(a)==='slowbloods'&&swallows(a,b)&&!losable(b,partUnder(b,h.ci))){h.swallowD=h.swallowT=SWALLOW.base+SWALLOW.k*lengthOf(b)/Math.max(0.5,lengthOf(a));h.placed=true;thump(0.5,80,35,b===player?null:h.at,1,0.1);return;} // a gape swallows from the body, not from a tail (v11.57)
+  if(h.k*(saws(a)?SHAKE.sawMax:1)>=1){h.placed=true;return;}
+  if(h.kind==='claws'&&losable(b,partUnder(b,h.ci))){h.placed=true;return;} // the pull is working
+  dropTarget(a,SUBDUE.bored);}
 function actOf(e){return e==='point'?'skewered':e==='crush'?'crushed':e==='cut'?'opened':e==='beak'?'bitten at the nerve cord':'dismembered';}
 function killBy(h,act){const a=h.a,b=h.b,at=h.at||b.pos,cl=cladeOf(b);bloodBurst(at,16,cl);hitFx(b,a,at,24);thump(0.6,90,40,b===player?null:at,1,0.1);
   if(b===player){die((act==='swallowed'?'swallowed by':act+' by')+' a '+(a===player?'player':a.kind));return;}
   kill(b,a,act==='swallowed');}
-function slowOf(o){return bloodK(o)*(o.stungT>0?STING.slow:1)*(o.sickT>0?POISON.slow:1)*(o.speedK||1);} // the blood lost (v11.91), the sting, the poison, the live spec's derive against the whole body's (v11.57)
+function slowOf(o){return bloodK(o)*(o.stungT>0?STING.slow:1)*(o.sickT>0?POISON.slow:1)*(o.speedK||1)*((o.held||0)>0?stamK(o):1);} // the blood lost (v11.91), the sting, the poison, the live spec's derive against the whole body's (v11.57), the stamina while held (v11.93: the struggle fades)
 function bleeding(o){return o===player?player.bleed>1e-5&&!playerGone()&&player.inkT<=0:o.bleed>1e-5;}
 function smellR(o){return SMELL_R*Math.min(2,Math.sqrt((o.bleed||0)/BLOOD.qRef));} // how far a wound is read from: by the square root of its rate — a pouring wound from 180 m, a thread from 40
 // the nearest bleeding body on c's prey list within R (creatures_ai.js updateHunter: past its detect, the water carries the blood)
@@ -356,8 +428,8 @@ function sicken(o){if(o===player){player.sickT=POISON.t;hurtPlayer(0,null);}else
 function poisonTick(c,dt){c.poisT-=dt;if(c.poisT>0)return;c.poisT=2;const sp=SPECS[c.kind];if(!sp||sp.clade!=='hingeshells')return;const ch=chunkAt(c.pos.x,c.pos.z),f=ch?ch.f(c.pos.x,c.pos.z):null;
   const at=c.pos.y<POISON.deep||(f&&f[FI.heat]>POISON.heat);c.poison=clamp((c.poison||0)+(at?2/(POISON.load*DAY_S):-2/(POISON.clear*DAY_S)),0,1);} // a body's speed factor by its states (creatures_ai.js seek, player.js)
 // once a frame: the states' clocks on the player and every creature (the creatures' paralysis is read in creatures_ai.js updateCreatures)
-function updateStates(dt){const P=player;P.paraT=Math.max(0,(P.paraT||0)-dt);P.stungT=Math.max(0,(P.stungT||0)-dt);P.sickT=Math.max(0,(P.sickT||0)-dt);if(P.regrow)regrowTick(P);
-  for(const c of creatures){if(!c.alive)continue;if(c.paraT>0)c.paraT-=dt;if(c.stungT>0)c.stungT-=dt;if(c.sickT>0){c.sickT-=dt;c.cool=Math.max(c.cool,0.5);}if(c.regrow)regrowTick(c);poisonTick(c,dt);}} // sick: no hunting (the cool held)
+function updateStates(dt){const P=player;P.paraT=Math.max(0,(P.paraT||0)-dt);P.stungT=Math.max(0,(P.stungT||0)-dt);P.sickT=Math.max(0,(P.sickT||0)-dt);if(P.regrow)regrowTick(P);if(P.clade&&mode==='play')stamTick(P,dt);
+  for(const c of creatures){if(!c.alive)continue;if(c.paraT>0)c.paraT-=dt;if(c.stungT>0)c.stungT-=dt;if(c.sickT>0){c.sickT-=dt;c.cool=Math.max(c.cool,0.5);}if(c.regrow)regrowTick(c);poisonTick(c,dt);if(c.held>0||c.stam<1)stamTick(c,dt);}} // sick: no hunting (the cool held); the stamina (v11.93) drains held, fills at rest
 // ---------- wounds ----------
 // bleeding, once a frame (v11.91): every wound drains its rate into the body's loss and clots (the rate falling by e over its tau), and trickles at its
 // point by its rate; the loss weakens the body (bloodK, read by slowOf and the grip), collapses it, and at BLOOD.dead the body bleeds out — dead, a
@@ -446,7 +518,7 @@ function playerBite(){
   if(held){const h=P.hold;if(!h.bit){h.bit=true;envenom(P,best);} // the coilshell's venom on its first bite in a hold (COMBAT.md §3b)
     afterBite(h,biteOn(h,h.pinned));}
   else{const g=gripOf(P),m=g?localToWorld(P,g.at,T1):T1.copy(P.pos);freshShapes(best);bodyPointNear(best,m,T2);const ci=bpIdx,edge=edgeOf(P);
-    if(best.def.hp>=1e8||thruOf(edge,coverAt(best,ci))!=='yes')bruise(best,P,T2);else cutAt(best,P,ci,T2,edge,rhoOf(P),pointDepth(P),m);
+    if(best.def.hp>=1e8||thruK(P,best,ci)<1)bruise(best,P,T2);else cutAt(best,P,ci,T2,edge,rhoOf(P),pointDepth(P),m); // v11.93: the edge's force against the covering (thruK); a free bite has no shake behind it
     if(best.alive)best.vel.addScaledVector(T3,4);}
   if(best.alive&&best.hold&&best.hold.b===P)best.hold.pull+=0.35; // it has you: a bite is a reason to let go
 }

@@ -235,7 +235,7 @@ gape by geometry. Findings, for the person:
 
 Answered 15 Sep 2026: the chemistry per clade (§3b) — ringmouth venom by the beak, slowblood venom on the spines, hingeshell poison from the seep diet, the drifters' cells; and the roster it lands on.
 
-## 10. The physics pass (24 Sep 2026; passes A and B built v11.91–92, C–D designed)
+## 10. The physics pass (24 Sep 2026; passes A–C built v11.91–93, D designed)
 
 The person, after hours as the finback being bitten on purpose (24 Sep 2026), separating what is the AI from what is the fight's
 physics. What each point is in the code:
@@ -426,8 +426,14 @@ refill), `STAMINA` (by clade), `STRIKE` (the lock, the lunge's steering 0.3, the
   overshoot, the impact's momentum, the joint at the struck point, the orientation, the petals to the surface; `MISS` out.
   The biggest change to the look; scripted checks as in `test/steer.js` for the orbit (the holder's angular speed about the held under a
   bound) and the petals (no tip behind its root, none inside its own head).
-- **C — the edge's work** (points 2, 4): the shake, the roll, the claws' pull, the crush; subdued by stamina; the swallow as a sequence;
-  the edge as a line's trait (§10.9).
+- **C — the edge's work** (points 2, 4) — **built v11.93** (the build added: the verdict as F × σ ≥ τ × r with a crush against r² — `EDGE_K`, `COVER_T`,
+  calibrated to §7's verdicts and §10.5's table, the `EDGE` words gone; the shake as a yaw composed on the facing, the roll for the chain cores with the
+  held carried round the axis, the saw ×1.5 a cycle to 3×; the claws' pull against `PULL.root` × r² with the claw's own force or the struggle's, and a
+  claw's bite a pinch (`EDGE_RHO.claws` 0.35); the stamina by clade riding `slowOf` for a held body, subdued as a second under half the grip; the swallow
+  as `h.la` drawn back into the swallower's frame, the grip doubled; the arms' cone (`ARM_CONE`, note b of §10.9); the edge at conception as `BUDGET.edge`,
+  the bill naming the sawmouths' step): the shake, the roll, the claws' pull, the crush; subdued by stamina; the swallow as a sequence;
+  the edge as a line's trait (§10.9). Not built: the bestiary's word for a sawmouth by descent (§10.10); the middle range's readable hold (note c) beyond
+  what the stamina does to it; the tentacles' wrap (note d, a later pass).
 - **D — predator behaviour** (point 8; the person's own pass, with another after it): commit to a crippled animal and follow its trail
   downcurrent; bite and wait on dangerous or bigger prey; break off when hurt (the life–dinner rule); the return — you bleeding, knowing,
   and it coming round.

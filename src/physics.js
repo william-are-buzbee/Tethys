@@ -342,6 +342,7 @@ function stepRigs(o,near,dt){
   // about the body's axis): outside it they keep their pose and the head has to turn. To v11.91 every tip went for the centre, and a prey beside the head
   // pulled the petals through the face (the person, 24 Sep 2026)
   const G=o.grab;if(G&&G.pos){const gp=stepRigs.G;gp.x=G.pos.x;gp.y=G.pos.y;gp.z=G.pos.z;gp.own=G;SIM.grab=gp;SIM.grabM=null;
+    {const fl=len3(e[8],e[9],e[10])||1,vx=G.pos.x-o.pos.x,vy=G.pos.y-o.pos.y,vz=G.pos.z-o.pos.z,vl=len3(vx,vy,vz)||1;if((vx*e[8]+vy*e[9]+vz*e[10])/(fl*vl)<ARM_CONE&&!(o.hold&&o.hold.b===G))SIM.grab=null;} // the arms' cone (v11.93, the person's note b): a prey beside or behind the ring is not reached for — the arms keep their pose and the body turns to bring the ring to bear (the arms holding it are already on it)
     const h=o.hold,gr=b.grip,mp=stepRigs.M;let sx,sy,sz;
     if(h&&h.b===G&&h.at){sx=h.at.x;sy=h.at.y;sz=h.at.z;}else{const m=gr?localToWorld(o,gr.at,T1):T1.copy(o.pos);if(G!==player)freshShapes(G);bodyPointNear(G,m,T2);const W=G.shapesW,r=W&&W[bpIdx]?W[bpIdx].r:0;let ddx=m.x-T2.x,ddy=m.y-T2.y,ddz=m.z-T2.z;const dl=len3(ddx,ddy,ddz)||1;sx=T2.x+ddx/dl*r;sy=T2.y+ddy/dl*r;sz=T2.z+ddz/dl*r;}
     const fl=len3(e[8],e[9],e[10])||1,vx=sx-o.pos.x,vy=sy-o.pos.y,vz=sz-o.pos.z,vl=len3(vx,vy,vz)||1;
@@ -353,6 +354,7 @@ function stepRigs(o,near,dt){
 }
 stepRigs.G={x:0,y:0,z:0,own:null};stepRigs.M={x:0,y:0,z:0,own:null};
 const MOUTH_CONE=0.85; // cos of the half-angle about the body's axis the mouth's chains reach within (the petals' joint limit: ~32°)
+const ARM_CONE=0.3; // cos of the half-angle the arms reach within (~72°: a ring at the front reaches wider than the petals, not behind itself); outside it a ringmouth's limbs clipped lengthwise through its own body to reach (the person, 24 Sep 2026)
 
 // ---------- disturbance ----------
 // What the flora bends away from and what the marine snow flows around: the player as a short capsule along its path with

@@ -1523,6 +1523,33 @@ the arms holding the player do not push it out. `GRIP.k` jaw 450, arms 350, claw
 The mouth's chains (`mouthArms` marks `c.mouth`) are drawn to the hold's point on the skin, or the nearest surface point to the mouth, only inside
 `MOUTH_CONE` 0.85 (physics.js `stepRigs`, `SIM.grabM`). The stub has real `lookAt`/`setFromRotationMatrix`/`slerp` and composes from the quaternion.
 
+**The edge's work (v11.93, COMBAT.md §10 pass C).** **The verdict is physics** (`EDGE_K`, `COVER_T`, `thruK`, `thruOf`): an edge is through a covering
+when F × σ ≥ τ × r — F = `K` × M^(2/3) the holder's force in newtons (K per kg^(2/3): cut 85, point 85, hold 85, crush 170, beak 150, claws 1300,
+shred 40, rasp 20, ram 0), σ its sharpness (`s`: point 6, beak 5, cut 3, rasp 1.5, shred 1, claws 0.1, hold and ram 0), τ the covering's `cut`
+toughness (skin 25e3, hide 100e3, plate 1.2e6, shell 4e6 N per m of radius), r the struck capsule's radius; a crush is a fracture, F ≥ `crush` × r²
+(skin 20e3, hide 50e3, plate 150e3, shell 200e3 N/m²). `h.k` is the ratio; `h.thru` the word (`yes`, `shake` — a cutting jaw that gets there by the
+saw — or `no`). The `EDGE` table, `PIN` and `pinTime` are gone. **The holder's work** (`holderWork`, once a frame before the joint closes): a cutting jaw
+**shakes** — `c.shakeYaw` = `SHAKE.amp` 0.44 rad × sin at `SHAKE.hz` 1.6 × √(`ref` 9 ÷ size) Hz, composed on the facing in creatures_ai.js (last
+frame's yaw taken off before the steering, this frame's put on after: `c.shook`), the grip moving with the head and the joint swinging the held; every
+cycle `h.saw` ×`SHAKE.saw` 1.5 to `sawMax` 3 and `biteOn` is through when k × saw ≥ 1; a **chain body** (the core's kind) **rolls** — `c.spinV` =
+`SPIN.rate` 3.2 rad/s spins the frame in fx.js `bodyPose` (`o.roll` advanced, wrapped, the ease skipped), the held's position turned round the axis
+through the grip and, a creature, its quaternion with it (`SPIN.yaw` 0.15 a little head yaw); **claws on a limb pull** — the holder's velocity eased
+toward away at `PULL.back` 0.5 of its speed, `h.tear` growing by (max(`h.load`, K_claws × M^(2/3)) ÷ (`PULL.root` 6e6 × r²) − 1) per `PULL.t` 1 s, the
+limb off at 1 (`severLimb`); a **plain jaw** clamps and waits. Far from the player (no joint) the saw grows on the clock and nothing moves. **Subdued**
+(`SUBDUE`): `h.calm` counts the seconds the struggle has stayed under `k` 0.5 of the grip and `t` 1 makes the hold a pin (`h.pinned`; a paralysed body at
+once; far, once the held clade's `full` + `fade` has passed); `bored` 8 s is the cooldown of a hunter whose edge can do nothing where it holds. **The
+stamina** (`STAMINA`, `stamOf`, `stamK`, `stamTick`): `o.stam` 1 → 0 over `full` + `fade` seconds while held and not paralysed (slowbloods 6 + 6 to
+`floor` 0.33, ringmouths 12 + 10 to 0.4, hingeshells 40 + 20 to 0.6, drifters 3 + 3 to 0.3), back over `rest` (40, 50, 90, 20 s) unheld; full thrust
+while stam is over fade ÷ (full + fade), then falling to the floor; `slowOf` multiplies by `stamK` for a held body. **The swallow** (`SWALLOW`): at the
+pin a slowblood whose gape takes the body (`swallows`, not a limb) sets `h.swallowT` = `h.swallowD` = `base` 1 + `k` 4 × length(held) ÷ length(swallower)
+(`lengthOf`: derive's at the body's scale — the stone on the finback 6.7 s, a ridge 2.3); through it `h.la[2]` walks back from the grip by `draw` 0.9 of
+the held's length, the grip's strength ×`grip` 2, the mouth does not bite, and at 0 `killBy(h,'swallowed')`. `placedAct`: the swallow; else an edge
+whose k × sawMax ≥ 1 keeps biting; claws on a limb keep pulling; else `dropTarget(SUBDUE.bored)`. `EDGE_RHO.claws` 0.35 (a pinch). **The arms' cone**
+(physics.js `ARM_CONE` 0.3): `SIM.grab` is nulled when the grab target is outside ~72° of the body's axis (unless the hold is already on it) — the
+arms keep their pose; this also stops a slowblood's tail chain reaching for its prey. **The edge at conception** (line.js `BUDGET.edge` 1.5, `EDGE_STEP`):
+a `mouth:tentacles` `edge` change is one item, "the mouth's edge: hold → cut (the sawmouths' step)". The readout's hold line (main.js `holdLine`) shows k,
+the saw, calm/subdued, the swallow, the tear and the held's stamina. test/combat.js is seeded (`mulberry(11)`); §18 covers the pass.
+
 ## The canopy
 
 **Struck in v11.81 (PLANKTON.md §12): the mask is the retention field `leeW` (world.js, the `EDDY` table) and places only the sailer fleets and

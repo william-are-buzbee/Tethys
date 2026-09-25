@@ -5984,3 +5984,67 @@ turning: a hunter that misses coasting past and coming round on a real circle, a
 (4) how often hunters miss now (`STRIKE.range`, `.steer`, `.face`, `.slack`) — most attacks should fail, but a ridge should get you within a few tries;
 (5) the run-up when a hunter finds you beside its head (`STRIKE.runup`); (6) the eel holding a fresh finback ~14 s and the finback tearing free of
 smaller jaws (`GRIP.k`) — pass C's stamina is the real answer; (7) the head snapping down to a prey under it (`TURN_STRIKE`).
+
+## v11.93 — COMBAT pass C: the edge's work — the verdict by force, the shake and the roll, the claws' pull, subdued by stamina, the swallow as a sequence (25 Sep 2026)
+
+The person on pass B: "AWESOME. terrifying." — with four notes (COMBAT.md §10.9): the orthos still orbit a little, the arm hunters angled away contort
+through their own bodies to reach, the middle range (a small player holding a bigger animal) detaches constantly and reads as nothing, tentacles should
+wrap (a later pass). Points 2 and 4 of §10: every fight physical, and a mouth too small to swallow still able to bite, tear, pull or break a part.
+
+- **The verdict is physics** (combat.js `EDGE_K`, `COVER_T`, `thruK`; §10.5): an edge is through a covering when F × σ ≥ τ × r — F = K × M^(2/3) the
+  holder's force (K in N per kg^(2/3): a jaw 85, the white shark's; a beak 150; the claws' lever 1300, the coconut crab's; the mouthparts 40), σ its
+  sharpness (point 6, beak 5, cut 3, rasp 1.5, shred 1, claws 0.1 — a pinch, not a blade), τ the covering's toughness (skin 25, hide 100, plate 1200,
+  shell 4000 kN per m of radius), r the struck capsule's. A crush is a fracture: F ≥ τc × r² (skin 20, hide 50, plate 150, shell 200 kN/m²) — a shell
+  breaks whole or not at all. The `EDGE` table (v11.54) is gone with its `nape`, `joint`, `thrash` and `time` words; the nape is geometry (cutAt) and
+  the limb's route is the pull. The same numbers say what a line's mouth would do at any size, which the table could not. Calibrated so §7's verdicts
+  hold: the eel's cut on the finback's hide k 0.93 (short at rest, through with the saw), the ridge's 6.2, the ridge on a plate 0.25 and a shell 0.16
+  (never, shake as it may), the crusher on the coil's shell 1.4, the soft-arm's beak on a grazer 1.4 (it bleeds one, §10.5's table), claws through
+  skin (the hood on a soft-arm 1.3) and not a hide (0.4–0.8), a point through a hide (9.4) and not a shell (0.15).
+- **The holder does what its build does** (`holderWork`, §10.4). A **cutting jaw shakes**: its head yaws ±25° (`SHAKE.amp`) at 1.6 Hz × √(9 m ÷ its
+  size) — the eel 2.4, the ridge 1.6, the abyssal 1.2 — a yaw composed on the facing (creatures_ai.js `c.shakeYaw`, taken off before the steering and
+  put back after, so the two never fight); the grip moves with the head and the joint swings the held (a grazer in a ridge's jaws is thrown side to
+  side). Each cycle sharpens the saw ×1.5 to 3× (`h.saw`): the eel is through the finback's hide on its second cycle, the ridge never through a plate.
+  A **chain body rolls** instead (the eel's core): `SPIN.rate` 3.2 rad/s on its own axis (fx.js `bodyPose` spins the frame), the held carried round
+  the axis through the grip and turned with it (the player's position only), a turn a cycle — the crocodile's roll. **Claws on a limb pull**: the
+  holder backs off at half its speed and the root tears when the claw's force (or the struggle's) passes `PULL.root` 6 MN/m² × r² for a second's
+  worth — the sickle (1.26 MN) takes the finback's tail (375 kN) in 0.4 s, the lash (0.42 MN) in ten, the trap and the hood never. A claw's own bite
+  is a pinch now (`EDGE_RHO.claws` 0.35 of the gape; 1 to v11.92, when a hood on your tail bled you out in five seconds). A **plain jaw clamps and
+  waits**. Arms reel in as built.
+- **Subdued by stamina** (`SUBDUE`, `STAMINA`, `stamK`, `stamTick`): `PIN.t` and `pinTime` are gone. The held body's struggle is its thrust × its blood
+  × a stamina that drains while it is held and fills at rest (by clade: slowbloods full 6 s then fading over 6 to a third; ringmouths 12 and 10 to 0.4;
+  hingeshells 40 and 20 to 0.6; the rest 40, 50, 90 s), riding `slowOf` for a held body (the player's speed and a creature's seek alike); subdued when
+  the struggle has stayed under half the grip for a second (`h.calm`), a paralysed body at once, a far hold (no joint) once the clade's stamina would
+  be gone. The placed act follows: the swallow, or the hunter that can do nothing where it holds lets go (`SUBDUE.bored` 8 s). An eel holds a fresh
+  finback through its thrashing now: the finback tires and the eel's roll opens it.
+- **The swallow is a sequence** (`SWALLOW`): subdued in a gape that takes it, the body is drawn into the mouth over 1 + 4 × (its length ÷ the
+  swallower's) seconds (the stone on the finback 6.7 s, a ridge 2.3) — the joint's point on the swallower walks back into its body (`h.la`, a copy
+  now), the grip doubled, the mouth not biting — and the death comes at the end, seen coming; a body that tears free keeps its wounds. To v11.92 the
+  swallow was the instant the pin struck.
+- **The arms' cone** (physics.js `ARM_CONE` 0.3, ~72°; the person's note b): a ringmouth's arms reach only for a target inside a cone about its axis
+  — outside it they keep their pose and the body must turn to bring the ring to bear; a slowblood's *tail* chain no longer reaches for its prey either
+  (every non-mouth chain of a rigged hunter was drawn to the grab target).
+- **The edge as a line's step** (line.js `BUDGET.edge` 1.5, `EDGE_STEP`; §10.10): the mouth's `edge` changed at conception is one item on the bill,
+  named for what it is — "the mouth's edge: hold → cut (the sawmouths' step)", point the needle's, crush the platebacks' — half the founder's budget,
+  where a switch cost 0.25.
+- **The readout's hold line** shows the ratio k, the saw, calm or subdued, the swallow's clock, the tear and the held body's stamina.
+- **The test is seeded** (test/combat.js: `Math.random = mulberry(11)`): the spawns and the fights are the same run each time. §3's eel had been
+  landing its bite by luck of the draw; seeded, this build lands it in 7 of 8 seeds at 9.3 s against 2 of 8 for v11.92. §17's standing ridge hold is on
+  a grazer now (its clamp opens the finback at once, §10.5) and the orbit is measured as the net bearing drift (the shake swings to and fro, an orbit
+  goes round); the petals' fold allowance is 6% under the shake's whip. §15's ridges are placed nose-on: a ridge's run-up on a floor-sitting prey
+  lands or not by the seed on this build and v11.92 alike (a pass D matter). §18 is new: the verdict numbers above, the sickle's tail-tear and the
+  hood's failure, the stone's swallow (subdued at 1.0 s, 6.7 s to the end, the finback drawn 1.4 m in), the stamina half back after half its rest,
+  the ortho with the finback abeam not reaching (90 frames of wanting it, no touch) and reaching ahead (822 contacts), the bill's edge line.
+- **On paper** (the hunter table, the finback thrashing): the trap, hood and hook hold a second and let go (claws on hide: no); the stone subdues at
+  1.0 s and swallows at 7.7; the eel subdues at 1.0 s, rolls and bleeds you out at 13.8; the lash and the sickle pinch the tail and bleed you out in
+  24 and 54 s; the lurker and the ortho take the nerve cord; the crusher, basker, ridge and abyssal kill at the clamp (opened, or a mouth that takes
+  30% of you in one bite: torn apart). The soft sickle in a ridge's jaws: 18 s, 25% taken.
+
+**Seen** (the app's browser pane, `dev.html`): an eel spawned 5 m ahead of the still finback took hold at once, was subdued in a second, rolled (spinV 3.2, the roll advancing frame by frame, the saw at 3×) and bled the finback out in under ten seconds ("bled out after a eel's bite"); the sim clock ran at wall speed. A ridge on a grazer 10 m ahead: it circled and missed the grazer two or three times before taking it, then stood on the carcass to feed, the grazer knocked onto its side by the clamp; the second trial it was still circling at 10 m after eight seconds (the run-up on a slow floor prey: pass D). The hold and the shake themselves were never framed — the camera looks along the finback and the eel held it from behind the view, and the ridge's hold on the grazer lasted less than the two seconds between stills — so the roll, the shake and the swallow are the tests' word.
+
+**Unseen, ask in this order:** (1) the eel's roll with you in its jaws — the world turning round the eel's axis, the finback carried round — and
+whether `SPIN.rate` 3.2 is a roll or a blur; (2) a ridge shaking a grazer: does the grazer whip and the ridge's head swing read as a shake, or as a
+glitch (`SHAKE.amp`, `.hz`); (3) being swallowed by a stone or a ridge: drawn into the mouth over seconds, the death at the end (`SWALLOW`); (4) the
+middle range now — the person's grab on a grazer with the grazer tiring (`STAMINA.slowbloods`): does it stop detaching, and is the drag on you felt;
+(5) the arm hunters angled away no longer contorting (`ARM_CONE`), and whether they turn to bring the ring to bear soon enough (pass D if not);
+(6) how long you last in an eel's jaws now (14 s on paper: the stamina's `full`, `GRIP.k`); (7) the bill at conception naming the sawmouths' step,
+and whether 1.5 is the right price.

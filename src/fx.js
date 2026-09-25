@@ -87,7 +87,8 @@ function bodyPose(o,dt,yaw){
   o.sq=(o.sq||0)+(sqT-(o.sq||0))*(1-Math.exp(-9*dt));
   const rigged=!!(b.rigs&&b.rigs.length),cap=rigged?POSE_K.bankRig:POSE_K.bankMax;let rollT=clamp(-POSE_K.bank*rate*spd,-cap,cap)+(o.rollBias||0); // rollBias (v11.78): a walker's lean into the side slope (player.js)
   if(o.stun>0)rollT=POSE_K.stunRoll*(o.stunSide||1)*(rigged?0.5:1);
-  o.rollV=(o.rollV||0)*Math.exp(-3*dt);o.roll=(o.roll||0)+(rollT-(o.roll||0))*(1-Math.exp(-4*dt))+o.rollV*dt;
+  if(o.spinV){o.roll=wrapA((o.roll||0)+o.spinV*dt);o.rollV=0;} // the roll (v11.93, combat.js holderWork SPIN): a chain body with a hold spins on its axis, the frame with it; the held is carried round in combat.js
+  else{o.rollV=(o.rollV||0)*Math.exp(-3*dt);o.roll=(o.roll||0)+(rollT-(o.roll||0))*(1-Math.exp(-4*dt))+o.rollV*dt;}
   const s=o.sq;b.frame.scale.set(1-s*0.5,1-s*0.5,1+s);b.frame.rotation.z=o.roll;
   // a rigged body: its chains' rest positions (rewritten by the anim each frame, then turned by the frame's yaw for the rigs that ride it — creatures_spec.js
   // compile) turned by the roll too, so the arms and the tail lean with the hull and their skins (world chains, physics.js rigSkin) meet the rolled body

@@ -154,8 +154,10 @@ const BUDGET={
   style:0.75, // × the same: a part kept and its style swapped, then the numbers the two styles share priced as moves
   core:6, // the core's kind changed: another body plan — dear enough that the founder's child cannot (3) and the third generation's can (6)
   size:4, // per doubling or halving of the build scale or the claimed half-length, whichever moved more (§6: size is one of the things generations buy)
-  coat:0.3 // every colour of the coat moved across the whole of its range (pigment is cheap; §6's pigment gate is the eating, not built)
+  coat:0.3, // every colour of the coat moved across the whole of its range (pigment is cheap; §6's pigment gate is the eating, not built)
+  edge:1.5 // the mouth's edge changed (COMBAT.md §10.10, v11.93): the rows the line already has on its back fused along the petal — the sawmouths' step (cut), the needle's (point), the platebacks' (crush); dearer than a switch, half the founder's budget, because a lineage turns on it
 };
+const EDGE_STEP={cut:'the sawmouths\' step',point:'the needle\'s step',crush:'the platebacks\' step',hold:'the pad again'}; // what the bill calls it
 function conceiveBudget(gen){return BUDGET.base+BUDGET.gen*(gen-1);} // gen: the parent's place in the line (the founder 1)
 // the fuel (v11.73, LINEAGE §6): a clutch is paid from what the body has eaten — the child's adult derived mass × the eggs × LINE.egg, in tonnes, taken
 // off the parent's stomach as a share of its meal (ecology.js ecoOf on the line kind: the player's hunger runs on it, player.js). Refused when it would
@@ -178,7 +180,8 @@ function conceivePrice(parent,child){ // {total, items:[{what, cost}]} dearest f
     for(let i=0;i<Math.max(a.length,b.length);i++){const p=a[i],c=b[i];
       if(!p){add('a new '+kind+(c.style?' ('+c.style+')':''),BUDGET.add*cost(c));continue;}if(!c){add('the '+kind+(p.style?' ('+p.style+')':'')+' dropped',BUDGET.remove*cost(p));continue;}
       if(p.style!==c.style)add(kind+': '+p.style+' → '+c.style,BUDGET.style*cost(c));if(!!p.mirror!==!!c.mirror)add(kind+(c.mirror?' mirrored':' unmirrored'),(c.mirror?BUDGET.add:BUDGET.remove)*def.cost);
-      const ka=paramsFor(kind,p.style);for(const k of paramsFor(kind,c.style)){if(ka.indexOf(k)<0)continue;const q=paramOf(kind,k,c,F);add(kind+' '+(q?q.label:k),priceMove(p[k],c[k],q));}}}
+      const ka=paramsFor(kind,p.style);for(const k of paramsFor(kind,c.style)){if(ka.indexOf(k)<0)continue;if(kind==='mouth'&&k==='edge'){if((p.edge||'hold')!==(c.edge||'hold'))add('the mouth\'s edge: '+(p.edge||'hold')+' → '+(c.edge||'hold')+' ('+(EDGE_STEP[c.edge||'hold']||'a new edge')+')',BUDGET.edge);continue;} // the edge is a line's step, not a switch (v11.93, COMBAT.md §10.10)
+        const q=paramOf(kind,k,c,F);add(kind+' '+(q?q.label:k),priceMove(p[k],c[k],q));}}}
   const pa=typeof A.coat==='string'?PAL[A.coat]:A.coat,pb=typeof B.coat==='string'?PAL[B.coat]:B.coat;let dc=0,nc=0;
   if(pa&&pb&&pa!==pb)for(const k in pb){const x=pa[k],y=pb[k];if(!Array.isArray(y))continue;nc++;dc+=Array.isArray(x)?(Math.abs(x[0]-y[0])+Math.abs(x[1]-y[1])+Math.abs(x[2]-y[2]))/3:1;}
   if(nc&&BUDGET.coat*dc/nc>=BUDGET.eps)add('the coat',BUDGET.coat*dc/nc);if(JSON.stringify(A.pattern||0)!==JSON.stringify(B.pattern||0))add('the pattern',BUDGET.toggle);
