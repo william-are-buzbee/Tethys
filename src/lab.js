@@ -704,6 +704,8 @@ function labDrop() {
     build: () => compile(spec),
     size: s.size,
     speed: st.speed,
+    top: st.speed, // v11.93.1: the committed lunge (creatures_ai.js, v11.92) runs at top × sprint — with neither on this row the placed creature's velocity went NaN in its first chase and the low tier's smoke test failed one run in three (a NaN cell)
+    sprint: st.burst || 1,
     accel: st.accel,
     hp: 100, // a mortal (v11.55: hp is the forage/immortal flag only)
     role: role,

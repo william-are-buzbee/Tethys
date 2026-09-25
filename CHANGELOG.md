@@ -6048,3 +6048,11 @@ middle range now — the person's grab on a grazer with the grazer tiring (`STAM
 (5) the arm hunters angled away no longer contorting (`ARM_CONE`), and whether they turn to bring the ring to bear soon enough (pass D if not);
 (6) how long you last in an eel's jaws now (14 s on paper: the stamina's `full`, `GRIP.k`); (7) the bill at conception naming the sawmouths' step,
 and whether 1.5 is the right price.
+
+## v11.93.1 — the placed creature's lunge: a NaN one run in three on the low tier's smoke test (25 Sep 2026)
+
+The person asked for the failure fixed before the freeze. `TIER=low node test/smoke.js` failed about one run in three, on v11.92 and v11.93 alike, in
+chunks.js `terrainColor` — a cell generated at NaN. Instrumented: the NaN was the lab's placed creature (`DEFS.lab`, lab.js) in its first chase of a
+darter — the committed lunge of v11.92 runs at `d.top × d.sprint`, and that row had neither, so its velocity went NaN, the player it bumped went NaN
+with it, and the next cell was asked for at NaN. `DEFS.lab` carries `top` and `sprint` now (the lab's own stats, as its speed and turn). Six low-tier
+runs clean; the high tier clean. Nothing seen: a headless matter.
