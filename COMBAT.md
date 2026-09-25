@@ -445,6 +445,14 @@ Each pass rewrites the matrix and the hunter table in `test/combat.js` to its ve
    line reaches it as an edit at conception at the budget's price (LINEAGE §13.4). The founder's slowblood (the finback, the grazer, the
    darter) is the engulfer. *Open: that family split, or the edge as a sub-clade of its own.*
 *Pass A seen (the person, 24 Sep 2026): "this pass looked good"; go ahead on B.*
+   *Pass B seen (the person, 24 Sep 2026, eaten by an ortho as the finback): "AWESOME. terrifying." The impact and the hold "GREAT for being a smaller
+   prey item". Four notes for the passes to come: (a) the orthos still orbit a little; (b) the arm hunters, close enough to reach but angled away, contort
+   — the limbs clip lengthwise through their own bodies to reach you — where the animal would more likely not push its reach (the arms want the
+   mouth chains' rule of v11.92, a cone about the body: a reach outside it is not tried; the ringmouths' turn to bring the ring to bear is the rest);
+   (c) the middle range — a smaller player grabbing a larger animal — is awkward and unclear: moving prey is clear, being moved is clear, moving
+   something you cannot tell you are moving detaches constantly and the trajectory is unreadable (pass C's struggle and stamina, and a readable
+   hold for the player: a held thing's drag on you should be felt and shown); (d) tentacles "grabbing" should wrap a physical object as tentacles
+   do (a later pass: the chain grab as a wrap round the capsule, not tips drawn to a point).*
 3. **As realistic as it comes.** The geometry decides; a crippled death is the common one and the instant death is real where the mouth
    is big enough (§10.5's table).
 4. **Physics first** (A–C), **behaviour after** (D), and possibly another behaviour pass after that.
