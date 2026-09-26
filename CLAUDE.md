@@ -73,10 +73,16 @@ Env vars: `TIER` (`low`), `PICK` (menu pick for smoke), `T0`, `OLD`, for preview
    `DESIGN.md` section whose numbers moved; a design doc gets a status note at its head when a pass builds or strikes it.
 5. `HANDOFF.md` describes current state only: a short paragraph for the new version at the top, and remove entries that are no
    longer true rather than appending. Keep that file short; the history is `CHANGELOG.md`.
-6. Commit each version on `main`, one commit per version, the message the CHANGELOG header. Identity is `WB <willbuzbee@gmail.com>`
-   (`user.name` in the repo's local config; never any other name). `origin` is a **private** GitHub mirror
-   (`william-are-buzbee/Tethys`, added 19 Sep 2026 so the person can work from elsewhere and so the history is not on one disk):
-   the person pushes, from their own shell. No pushing, rebasing or hard resets from here (`.claude/settings.json`).
+6. Commit each version on a `claude/…` branch, one commit per version, the message the CHANGELOG header, and open one pull request
+   per version into `main`. Identity is `WB <willbuzbee@gmail.com>` (`user.name` in the repo's local config; never any other name,
+   the person, 26 Sep 2026 — GitHub shows these commits "Unverified", which is accepted). `origin` is a **public** GitHub repo
+   (`william-are-buzbee/Tethys`) and `main` is protected: nothing reaches it but a pull request the person merges — that button is
+   the release. Claude pushes only its `claude/…` branch (`git push -u origin claude/…`, allowed in `.claude/settings.json`); never
+   `main`, never a force push, no rebasing or hard resets.
+7. Pages (`.github/workflows/pages.yml`, `.github/publish.sh`, 26 Sep 2026) builds on GitHub and writes the `gh-pages` branch: `main`
+   is the live game at `https://william-are-buzbee.github.io/Tethys/`; a pull request is a preview at `…/preview/<number>/`
+   (linked in a comment on it, removed when it closes) — the person plays it there before merging; each new CHANGELOG version is
+   kept at `…/v/<version>/` (e.g. `v/v11.93.1/`), written once, never overwritten.
 
 The sandbox delivery (when there is no PC): copy `tethys.html` to `/mnt/user-data/outputs/`, zip the folder as `tethys-src.zip`.
 
