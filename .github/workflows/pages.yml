@@ -1,0 +1,36 @@
+# pages.yml — builds tethys.html on every push to main and publishes it to GitHub Pages (the build output stays out of git).
+name: pages
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: true
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node build.js
+      - run: |
+          mkdir -p _site
+          cp tethys.html _site/index.html
+          cp tethys.html _site/tethys.html
+          cp map.html _site/map.html 2>/dev/null || true
+          mkdir -p _site/src && cp src/util.js src/world.js _site/src/
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deploy
+        uses: actions/deploy-pages@v4
