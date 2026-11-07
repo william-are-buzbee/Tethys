@@ -1,5 +1,11 @@
 # tethys
 
+> **Moved, 7 Nov 2026.** Tethys lives in
+> [Game-Template-and-Library](https://github.com/william-are-buzbee/Game-Template-and-Library/tree/main/games/tethys)
+> now, with this repository's history. Play it at
+> https://william-are-buzbee.github.io/Game-Template-and-Library/games/tethys/ (the old address sends you there, saves and
+> all). This repository is frozen and will be archived: work on Tethys there, not here.
+
 An underwater exploration game in one three.js file.
 
 - `tethys.html` — the built game. Open it in a desktop browser. (Add `#low` or `#high` to the URL to force a quality tier.)

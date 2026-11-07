@@ -1,5 +1,9 @@
 # CLAUDE.md — tethys
 
+**This repository is frozen (7 Nov 2026).** Tethys moved to the Game-Template-and-Library repository, at
+`games/tethys`, with this repository's history. Do not work here: open that repository and read its `CLAUDE.md` and
+`games/tethys/CLAUDE.md`. Nothing below is kept current.
+
 Read this first. Then `HANDOFF.md` for where things stand, and the `DESIGN.md` section of any system before touching it.
 
 ## What this is
